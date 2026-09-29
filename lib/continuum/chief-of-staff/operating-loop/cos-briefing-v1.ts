@@ -146,6 +146,14 @@ export function occupiesCurrentUpNext(briefing: CosBriefingV1): boolean {
 
 export function deriveCosBriefingV1(input: DeriveCosBriefingInput): CosBriefingV1 {
   const packet = input.packet;
+  if (packet.projection) {
+    const p = packet.projection, c = p.commitment;
+    const dueDate = c?.window?.end ?? c?.date ?? null;
+    const asOf = input.nowIso ? civilDateInZone(input.nowIso, FOUNDER_BUSINESS_TIME_ZONE) : null;
+    const facts: CosTimingFact[] = c ? [{ kind: "promised_date", statement: c.originalWording, anchorDate: civilDateInZone(c.sourceTimestamp, FOUNDER_BUSINESS_TIME_ZONE), dueDate, leadBusinessDays: null, sourceRefs: [c.sourceRef] }] : [];
+    const checkpoint: CosCheckpoint | null = c ? { dueAt: null, dueDate, condition: c.precision === "approximate" ? "Approximate vendor estimate; confirm if still outstanding." : "If the promised deliverable is still outstanding.", action: `Check ${c.deliverable}${dueDate ? ` on ${dueDate}` : " when timing is clarified"}.`, reason: c.originalWording, sourceRefs: [c.sourceRef], status: dueDate && asOf && dueDate <= asOf && c.precision !== "approximate" ? "triggered" : "advisory", basis: "evidence" } : null;
+    return { modelId: COS_BRIEFING_MODEL_ID, currentState: input.rendered?.stand ?? `${p.stage.replaceAll("_", " ")}${p.dependency ? `; waiting on ${p.dependency}` : ""}`, timingFacts: facts, timingProse: c ? `${c.originalWording}${dueDate ? ` (${c.precision}: ${dueDate})` : " (date unresolved)"}` : null, checkpoint, checkpointProse: checkpoint?.action ?? "Nothing needed now.", why: null, currentFounderAction: p.ballHolder === "founder" };
+  }
   const evidence = evidenceRows(input);
   const hay = evidence.map((row) => row.summary).join("\n");
   const asOf = input.nowIso ? civilDateInZone(input.nowIso, FOUNDER_BUSINESS_TIME_ZONE) : null;

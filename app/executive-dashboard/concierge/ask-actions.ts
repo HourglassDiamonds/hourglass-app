@@ -1,5 +1,10 @@
 "use server";
 
+import { executeAuthenticatedFounderOperation } from "@/lib/continuum/concierge-sol/founder-command-server";
+import { revalidatePath } from "next/cache";
+import { proposeFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
+import { refreshTodayAfterFounderMutation } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { answerAskConciergeQuery } from "@/lib/continuum/client-memory/ask/query";
 import { parseAskConciergeIntent } from "@/lib/continuum/client-memory/ask/intent";
 import type { AskConciergeAnswer } from "@/lib/continuum/client-memory/ask/types";
@@ -45,6 +50,12 @@ export async function askConcierge(
   const mode = typeof input === "string" ? "conversation" : input.mode ?? "conversation";
   const history = typeof input === "string" ? [] : input.history ?? [];
   const todayContext = typeof input === "string" ? undefined : input.todayContext;
+  const operation = mode === "conversation" || todayContext ? proposeFounderOperation(query) : null;
+  if (operation) {
+    const result = await executeAuthenticatedFounderOperation(operation, refreshTodayAfterFounderMutation);
+    if (result.refresh) revalidatePath(CONCIERGE_HOME_PATH);
+    return { kind: "conversation", mode: "conversation", text: result.text, actions: [], brainDump: null, writesCanonical: result.status === "applied", refreshToday: result.refresh, telemetry: { requestModel: conciergeForegroundModel(), brain: "fallback", promptTokens: null, completionTokens: null, latencyMs: 0, toolCount: 1, toolNames: ["apply_founder_operation"] } };
+  }
   if (todayContext?.packet) {
     const packet = readTodayBriefingPacket(todayContext.packet);
     if (!packet || packet.itemId !== todayContext.itemId) {

@@ -88,6 +88,7 @@ export function presentTop5Item(
   const writer = completionWriterFor(item.sourceType);
   return {
     id: item.id,
+    sourceRef: item.job.sourceRef,
     sourceType: item.sourceType,
     action: item.action,
     clientLabel: item.personName,

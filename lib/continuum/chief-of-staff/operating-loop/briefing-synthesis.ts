@@ -35,7 +35,7 @@ export function applySolBriefingSynthesis(
   sol: SolBriefingSynthesis | string | null | undefined,
 ): TodayRenderedBriefing {
   const fallback = renderDeterministicBriefing(packet);
-  if (sol == null) return fallback;
+  if (sol == null || packet.projection) return fallback;
   const parsed = typeof sol === "string" ? parseSolBriefingText(sol) : sol;
   if (!parsed) return fallback;
   const rejection = unsupportedSolClaim(packet, parsed);

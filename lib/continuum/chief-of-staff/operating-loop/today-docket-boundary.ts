@@ -90,6 +90,8 @@ import type {
 } from "./types";
 import { TODAY_DOCKET_VERSION } from "./types";
 
+import { mergeCurrentSourceEvents } from "./current-work";
+
 const UNASSIGNED = "Unassigned";
 const DIAGNOSTIC_COPY =
   /shop evidence is already (?:tied to|on) this production Project|canonical Project is already in production|I do not see a later (?:shop|vendor)|I will not create a reminder Open Job/i;
@@ -446,6 +448,7 @@ export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoo
     noFounderAction: !/YOUR TURN|founder/i.test(item.ownership),
     staleInboundSatisfied: false,
     openJobProven: true,
+    sourceRefs: item.sourceRef ? [item.sourceRef] : [],
     evidence: [],
   });
 }
@@ -527,6 +530,7 @@ export function isStaleLifecycleOnly(
 }
 
 export function hasRealFounderOwnedObligation(packet: TodayBriefingPacket | null | undefined): boolean {
+  if (packet?.projection) return packet.projection.activeObligations.some(o => o.actor === "founder");
   if (!packet) return false;
   if (packet.briefingKind === "founder_print_check") return true;
   if (packet.semanticNextActionClass === "founder_review") return true;
@@ -849,7 +853,7 @@ function collectSeeds(loop: CosOperatingLoopView): TodayDocketSeed[] {
   const seeds: TodayDocketSeed[] = [];
   for (const item of loop.brief) seeds.push(seedFromBrief(item, loop));
   for (const item of loop.watching) seeds.push(seedFromWatching(item));
-  for (const item of loop.top5) seeds.push(seedFromJob(item, loop));
+  for (const item of loop.canonicalQueue ?? loop.top5) seeds.push(seedFromJob(item, loop));
   for (const item of loop.needsYourDecision) {
     if (!item.recap && !item.proposedAction) continue;
     seeds.push(seedFromDecision(item));
@@ -860,6 +864,24 @@ function collectSeeds(loop: CosOperatingLoopView): TodayDocketSeed[] {
 }
 
 function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
+  const clock = Date.parse(loop.asOfIso ?? "");
+  if (loop.quietJobs?.some(j => {
+    const exact =
+      seed.job?.id === j.jobId ||
+      seed.id === j.jobId ||
+      Boolean(j.sourceRef && seed.packet?.sourceRefs.includes(j.sourceRef));
+    if (j.reason === "terminal") return Boolean(seed.job && exact);
+    const stillDeferred = !j.deferredUntil || Date.parse(j.deferredUntil) > clock;
+    return stillDeferred &&
+      (Boolean(seed.job && exact) ||
+        (!j.sourceRef && j.soleProjectJob && seed.projectId === j.projectId));
+  })) return false;
+  if (seed.packet?.projection) {
+    if (seed.packet.projection.stage === "complete") return false;
+    if (seed.packet.projection.activeObligations.length === 0)
+      return ["in_production", "ready"].includes(seed.packet.projection.stage);
+    return true;
+  }
   if (isClosedBeatPacket(seed.packet, seed.declined)) return false;
   const packet = seed.packet!;
   if (!seed.brief && !seed.job && !seed.decision && !seed.anomaly) {
@@ -929,6 +951,54 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
   return true;
 }
 
+function applyQuietJobDispositions(
+  seed: TodayDocketSeed,
+  loop: CosOperatingLoopView,
+): TodayDocketSeed {
+  const projection = seed.packet?.projection;
+  if (!projection) return seed;
+  const clock = Date.parse(loop.asOfIso ?? "");
+  const quietRefs = new Set(
+    (loop.quietJobs ?? [])
+      .filter(
+        (job) =>
+          job.sourceRef &&
+          (job.reason === "terminal" ||
+            !job.deferredUntil ||
+            Date.parse(job.deferredUntil) > clock),
+      )
+      .map((job) => job.sourceRef!),
+  );
+  if (quietRefs.size === 0) return seed;
+  const activeObligations = projection.activeObligations.filter(
+    (obligation) => !quietRefs.has(obligation.openedBy),
+  );
+  if (activeObligations.length === projection.activeObligations.length) return seed;
+  const founder = activeObligations.find((obligation) => obligation.actor === "founder");
+  const controlling = founder ?? activeObligations[0] ?? null;
+  const packet = {
+    ...seed.packet!,
+    projection: {
+      ...projection,
+      activeObligations,
+      dependency: controlling?.deliverable ?? null,
+      ballHolder: controlling?.actor ?? "unknown",
+      controllingSourceRefs: [
+        ...new Set(activeObligations.map((obligation) => obligation.openedBy)),
+      ],
+    },
+    ballHolder: controlling?.actor ?? "unknown",
+    candidateNextAction: controlling?.deliverable ?? null,
+    unresolvedFounderObligation:
+      controlling?.actor === "founder" ? controlling.deliverable : null,
+  } satisfies TodayBriefingPacket;
+  return {
+    ...seed,
+    packet,
+    briefing: renderDeterministicBriefing(packet),
+  };
+}
+
 function seedScore(seed: TodayDocketSeed): number {
   const packet = seed.packet;
   if (!packet) return 0;
@@ -967,6 +1037,13 @@ function seedActivityMs(seed: TodayDocketSeed): number {
 }
 
 function strongerSeed(a: TodayDocketSeed, b: TodayDocketSeed): TodayDocketSeed {
+  const ap = a.packet?.projection, bp = b.packet?.projection;
+  if (ap || bp) {
+    const am = Date.parse(ap?.asOf ?? ""), bm = Date.parse(bp?.asOf ?? "");
+    if (Number.isFinite(am) !== Number.isFinite(bm)) return Number.isFinite(am) ? a : b;
+    if (Number.isFinite(am) && am !== bm) return am > bm ? a : b;
+    if (Boolean(ap) !== Boolean(bp)) return ap ? a : b;
+  }
   const left = seedScore(a);
   const right = seedScore(b);
   if (left !== right) return left >= right ? a : b;
@@ -1180,6 +1257,7 @@ function recomposeMergedPacket(left: TodayDocketSeed, right: TodayDocketSeed): T
     staleInboundSatisfied:
       Boolean(primary.brief?.staleInboundSatisfied || secondary.brief?.staleInboundSatisfied),
     evidence,
+    sourceEvents: mergeCurrentSourceEvents(left.packet?.sourceEvents, right.packet?.sourceEvents, left.brief?.sourceEvents, right.brief?.sourceEvents),
     founderOwnTexts: evidence.filter((beat) => beat.speaker === "founder").map((beat) => authorOwnedText(beat.summary)),
     vendorOwnTexts: evidence.filter((beat) => beat.speaker === "vendor").map((beat) => authorOwnedText(beat.summary)),
     sourceRefs: [...new Set([...primary.packet?.sourceRefs ?? [], ...secondary.packet?.sourceRefs ?? []])],
@@ -1235,6 +1313,13 @@ function mergeSeeds(left: TodayDocketSeed, right: TodayDocketSeed): TodayDocketS
 }
 
 function strongWorkIdentitiesConflict(a: TodayDocketSeed, b: TodayDocketSeed): boolean {
+  if (a.job && b.job && a.job.id !== b.job.id) return true;
+  if (Boolean(a.job) !== Boolean(b.job)) {
+    const job = a.job ?? b.job;
+    const other = a.job ? b : a;
+    const sourceRef = job?.sourceRef?.trim() ?? "";
+    if (!sourceRef || !other.packet?.sourceRefs.includes(sourceRef)) return true;
+  }
   if (a.projectId && b.projectId && a.projectId !== b.projectId) return true;
   const cadA = currentCadOf(a);
   const cadB = currentCadOf(b);
@@ -1259,14 +1344,12 @@ function sameClientCadPair(a: TodayDocketSeed, b: TodayDocketSeed): boolean {
     Boolean(seed.packet?.organizationLabel && isVendorOrganizationLabel(seed.packet.organizationLabel)) ||
     isVendorOrganizationLabel(seed.subject);
   if (vendorLike(a) === vendorLike(b)) return false;
-  const nameA = clientFirstNameOf(a);
-  const nameB = clientFirstNameOf(b);
-  if (!nameA || !nameB || nameA !== nameB) return false;
-  return true;
+  // A shared first name cannot associate separate threads.
+  return false;
 }
 
 export function dedupeTodaySeeds(seeds: readonly TodayDocketSeed[]): TodayDocketSeed[] {
-  const list = [...seeds];
+  const list = [...seeds].sort((a,b) => a.id.localeCompare(b.id));
   const parent = list.map((_, index) => index);
   const find = (index: number): number => {
     const current = parent[index]!;
@@ -1277,7 +1360,12 @@ export function dedupeTodaySeeds(seeds: readonly TodayDocketSeed[]): TodayDocket
   const union = (left: number, right: number) => {
     const a = find(left);
     const b = find(right);
-    if (a !== b) parent[b] = a;
+    if (a !== b) {
+      const leftGroup = list.filter((_, i) => find(i) === a);
+      const rightGroup = list.filter((_, i) => find(i) === b);
+      if (leftGroup.some(left => rightGroup.some(right => strongWorkIdentitiesConflict(left, right)))) return;
+      parent[b] = a;
+    }
   };
   const indexByKey = new Map<string, number>();
   for (let index = 0; index < list.length; index++) {
@@ -1518,7 +1606,7 @@ export function finalizeTodayDocket(loop: CosOperatingLoopView): {
   upNext: CosDocketItemView[];
   watching: CosWatchingItem[];
 } {
-  const kept = dedupeTodaySeeds(collectSeeds(loop).filter((seed) => keepSeed(seed, loop))).map((seed) => {
+  const kept = dedupeTodaySeeds(collectSeeds(loop).filter(seed => seed.packet?.projection || keepSeed(seed, loop))).map((seed) => applyQuietJobDispositions(seed, loop)).filter((seed) => seed.packet?.projection?.stage !== "complete" && keepSeed(seed, loop)).map((seed) => {
     const packet = overlayClientIdentity(seed.packet, [seed], loop);
     if (!packet) return seed;
     return {

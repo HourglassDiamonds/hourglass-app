@@ -72,6 +72,11 @@ export type SourceViewerFetchResult =
   | SourceViewerFetchFailure
   | SourceViewerFetchSuccess;
 
+export type PreparedIndexedMessage = Pick<
+  GmailIndexedMessage,
+  "messageId" | "threadId" | "sentAt" | "subject"
+>;
+
 function isConnectedCredential(
   row: GmailConnection | null,
 ): row is GmailConnection & { refreshToken: GmailTokenCiphertext } {
@@ -155,9 +160,27 @@ export async function runSourceViewerFetch(
   }
   if (!refreshed.ok) return failed(refreshed.error);
 
-  const api = exactThreadOnlyApi(input.createApi(refreshed.accessToken));
+  return runPreparedSourceViewerFetch({
+    threadId,
+    messageId,
+    indexed,
+    api: exactThreadOnlyApi(input.createApi(refreshed.accessToken)),
+  });
+}
+
+export async function runPreparedSourceViewerFetch(input: {
+  threadId: string;
+  messageId?: string | null;
+  indexed: readonly PreparedIndexedMessage[];
+  api: GmailApi;
+}): Promise<SourceViewerFetchResult> {
+  const threadId = input.threadId.trim();
+  const messageId = input.messageId?.trim() || null;
+  if (!threadId) return failed("blank-pointer");
+  if (input.indexed.length === 0) return failed("not-indexed");
+  const indexed = [...input.indexed];
   try {
-    const raw = await api.getThread(threadId);
+    const raw = await input.api.getThread(threadId);
     if (!raw?.id || raw.id !== threadId || !Array.isArray(raw.messages)) {
       return failed("thread-fetch-failed");
     }
@@ -205,4 +228,49 @@ export async function runSourceViewerFetch(
   } catch (error) {
     return failed(threadFetchErrorCode(error));
   }
+}
+
+export type PreparedSourceViewerBatch = {
+  metrics: { threadFetches: number };
+  fetchThread(input: {
+    threadId: string;
+    indexed: readonly PreparedIndexedMessage[];
+  }): Promise<SourceViewerFetchResult>;
+};
+
+/** Coalesces duplicate exact-thread reads and bounds the entire live batch. */
+export function createPreparedSourceViewerBatch(
+  api: GmailApi,
+  timeoutMs: number,
+  now: () => number = Date.now,
+): PreparedSourceViewerBatch {
+  const deadline = now() + Math.max(1, timeoutMs);
+  const pending = new Map<string, Promise<SourceViewerFetchResult>>();
+  const metrics = { threadFetches: 0 };
+  return {
+    metrics,
+    fetchThread({ threadId, indexed }) {
+      const key = `${threadId}|${indexed.map((row) => row.messageId).sort().join(",")}`;
+      const prior = pending.get(key);
+      if (prior) return prior;
+      const remaining = deadline - now();
+      if (remaining <= 0)
+        return Promise.resolve({ ok: false, safeErrorCode: "unavailable" });
+      metrics.threadFetches += 1;
+      let timer: ReturnType<typeof setTimeout> | null = null;
+      const work = Promise.race([
+        runPreparedSourceViewerFetch({ threadId, indexed, api }),
+        new Promise<SourceViewerFetchResult>((resolve) => {
+          timer = setTimeout(
+            () => resolve({ ok: false, safeErrorCode: "unavailable" }),
+            remaining,
+          );
+        }),
+      ]).finally(() => {
+        if (timer) clearTimeout(timer);
+      });
+      pending.set(key, work);
+      return work;
+    },
+  };
 }

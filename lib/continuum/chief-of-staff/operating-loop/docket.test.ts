@@ -192,14 +192,15 @@ describe("Today Chief of Staff docket", () => {
     );
   });
 
-  it("dedupes a Top 5 job already covered by a Brief item", () => {
+  it("does not merge a distinct Top 5 job solely because a Brief shares its Project", () => {
     const docket = composeTodayDocket(loopOf({
       status: "active",
       brief: [briefItem()],
       top5: [jobItem({ projectId: COS_LOOP_PROJECT_A })],
     }));
-    assert.equal(docket.items.length, 1);
-    assert.equal(docket.items[0]?.origin, "brief");
+    assert.equal(docket.items.length, 2);
+    assert.ok(docket.items.some((item) => item.origin === "brief"));
+    assert.ok(docket.items.some((item) => item.origin === "open_job"));
   });
 
   it("renders one numbered queue without Concierge Brief, Top 5, or Recommended", () => {

@@ -179,6 +179,7 @@ export type TodayGmailThreadContext = {
   fromDisplayName?: string | null;
   fromEmail?: string | null;
   liveIdentityLoaded?: boolean;
+  liveEnrichmentAttempted?: boolean;
   messages?: readonly TodayGmailIndexedMessage[];
   attachmentFilenames?: readonly string[];
 };

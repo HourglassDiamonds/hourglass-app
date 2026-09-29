@@ -58,6 +58,26 @@ describe("Today navigation read model", () => {
     );
   });
 
+  it("invalidates the in-memory loop exactly when a snooze expires without a source write", () => {
+    resetTodayReadModelCache();
+    const expiring = {
+      ...loop("deferred"),
+      quietJobs: [
+        {
+          jobId: "job-1",
+          projectId: "project-1",
+          sourceRef: null,
+          deferredUntil: "1970-01-01T00:00:02.000Z",
+          soleProjectJob: true,
+          reason: "deferred" as const,
+        },
+      ],
+    };
+    storeCachedTodayLoop("same-watermark", 1_000, expiring);
+    assert.equal(readCachedTodayLoop("same-watermark", 1_999), expiring);
+    assert.equal(readCachedTodayLoop("same-watermark", 2_000), null);
+  });
+
   it("does not await Gmail incremental sync while rendering Today", () => {
     const page = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/page.tsx"),

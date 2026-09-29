@@ -69,7 +69,8 @@ export type ConciergeSolAnswer = {
   text: string;
   actions: ConciergeEvidenceAction[];
   brainDump: BrainDumpProposal | null;
-  writesCanonical: false;
+  writesCanonical: boolean;
+  refreshToday?: boolean;
   telemetry: ConciergeSolTelemetry;
 };
 

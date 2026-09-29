@@ -79,6 +79,8 @@ export type TodayBriefingEvent = {
 };
 
 export type TodayBriefingPacket = {
+  projection?: import("./current-work").CurrentWorkProjection;
+  sourceEvents?: readonly SourceCommunicationEvent[];
   itemId: string;
   displayName: string;
   entityType: TodayBriefingEntityType;
@@ -428,7 +430,7 @@ export function composeTodayBriefingPacket(
   const shipOpen = reduced.semanticClass === "founder_communication" && isCurrentShippingObligation(loopEvents);
   const waitingOnCad = reduced.semanticClass === "founder_review" && clientIsWaitingOnCad(loopEvents);
   const ballHolder =
-    reduced.ballHolder !== "unknown"
+    reduced.projection || reduced.ballHolder !== "unknown"
       ? reduced.ballHolder
       : sourceFulfillClosedLoop(loopEvents)
         ? "unknown"
@@ -494,6 +496,8 @@ export function composeTodayBriefingPacket(
   });
 
   return {
+    projection: reduced.projection,
+    sourceEvents: input.sourceEvents,
     itemId: input.itemId,
     displayName,
     entityType,
@@ -528,17 +532,17 @@ export function composeTodayBriefingPacket(
       displayName,
     }),
     ballHolder,
-    unresolvedFounderObligation,
-    externalCommitment,
+    unresolvedFounderObligation: reduced.projection ? (ballHolder === "founder" ? reduced.projection.dependency : null) : unresolvedFounderObligation,
+    externalCommitment: reduced.projection ? reduced.projection.commitment?.originalWording ?? null : externalCommitment,
     nextExpectedEvent,
-    candidateNextAction,
+    candidateNextAction: reduced.projection ? reduced.projection.dependency : candidateNextAction,
     uncertainty: uncertaintyOf({
       remaining,
       printPlan,
       lifecycle,
       openJobProven: input.openJobProven === true,
     }),
-    mustNotState,
+    mustNotState: reduced.projection?.stage === "in_production" ? mustNotState.filter(line => !/production/i.test(line)) : mustNotState,
     sourceRefs: uniqueRefs([
       ...(input.sourceRefs ?? []),
       ...input.evidence.map((beat) => beat.sourceHref).filter((row): row is string => Boolean(row)),

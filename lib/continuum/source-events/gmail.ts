@@ -5,6 +5,7 @@
  * on the same message; quoted/historical candidates are ignored.
  */
 
+import { currentActionEligibility } from "@/lib/continuum/chief-of-staff/operating-loop/current-action-eligibility";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import {
   collectTodayFounderEmailHashes,
@@ -24,7 +25,7 @@ import {
   parseHgdClientLabel,
   parseShopCadFilename,
 } from "@/lib/continuum/candidates/work-loop-identity";
-import { classifySourceCommunication } from "./classify";
+import { classifySourceCommunications } from "./classify";
 import type {
   SourceCommunicationActor,
   SourceCommunicationEvent,
@@ -75,6 +76,8 @@ function candidateOverlayByMessage(
   if (!candidates?.length) return map;
   for (const row of candidates) {
     if (isQuotedHistoricalCandidate(row)) continue;
+    const eligibility = currentActionEligibility(row, { peers: candidates });
+    if (["quoted_historical", "duplicate_wrapper", "superseded_by_later_state"].includes(eligibility.reason)) continue;
     const messageId = sourceMessageId(row);
     if (!messageId) continue;
     const raw = `${row.evidenceBasis.matchedText ?? ""}\n${
@@ -233,7 +236,7 @@ export function projectGmailSourceEvents(input: {
         ...(overlayRow?.cadIds ?? []),
       ]);
       const identityHay = [subject, authorOwned, ...files].join("\n");
-      const semanticClass = classifySourceCommunication({
+      const classifications = classifySourceCommunications({
         actor,
         direction: message.direction,
         subject,
@@ -260,36 +263,38 @@ export function projectGmailSourceEvents(input: {
         threadId,
         messageId: message.messageId,
       });
-      events.push({
-        sourceType: "gmail",
-        sourceRef: packed.ok ? packed.sourceRef : `gc1|${threadId}|${message.messageId}`,
-        messageId: message.messageId,
-        threadId,
-        timestamp: message.sentAt,
-        direction: message.direction,
-        actor,
-        subject,
-        authorOwnedText: authorOwned,
-        quotedText: quoted,
-        attachmentFilenames: files,
-        hasAttachments: message.hasAttachments === true || files.length > 0,
-        cadIds,
-        orderIds,
-        productionJobIds,
-        personLabel: personLabelOf(subject, files),
-        projectId,
-        workLoopId: workLoopIdOf({ projectId, cadIds, threadId }),
-        semanticClass,
-        evidenceExcerpt: authorOwned || files.join(", "),
-        workIdentityBasis,
-        provenance: message.operationalText
-          ? overlayRow
-            ? "indexed_gmail+interpretation+live_operational_fact"
-            : "indexed_gmail+live_operational_fact"
-          : overlayRow
-            ? "indexed_gmail+interpretation"
-            : "indexed_gmail",
-      });
+      for (const classification of classifications) {
+        events.push({
+          sourceType: "gmail",
+          sourceRef: packed.ok ? packed.sourceRef : `gc1|${threadId}|${message.messageId}`,
+          messageId: message.messageId,
+          threadId,
+          timestamp: message.sentAt,
+          direction: message.direction,
+          actor,
+          subject,
+          authorOwnedText: authorOwned,
+          quotedText: quoted,
+          attachmentFilenames: files,
+          hasAttachments: message.hasAttachments === true || files.length > 0,
+          cadIds,
+          orderIds,
+          productionJobIds,
+          personLabel: personLabelOf(subject, files),
+          projectId,
+          workLoopId: workLoopIdOf({ projectId, cadIds, threadId }),
+          semanticClass: classification.semanticClass,
+          evidenceExcerpt: classification.evidenceExcerpt || authorOwned || files.join(", "),
+          workIdentityBasis,
+          provenance: message.operationalText
+            ? overlayRow
+              ? "indexed_gmail+interpretation+live_operational_fact"
+              : "indexed_gmail+live_operational_fact"
+            : overlayRow
+              ? "indexed_gmail+interpretation"
+              : "indexed_gmail",
+        });
+      }
     }
   }
   return propagateThreadIdentity(events).sort((left, right) => {

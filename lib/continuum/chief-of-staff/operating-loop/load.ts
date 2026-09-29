@@ -10,6 +10,7 @@
 
 import "server-only";
 
+import { loadFounderCorrectionEvents } from "./founder-corrections-load";
 import { cookies } from "next/headers";
 import { after } from "next/server";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
@@ -34,6 +35,7 @@ import {
 } from "@/lib/agent-os/operating-backlog";
 import { resolvePersistenceAdapter } from "@/lib/agent-os/persistence/resolve";
 import { readTodaySourceWatermark } from "@/lib/continuum/today-source-watermark";
+import { beginTodayRecomputeAttempt } from "./today-recompute-clock";
 import { decideSnapshotUse, projectTodaySnapshot } from "@/lib/continuum/today-snapshot";
 import {
   publishPersistedTodaySnapshot,
@@ -95,7 +97,10 @@ function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
     add(brief.recoveredGmailThreadId);
     add(brief.canonicalGmailThreadId);
   }
-  return [...ids];
+  return [...ids].filter(
+    (threadId) =>
+      loop.threadContext?.get(threadId)?.liveEnrichmentAttempted !== true,
+  );
 }
 
 function disconnectedLoop(): CosOperatingLoopView {
@@ -175,7 +180,9 @@ async function rebuildTodayLoop(
   const indexedContext = await loadLiveTodayOperationalFacts(
     await loadIndexedTodayThreadContext(candidates),
   );
+  const founderCorrections = client ? await loadFounderCorrectionEvents(client) : [];
   const composeInput = {
+    founderCorrections,
     jobs,
     summaries,
     candidates,
@@ -202,11 +209,14 @@ async function rebuildTodayLoop(
   return loop;
 }
 
-async function liveWatermark(fallback: string | null): Promise<string | null> {
+async function liveWatermark(
+  fallback: string | null,
+  evaluationTime = new Date(),
+): Promise<string | null> {
   const client = getSupabaseAdmin();
   if (!client) return fallback;
   try {
-    return await readTodaySourceWatermark(client);
+    return await readTodaySourceWatermark(client, evaluationTime);
   } catch {
     return fallback;
   }
@@ -216,9 +226,10 @@ async function commitComposedLoop(
   composedWatermark: string | null,
   loop: CosOperatingLoopView,
   composedAt: string,
+  evaluationTime = new Date(composedAt),
 ): Promise<"published" | "moved" | "skipped"> {
   if (!composedWatermark || loop.status === "disconnected") return "skipped";
-  const live = await liveWatermark(composedWatermark);
+  const live = await liveWatermark(composedWatermark, evaluationTime);
   if (live !== composedWatermark) return "moved";
   storeCachedTodayLoop(composedWatermark, Date.now(), loop);
   const client = getSupabaseAdmin();
@@ -226,8 +237,19 @@ async function commitComposedLoop(
   try {
     await publishPersistedTodaySnapshot(client, {
       composedWatermark,
-      payload: projectTodaySnapshot(composeTodayDocket(loop)),
+      payload: projectTodaySnapshot(
+        composeTodayDocket(loop),
+        [...(loop.quietJobs ?? [])]
+          .filter((job) =>
+            job.reason === "deferred" &&
+            job.deferredUntil &&
+            Date.parse(job.deferredUntil) > evaluationTime.getTime(),
+          )
+          .map((job) => job.deferredUntil!)
+          .sort()[0] ?? null,
+      ),
       composedAt,
+      evaluationTime: evaluationTime.toISOString(),
     });
   } catch {
     // A missing table or a lost race leaves the previous snapshot in place.
@@ -242,18 +264,24 @@ async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boole
     getAuthenticatedCandidateStore(),
   ]);
   const run = async () => {
-    let composedFor = await liveWatermark(watermark);
-    if (!composedFor) throw new Error("today recompute disconnected");
     for (let attempt = 0; attempt < 2; attempt += 1) {
-      const loop = await rebuildTodayLoop(now, composedFor, { desk, store });
+      const evaluation = await beginTodayRecomputeAttempt((evaluationTime) =>
+        liveWatermark(watermark, evaluationTime),
+      );
+      const evaluationTime = evaluation.evaluationTime;
+      const composedFor = evaluation.watermark;
+      if (!composedFor) throw new Error("today recompute disconnected");
+      const loop = await rebuildTodayLoop(evaluationTime, composedFor, { desk, store });
       if (loop.status === "disconnected") {
         throw new Error("today recompute disconnected");
       }
-      const committed = await commitComposedLoop(composedFor, loop, now.toISOString());
+      const committed = await commitComposedLoop(
+        composedFor,
+        loop,
+        evaluationTime.toISOString(),
+        evaluationTime,
+      );
       if (committed !== "moved") return;
-      const live = await liveWatermark(composedFor);
-      if (!live || live === composedFor) return;
-      composedFor = live;
     }
     throw new Error("today recompute watermark moved");
   };
@@ -294,7 +322,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
   const client = getSupabaseAdmin();
   const [session, watermark, snapshot] = await Promise.all([
     requireInternalClientMemorySession(jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value),
-    client ? liveWatermark(null) : Promise.resolve(null),
+    client ? liveWatermark(null, now) : Promise.resolve(null),
     client
       ? readPersistedTodaySnapshot(client).catch(() => null)
       : Promise.resolve(null),
@@ -306,7 +334,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
     const lastKnown = readLastKnownTodayLoop();
     const choice = chooseTodayNavigation({
       exactHit: Boolean(cached),
-      hasLastKnown: Boolean(lastKnown),
+      hasLastKnown: Boolean(lastKnown && lastKnown.watermark === watermark),
     });
     if (choice === "current" && cached) {
       return pageFromLoop(cached, "current", watermark);
@@ -322,6 +350,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
     const snapshotUse = decideSnapshotUse({
       record: snapshot,
       liveWatermark: watermark,
+      nowIso: now.toISOString(),
     });
     if (snapshot && snapshotUse === "current") {
       return {
@@ -330,7 +359,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
         readModelWatermark: snapshot.sourceWatermark,
       };
     }
-    if (snapshot && snapshotUse === "refreshing") {
+    if (snapshot && snapshotUse === "refreshing" && snapshot.sourceWatermark === watermark) {
       const scheduled = watermark ? await scheduleTodayRebuild(now, watermark) : false;
       return {
         docket: snapshot.payload.docket,
@@ -340,7 +369,12 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
     }
     const loop = await rebuildTodayLoop(now, watermark);
     if (loop.status === "disconnected") return disconnectedPage();
-    const committed = await commitComposedLoop(watermark, loop, now.toISOString());
+    const committed = await commitComposedLoop(
+      watermark,
+      loop,
+      now.toISOString(),
+      now,
+    );
     if (committed === "moved" && watermark) {
       await scheduleTodayRebuild(now, watermark);
       return pageFromLoop(loop, "refreshing", watermark);
@@ -365,7 +399,7 @@ export async function loadCosOperatingLoop(
     let watermark: string | null = null;
     if (client) {
       try {
-        watermark = await readTodaySourceWatermark(client);
+        watermark = await readTodaySourceWatermark(client, now);
       } catch {
         watermark = null;
       }
@@ -374,7 +408,7 @@ export async function loadCosOperatingLoop(
     const lastKnown = readLastKnownTodayLoop();
     const choice = chooseTodayNavigation({
       exactHit: Boolean(cached),
-      hasLastKnown: Boolean(lastKnown),
+      hasLastKnown: Boolean(lastKnown && lastKnown.watermark === watermark),
     });
     if (choice === "current" && cached) {
       return presentLoop(cached, "current", watermark);
@@ -388,9 +422,35 @@ export async function loadCosOperatingLoop(
       );
     }
     const loop = await rebuildTodayLoop(now, watermark);
-    await commitComposedLoop(watermark, loop, now.toISOString());
+    await commitComposedLoop(watermark, loop, now.toISOString(), now);
     return presentLoop(loop, "current", watermark);
   } catch {
     return disconnectedLoop();
   }
+}
+
+/** Mutation barrier: await old background work, then publish current canonical truth. */
+export async function refreshTodayAfterFounderMutation(): Promise<void> {
+  const jar = await cookies();
+  const session = await requireInternalClientMemorySession(jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value);
+  if (!session.ok) throw new Error("unauthorized");
+  await waitForTodayRecompute();
+  const now = new Date();
+  const watermark = await liveWatermark(null, now);
+  const loop = await rebuildTodayLoop(now, watermark);
+  if (loop.status === "disconnected") throw new Error("today-refresh-failed");
+  const committed = await commitComposedLoop(
+    watermark,
+    loop,
+    now.toISOString(),
+    now,
+  );
+  if (committed !== "published") throw new Error("today-changed-during-refresh");
+}
+
+export async function readAuthenticatedTodayWatermark(): Promise<string | null> {
+  const jar = await cookies();
+  const session = await requireInternalClientMemorySession(jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value);
+  const now = new Date();
+  return session.ok ? liveWatermark(null, now) : null;
 }

@@ -69,11 +69,15 @@ export async function publishPersistedTodaySnapshot(
     composedWatermark: string;
     payload: TodaySnapshotPayload;
     composedAt: string;
+    evaluationTime?: string;
   },
 ): Promise<"published" | "stale" | "lost-race" | "unavailable"> {
   let live = "";
   try {
-    live = await readTodaySourceWatermark(client);
+    live = await readTodaySourceWatermark(
+      client,
+      new Date(input.evaluationTime ?? input.composedAt),
+    );
   } catch {
     return "unavailable";
   }

@@ -72,6 +72,7 @@ function lifecycleByAssociatedGmailThreads(
 }
 
 export type ComposeCosOperatingLoopInput = {
+  founderCorrections?: readonly import("@/lib/continuum/source-events/types").SourceCommunicationEvent[];
   jobs: readonly ProjectJob[] | null;
   summaries?: readonly ProjectDeskSummary[];
   projects?: ReadonlyMap<string, CosProjectContext>;
@@ -173,6 +174,30 @@ export function composeCosOperatingLoop(
     threadContext: input.threadContext,
     founderEmailHashes,
     asOfIso: input.nowIso,
+    quietJobs: (input.jobs ?? [])
+      .filter(j =>
+        j.state === "resolved" ||
+        j.state === "cancelled" ||
+        j.state === "snoozed" ||
+        Boolean(j.deferredUntil && Date.parse(j.deferredUntil) > Date.parse(input.nowIso)),
+      )
+      .map(j => ({
+        jobId: j.jobId,
+        projectId: j.projectId,
+        sourceRef: j.sourceRef,
+        deferredUntil: j.deferredUntil,
+        soleProjectJob:
+          Boolean(j.projectId) &&
+          (input.jobs ?? []).filter(
+            other =>
+              other.projectId === j.projectId &&
+              (other.state === "open" || other.state === "snoozed"),
+          ).length === 1,
+        reason:
+          j.state === "resolved" || j.state === "cancelled"
+            ? "terminal" as const
+            : "deferred" as const,
+      })),
   };
 
   if (input.jobs == null) {
@@ -239,6 +264,7 @@ export function composeCosOperatingLoop(
     evidenceTexts: input.evidenceTexts,
   });
   const moderated = composeConciergeBrief({
+    founderCorrections: input.founderCorrections,
     candidates,
     jobs: input.jobs,
     projects,
@@ -259,6 +285,7 @@ export function composeCosOperatingLoop(
       quietDetail: COS_CAUGHT_UP_DETAIL,
       top5: [],
       remainingCount: 0,
+      canonicalQueue: ranked.map(item => presentTop5Item(item, input.nowIso, newMutationId())),
       brief: moderated.brief,
       watching: moderated.watching,
       needsYourDecision: attention.needsYourDecision,
@@ -279,6 +306,7 @@ export function composeCosOperatingLoop(
     quietDetail: null,
     top5,
     remainingCount: Math.max(0, ranked.length - top.length),
+    canonicalQueue: ranked.map(item => presentTop5Item(item, input.nowIso, newMutationId())),
     brief: moderated.brief,
     watching: moderated.watching,
     needsYourDecision: attention.needsYourDecision,

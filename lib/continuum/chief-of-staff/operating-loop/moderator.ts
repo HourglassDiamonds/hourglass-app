@@ -1,3 +1,4 @@
+import { mergeCurrentSourceEvents } from "./current-work";
 /**
  * Concierge Executive Moderator V1.
  * Reasons across Gmail Candidates, People, Projects, Open Jobs, and Top 5.
@@ -2008,6 +2009,7 @@ function withBriefingDisposition(item: RankedSituation): RankedSituation {
     }
     return { ...item, briefingPacket: null };
   }
+  if (packet.projection) return { ...item, disposition: packet.projection.stage === "complete" || (!packet.projection.activeObligations.length && packet.projection.stage !== "ready") ? "suppress" : packet.ballHolder === "founder" ? "brief" : "watching", briefingPacket: packet };
   if (item.specConflict) {
     if (packet.authoritative && packet.ballHolder !== "founder") {
       return { ...item, briefingPacket: packet };
@@ -2315,14 +2317,7 @@ function mergeSourceEvents(
   left: readonly SourceCommunicationEvent[] | undefined,
   right: readonly SourceCommunicationEvent[] | undefined,
 ): SourceCommunicationEvent[] {
-  const out: SourceCommunicationEvent[] = [];
-  const seen = new Set<string>();
-  for (const row of [...(left ?? []), ...(right ?? [])]) {
-    if (seen.has(row.sourceRef)) continue;
-    seen.add(row.sourceRef);
-    out.push(row);
-  }
-  return out.sort((a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp));
+  return mergeCurrentSourceEvents(left, right);
 }
 
 function seedSourceEventGroups(
@@ -2390,6 +2385,7 @@ function mergeRankedSituations(items: readonly RankedSituation[]): RankedSituati
 }
 
 export type ComposeConciergeBriefInput = {
+  founderCorrections?: readonly SourceCommunicationEvent[];
   candidates: readonly ContinuumCandidate[];
   jobs: readonly ProjectJob[];
   projects: ReadonlyMap<string, CosProjectContext>;
@@ -2452,6 +2448,7 @@ export function composeConciergeBrief(input: ComposeConciergeBriefInput): {
     candidates: input.candidates,
     projectIdByThread: projectByThread,
   });
+  sourceEvents.push(...(input.founderCorrections ?? []));
   const groups = new Map<string, ContinuumCandidate[]>();
   for (const row of input.candidates) {
     if (isCandidateQuietForToday(row, input.nowIso)) continue;

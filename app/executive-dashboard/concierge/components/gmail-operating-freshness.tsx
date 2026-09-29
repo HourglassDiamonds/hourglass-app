@@ -9,14 +9,14 @@ import {
   shouldSwapTodayAfterRecompute,
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-refresh";
 import { refreshGmailOperatingFreshness } from "../gmail-freshness-actions";
-import { probeTodayRecompute } from "../today-read-model-actions";
+import { probeTodayRecompute, probeTodayCanonicalWatermark } from "../today-read-model-actions";
 
 const TODAY_RECOMPUTE_POLL_MS = 1_000;
 
 /**
  * Today freshness loop.
  * On open, and about once a minute while the tab is visible, check the
- * Gmail source watermark. Refresh the server render only when that cycle
+ * Gmail and canonical source watermarks (including snooze expiry). Refresh only when that cycle
  * reports a meaningful docket change. Hidden tabs do not poll.
  * A source-change navigation shows the last composed docket and this line
  * until the background recomposition stores a newer watermark.
@@ -42,10 +42,15 @@ export function GmailOperatingFreshness({
       }
       inFlight.current = true;
       try {
-        const result = await refreshGmailOperatingFreshness();
+        const [mail, canonical] = await Promise.allSettled([
+          refreshGmailOperatingFreshness(),
+          probeTodayCanonicalWatermark(),
+        ]);
         if (cancelled) return;
-        if (result.safeErrorCode === "unauthorized") return;
-        if (shouldRefreshTodaySurface(result.docketMayHaveChanged)) router.refresh();
+        const currentWatermark = canonical.status === "fulfilled" ? canonical.value : null;
+        const result = mail.status === "fulfilled" ? mail.value : null;
+        const mailChanged = result && result.safeErrorCode !== "unauthorized" && shouldRefreshTodaySurface(result.docketMayHaveChanged);
+        if (mailChanged || (currentWatermark && baselineWatermark && currentWatermark !== baselineWatermark)) router.refresh();
       } catch {
         // Next tick retries. Do not surface mailbox errors on Today.
       } finally {
@@ -68,7 +73,7 @@ export function GmailOperatingFreshness({
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [router]);
+  }, [router, baselineWatermark]);
 
   useEffect(() => {
     setChecking(refreshing);

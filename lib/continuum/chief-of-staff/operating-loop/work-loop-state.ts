@@ -4,6 +4,7 @@
  * Read-model only.
  */
 
+import { projectCurrentWork, type CurrentWorkProjection } from "./current-work";
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { workLoopEventsFromSource } from "@/lib/continuum/source-events/work-loop";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
@@ -56,6 +57,7 @@ export const WORK_LOOP_SEMANTIC_CLASSES = [
 export type WorkLoopSemanticClass = (typeof WORK_LOOP_SEMANTIC_CLASSES)[number];
 
 export type ReducedWorkLoopState = {
+  projection?: CurrentWorkProjection;
   ballHolder: TodayBallHolder;
   briefingKind: TodayBriefingKind;
   semanticClass: WorkLoopSemanticClass;
@@ -190,6 +192,28 @@ export type ReduceWorkLoopInput = {
 };
 
 export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState {
+  const projection = projectCurrentWork(input.sourceEvents ?? []);
+  const historicalClientAsk = Boolean(
+    projection &&
+      input.staleInboundSatisfied &&
+      input.waitingState &&
+      projection.activeObligations.length > 0 &&
+      projection.activeObligations.every(
+        (obligation) => obligation.kind === "client_request",
+      ),
+  );
+  if (projection && !historicalClientAsk) {
+    const ballHolder = projection.ballHolder;
+    const review = ballHolder === "founder" && /(?:CAD|STL).*review|confirmation.*review/.test(projection.dependency ?? "");
+    return { projection, ballHolder, authoritative: true,
+      vendorOpen: ballHolder === "vendor_shop", founderOpen: ballHolder === "founder", clientOpen: ballHolder === "client",
+      briefingKind: ballHolder === "client" ? "client_wait" : ballHolder === "vendor_shop" && /CAD|STL/.test(projection.dependency ?? "") ? "vendor_cad_wait" : "generic",
+      semanticClass: review ? "founder_review" : ballHolder === "founder" ? "founder_communication" : ballHolder === "client" ? "client_wait" : ballHolder === "vendor_shop" ? "vendor_shop_wait" : "unknown",
+      latestFounderText: [...projection.provenance].reverse().find(r => r.applied && r.origin === "founder_correction")?.wording ?? null,
+      latestExternalText: [...projection.provenance].reverse().find(r => r.applied)?.wording ?? null,
+      nextExpectedEvent: projection.dependency,
+    };
+  }
   const events = eventsFromInput(input);
   let vendorOpen = false;
   let founderOpen = false;

@@ -1,5 +1,6 @@
 "use server";
 
+import { refreshTodayAfterFounderMutation } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -71,6 +72,7 @@ export async function completeTop5OpenJobAction(formData: FormData) {
     reason: result.ok ? undefined : result.reason,
     ms: Date.now() - started,
   });
+  if (result.ok) await refreshTodayAfterFounderMutation();
   revalidatePath(CONCIERGE_HOME_PATH);
   redirect(CONCIERGE_HOME_PATH);
 }
@@ -153,6 +155,7 @@ export async function disposeTodayDocketItemAction(formData: FormData) {
     reason: result.ok ? undefined : result.reason,
     ms: Date.now() - started,
   });
+  if (result.ok) await refreshTodayAfterFounderMutation();
   revalidatePath(CONCIERGE_HOME_PATH);
   redirect(CONCIERGE_HOME_PATH);
 }

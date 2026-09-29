@@ -23,7 +23,11 @@ import {
   getContinuumGmailInternalAddresses,
 } from "./env";
 import { parseGmailFromHeader } from "./payload";
-import { executeLiveSourceViewerFetch } from "./source-viewer-run";
+import {
+  createLiveSourceViewerBatch,
+  executeLiveSourceViewerFetch,
+  type LiveSourceViewerBatch,
+} from "./source-viewer-run";
 import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-events/operational-facts";
 
 const THREAD_QUERY_CHUNK = 40;
@@ -115,6 +119,9 @@ export function mergeTodayThreadContext(
       fromEmail: next.fromEmail ?? prior.fromEmail ?? null,
       liveIdentityLoaded:
         next.liveIdentityLoaded === true || prior.liveIdentityLoaded === true,
+      liveEnrichmentAttempted:
+        next.liveEnrichmentAttempted === true ||
+        prior.liveEnrichmentAttempted === true,
       messages:
         next.messages && next.messages.length > 0
           ? next.messages
@@ -170,6 +177,7 @@ function ingestIndexedRows(
       fromDisplayName: existing.fromDisplayName ?? null,
       fromEmail: existing.fromEmail ?? null,
       liveIdentityLoaded: existing.liveIdentityLoaded,
+      liveEnrichmentAttempted: existing.liveEnrichmentAttempted,
       messages,
       attachmentFilenames: existing.attachmentFilenames,
     });
@@ -323,27 +331,44 @@ export async function loadLiveExternalThreadIdentity(
  */
 export async function loadLiveTodayOperationalFacts(
   base: ReadonlyMap<string, TodayGmailThreadContext>,
+  options: {
+    createBatch?: () => Promise<LiveSourceViewerBatch | null>;
+  } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
-  const threadIds = [...base.keys()];
+  const threadIds = [...new Set(base.keys())];
+  const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
+  if (!batch) return out;
+  const extracted = new Map<string, string | null>();
   let cursor = 0;
   const worker = async () => {
     while (cursor < threadIds.length) {
       const threadId = threadIds[cursor++]!;
       const current = out.get(threadId);
       if (!current?.messages?.length) continue;
-      const fetched = await executeLiveSourceViewerFetch({
-        founderSessionOk: true,
+      out.set(threadId, { ...current, liveEnrichmentAttempted: true });
+      const fetched = await batch.fetchThread({
         threadId,
+        indexed: current.messages.map((message) => ({
+          messageId: message.messageId,
+          threadId,
+          sentAt: message.sentAt,
+          subject: message.subject ?? current.subject ?? null,
+        })),
       });
       if (!fetched.ok) continue;
       const liveById = new Map(fetched.messages.map((message) => [message.messageId, message]));
       const messages = current.messages.map((message) => {
         const live = liveById.get(message.messageId);
         if (!live) return message;
-        const operationalText = extractCurrentMessageOperationalFacts(
-          live.plainText ?? live.snippet,
-        );
+        const extractionKey = `${threadId}|${message.messageId}|${message.sentAt}`;
+        let operationalText = extracted.get(extractionKey);
+        if (operationalText === undefined) {
+          operationalText = extractCurrentMessageOperationalFacts(
+            live.plainText ?? live.snippet,
+          );
+          extracted.set(extractionKey, operationalText);
+        }
         const liveAttachmentFilenames = live.attachments
           .map((attachment) => attachment.filename)
           .filter((filename): filename is string => Boolean(filename));
@@ -360,9 +385,25 @@ export async function loadLiveTodayOperationalFacts(
           attachmentFilenames,
         };
       });
+      let fromDisplayName = current.fromDisplayName ?? null;
+      let fromEmail = current.fromEmail ?? null;
+      for (const live of [...fetched.messages].reverse()) {
+        const parsed = parseGmailFromHeader(live.fromRaw ?? null);
+        const display = parsed.displayName?.trim() || null;
+        const email = (parsed.email ?? live.fromEmail)?.trim() || null;
+        if (isInternalAddress(display, email)) continue;
+        if (!display && !email) continue;
+        fromDisplayName = display;
+        fromEmail = email;
+        break;
+      }
       out.set(threadId, {
         ...current,
         subject: fetched.indexedSubject ?? current.subject ?? null,
+        fromDisplayName,
+        fromEmail,
+        liveIdentityLoaded: true,
+        liveEnrichmentAttempted: true,
         messages,
         attachmentFilenames: [
           ...new Set([

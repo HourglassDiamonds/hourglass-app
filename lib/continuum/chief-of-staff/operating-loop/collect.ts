@@ -8,9 +8,9 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import { isTerminalTodayLifecycle } from "@/lib/continuum/candidates/today-lifecycle";
 import type { ActionableWork, CosProjectContext } from "./types";
 
-function isDeferredQuiet(job: ProjectJob, nowMs: number): boolean {
-  if (job.state !== "snoozed") return false;
-  if (!job.deferredUntil) return true;
+export function isDeferredQuiet(job: ProjectJob, nowMs: number): boolean {
+  if (job.state === "resolved" || job.state === "cancelled") return false;
+  if (!job.deferredUntil) return job.state === "snoozed";
   const until = Date.parse(job.deferredUntil);
   if (!Number.isFinite(until)) return true;
   return until > nowMs;

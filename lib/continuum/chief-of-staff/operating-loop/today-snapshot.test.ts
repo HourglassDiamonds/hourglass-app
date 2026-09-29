@@ -145,12 +145,17 @@ function docket(): CosTodayDocketView {
   } as unknown as CosTodayDocketView;
 }
 
-function record(sourceWatermark: string, version = CONTINUUM_TODAY_READ_MODEL_VERSION): TodaySnapshotRecord {
+function record(
+  sourceWatermark: string,
+  version: string = CONTINUUM_TODAY_READ_MODEL_VERSION,
+  validUntil: string | null = null,
+): TodaySnapshotRecord {
   return {
     snapshotKey: TODAY_SNAPSHOT_KEY,
-    readModelVersion: version,
+    readModelVersion:
+      version as TodaySnapshotRecord["readModelVersion"],
     sourceWatermark,
-    payload: projectTodaySnapshot(docket()),
+    payload: projectTodaySnapshot(docket(), validUntil),
     composedAt: "2026-09-23T16:00:00.000Z",
     updatedAt: "2026-09-23T16:00:00.000Z",
   };
@@ -180,6 +185,30 @@ describe("persisted Today snapshot", () => {
       decideSnapshotUse({
         record: record("v1", "continuum-today-read-model-v0"),
         liveWatermark: "v1",
+      }),
+      "miss",
+    );
+  });
+
+  it("rejects a cold persisted snapshot after its time-only validity boundary", () => {
+    const expiring = record(
+      "same-source-state",
+      CONTINUUM_TODAY_READ_MODEL_VERSION,
+      "2026-09-23T16:05:00.000Z",
+    );
+    assert.equal(
+      decideSnapshotUse({
+        record: expiring,
+        liveWatermark: "same-source-state",
+        nowIso: "2026-09-23T16:04:59.999Z",
+      }),
+      "current",
+    );
+    assert.equal(
+      decideSnapshotUse({
+        record: expiring,
+        liveWatermark: "same-source-state",
+        nowIso: "2026-09-23T16:05:00.000Z",
       }),
       "miss",
     );

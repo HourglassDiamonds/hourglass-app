@@ -31,6 +31,7 @@ async function latestIso(
 
 export async function readTodaySourceWatermark(
   client: SupabaseClient,
+  now = new Date(),
 ): Promise<string> {
   const [
     candidateCount,
@@ -40,6 +41,9 @@ export async function readTodaySourceWatermark(
     gmailIndexed,
     jobUpdated,
     projectUpdated,
+    noteUpdated,
+    noteCount,
+    expiredDefer,
   ] = await Promise.all([
     exactCount(client, "continuum_candidates"),
     latestIso(client, "continuum_candidates", "created_at"),
@@ -48,6 +52,9 @@ export async function readTodaySourceWatermark(
     latestIso(client, "continuum_gmail_messages", "indexed_at"),
     latestIso(client, "continuum_project_jobs", "updated_at"),
     latestIso(client, "continuum_project_profiles", "updated_at"),
+    latestIso(client, "continuum_source_notes", "updated_at"),
+    exactCount(client, "continuum_source_notes"),
+    expiredDeferral(client, now),
   ]);
   return [
     candidateCount,
@@ -57,5 +64,14 @@ export async function readTodaySourceWatermark(
     gmailIndexed,
     jobUpdated,
     projectUpdated,
+    noteUpdated,
+    noteCount,
+    expiredDefer,
   ].join("|");
+}
+
+async function expiredDeferral(client: SupabaseClient, now: Date): Promise<string> {
+  const { data, error } = await client.from("continuum_project_jobs").select("deferred_until").lte("deferred_until", now.toISOString()).order("deferred_until", { ascending: false }).limit(1);
+  if (error) throw error;
+  return String(data?.[0]?.deferred_until ?? "");
 }

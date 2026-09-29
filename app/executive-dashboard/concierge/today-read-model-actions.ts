@@ -25,3 +25,8 @@ export async function probeTodayRecompute(): Promise<TodayRecomputeProbe> {
     cacheWatermark: last?.watermark ?? null,
   };
 }
+
+export async function probeTodayCanonicalWatermark(): Promise<string | null> {
+  const { readAuthenticatedTodayWatermark } = await import("@/lib/continuum/chief-of-staff/operating-loop/load");
+  return readAuthenticatedTodayWatermark();
+}

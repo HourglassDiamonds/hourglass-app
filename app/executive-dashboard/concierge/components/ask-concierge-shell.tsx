@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition, type FormEvent } from "react";
 import { askConcierge } from "../ask-actions";
 import { AskConciergeAnswerView, type AskAnswer } from "./ask-concierge-answer";
@@ -31,6 +32,7 @@ export function AskConciergeShell({
   mode?: ConciergeAskMode;
 } = {}) {
   const inputId = useId();
+  const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, startTransition] = useTransition();
@@ -64,6 +66,7 @@ export function AskConciergeShell({
         mode,
         history: historyFrom(prior),
       });
+      if (next.kind === "conversation" && next.refreshToday) router.refresh();
       setTurns([
         ...prior,
         { role: "founder", text: trimmed, answer: null },

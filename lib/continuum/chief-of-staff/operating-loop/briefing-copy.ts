@@ -12,6 +12,8 @@ import {
 import { isUnsafeBriefingFragment } from "./work-loop-state";
 
 export type TodayBriefingStateChip =
+  | "IN PRODUCTION"
+  | "READY"
   | "YOUR MOVE"
   | "WAITING ON SHOP"
   | "WAITING ON CLIENT"
@@ -39,7 +41,18 @@ export function stateChipFor(ballHolder: TodayBallHolder): TodayBriefingStateChi
 export function renderDeterministicBriefing(
   packet: TodayBriefingPacket,
 ): TodayRenderedBriefing {
-  const chip = stateChipFor(packet.ballHolder);
+  const p = packet.projection;
+  const chip = packet.ballHolder === "founder" ? "YOUR MOVE" : p?.stage === "in_production" ? "IN PRODUCTION" : p?.stage === "ready" ? "READY" : stateChipFor(packet.ballHolder);
+  if (p) {
+    const stage = p.stage.replaceAll("_", " ");
+    const dependency = p.dependency;
+    return { displayName: packet.displayName, projectName: packet.projectName, stateChip: chip,
+      headline: p.stage === "cad_review" && /(?:CAD|STL).*review/.test(dependency ?? "") ? `${dependency!.replace(/ review$/, "")} ${dependency!.includes(" and ") ? "are" : "is"} in.` : packet.ballHolder === "founder" && dependency ? dependency : `${packet.displayName}: ${stage}.`,
+      stand: `${stage[0].toUpperCase()}${stage.slice(1)}.${dependency ? ` Waiting on ${dependency}.` : ""}`,
+      nextKind: packet.ballHolder === "founder" ? "best_next_step" : packet.ballHolder === "vendor_shop" ? "nothing_from_you" : "waiting_on",
+      nextLabel: packet.ballHolder === "founder" ? "Best next step" : packet.ballHolder === "vendor_shop" ? "Nothing from you right now" : "Waiting on",
+      nextBody: dependency ?? "No active obligation.", source: "deterministic" };
+  }
   const currentIds = currentIdentifierValues(packet.identifiers);
   const cad = currentIds.find((value) => /^C\d{5,}/i.test(value));
   const who = packet.displayName;

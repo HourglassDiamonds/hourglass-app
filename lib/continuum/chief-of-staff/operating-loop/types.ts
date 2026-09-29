@@ -78,6 +78,7 @@ export type ActionableRanker = {
 
 export type CosTop5Item = {
   id: string;
+  sourceRef?: string | null;
   sourceType: ActionableSourceType;
   action: string;
   clientLabel: string | null;
@@ -335,6 +336,15 @@ export type CosOperatingLoopView = {
   founderEmailHashes?: readonly string[];
   /** Founder clock used for checkpoint prose. Not a source watermark. */
   asOfIso?: string;
+  canonicalQueue?: readonly CosTop5Item[];
+  quietJobs?: readonly {
+    jobId: string;
+    projectId: string | null;
+    sourceRef: string | null;
+    deferredUntil: string | null;
+    soleProjectJob: boolean;
+    reason: "deferred" | "terminal";
+  }[];
   /**
    * current: this loop matches the source watermark.
    * refreshing: last successful composition, shown while a rebuild runs.

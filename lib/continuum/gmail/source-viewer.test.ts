@@ -3,14 +3,17 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
-import { GmailHttpError, MockGmailApi } from "./adapter";
+import { GmailHttpError, MockGmailApi, type GmailApi } from "./adapter";
 import { exactThreadOnlyApi } from "./exact-thread";
 import { encodeGmailBody } from "./exact-thread-fixtures";
 import { InMemoryGmailIndexStore } from "@/lib/continuum/client-memory/gmail/store";
 import { InMemoryGmailConnectionStore, connectFounderMailbox } from "./connection";
 import { encryptRefreshToken } from "./token-crypto";
 import { GMAIL_READONLY_SCOPE, type GmailApiThread } from "./types";
-import { runSourceViewerFetch } from "./source-viewer";
+import {
+  createPreparedSourceViewerBatch,
+  runSourceViewerFetch,
+} from "./source-viewer";
 import { presentSourceViewer } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
 
 const DIR = dirname(fileURLToPath(import.meta.url));
@@ -96,6 +99,49 @@ async function connectedIndex() {
 }
 
 describe("read-only source viewer fetch", () => {
+  it("coalesces duplicate thread reads and bounds a stalled live batch", async () => {
+    const api = new MockGmailApi();
+    api.setThread(thread());
+    const indexed = [
+      {
+        messageId: MESSAGE,
+        threadId: THREAD,
+        sentAt: "2026-09-07T15:00:00.000Z",
+        subject: "Another piece",
+      },
+    ];
+    const batch = createPreparedSourceViewerBatch(api, 1_000);
+    const [left, right] = await Promise.all([
+      batch.fetchThread({ threadId: THREAD, indexed }),
+      batch.fetchThread({ threadId: THREAD, indexed }),
+    ]);
+    assert.equal(left.ok, true);
+    assert.equal(right.ok, true);
+    assert.equal(batch.metrics.threadFetches, 1);
+    assert.equal(
+      api.calls.filter((call) => call.method === "getThread").length,
+      1,
+    );
+
+    const stalled = createPreparedSourceViewerBatch(
+      {
+        getThread: () => new Promise(() => {}),
+      } as unknown as GmailApi,
+      5,
+    );
+    const timedOut = await stalled.fetchThread({ threadId: THREAD, indexed });
+    assert.equal(timedOut.ok, false);
+    if (!timedOut.ok) assert.equal(timedOut.safeErrorCode, "unavailable");
+
+    const recovered = createPreparedSourceViewerBatch(api, 1_000);
+    const recoveredResult = await recovered.fetchThread({
+      threadId: THREAD,
+      indexed,
+    });
+    assert.equal(recoveredResult.ok, true);
+    assert.equal(recovered.metrics.threadFetches, 1);
+  });
+
   it("fails closed without a founder session and does not list mail", async () => {
     const api = new MockGmailApi();
     const result = await runSourceViewerFetch({

@@ -39,6 +39,9 @@ export const SOURCE_COMMUNICATION_EVENT_CLASSES = [
   "vendor_order_confirmation",
   "vendor_acknowledges",
   "workshop_started",
+  "work_ready",
+  "work_complete",
+  "founder_correction",
   "unknown_communication",
 ] as const;
 
@@ -84,7 +87,9 @@ export type SourceCommunicationEvent = {
     | "production_job"
     | "candidate_message"
     | null;
+  correction?: { stage?: import("../chief-of-staff/operating-loop/current-work").WorkStage; ballHolder: import("../chief-of-staff/operating-loop/current-work").ResponsibleActor; dependency: string | null };
   provenance:
+    | "founder_correction"
     | "indexed_gmail"
     | "indexed_gmail+interpretation"
     | "indexed_gmail+live_operational_fact"

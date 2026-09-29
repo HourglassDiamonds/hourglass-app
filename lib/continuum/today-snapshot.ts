@@ -6,7 +6,7 @@
 
 import type { CosTodayDocketView } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 
-export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v1" as const;
+export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v3" as const;
 export const TODAY_SNAPSHOT_KEY = "founder_today_v1" as const;
 
 const DROP_KEYS = new Set([
@@ -29,6 +29,7 @@ const MAX_TEXT = 800;
 
 export type TodaySnapshotPayload = {
   readModelVersion: typeof CONTINUUM_TODAY_READ_MODEL_VERSION;
+  validUntil: string | null;
   docket: CosTodayDocketView;
 };
 
@@ -62,10 +63,14 @@ function sanitize(value: unknown): unknown {
   return out;
 }
 
-export function projectTodaySnapshot(docket: CosTodayDocketView): TodaySnapshotPayload {
+export function projectTodaySnapshot(
+  docket: CosTodayDocketView,
+  validUntil: string | null = null,
+): TodaySnapshotPayload {
   const sanitized = sanitize(docket) as CosTodayDocketView;
   return {
     readModelVersion: CONTINUUM_TODAY_READ_MODEL_VERSION,
+    validUntil,
     docket: sanitized,
   };
 }
@@ -76,12 +81,19 @@ export function serializedTodaySnapshotBytes(payload: TodaySnapshotPayload): num
 
 export function readTodaySnapshotPayload(value: unknown): TodaySnapshotPayload | null {
   if (!value || typeof value !== "object") return null;
-  const row = value as { readModelVersion?: unknown; docket?: unknown };
+  const row = value as { readModelVersion?: unknown; validUntil?: unknown; docket?: unknown };
   if (row.readModelVersion !== CONTINUUM_TODAY_READ_MODEL_VERSION) return null;
+  if (
+    row.validUntil !== undefined &&
+    row.validUntil !== null &&
+    typeof row.validUntil !== "string"
+  )
+    return null;
+  if (typeof row.validUntil === "string" && !Number.isFinite(Date.parse(row.validUntil))) return null;
   if (!row.docket || typeof row.docket !== "object") return null;
   const docket = row.docket as { items?: unknown; watching?: unknown };
   if (!Array.isArray(docket.items) || !Array.isArray(docket.watching)) return null;
-  return row as TodaySnapshotPayload;
+  return { ...row, validUntil: row.validUntil ?? null } as TodaySnapshotPayload;
 }
 
 export function watermarkToken(value: unknown): string | null {
@@ -93,10 +105,15 @@ export function watermarkToken(value: unknown): string | null {
 export function decideSnapshotUse(input: {
   record: TodaySnapshotRecord | null;
   liveWatermark: string | null;
+  nowIso?: string;
 }): TodaySnapshotUse {
   if (!input.record) return "miss";
   if (input.record.readModelVersion !== CONTINUUM_TODAY_READ_MODEL_VERSION) return "miss";
   if (!readTodaySnapshotPayload(input.record.payload)) return "miss";
+  const now = Date.parse(input.nowIso ?? new Date().toISOString());
+  const validUntil = Date.parse(input.record.payload.validUntil ?? "");
+  if (Number.isFinite(validUntil) && (!Number.isFinite(now) || now >= validUntil))
+    return "miss";
   if (!input.liveWatermark) return "miss";
   if (input.record.sourceWatermark === input.liveWatermark) return "current";
   return "refreshing";

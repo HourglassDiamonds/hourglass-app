@@ -82,6 +82,13 @@ export function readCachedTodayLoop(
   if (!slot) return null;
   if (slot.watermark !== watermark) return null;
   if (nowMs - slot.cachedAtMs > TODAY_READ_MODEL_TTL_MS) return null;
+  const nextBoundary = Math.min(
+    ...((slot.loop.quietJobs ?? [])
+      .filter((job) => job.reason === "deferred" && job.deferredUntil)
+      .map((job) => Date.parse(job.deferredUntil!))
+      .filter(Number.isFinite)),
+  );
+  if (Number.isFinite(nextBoundary) && nowMs >= nextBoundary) return null;
   return slot.loop;
 }
 

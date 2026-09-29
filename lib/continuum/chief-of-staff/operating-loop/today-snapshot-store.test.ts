@@ -24,12 +24,13 @@ before(async () => {
 });
 
 const ISO = "2026-09-23T00:00:00.000Z";
-const LIVE = [1, ISO, ISO, 1, ISO, ISO, ISO].join("|");
+const LIVE = [1, ISO, ISO, 1, ISO, ISO, ISO, ISO, 1, ISO].join("|");
 
 const payload = {
   readModelVersion: CONTINUUM_TODAY_READ_MODEL_VERSION,
+  validUntil: null,
   docket: { items: [], watching: [] },
-} as TodaySnapshotPayload;
+} as unknown as TodaySnapshotPayload;
 
 type SnapshotRow = {
   snapshot_key: string;
@@ -88,6 +89,7 @@ function createClient(input?: {
           query.token = token;
           return api;
         },
+        lte() { return api; },
         order() {
           return api;
         },
