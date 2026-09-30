@@ -27,7 +27,10 @@ test("explicit Reminder and Watching language is represented with trusted captur
     timing: { kind: "exact-instant", originalWording: "tomorrow at 1 PM", instantAt: "2026-10-01T13:00:00-04:00", timezone: "America/New_York" },
   }] }), world }, request);
   assert.equal(reminder.items[0].kind, "reminder");
-  assert.equal(reminder.items[0].timing?.referenceInstant, request.referenceTime);
+  const reminderTiming = reminder.items[0].timing;
+  assert.ok(reminderTiming);
+  assert.ok(reminderTiming.kind !== "unspecified");
+  assert.equal(reminderTiming.referenceInstant, request.referenceTime);
 
   const watchRequest = { ...request, text: "Watch for Dylan to approve the revision; check Friday if we're still waiting." };
   const watching = await interpretCapture({ brain: brain({ version: 1, captureId: request.captureId, canonical: false, items: [{
