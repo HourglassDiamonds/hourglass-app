@@ -12,6 +12,7 @@ import {
   hubspotFetchJson,
   resolveHubSpotToken,
   sanitizeHubSpotErrorBody,
+  sanitizeHubSpotLogPath,
 } from "@/lib/concierge/hubspot-client";
 import {
   beginConciergeSubmission,
@@ -22,11 +23,20 @@ import {
   releaseConciergeSubmission,
 } from "@/lib/concierge/rate-limit";
 import {
-  CONCIERGE_MAX,
   normalizePreferredContactMethod,
-  truncateField,
-  validateConciergeContactFields,
 } from "@/lib/concierge/validation";
+import {
+  ingestWebsiteInquiryServer,
+  recordWebsiteIntakeHubSpotOutcome,
+} from "@/lib/continuum/website-intake/server";
+import {
+  classifyWebsiteInquiry,
+  validateWebsiteInquiryFormData,
+} from "@/lib/continuum/website-intake/validation";
+import {
+  decideWebsiteIntakeHubSpotAction,
+  websiteIntakeHubSpotCorrelationLine,
+} from "@/lib/continuum/website-intake/hubspot-replay";
 
 const VISITOR_ERROR =
   "We couldn’t send your note just now. Please try again, or contact us directly.";
@@ -218,10 +228,14 @@ function buildDealDescription(payload: {
   inspirationNotes?: string;
   source: string;
   submissionId: string;
+  continuumIntakeId?: string;
   attribution: AttributionSnapshot;
 }) {
   const lines = [
     `Submission ID: ${payload.submissionId}`,
+    ...(payload.continuumIntakeId
+      ? [websiteIntakeHubSpotCorrelationLine(payload.continuumIntakeId)]
+      : []),
     `Project Type: ${payload.projectType || "Not provided"}`,
     `Shape Interest: ${payload.shapeInterest || "Not provided"}`,
     `Design Direction: ${payload.designDirection || "Not provided"}`,
@@ -259,6 +273,7 @@ async function createDeal(
     inspirationNotes?: string;
     source: string;
     submissionId: string;
+    continuumIntakeId?: string;
     attribution: AttributionSnapshot;
   },
   token: string,
@@ -443,54 +458,26 @@ export async function POST(request: Request) {
       return visitorJson(CONCIERGE_RATE_LIMIT_ERROR, 429);
     }
 
-    const preferredContactMethod = truncateField(
-      clean(formData.get("preferredContactMethod")),
-      CONCIERGE_MAX.selection,
-    );
-
-    const validated = validateConciergeContactFields({
-      fullName: clean(formData.get("fullName")),
-      email: clean(formData.get("email")),
-      phone: clean(formData.get("phone")),
-      preferredContactMethod,
-      inspirationNotes: clean(formData.get("inspirationNotes")),
-    });
+    const validated = validateWebsiteInquiryFormData(formData);
 
     if (!validated.ok) {
       return visitorJson(validated.message, 400);
     }
 
-    const { fullName, email, phone, notes: inspirationNotes } = validated;
-
-    const projectType = truncateField(
-      clean(formData.get("projectType")),
-      CONCIERGE_MAX.selection,
-    );
-    const shapeInterest = truncateField(
-      clean(formData.get("shapeInterest")),
-      CONCIERGE_MAX.selection,
-    );
-    const designDirection = truncateField(
-      clean(formData.get("designDirection")),
-      CONCIERGE_MAX.selection,
-    );
-    const ringPresence = truncateField(
-      clean(formData.get("ringPresence")),
-      CONCIERGE_MAX.selection,
-    );
-    const timeline = truncateField(
-      clean(formData.get("timeline")),
-      CONCIERGE_MAX.selection,
-    );
-    const budgetRange = truncateField(
-      clean(formData.get("budgetRange")),
-      CONCIERGE_MAX.selection,
-    );
-    const submissionId =
-      truncateField(
-        clean(formData.get("submissionId")),
-        CONCIERGE_MAX.submissionId,
-      ) || crypto.randomUUID();
+    const {
+      fullName,
+      email,
+      phone,
+      preferredContactMethod,
+      inspirationNotes,
+      projectType,
+      shapeInterest,
+      designDirection,
+      ringPresence,
+      timeline,
+      budgetRange,
+      submissionId,
+    } = validated.value;
 
     const attribution = sanitizeAttributionFromFormData(formData);
     const source = buildHumanReadableSource(attribution, "concierge_page");
@@ -515,21 +502,76 @@ export async function POST(request: Request) {
       return hardAcceptJson(submissionId);
     }
 
+    let continuumIntakeId: string | null = null;
+    let continuumAccepted = false;
+
     try {
+      const continuum = await ingestWebsiteInquiryServer({
+        ...validated.value,
+        category: classifyWebsiteInquiry(projectType),
+        attribution,
+        source: "hourglassdiamonds.com/concierge",
+        acknowledgementExpected: false,
+        synthetic: false,
+      });
+      if (!continuum.ok && continuum.reason === "idempotency-conflict") {
+        releaseConciergeSubmission(submissionId);
+        return visitorJson("Please refresh the form and try again.", 409);
+      }
+      if (!continuum.ok) {
+        console.warn("[CONTINUUM_INTAKE_NONFATAL]", {
+          code: "CONTINUUM_INTAKE_NONFATAL",
+          submissionId: submissionId.slice(0, 12),
+          reason: continuum.reason,
+        });
+      } else {
+        continuumAccepted = true;
+        continuumIntakeId = continuum.intakeId;
+      }
+
+      if (continuum.ok) {
+        const hubspotAction = decideWebsiteIntakeHubSpotAction(continuum);
+        if (hubspotAction === "skip_succeeded") {
+          completeConciergeSubmission(submissionId);
+          return hardAcceptJson(submissionId);
+        }
+        if (hubspotAction === "recovery_required") {
+          try {
+            await recordWebsiteIntakeHubSpotOutcome({
+              intakeId: continuum.intakeId,
+              status: "failed",
+              errorCode: "recovery_required",
+            });
+          } catch {
+            console.warn("[CONTINUUM_HUBSPOT_LINK_NONFATAL]", {
+              code: "CONTINUUM_HUBSPOT_LINK_NONFATAL",
+              submissionId: submissionId.slice(0, 12),
+            });
+          }
+          console.error("[CONCIERGE_HUBSPOT_RECOVERY_REQUIRED]", {
+            code: "CONCIERGE_HUBSPOT_RECOVERY_REQUIRED",
+            intakeId: continuum.intakeId,
+          });
+          completeConciergeSubmission(submissionId);
+          return hardAcceptJson(submissionId);
+        }
+      }
+
       const token = requireHubSpotToken();
 
       const dealPayload = {
         fullName,
-        projectType: projectType || "Concierge Inquiry",
-        shapeInterest: shapeInterest || undefined,
-        designDirection: designDirection || undefined,
-        ringPresence: ringPresence || undefined,
-        timeline: timeline || undefined,
-        budgetRange: budgetRange || undefined,
-        preferredContactMethod: preferredContactMethod || undefined,
+        projectType,
+        shapeInterest,
+        designDirection,
+        ringPresence,
+        timeline,
+        budgetRange,
+        preferredContactMethod,
         inspirationNotes: inspirationNotes || undefined,
         source,
         submissionId,
+        continuumIntakeId: continuum.ok ? continuum.intakeId : undefined,
         attribution,
       };
 
@@ -544,6 +586,22 @@ export async function POST(request: Request) {
       );
 
       const dealId = await createDeal(dealPayload, token);
+
+      if (continuum.ok) {
+        try {
+          await recordWebsiteIntakeHubSpotOutcome({
+            intakeId: continuum.intakeId,
+            status: "succeeded",
+            contactId,
+            dealId,
+          });
+        } catch {
+          console.warn("[CONTINUUM_HUBSPOT_LINK_NONFATAL]", {
+            code: "CONTINUUM_HUBSPOT_LINK_NONFATAL",
+            submissionId: submissionId.slice(0, 12),
+          });
+        }
+      }
 
       try {
         await associateContactToDeal(contactId, dealId, token);
@@ -603,6 +661,31 @@ export async function POST(request: Request) {
 
       return hardAcceptJson(submissionId);
     } catch (innerError) {
+      if (continuumAccepted && continuumIntakeId) {
+        try {
+          await recordWebsiteIntakeHubSpotOutcome({
+            intakeId: continuumIntakeId,
+            status: "failed",
+            errorCode:
+              innerError instanceof HubSpotConfigError
+                ? "configuration"
+                : innerError instanceof HubSpotRequestError
+                  ? `http_${innerError.status}`
+                  : "delivery",
+          });
+        } catch {
+          console.warn("[CONTINUUM_HUBSPOT_LINK_NONFATAL]", {
+            code: "CONTINUUM_HUBSPOT_LINK_NONFATAL",
+            submissionId: submissionId.slice(0, 12),
+          });
+        }
+        completeConciergeSubmission(submissionId);
+        console.error("[CONCIERGE_DUAL_INGEST_HUBSPOT_FAILED]", {
+          code: "CONCIERGE_DUAL_INGEST_HUBSPOT_FAILED",
+          submissionId: submissionId.slice(0, 12),
+        });
+        return hardAcceptJson(submissionId);
+      }
       releaseConciergeSubmission(submissionId);
       throw innerError;
     }
@@ -615,7 +698,7 @@ export async function POST(request: Request) {
       console.error("[concierge-submit-error]", {
         error: "hubspot_request_failed",
         status: error.status,
-        path: error.path,
+        path: sanitizeHubSpotLogPath(error.path),
         message: error.hubspotMessage || undefined,
       });
     } else {
