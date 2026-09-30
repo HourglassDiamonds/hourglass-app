@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "node_modules/next/types/global.d.ts",
+    "app/executive-dashboard/concierge/personal/**/*.ts",
+    "app/executive-dashboard/concierge/personal/**/*.tsx",
+    "lib/continuum/personal-performance/**/*.ts"
+  ],
+  "exclude": []
+}

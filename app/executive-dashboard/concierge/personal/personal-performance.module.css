@@ -1,0 +1,839 @@
+.root {
+  --paper: #efe8de;
+  --muted: #9a8d80;
+  --quiet: #74695f;
+  --gold: #ad9164;
+  --line: rgba(255, 255, 255, 0.09);
+  margin-top: 2rem;
+  color: var(--paper);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 2rem;
+  max-width: 54rem;
+}
+
+.header h1 {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: clamp(2.4rem, 7vw, 4.6rem);
+  font-weight: 400;
+  line-height: 0.98;
+  letter-spacing: -0.055em;
+}
+
+.intro {
+  max-width: 34rem;
+  margin-top: 1rem;
+  color: #b9ada1;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--gold);
+  font-size: 10px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
+
+.programMark {
+  display: grid;
+  flex: 0 0 4.5rem;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid rgba(173, 145, 100, 0.4);
+  border-radius: 50%;
+}
+
+.programMark span {
+  align-self: end;
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.programMark .programMarkWord {
+  font-family: var(--font-continuum-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+
+.programMark small {
+  align-self: start;
+  margin-top: 0.1rem;
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.truthStrip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 54rem;
+  margin-top: 2.2rem;
+  border-block: 1px solid var(--line);
+}
+
+.recoveryNotice {
+  max-width: 54rem;
+  margin: 1.5rem 0 0;
+  border-left: 1px solid var(--gold);
+  padding-left: 0.85rem;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.truthStrip > div {
+  padding: 1rem 1.25rem 1rem 0;
+}
+
+.truthStrip > div + div {
+  border-left: 1px solid var(--line);
+  padding-left: 1.25rem;
+}
+
+.truthStrip span,
+.bodyMeasure span,
+.nutritionTotals span,
+.targets span,
+.recovery span,
+.targetLine,
+.historyBlock > span {
+  display: block;
+  color: var(--quiet);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.truthStrip strong {
+  display: block;
+  margin-top: 0.35rem;
+  color: #d8cfc4;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.today {
+  position: relative;
+  max-width: 62rem;
+  margin-top: 3.6rem;
+  overflow: hidden;
+  border: 1px solid rgba(173, 145, 100, 0.34);
+  background:
+    radial-gradient(circle at 90% 0%, rgba(173, 145, 100, 0.12), transparent 32%),
+    #191512;
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+}
+
+.todayComplete {
+  border-color: rgba(129, 153, 124, 0.38);
+}
+
+.todayTopline,
+.todayGrid,
+.targetLine,
+.consistencyHeadline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.status {
+  color: var(--gold);
+  font-size: 9px;
+  letter-spacing: 0.22em;
+}
+
+.todayComplete .status {
+  color: #93a98e;
+}
+
+.todayGrid {
+  align-items: end;
+  margin-top: 1.6rem;
+}
+
+.todayGrid h2 {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.duration {
+  margin: 0;
+  color: var(--gold);
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: 1.1rem;
+}
+
+.todaySummary {
+  max-width: 41rem;
+  margin: 0.9rem 0 0;
+  color: #b9ada1;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.targets {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 1.75rem;
+  padding-bottom: 0.25rem;
+}
+
+.targets strong {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.exerciseList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.readiness {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 1.5rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  padding: 1rem 0 0;
+}
+
+.readiness legend {
+  float: left;
+  margin-right: 0.65rem;
+  color: var(--quiet);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.readiness button {
+  min-height: 2.75rem;
+  border: 1px solid var(--line);
+  padding: 0 0.8rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 10px;
+}
+
+.readiness button[data-selected] {
+  border-color: rgba(173, 145, 100, 0.58);
+  background: rgba(173, 145, 100, 0.08);
+  color: var(--paper);
+}
+
+.exerciseList label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding: 0.9rem 0;
+}
+
+.exerciseList label:nth-child(odd) {
+  padding-right: 1.25rem;
+}
+
+.exerciseList label:nth-child(even) {
+  border-left: 1px solid var(--line);
+  padding-left: 1.25rem;
+}
+
+.exerciseList strong,
+.exerciseList small {
+  display: block;
+}
+
+.exerciseList strong {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.exerciseList small {
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.exerciseList input {
+  width: 8.25rem;
+  min-height: 2.5rem;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-size: 11px;
+  outline: none;
+}
+
+.exerciseList input:focus,
+.inlineForm input:focus,
+.mealForm input:focus {
+  border-color: var(--gold);
+}
+
+.exerciseList input::placeholder,
+.inlineForm input::placeholder,
+.mealForm input::placeholder {
+  color: #5f574f;
+}
+
+.recovery {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  margin-top: 1.15rem;
+}
+
+.recovery p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 2.75rem;
+  margin-top: 1.5rem;
+  border: 1px solid var(--gold);
+  padding: 0 1rem;
+  cursor: pointer;
+  background: var(--gold);
+  color: #17130f;
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.todayActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.secondaryButton {
+  background: transparent;
+  color: var(--muted);
+  border-color: var(--line);
+}
+
+.book {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 2rem;
+  max-width: 62rem;
+  margin-top: 3rem;
+  border-top: 1px solid var(--line);
+}
+
+.book details {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.book summary {
+  display: flex;
+  min-height: 4.5rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  list-style: none;
+  outline: none;
+}
+
+.book summary:focus-visible {
+  box-shadow: inset 0 0 0 1px var(--gold);
+}
+
+.book summary span {
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: 1.45rem;
+  letter-spacing: -0.025em;
+}
+
+.book summary small {
+  color: var(--quiet);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.book summary::after {
+  content: "+";
+  color: var(--gold);
+  font-size: 1rem;
+}
+
+.book details[open] summary::after {
+  content: "−";
+}
+
+.panel {
+  padding: 0 0 1.6rem;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.panel > p {
+  margin: 0.5rem 0 0;
+}
+
+.panelLead {
+  color: #d8cfc4;
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: 1.15rem;
+}
+
+.quiet {
+  color: var(--quiet);
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.bodyMeasure,
+.nutritionTotals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.bodyMeasure strong,
+.nutritionTotals strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #d8cfc4;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.trendChart {
+  width: 100%;
+  height: 4.75rem;
+  margin-top: 1rem;
+  overflow: visible;
+}
+
+.chartEmpty {
+  display: grid;
+  min-height: 4.75rem;
+  margin-top: 1rem;
+  place-items: center;
+  border-block: 1px solid rgba(255, 255, 255, 0.05);
+  color: var(--quiet);
+  font-size: 10px;
+  text-align: center;
+}
+
+.chartBaseline {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 0.6;
+}
+
+.chartLine {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 1.15;
+  vector-effect: non-scaling-stroke;
+}
+
+.chartPoint {
+  fill: #181411;
+  stroke: var(--gold);
+  stroke-width: 0.8;
+}
+
+.progress {
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 250ms ease;
+}
+
+.targetLine {
+  margin-bottom: 0.5rem;
+  color: var(--quiet);
+}
+
+.inlineForm,
+.mealForm {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.inlineForm label,
+.mealForm label {
+  display: block;
+  min-width: 0;
+}
+
+.inlineForm label {
+  flex: 1 1 0;
+}
+
+.inlineForm label span,
+.mealForm label span {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--quiet);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inlineForm input,
+.mealForm input {
+  width: 100%;
+  min-height: 2.5rem;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: transparent;
+  color: var(--paper);
+  font: inherit;
+  font-size: 12px;
+  outline: none;
+}
+
+.inlineForm button,
+.mealForm button {
+  min-height: 2.5rem;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.historyBlock {
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  padding-top: 1rem;
+}
+
+.currentTruthRow {
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 0.8rem;
+}
+
+.currentTruthRow span {
+  display: block;
+  color: var(--quiet);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.currentTruthRow strong {
+  display: block;
+  margin-top: 0.25rem;
+  color: #d8cfc4;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.historyBlock p {
+  margin: 0.45rem 0 0;
+  color: #aa9e92;
+  font-size: 11px;
+}
+
+.nutritionTotals {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.nutritionTotals strong small {
+  color: var(--quiet);
+  font-size: 9px;
+  font-weight: 400;
+}
+
+.nutritionTotals .progress {
+  margin-top: 0.55rem;
+}
+
+.mealName {
+  flex: 1 1 auto;
+}
+
+.mealForm label:not(.mealName) {
+  width: 4.5rem;
+}
+
+.meals {
+  margin: 1.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meals li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-top: 1px solid var(--line);
+  padding: 0.55rem 0;
+  color: #b9ada1;
+  font-size: 11px;
+}
+
+.meals small {
+  color: var(--quiet);
+}
+
+.meals button {
+  min-height: 2.75rem;
+  margin-left: 0.5rem;
+  border: 0;
+  cursor: pointer;
+  background: transparent;
+  color: var(--gold);
+  font: inherit;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+
+.empty {
+  margin-top: 1rem !important;
+  color: var(--quiet);
+  font-size: 11px;
+}
+
+.consistencyHeadline {
+  justify-content: flex-start;
+  align-items: baseline;
+}
+
+.consistencyHeadline strong {
+  color: var(--paper);
+  font-family: var(--font-continuum-serif), ui-serif, Georgia, serif;
+  font-size: 2.4rem;
+  font-weight: 400;
+}
+
+.consistencyHeadline span {
+  max-width: 16rem;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.weekRail {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.35rem;
+  margin: 1.2rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weekRail li {
+  display: grid;
+  min-height: 3.4rem;
+  place-items: center;
+  border: 1px solid var(--line);
+  color: var(--quiet);
+  font-size: 9px;
+}
+
+.weekRail li[data-complete] {
+  border-color: rgba(173, 145, 100, 0.44);
+  color: var(--gold);
+}
+
+.weekRail li[data-today] {
+  background: #211b16;
+  color: var(--paper);
+}
+
+.weekRail li[data-future] {
+  opacity: 0.45;
+}
+
+.weekRail span,
+.weekRail i {
+  display: block;
+  font-style: normal;
+}
+
+.railLegend {
+  margin: 0.65rem 0 0;
+  color: var(--quiet);
+  font-size: 9px;
+  line-height: 1.6;
+}
+
+.weekRail li[data-skipped] {
+  border-color: rgba(154, 141, 128, 0.4);
+  color: var(--muted);
+}
+
+.localDataControl {
+  display: flex;
+  min-height: 3.25rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  border-top: 1px solid var(--line);
+  padding-top: 0.65rem;
+}
+
+.localDataControl span {
+  color: var(--quiet);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.localDataControl div {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.localDataControl button {
+  min-height: 2.75rem;
+  border: 0;
+  padding: 0 0.55rem;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.localDataControl div button:first-child {
+  color: #c59a8f;
+}
+
+@media (max-width: 767px) {
+  .root {
+    margin-top: 1.4rem;
+  }
+
+  .programMark {
+    flex-basis: 3.9rem;
+  }
+
+  .truthStrip {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .truthStrip > div:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .today {
+    margin-top: 2.5rem;
+  }
+
+  .todayGrid {
+    display: block;
+  }
+
+  .targets {
+    margin-top: 1.4rem;
+  }
+
+  .exerciseList,
+  .book {
+    grid-template-columns: 1fr;
+  }
+
+  .exerciseList label:nth-child(odd),
+  .exerciseList label:nth-child(even) {
+    border-left: 0;
+    padding-inline: 0;
+  }
+
+  .exerciseList input {
+    width: 7.25rem;
+  }
+
+  .book {
+    gap: 0;
+  }
+
+  .inlineForm,
+  .mealForm {
+    flex-wrap: wrap;
+  }
+
+  .inlineForm label {
+    flex: 1 1 calc(50% - 0.5rem);
+  }
+
+  .inlineForm button,
+  .mealForm button {
+    min-width: 3rem;
+  }
+
+  .mealName {
+    flex-basis: 100%;
+  }
+
+  .readiness {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .readiness legend {
+    width: 100%;
+  }
+
+  .localDataControl {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress span {
+    transition: none;
+  }
+}

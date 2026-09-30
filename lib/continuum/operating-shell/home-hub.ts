@@ -59,9 +59,9 @@ export const MOBILE_HUB_DESTINATIONS: readonly MobileHubDestination[] = [
   },
   {
     id: "personal",
-    label: "Personal",
+    label: "Performance",
     href: CONCIERGE_PERSONAL_PATH,
-    descriptor: "Life, family and everything else",
+    descriptor: "Training, nutrition and recovery",
   },
 ];
 

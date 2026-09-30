@@ -219,14 +219,14 @@ describe("Founder Operating UX V1 shell", () => {
     assert.match(nav, /CONCIERGE_HUB_PATH/);
     assert.match(nav, /grid grid-cols-5/);
     assert.doesNotMatch(nav, /grid-cols-6/);
-    assert.match(personal, /This book is not open yet/);
+    assert.match(personal, /PersonalPerformance/);
     assert.match(html, /Good afternoon, Justin/);
     assert.match(html, />Today</);
     assert.match(html, /What needs your attention/);
     assert.match(html, />Projects</);
     assert.match(html, />Repairs</);
     assert.match(html, />Clients</);
-    assert.match(html, />Personal</);
+    assert.match(html, />Performance</);
     assert.match(html, /Ask a question/);
     assert.match(html, /Brain Dump/);
     assert.match(html, /Conversation/);

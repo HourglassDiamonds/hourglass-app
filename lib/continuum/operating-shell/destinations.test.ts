@@ -43,10 +43,10 @@ describe("Founder operating destinations", () => {
     assert.equal(CONCIERGE_PERSONAL_PATH, "/executive-dashboard/concierge/personal");
   });
 
-  it("keeps Gmail Inbox Calendar Reconstruction Passkeys and Digital Card as secondary tools", () => {
+  it("keeps Performance and operating utilities as secondary tools", () => {
     assert.deepEqual(
       OPERATING_TOOL_LINKS.map((row) => row.id),
-      ["gmail", "inbox", "calendar", "reconstruction", "passkeys", "card"],
+      ["performance", "gmail", "inbox", "calendar", "reconstruction", "passkeys", "card"],
     );
     assert.equal(
       OPERATING_TOOL_LINKS.some((row) => row.id === "today"),

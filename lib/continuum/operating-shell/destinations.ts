@@ -60,6 +60,7 @@ export type OperatingToolLink = {
 };
 
 export const OPERATING_TOOL_LINKS: readonly OperatingToolLink[] = [
+  { id: "performance", label: "Performance", href: CONCIERGE_PERSONAL_PATH },
   { id: "gmail", label: "Gmail", href: CONCIERGE_GMAIL_PATH },
   { id: "inbox", label: "Inbox", href: conciergeInboxPath() },
   { id: "calendar", label: "Calendar", href: CONCIERGE_CALENDAR_PATH },
