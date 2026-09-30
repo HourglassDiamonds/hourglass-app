@@ -278,15 +278,15 @@ begin
     end if;
   end if;
 
-  job_subject := left('Website inquiry — ' || p_payload->>'full_name', 160);
+  job_subject := left('Website inquiry — ' || (p_payload->>'full_name'), 160);
   job_detail := left(concat_ws(E'\n',
-    'Classification: ' || p_payload->>'category',
-    'Project type: ' || p_payload->>'project_type',
-    'Timeline: ' || p_payload->>'timeline',
-    'Budget: ' || p_payload->>'budget_range',
-    'Preferred contact: ' || p_payload->>'preferred_contact_method',
+    'Classification: ' || (p_payload->>'category'),
+    'Project type: ' || (p_payload->>'project_type'),
+    'Timeline: ' || (p_payload->>'timeline'),
+    'Budget: ' || (p_payload->>'budget_range'),
+    'Preferred contact: ' || (p_payload->>'preferred_contact_method'),
     case when resolved_identity_status = 'needs_review' then 'Identity: needs review' else null end,
-    case when p_payload->>'inspiration_notes' <> '' then E'Notes:\n' || p_payload->>'inspiration_notes' else null end
+    case when p_payload->>'inspiration_notes' <> '' then E'Notes:\n' || (p_payload->>'inspiration_notes') else null end
   ), 2000);
 
   perform public.continuum_write_project_job(
