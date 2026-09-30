@@ -1,8 +1,8 @@
 # Phase 2 — Today current truth
 
-Worktree: ../hourglass-app-today-current-truth  
-Branch: continuum/today-current-truth  
-Base: e7c793e07da0e07c63c18058ae54ea5be682a01d  
+Worktree: ../hourglass-app-today-current-truth
+Branch: continuum/today-current-truth
+Base: e7c793e07da0e07c63c18058ae54ea5be682a01d
 No commit, push, deployment, schema change, model-default change, voice work, or durable reminders/Watching persistence.
 
 ## 1. Files changed
