@@ -352,6 +352,8 @@ export type CosOperatingLoopView = {
   todayFreshness?: "current" | "refreshing";
   /** Watermark this loop was composed for. Not mailbox content. */
   todayReadModelWatermark?: string | null;
+  /** Shared all-Job time boundary; includes work outside visible Top N. */
+  attentionValidUntil?: string | null;
 };
 
 export type CosProjectPerson = {

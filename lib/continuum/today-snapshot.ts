@@ -134,3 +134,10 @@ export function publishWinsRace(input: {
   if (input.composedWatermark !== input.liveWatermark) return false;
   return input.storedWatermarkAtWrite === input.storedWatermarkAtRead;
 }
+
+export function snapshotBoundaryIsFuture(payload: TodaySnapshotPayload, evaluationTime: string): boolean {
+  const boundary = Date.parse(payload.validUntil ?? "");
+  if (!Number.isFinite(boundary)) return true;
+  const evaluated = Date.parse(evaluationTime);
+  return Number.isFinite(evaluated) && evaluated < boundary;
+}

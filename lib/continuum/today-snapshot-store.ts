@@ -12,6 +12,7 @@ import {
   TODAY_SNAPSHOT_KEY,
   publishWinsRace,
   readTodaySnapshotPayload,
+  snapshotBoundaryIsFuture,
   watermarkToken,
   type TodaySnapshotPayload,
   type TodaySnapshotRecord,
@@ -82,6 +83,7 @@ export async function publishPersistedTodaySnapshot(
     return "unavailable";
   }
   if (input.composedWatermark !== live) return "stale";
+  if (!snapshotBoundaryIsFuture(input.payload, input.evaluationTime ?? input.composedAt)) return "stale";
 
   let observed = await readPersistedTodaySnapshot(client);
   const write = {

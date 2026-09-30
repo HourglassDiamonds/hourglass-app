@@ -8,6 +8,7 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import { nextAttentionBoundary } from "@/lib/continuum/client-memory/project-jobs/attention-boundary";
 import {
   isClientPersonLabel,
   collectTodayFounderEmailHashes,
@@ -174,6 +175,7 @@ export function composeCosOperatingLoop(
     threadContext: input.threadContext,
     founderEmailHashes,
     asOfIso: input.nowIso,
+    attentionValidUntil: nextAttentionBoundary(input.jobs, new Date(input.nowIso)),
     quietJobs: (input.jobs ?? [])
       .filter(j =>
         j.state === "resolved" ||

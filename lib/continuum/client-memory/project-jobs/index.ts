@@ -6,6 +6,10 @@
 
 export type {
   OpenJobActor,
+  AttentionMetadata,
+  AttentionMetadataV1,
+  AttentionMode,
+  AttentionTimingPrecision,
   OpenJobKind,
   OpenJobSourceSystem,
   OpenJobState,
@@ -20,7 +24,43 @@ export {
   OPEN_JOB_SOURCE_SYSTEMS,
   OPEN_JOB_STATES,
   UNRESOLVED_OPEN_JOB_STATES,
+  ATTENTION_MODES,
+  ATTENTION_TIMING_PRECISIONS,
 } from "./types";
+export {
+  attentionModeOf,
+  canonicalAttentionOf,
+  exactAttentionIdentity,
+  parseAttention,
+  parseAttentionMetadata,
+} from "./attention";
+export { evaluateAttentionEligibility } from "./attention-eligibility";
+export type {
+  AttentionEligibility,
+  AttentionEligibilityReason,
+  AttentionTargetAssessment,
+} from "./attention-eligibility";
+export {
+  attentionBoundaryJobFromRow,
+  attentionBoundaryState,
+  nextAttentionBoundary,
+} from "./attention-boundary";
+export { FOUNDER_DEFAULT_TIMEZONE, normalizeAttentionTime } from "./attention-time";
+export type {
+  AttentionTimeFailure,
+  AttentionTimeInput,
+  AttentionTimeProposal,
+} from "./attention-time";
+export {
+  reminderDispositionMutation,
+  watchingDispositionMutation,
+} from "./attention-disposition";
+export type { ReminderDisposition, WatchingDisposition } from "./attention-disposition";
+export {
+  ATTENTION_CREATION_PREREQUISITES,
+  PHASE_1_ATTENTION_CREATION_ENABLED,
+  attentionCreationEnabled,
+} from "./attention-creation-gate";
 export {
   isOpenJobActor,
   isOpenJobKind,

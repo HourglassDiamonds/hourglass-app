@@ -239,14 +239,7 @@ async function commitComposedLoop(
       composedWatermark,
       payload: projectTodaySnapshot(
         composeTodayDocket(loop),
-        [...(loop.quietJobs ?? [])]
-          .filter((job) =>
-            job.reason === "deferred" &&
-            job.deferredUntil &&
-            Date.parse(job.deferredUntil) > evaluationTime.getTime(),
-          )
-          .map((job) => job.deferredUntil!)
-          .sort()[0] ?? null,
+        loop.attentionValidUntil ?? null,
       ),
       composedAt,
       evaluationTime: evaluationTime.toISOString(),

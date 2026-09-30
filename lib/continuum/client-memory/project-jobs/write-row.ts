@@ -4,6 +4,7 @@
 
 import type { ProjectJob } from "./types";
 import { encodeDateOnlyForTimestamptz, parseDateOnly } from "@/lib/continuum/date-only";
+import { canonicalAttentionOf } from "./attention";
 
 function persistDue(value: string | null): string | null {
   if (!value) return null;
@@ -12,6 +13,7 @@ function persistDue(value: string | null): string | null {
 }
 
 export function projectJobToRow(job: ProjectJob): Record<string, unknown> {
+  const attention = canonicalAttentionOf(job);
   return {
     job_id: job.jobId,
     project_id: job.projectId,
@@ -31,5 +33,9 @@ export function projectJobToRow(job: ProjectJob): Record<string, unknown> {
     source_system: job.sourceSystem,
     source_ref: job.sourceRef,
     created_mutation_id: job.createdMutationId,
+    attention_mode: attention.attentionMode,
+    activation_at: attention.activationAt,
+    checkpoint_at: attention.checkpointAt,
+    attention_metadata: attention.attentionMetadata,
   };
 }

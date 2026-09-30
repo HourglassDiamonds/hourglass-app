@@ -8,6 +8,8 @@ import { assertSameRequest, type AppliedOperation, type OperationRequest } from 
 import type { ClientMemoryEntity, PersonProfile, ProjectProfile } from "../types";
 import type { OpenJobActor, OpenJobKind, OpenJobSourceSystem, ProjectJob } from "./types";
 import { findUnresolvedJobByActionIdentity } from "./identity";
+import { parseAttention } from "./attention";
+import { PHASE_1_ATTENTION_CREATION_ENABLED } from "./attention-creation-gate";
 import {
   isOpenJobActor,
   isOpenJobKind,
@@ -30,6 +32,11 @@ export type CreateProjectJobInvalidCode =
   | "invalid-detail"
   | "invalid-source"
   | "invalid-due"
+  | "invalid-attention-mode"
+  | "invalid-attention-schedule"
+  | "invalid-attention-metadata"
+  | "unsupported-attention-metadata-version"
+  | "attention-creation-disabled"
   | "person-not-on-project";
 
 export type CreateProjectJobResult =
@@ -44,6 +51,7 @@ export type CreateProjectJobResult =
         | "invalid-input"
         | "project-not-found"
         | "entity-kind-mismatch"
+        | "feature-disabled"
         | "unavailable";
       code?: CreateProjectJobInvalidCode;
     };
@@ -60,6 +68,10 @@ export type CreateProjectJobInput = {
   actor: string;
   sourceSystem?: string | null;
   sourceRef?: string | null;
+  attentionMode?: unknown;
+  activationAt?: string | null;
+  checkpointAt?: string | null;
+  attentionMetadata?: unknown;
 };
 
 export type CreateProjectJobApplyInput = ProjectJob;
@@ -85,6 +97,7 @@ export type CreateProjectJobDeps = {
     input: CreateProjectJobApplyInput,
     request?: OperationRequest,
   ) => Promise<CreateProjectJobApplyResult>;
+  attentionCreationEnabled?: () => boolean;
 };
 
 function invalid(
@@ -122,6 +135,18 @@ export async function createProjectJob(
   if (associatedPersonId && !isOpenJobUuid(associatedPersonId)) {
     return invalid("invalid-id");
   }
+  const attention = parseAttention({
+    attentionMode: input.attentionMode,
+    activationAt: input.activationAt,
+    checkpointAt: input.checkpointAt,
+    attentionMetadata: input.attentionMetadata,
+    waitingOnActor: input.waitingOnActor,
+  });
+  if (!attention.ok) return invalid(attention.code);
+  if (attention.value.attentionMode !== "action" &&
+      !(deps.attentionCreationEnabled?.() ?? PHASE_1_ATTENTION_CREATION_ENABLED)) {
+    return { ok: false, reason: "feature-disabled", code: "attention-creation-disabled" };
+  }
 
   try {
     const request = { ...input, operation: "create" };
@@ -153,22 +178,6 @@ export async function createProjectJob(
       if (!linked) return invalid("person-not-on-project");
     }
 
-    const unresolved = await deps.listUnresolvedJobs(projectId);
-    const existingAction = findUnresolvedJobByActionIdentity(
-      unresolved,
-      projectId,
-      subject.subject,
-    );
-    if (existingAction) {
-      // A concurrent create may have committed after our first history read.
-      const applied = await deps.findAppliedOperation(mutationId);
-      if (applied) {
-        assertSameRequest(applied, request);
-        return { ok: true, status: "already-present", job: applied.job };
-      }
-      return { ok: true, status: "already-present", job: existingAction };
-    }
-
     const now = deps.nowIso();
     const job: ProjectJob = {
       jobId: deps.newJobId(),
@@ -189,7 +198,20 @@ export async function createProjectJob(
       sourceSystem,
       sourceRef: sourceRef.sourceRef,
       createdMutationId: mutationId,
+      ...attention.value,
     };
+    const unresolved = await deps.listUnresolvedJobs(projectId);
+    const existingAction = findUnresolvedJobByActionIdentity(unresolved, job);
+    if (existingAction) {
+      // A concurrent create may have committed after our first history read.
+      const applied = await deps.findAppliedOperation(mutationId);
+      if (applied) {
+        assertSameRequest(applied, request);
+        return { ok: true, status: "already-present", job: applied.job };
+      }
+      return { ok: true, status: "already-present", job: existingAction };
+    }
+
     const result = await deps.applyCreate(job, request);
     return { ok: true, status: result.status, job: result.job };
   } catch (error) {

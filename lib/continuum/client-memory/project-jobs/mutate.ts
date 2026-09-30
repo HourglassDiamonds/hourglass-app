@@ -7,6 +7,7 @@ import { assertSameRequest, type AppliedOperation, type OperationRequest } from 
 
 import type { ClientMemoryEntity, PersonProfile, ProjectProfile } from "../types";
 import type { OpenJobActor, OpenJobState, ProjectJob } from "./types";
+import { canonicalAttentionOf, parseAttention } from "./attention";
 import {
   isOpenJobActor,
   isOpenJobUuid,
@@ -24,6 +25,10 @@ export const OPEN_JOB_MUTATE_ACTIONS = [
   "snooze",
   "unsnooze",
   "update",
+  "reschedule_attention",
+  "watch_checked",
+  "stop_watching",
+  "dependency_resolved",
 ] as const;
 
 export type OpenJobMutateAction = (typeof OPEN_JOB_MUTATE_ACTIONS)[number];
@@ -38,6 +43,10 @@ export type MutateOpenJobInvalidCode =
   | "invalid-actor"
   | "invalid-due"
   | "invalid-defer"
+  | "invalid-attention-mode"
+  | "invalid-attention-schedule"
+  | "invalid-attention-metadata"
+  | "unsupported-attention-metadata-version"
   | "person-not-on-project"
   | "wrong-project";
 
@@ -72,6 +81,10 @@ export type MutateOpenJobInput = {
   dueAt?: string | null;
   clearAssociatedPerson?: boolean;
   clearDueAt?: boolean;
+  attentionMode?: unknown;
+  activationAt?: string | null;
+  checkpointAt?: string | null;
+  attentionMetadata?: unknown;
 };
 
 export type OpenJobMutationRecord = {
@@ -141,24 +154,22 @@ export function applyOpenJobStateChange(
     waitingOnActor?: OpenJobActor;
     associatedPersonId?: string | null;
     dueAt?: string | null;
+    attention?: ReturnType<typeof canonicalAttentionOf>;
   },
 ): { ok: true; next: ProjectJob } | { ok: false; code: MutateOpenJobInvalidCode } {
-  if (isTerminal(prior.state) && input.action === "resolve" && prior.state === "resolved") {
+  if ((input.action === "resolve" || input.action === "dependency_resolved") && prior.state === "resolved") {
     return { ok: true, next: prior };
   }
-  if (isTerminal(prior.state) && input.action !== "update") {
-    return { ok: false, code: "invalid-state" };
-  }
-  if (isTerminal(prior.state) && input.action === "update") {
+  if (isTerminal(prior.state)) {
     return { ok: false, code: "invalid-state" };
   }
   const next: ProjectJob = { ...prior, updatedAt: input.now };
-  if (input.action === "resolve") {
+  if (input.action === "resolve" || input.action === "dependency_resolved") {
     next.state = "resolved";
     next.resolvedAt = input.now;
     next.cancelledAt = null;
     next.deferredUntil = null;
-  } else if (input.action === "cancel") {
+  } else if (input.action === "cancel" || input.action === "stop_watching") {
     next.state = "cancelled";
     next.cancelledAt = input.now;
     next.resolvedAt = null;
@@ -175,7 +186,7 @@ export function applyOpenJobStateChange(
     next.deferredUntil = null;
     next.resolvedAt = null;
     next.cancelledAt = null;
-  } else {
+  } else if (input.action === "update") {
     if (input.subject != null) next.subject = input.subject;
     if (input.detail !== undefined) next.detail = input.detail;
     if (input.waitingOnActor) next.waitingOnActor = input.waitingOnActor;
@@ -183,6 +194,12 @@ export function applyOpenJobStateChange(
       next.associatedPersonId = input.associatedPersonId;
     }
     if (input.dueAt !== undefined) next.dueAt = input.dueAt;
+  } else if (input.action === "reschedule_attention") {
+    if (!input.attention) return { ok: false, code: "invalid-attention-schedule" };
+    Object.assign(next, input.attention);
+  } else if (input.action === "watch_checked") {
+    if ((prior.attentionMode ?? "action") !== "watching") return { ok: false, code: "invalid-state" };
+    Object.assign(next, input.attention ?? { ...canonicalAttentionOf(prior), checkpointAt: null });
   }
   if (
     !stateTimestampsValid({
@@ -194,6 +211,14 @@ export function applyOpenJobStateChange(
   ) {
     return { ok: false, code: "invalid-state" };
   }
+  const validAttention = parseAttention({
+    attentionMode: next.attentionMode,
+    activationAt: next.activationAt,
+    checkpointAt: next.checkpointAt,
+    attentionMetadata: next.attentionMetadata,
+    waitingOnActor: next.waitingOnActor,
+  });
+  if (!validAttention.ok) return { ok: false, code: validAttention.code };
   return { ok: true, next };
 }
 
@@ -248,6 +273,7 @@ export async function mutateOpenJob(
     let waitingOnActor: OpenJobActor | undefined;
     let associatedPersonId: string | null | undefined;
     let dueAt: string | null | undefined;
+    let attention: ReturnType<typeof canonicalAttentionOf> | undefined;
 
     if (input.action === "snooze") {
       const parsed = parseOptionalIso(input.deferredUntil);
@@ -291,6 +317,31 @@ export async function mutateOpenJob(
         dueAt = parsed.value;
       }
     }
+    if (input.action === "reschedule_attention" || input.action === "watch_checked") {
+      const current = canonicalAttentionOf(prior);
+      const nextMetadata = input.attentionMetadata === undefined
+        ? current.attentionMetadata
+        : input.attentionMetadata;
+      const checkedMetadata = input.action === "watch_checked" &&
+          (input.checkpointAt === undefined || input.checkpointAt === null) &&
+          nextMetadata && typeof nextMetadata === "object"
+        ? { ...(nextMetadata as Record<string, unknown>), unscheduledConfirmed: true }
+        : nextMetadata;
+      const parsed = parseAttention({
+        attentionMode: input.attentionMode ?? current.attentionMode,
+        activationAt: input.activationAt === undefined ? current.activationAt : input.activationAt,
+        checkpointAt: input.checkpointAt === undefined
+          ? (input.action === "watch_checked" ? null : current.checkpointAt)
+          : input.checkpointAt,
+        attentionMetadata: checkedMetadata,
+        waitingOnActor: prior.waitingOnActor,
+      });
+      if (!parsed.ok) return invalid(parsed.code);
+      attention = parsed.value;
+    }
+    if (input.action === "stop_watching" || input.action === "dependency_resolved" || input.action === "watch_checked") {
+      if ((prior.attentionMode ?? "action") !== "watching") return invalid("invalid-state");
+    }
 
     const changed = applyOpenJobStateChange(prior, {
       action: input.action,
@@ -301,6 +352,7 @@ export async function mutateOpenJob(
       waitingOnActor,
       associatedPersonId,
       dueAt,
+      attention,
     });
     if (!changed.ok) return invalid(changed.code);
     const result = await deps.applyMutation({

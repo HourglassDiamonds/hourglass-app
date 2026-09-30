@@ -118,8 +118,8 @@ export function parseOptionalIso(
 ): { ok: true; value: string | null } | { ok: false } {
   const trimmed = trimOrNull(value);
   if (!trimmed) return { ok: true, value: null };
-  if (!ISO_RE.test(trimmed)) return { ok: false };
-  return { ok: true, value: trimmed };
+  if (!ISO_RE.test(trimmed) || !Number.isFinite(Date.parse(trimmed))) return { ok: false };
+  return { ok: true, value: new Date(trimmed).toISOString() };
 }
 
 export function parseOptionalDue(

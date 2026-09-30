@@ -5,6 +5,7 @@
 
 import { isUnresolvedOpenJobState } from "@/lib/continuum/client-memory/project-jobs/validate";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import { evaluateAttentionEligibility } from "@/lib/continuum/client-memory/project-jobs/attention-eligibility";
 import { isTerminalTodayLifecycle } from "@/lib/continuum/candidates/today-lifecycle";
 import type { ActionableWork, CosProjectContext } from "./types";
 
@@ -30,6 +31,9 @@ export function collectCanonicalActionables(input: {
   for (const job of input.jobs) {
     if (!isUnresolvedOpenJobState(job.state)) continue;
     if (isDeferredQuiet(job, clock)) continue;
+    const attention = evaluateAttentionEligibility(job, { now: new Date(clock) });
+    if (["terminal", "target-satisfied", "target-superseded", "deferred", "scheduled", "watching-unscheduled"]
+      .includes(attention.reason)) continue;
     if (seen.has(job.jobId)) continue;
     seen.add(job.jobId);
     const project = (job.projectId ? input.projects.get(job.projectId) : undefined);

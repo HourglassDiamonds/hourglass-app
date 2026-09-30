@@ -16,6 +16,7 @@ import {
   stateTimestampsValid,
 } from "./validate";
 import { decodeStoredDue } from "@/lib/continuum/date-only";
+import { parseAttention } from "./attention";
 
 function timestampOrNull(value: unknown): string | null {
   if (value == null) return null;
@@ -24,7 +25,7 @@ function timestampOrNull(value: unknown): string | null {
 }
 
 export const PROJECT_JOB_COLUMNS =
-  "job_id, project_id, kind, subject, detail, waiting_on_actor, associated_person_id, state, due_at, deferred_until, resolved_at, cancelled_at, created_at, updated_at, created_by, source_system, source_ref, created_mutation_id";
+  "job_id, project_id, kind, subject, detail, waiting_on_actor, associated_person_id, state, due_at, deferred_until, resolved_at, cancelled_at, created_at, updated_at, created_by, source_system, source_ref, created_mutation_id, attention_mode, activation_at, checkpoint_at, attention_metadata";
 
 export function rowToProjectJob(
   row: Record<string, unknown> | null | undefined,
@@ -52,13 +53,21 @@ export function rowToProjectJob(
   const cancelledAt = timestampOrNull(row.cancelled_at);
   const createdAt = timestampOrNull(row.created_at);
   const updatedAt = timestampOrNull(row.updated_at);
+  const attention = parseAttention({
+    attentionMode: row.attention_mode ?? "action",
+    activationAt: timestampOrNull(row.activation_at),
+    checkpointAt: timestampOrNull(row.checkpoint_at),
+    attentionMetadata: row.attention_metadata ?? null,
+    waitingOnActor: String(row.waiting_on_actor),
+  });
   if (
     !subject.ok ||
     !detail.ok ||
     !sourceRef.ok ||
     !createdBy.ok ||
     createdAt == null ||
-    updatedAt == null
+    updatedAt == null ||
+    !attention.ok
   ) {
     return null;
   }
@@ -93,5 +102,6 @@ export function rowToProjectJob(
     sourceSystem: row.source_system,
     sourceRef: sourceRef.sourceRef,
     createdMutationId: String(row.created_mutation_id),
+    ...attention.value,
   };
 }
