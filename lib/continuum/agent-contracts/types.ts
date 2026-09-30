@@ -125,8 +125,8 @@ export type AgentClientContext = {
 
 export type AgentOpenJob = {
   jobId: string;
-  projectId: string;
-  projectTitle: string;
+  projectId: string | null;
+  projectTitle: string | null;
   kind: OpenJobKind;
   subject: string;
   detail: string | null;
@@ -163,6 +163,7 @@ export type AgentCommitments = {
 
 export type AgentToday = {
   items: Array<{
+    jobId: string | null;
     title: string;
     detail: string;
     projectTitle: string | null;

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 
 import { createTravisSolWorld, TRAVIS_PERSON_ID, TRAVIS_PROJECT_ID } from "@/lib/continuum/concierge-sol/travis-world";
+import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { executeContinuumAgentContract } from "./execute";
 import {
   CONTINUUM_AGENT_CAPABILITIES,
@@ -12,6 +13,50 @@ import {
 import type { ContinuumAgentWorld } from "./world";
 
 const NOW = new Date("2026-09-30T14:00:00.000Z");
+const PROJECTLESS_JOB_ID = "11111111-1111-4111-8111-111111111111";
+const PROJECT_JOB_ID = "22222222-2222-4222-8222-222222222222";
+
+function canonicalJob(extra: Partial<ProjectJob> = {}): ProjectJob {
+  return {
+    jobId: PROJECTLESS_JOB_ID,
+    projectId: null,
+    kind: "required_action",
+    subject: "Review website inquiry and decide the next action",
+    detail: "Canonical projectless founder work from website intake.",
+    waitingOnActor: "unknown",
+    associatedPersonId: null,
+    state: "open",
+    dueAt: null,
+    deferredUntil: null,
+    resolvedAt: null,
+    cancelledAt: null,
+    createdAt: "2026-09-30T13:00:00.000Z",
+    updatedAt: "2026-09-30T13:00:00.000Z",
+    createdBy: "website-intake",
+    sourceSystem: "human-intake",
+    sourceRef: "website-inquiry:example",
+    createdMutationId: "33333333-3333-4333-8333-333333333333",
+    ...extra,
+  };
+}
+
+function createAgentWorld(
+  projectlessJobs: readonly ProjectJob[] = [],
+  base = createTravisSolWorld(),
+): ContinuumAgentWorld {
+  return {
+    ...base,
+    async listProjectlessJobs() {
+      return [...projectlessJobs];
+    },
+    async loadTodayItems(limit) {
+      return (await base.loadTodayItems(limit)).map((item) => ({
+        ...item,
+        jobId: null,
+      }));
+    },
+  };
+}
 
 describe("provider-neutral Continuum agent contracts", () => {
   it("publishes a closed, versioned capability surface", () => {
@@ -33,7 +78,7 @@ describe("provider-neutral Continuum agent contracts", () => {
   });
 
   it("reuses canonical grouping and Today readers with bounded structured output", async () => {
-    const base = createTravisSolWorld();
+    const base = createAgentWorld();
     let grouped = 0;
     let todayLimit = 0;
     const world: ContinuumAgentWorld = {
@@ -70,7 +115,7 @@ describe("provider-neutral Continuum agent contracts", () => {
   });
 
   it("fails closed when identity search is ambiguous", async () => {
-    const base = createTravisSolWorld();
+    const base = createAgentWorld();
     const world: ContinuumAgentWorld = {
       ...base,
       async searchPeople(query) {
@@ -95,7 +140,7 @@ describe("provider-neutral Continuum agent contracts", () => {
   });
 
   it("preserves needs-review state when translating canonical client context", async () => {
-    const base = createTravisSolWorld();
+    const base = createAgentWorld();
     const world: ContinuumAgentWorld = {
       ...base,
       async getPersonProfile(personId) {
@@ -122,7 +167,7 @@ describe("provider-neutral Continuum agent contracts", () => {
   });
 
   it("bounds nested canonical fact values before returning model-facing context", async () => {
-    const base = createTravisSolWorld();
+    const base = createAgentWorld();
     const world: ContinuumAgentWorld = {
       ...base,
       async getPersonProfile(personId) {
@@ -170,9 +215,117 @@ describe("provider-neutral Continuum agent contracts", () => {
     }
   });
 
+  it("unions canonical projectless and Project Jobs without inventing Project identity", async () => {
+    const base = createTravisSolWorld();
+    const openProjectless = canonicalJob();
+    const resolvedProjectless = canonicalJob({
+      jobId: "44444444-4444-4444-8444-444444444444",
+      subject: "Resolved website inquiry",
+      state: "resolved",
+      resolvedAt: "2026-09-30T13:30:00.000Z",
+      createdAt: "2026-09-30T13:30:00.000Z",
+      updatedAt: "2026-09-30T13:30:00.000Z",
+      createdMutationId: "55555555-5555-4555-8555-555555555555",
+    });
+    const cancelledProjectless = canonicalJob({
+      jobId: "66666666-6666-4666-8666-666666666666",
+      subject: "Cancelled website inquiry",
+      state: "cancelled",
+      cancelledAt: "2026-09-30T13:45:00.000Z",
+      createdAt: "2026-09-30T13:45:00.000Z",
+      updatedAt: "2026-09-30T13:45:00.000Z",
+      createdMutationId: "77777777-7777-4777-8777-777777777777",
+    });
+    const projectless = [cancelledProjectless, openProjectless, resolvedProjectless];
+    const world: ContinuumAgentWorld = {
+      ...createAgentWorld(projectless, base),
+      async getProjectDesk(projectId) {
+        const result = await base.getProjectDesk(projectId);
+        if (!result.ok) return result;
+        return {
+          ...result,
+          desk: {
+            ...result.desk,
+            openJobs: {
+              connected: true as const,
+              unresolved: [{
+                jobId: PROJECT_JOB_ID,
+                kind: "commitment" as const,
+                subject: "Send the Project CAD",
+                detail: null,
+                waitingOnActor: "founder" as const,
+                associatedPersonId: TRAVIS_PERSON_ID,
+                associatedPersonName: "Travis Morse",
+                state: "open" as const,
+                dueAt: null,
+                deferredUntil: null,
+                createdAt: "2026-09-30T12:00:00.000Z",
+                sourceSystem: "concierge-manual" as const,
+              }],
+              unresolvedCount: 1,
+            },
+          },
+        };
+      },
+      async loadTodayItems() {
+        return [{
+          jobId: PROJECTLESS_JOB_ID,
+          title: "Handle the new website inquiry",
+          detail: "Today ranks this founder action first.",
+          projectTitle: null,
+          personName: null,
+        }];
+      },
+    };
+    const before = JSON.stringify(projectless);
+
+    const open = await executeContinuumAgentContract(
+      world,
+      { requestId: "open-union", operation: "get_open_jobs" },
+      NOW,
+    );
+    assert.equal(open.ok, true);
+    assert.equal(open.review.status, "needs_review");
+    assert.deepEqual(open.review.reasons, ["job_owner_unknown"]);
+    if (!open.ok || !("jobs" in open.data)) return;
+    assert.deepEqual(open.data.jobs.map((job) => job.jobId), [
+      PROJECT_JOB_ID,
+      PROJECTLESS_JOB_ID,
+    ]);
+    const founderJob = open.data.jobs.find((job) => job.jobId === PROJECTLESS_JOB_ID);
+    assert.equal(founderJob?.kind, "required_action");
+    assert.equal(founderJob?.state, "open");
+    assert.equal(founderJob?.projectId, null);
+    assert.equal(founderJob?.projectTitle, null);
+    assert.equal(open.data.jobs.some((job) => job.jobId === resolvedProjectless.jobId), false);
+    assert.equal(open.data.jobs.some((job) => job.jobId === cancelledProjectless.jobId), false);
+    assert.equal(
+      open.data.jobs.find((job) => job.jobId === PROJECT_JOB_ID)?.projectId,
+      TRAVIS_PROJECT_ID,
+    );
+
+    const today = await executeContinuumAgentContract(
+      world,
+      { requestId: "today-same-job", operation: "get_today" },
+      NOW,
+    );
+    assert.equal(today.ok, true);
+    if (today.ok && "items" in today.data) {
+      assert.equal(today.data.items[0]?.jobId, founderJob?.jobId);
+      assert.notEqual(today.data.items[0]?.title, founderJob?.subject);
+      assert.equal(founderJob?.state, "open");
+    }
+    assert.equal(JSON.stringify(projectless), before);
+  });
+
   it("keeps reads observational and leaves the source world unchanged", async () => {
-    const world = createTravisSolWorld();
-    const before = JSON.stringify(await world.listCurrentProjectCards());
+    const base = createTravisSolWorld();
+    const projectless = [canonicalJob()];
+    const world = createAgentWorld(projectless, base);
+    const before = JSON.stringify({
+      cards: await base.listCurrentProjectCards(),
+      projectless,
+    });
     const operations = [
       { requestId: "r1", operation: "get_current_truth" },
       { requestId: "r2", operation: "get_open_jobs" },
@@ -185,11 +338,14 @@ describe("provider-neutral Continuum agent contracts", () => {
       assert.equal(result.ok, true);
       assert.equal(result.capability, "read");
     }
-    assert.equal(JSON.stringify(await world.listCurrentProjectCards()), before);
+    assert.equal(JSON.stringify({
+      cards: await base.listCurrentProjectCards(),
+      projectless,
+    }), before);
   });
 
   it("returns a proposal receipt without persistence or approved mutation authority", async () => {
-    const world = createTravisSolWorld();
+    const world = createAgentWorld();
     const result = await executeContinuumAgentContract(
       world,
       {
@@ -222,7 +378,7 @@ describe("provider-neutral Continuum agent contracts", () => {
   });
 
   it("rejects missing provenance, uncertain targets, and unapproved mutation operations", async () => {
-    const world = createTravisSolWorld();
+    const world = createAgentWorld();
     const noProvenance = await executeContinuumAgentContract(
       world,
       {
@@ -273,6 +429,8 @@ describe("provider-neutral Continuum agent contracts", () => {
     assert.doesNotMatch(source, /getSupabaseAdmin|createProjectJob|correctProjectSpec|addManualNote|applyReview/);
     assert.doesNotMatch(source, /@supabase|\.from\(|\.insert\(|\.update\(|\.delete\(/);
     assert.match(load, /loadTodaySurface/);
+    assert.match(load, /loadProjectJobs\(client, null\)/);
+    assert.doesNotMatch(load, /\.from\(|\.insert\(|\.update\(|\.delete\(/);
     assert.doesNotMatch(load, /loadCosOperatingLoop/);
   });
 });

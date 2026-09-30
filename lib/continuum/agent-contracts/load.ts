@@ -6,7 +6,9 @@
 import "server-only";
 
 import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import { loadConciergeSolWorld } from "@/lib/continuum/concierge-sol/load";
+import { getSupabaseAdmin } from "@/lib/supabase/client";
 import type { ContinuumAgentWorld } from "./world";
 
 export type LoadedContinuumAgentWorld =
@@ -16,13 +18,17 @@ export type LoadedContinuumAgentWorld =
 export async function loadContinuumAgentWorld(): Promise<LoadedContinuumAgentWorld> {
   const loaded = await loadConciergeSolWorld();
   if (!loaded.ok) return loaded;
+  const client = getSupabaseAdmin();
   return {
     ok: true,
     world: {
       ...loaded.world,
+      listProjectlessJobs: () =>
+        client ? loadProjectJobs(client, null) : Promise.resolve(null),
       async loadTodayItems(limit) {
         const today = await loadTodaySurface();
         return today.docket.items.slice(0, limit).map((item) => ({
+          jobId: item.origin === "open_job" ? item.job?.id ?? null : null,
           title: item.headline,
           detail: item.context ?? item.headline,
           projectTitle:

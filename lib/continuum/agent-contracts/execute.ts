@@ -10,6 +10,10 @@ import {
   parseOptionalDue,
   parseOptionalIso,
 } from "@/lib/continuum/client-memory/project-jobs/validate";
+import {
+  deskJobsFromCanonical,
+  sortProjectJobs,
+} from "@/lib/continuum/client-memory/project-jobs/read";
 import { validateProjectSpecCorrection } from "@/lib/continuum/client-memory/project-spec/validate";
 import { MANUAL_NOTE_MAX_LENGTH } from "@/lib/continuum/client-memory/write/types";
 import type { ConciergePersonProfileResult } from "@/lib/continuum/client-memory/read/types";
@@ -323,10 +327,13 @@ async function openJobs(
   const listed = requestedProjectId
     ? [{ projectId: requestedProjectId, title: "" }]
     : (await world.listProjects()).slice(0, MAX_PROJECTS);
-  const desks = await Promise.all(listed.map(async (row) => ({
-    summary: row,
-    result: await world.getProjectDesk(row.projectId),
-  })));
+  const [desks, projectless] = await Promise.all([
+    Promise.all(listed.map(async (row) => ({
+      summary: row,
+      result: await world.getProjectDesk(row.projectId),
+    }))),
+    requestedProjectId ? Promise.resolve([]) : world.listProjectlessJobs(),
+  ]);
   if (requestedProjectId && !desks[0]?.result.ok) {
     return failed(
       metadata({ requestId, operation: "get_open_jobs", now }),
@@ -348,6 +355,32 @@ async function openJobs(
         jobId: job.jobId,
         projectId: row.result.desk.projectId,
         projectTitle: row.result.desk.title,
+        kind: job.kind,
+        subject: job.subject,
+        detail: job.detail,
+        waitingOn: job.waitingOnActor,
+        state: job.state,
+        dueAt: job.dueAt,
+        deferredUntil: job.deferredUntil,
+        associatedPersonId: job.associatedPersonId,
+        associatedPersonName: job.associatedPersonName,
+        sourceSystem: job.sourceSystem,
+      });
+    }
+  }
+  if (projectless == null) {
+    reasons.push("open_jobs_not_connected");
+  } else {
+    const projectlessOpen = deskJobsFromCanonical(
+      sortProjectJobs(projectless),
+      [],
+    );
+    for (const job of projectlessOpen) {
+      if (job.waitingOnActor === "unknown") reasons.push("job_owner_unknown");
+      all.push({
+        jobId: job.jobId,
+        projectId: null,
+        projectTitle: null,
         kind: job.kind,
         subject: job.subject,
         detail: job.detail,
