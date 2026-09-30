@@ -1,12 +1,28 @@
 import assert from "node:assert/strict";
-import { afterEach, beforeEach, describe, it } from "node:test";
-import { POST } from "@/app/api/concierge/route";
+import { createRequire } from "node:module";
+import { afterEach, before, beforeEach, describe, it } from "node:test";
 import { resetConciergeRateLimits } from "./rate-limit";
 import {
   getDefaultConciergeSlaStore,
   resetConciergeSlaTestStore,
 } from "./sla/ledger";
 import { createMemoryConciergeSlaStore } from "./sla/memory-store";
+
+const require = createRequire(import.meta.url);
+const nodeModule = require("module") as {
+  _load: (request: string, parent: unknown, isMain: boolean) => unknown;
+};
+const originalLoad = nodeModule._load;
+nodeModule._load = function (request: string, parent: unknown, isMain: boolean) {
+  if (request === "server-only") return {};
+  return originalLoad.call(this, request, parent, isMain);
+};
+
+let POST: typeof import("@/app/api/concierge/route").POST;
+
+before(async () => {
+  ({ POST } = await import("@/app/api/concierge/route"));
+});
 
 const ORIGINAL_ENV = { ...process.env };
 const ORIGINAL_FETCH = globalThis.fetch;
