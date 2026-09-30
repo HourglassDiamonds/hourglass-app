@@ -7,6 +7,7 @@ import {
   parseHubSpotRetryAfterSeconds,
   resolveHubSpotToken,
   sanitizeHubSpotErrorBody,
+  sanitizeHubSpotLogPath,
 } from "./hubspot-client";
 
 describe("resolveHubSpotToken", () => {
@@ -49,6 +50,19 @@ describe("sanitizeHubSpotErrorBody", () => {
     assert.doesNotMatch(sanitized, /user@example.com/i);
     assert.match(sanitized, /Bearer \[redacted\]/);
     assert.match(sanitized, /\[redacted-email\]/);
+  });
+});
+
+describe("sanitizeHubSpotLogPath", () => {
+  it("removes query strings and contact identifiers", () => {
+    assert.equal(
+      sanitizeHubSpotLogPath("/crm/v3/objects/contacts/alex%40example.com?idProperty=email"),
+      "/crm/v3/objects/contacts/[redacted-contact]",
+    );
+    assert.equal(
+      sanitizeHubSpotLogPath("/crm/v3/objects/deals?archived=false"),
+      "/crm/v3/objects/deals",
+    );
   });
 });
 

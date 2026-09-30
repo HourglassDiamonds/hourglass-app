@@ -43,6 +43,15 @@ export function sanitizeHubSpotErrorBody(text: string, max = 400): string {
     .slice(0, max);
 }
 
+/** Remove query strings and contact identifiers before writing a request path to logs. */
+export function sanitizeHubSpotLogPath(path: string): string {
+  const pathname = path.split("?", 1)[0] ?? "";
+  return pathname.replace(
+    /^(\/crm\/v3\/objects\/contacts\/)[^/]+$/,
+    "$1[redacted-contact]",
+  );
+}
+
 /** Parse HTTP Retry-After (delta-seconds or HTTP-date). */
 export function parseHubSpotRetryAfterSeconds(
   value: string | null | undefined,
@@ -138,7 +147,7 @@ export async function hubspotFetchJson<T>(
           response.headers.get("retry-after"),
       );
       console.error("[concierge-hubspot]", {
-        path,
+        path: sanitizeHubSpotLogPath(path),
         status: response.status,
         retryAfterSeconds,
         message: hubspotMessage || undefined,
@@ -164,11 +173,13 @@ export async function hubspotFetchJson<T>(
       throw error;
     }
     if (error instanceof Error && error.name === "AbortError") {
-      console.error("[concierge-hubspot-timeout]", { path });
+      console.error("[concierge-hubspot-timeout]", {
+        path: sanitizeHubSpotLogPath(path),
+      });
       throw new Error("hubspot_timeout");
     }
     console.error("[concierge-hubspot-network]", {
-      path,
+      path: sanitizeHubSpotLogPath(path),
       error: error instanceof Error ? error.name : "unknown",
     });
     throw new Error("hubspot_network_error");
