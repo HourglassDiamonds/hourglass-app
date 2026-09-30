@@ -67,11 +67,13 @@ export function isCaptureTiming(v: unknown): v is CaptureTiming {
     || v.originalWording.includes("\0")) return false;
   if (v.kind === "unspecified") return keys(v, ["kind", "originalWording"]);
   if (!text(v.originalWording)) return false;
-  if (v.kind === "date-only") return keys(v, ["kind", "originalWording", "date"]) && date(v.date);
-  if (v.kind === "exact-instant") return keys(v, ["kind", "originalWording", "instantAt", "timezone"])
-    && instant(v.instantAt) && timezone(v.timezone);
-  return v.kind === "checkpoint" && keys(v, ["kind", "originalWording", "condition", "checkAt"])
-    && text(v.condition) && optional(v, "checkAt", x => row(x)
+  if (v.kind === "date-only") return keys(v, ["kind", "originalWording", "date", "timezone", "referenceInstant"])
+    && date(v.date) && optional(v, "timezone", timezone) && optional(v, "referenceInstant", instant);
+  if (v.kind === "exact-instant") return keys(v, ["kind", "originalWording", "instantAt", "timezone", "referenceInstant"])
+    && instant(v.instantAt) && timezone(v.timezone) && optional(v, "referenceInstant", instant);
+  return v.kind === "checkpoint" && keys(v, ["kind", "originalWording", "condition", "checkAt", "timezone", "referenceInstant"])
+    && text(v.condition) && optional(v, "timezone", timezone) && optional(v, "referenceInstant", instant)
+    && optional(v, "checkAt", x => row(x)
       && (x.kind === "date-only" || x.kind === "exact-instant") && isCaptureTiming(x));
 }
 export function isCaptureProposedItem(v: unknown): v is CaptureProposedItem {

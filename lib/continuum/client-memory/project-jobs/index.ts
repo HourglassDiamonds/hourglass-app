@@ -56,6 +56,9 @@ export {
   watchingDispositionMutation,
 } from "./attention-disposition";
 export type { ReminderDisposition, WatchingDisposition } from "./attention-disposition";
+export { applyAttentionDisposition } from "./attention-application";
+export type { AttentionDispositionInput } from "./attention-application";
+export { assessAttentionTarget } from "./attention-evidence";
 export {
   ATTENTION_CREATION_PREREQUISITES,
   PHASE_1_ATTENTION_CREATION_ENABLED,

@@ -69,9 +69,11 @@ export function CosBriefActions({ item }: { item: CosBriefItem }) {
 export function CosWatchingList({
   watching,
   askAction,
+  disposeAction,
 }: {
   watching: readonly CosWatchingItem[];
   askAction?: TodayAskAction;
+  disposeAction?: (formData: FormData) => void | Promise<void>;
 }) {
   if (watching.length === 0) return null;
   return (
@@ -87,6 +89,11 @@ export function CosWatchingList({
                 .filter((row, index, all) => row && all.indexOf(row) === index)
                 .join(" / ")
             : item.title;
+          const attentionChip = item.attention?.status === "scheduled-later"
+            ? "LATER"
+            : item.attention?.status === "still-waiting"
+              ? "STILL WAITING"
+              : null;
           return (
             <li
               key={item.id}
@@ -100,7 +107,7 @@ export function CosWatchingList({
                     {name}
                   </p>
                   <p className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-[#ad9164]">
-                    {briefing?.stateChip ?? "WAITING"}
+                    {briefing?.stateChip ?? attentionChip ?? "WAITING"}
                   </p>
                 </div>
                 {item.cosBriefing ? (
@@ -133,6 +140,27 @@ export function CosWatchingList({
                     cosBriefing={item.cosBriefing ?? null}
                     askAction={askAction}
                   />
+                ) : null}
+                {item.attention ? (
+                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-5">
+                    {(item.attention.mode === "reminder"
+                      ? [["complete", "Done"]]
+                      : [["still_waiting", "Still waiting"], ["resolved", "Resolved"], ["stop_watching", "Stop watching"]]
+                    ).map(([verb, label]) => (
+                      <form action={disposeAction} key={verb} className="inline">
+                        <input type="hidden" name="verb" value={verb} />
+                        <input type="hidden" name="origin" value="open_job" />
+                        <input type="hidden" name="itemId" value={item.id} />
+                        <input type="hidden" name="projectId" value={item.attention?.projectId ?? ""} />
+                        <input type="hidden" name="jobId" value={item.attention?.jobId ?? ""} />
+                        <input type="hidden" name="candidateIds" value="" />
+                        <input type="hidden" name="mutationId" value={item.attention?.mutationId ?? ""} />
+                        <button type="submit" className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
+                          {label}
+                        </button>
+                      </form>
+                    ))}
+                  </div>
                 ) : null}
               </div>
             </li>

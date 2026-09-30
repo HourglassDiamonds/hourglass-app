@@ -6,7 +6,7 @@
 
 import type { StructuredSpecSourceProvenance } from "@/lib/continuum/candidates/types";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
-import type { OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import type { AttentionMode, OpenJobActor, OpenJobKind, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { TodayRenderedBriefing } from "./briefing-copy";
@@ -93,6 +93,31 @@ export type CosTop5Item = {
   writer: CosCompletionWriter | null;
   mutationId: string;
   editHref: string | null;
+  attentionMode?: AttentionMode;
+  attentionStatus?: CosAttentionStatus;
+};
+
+export type CosAttentionStatus =
+  | "actionable-now"
+  | "scheduled-later"
+  | "checkpoint-due"
+  | "still-waiting"
+  | "terminal-resolved"
+  | "repair-required";
+
+export type CosAttentionItem = {
+  jobId: string;
+  projectId: string | null;
+  projectTitle: string;
+  subject: string;
+  detail: string | null;
+  sourceRef: string | null;
+  mode: Exclude<AttentionMode, "action">;
+  status: CosAttentionStatus;
+  scheduledAt: string | null;
+  waitingOnActor: OpenJobActor;
+  mutationId: string;
+  canonical: true;
 };
 
 export type CosProposedAction = {
@@ -303,6 +328,7 @@ export type CosWatchingItem = {
   briefing?: TodayRenderedBriefing | null;
   cosBriefing?: CosBriefingV1 | null;
   todayDocketVersion?: TodayDocketVersion;
+  attention?: CosAttentionItem;
 };
 
 export type CosMasterSprintItem = {
@@ -354,6 +380,8 @@ export type CosOperatingLoopView = {
   todayReadModelWatermark?: string | null;
   /** Shared all-Job time boundary; includes work outside visible Top N. */
   attentionValidUntil?: string | null;
+  /** Canonical Reminder/Watching state, including quiet and terminal rows. */
+  attentionItems?: readonly CosAttentionItem[];
 };
 
 export type CosProjectPerson = {

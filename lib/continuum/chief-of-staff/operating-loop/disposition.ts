@@ -14,6 +14,8 @@ import type {
 import { isEditableProjectSpecField } from "@/lib/continuum/client-memory/contracts";
 import { validateProjectSpecCorrection } from "@/lib/continuum/client-memory/project-spec/validate";
 import type { ProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/writer";
+import { attentionModeOf } from "@/lib/continuum/client-memory/project-jobs/attention";
+import { applyAttentionDisposition } from "@/lib/continuum/client-memory/project-jobs/attention-application";
 import { completeFounderActionable } from "./complete";
 import type { CosFounderVerb } from "./founder-actions";
 import { canMutateSpecConflict } from "./founder-actions";
@@ -41,7 +43,7 @@ export type DisposeDocketItemResult =
       resolvedAt: string;
       mutatedSpec: boolean;
       reviewedCandidateIds: string[];
-      jobAction: "resolve" | "snooze" | "cancel" | null;
+      jobAction: "resolve" | "snooze" | "cancel" | "watch_checked" | "stop_watching" | "dependency_resolved" | null;
     }
   | {
       ok: false;
@@ -136,6 +138,17 @@ async function resolveJob(
   if (!input.jobId) {
     return { ok: false, reason: "unsupported-mutation" };
   }
+  const prior = await writer.getJob(input.projectId, input.jobId);
+  if (!prior) return { ok: false, reason: "job-not-found" };
+  const mode = attentionModeOf(prior);
+  if (mode === "reminder" || mode === "watching") {
+    const result = await applyAttentionDisposition(writer, mode === "reminder"
+      ? { mode, mutationId: input.mutationId, projectId: input.projectId, jobId: input.jobId,
+          actor: input.actor, disposition: { kind: "done" } }
+      : { mode, mutationId: input.mutationId, projectId: input.projectId, jobId: input.jobId,
+          actor: input.actor, disposition: { kind: "dependency-resolved" } });
+    return attentionMutationResult(input, result, mode === "reminder" ? "resolve" : "dependency_resolved");
+  }
   const completed = await completeFounderActionable(writer, {
     sourceType: "open_job",
     projectId: input.projectId,
@@ -169,7 +182,13 @@ async function snoozeJob(
   if (!input.jobId) {
     return { ok: false, reason: "unsupported-mutation" };
   }
-  const result = await writer.mutateJob({
+  const prior = await writer.getJob(input.projectId, input.jobId);
+  if (!prior) return { ok: false, reason: "job-not-found" };
+  const result = attentionModeOf(prior) === "reminder"
+    ? await applyAttentionDisposition(writer, { mode: "reminder", mutationId: input.mutationId,
+        projectId: input.projectId, jobId: input.jobId, actor: input.actor,
+        disposition: { kind: "snooze", deferredUntil: until } })
+    : await writer.mutateJob({
     mutationId: input.mutationId,
     projectId: input.projectId,
     jobId: input.jobId,
@@ -200,7 +219,16 @@ async function cancelJob(
   if (!input.jobId) {
     return { ok: false, reason: "unsupported-mutation" };
   }
-  const result = await writer.mutateJob({
+  const prior = await writer.getJob(input.projectId, input.jobId);
+  if (!prior) return { ok: false, reason: "job-not-found" };
+  const mode = attentionModeOf(prior);
+  const result = mode === "reminder"
+    ? await applyAttentionDisposition(writer, { mode, mutationId: input.mutationId, projectId: input.projectId,
+        jobId: input.jobId, actor: input.actor, disposition: { kind: "cancel" } })
+    : mode === "watching"
+      ? await applyAttentionDisposition(writer, { mode, mutationId: input.mutationId, projectId: input.projectId,
+          jobId: input.jobId, actor: input.actor, disposition: { kind: "stop-watching" } })
+      : await writer.mutateJob({
     mutationId: input.mutationId,
     projectId: input.projectId,
     jobId: input.jobId,
@@ -218,8 +246,23 @@ async function cancelJob(
     resolvedAt: result.job.updatedAt,
     mutatedSpec: false,
     reviewedCandidateIds: [],
-    jobAction: "cancel",
+    jobAction: mode === "watching" ? "stop_watching" : "cancel",
   };
+}
+
+function attentionMutationResult(
+  input: DisposeDocketItemInput,
+  result: Awaited<ReturnType<typeof applyAttentionDisposition>>,
+  action: "resolve" | "watch_checked" | "stop_watching" | "dependency_resolved",
+): DisposeDocketItemResult {
+  if (!result.ok) {
+    if (result.reason === "job-not-found") return { ok: false, reason: "job-not-found" };
+    if ("code" in result && result.code === "invalid-state") return { ok: false, reason: "invalid-state" };
+    if (result.reason === "invalid-input") return { ok: false, reason: "invalid-input" };
+    return { ok: false, reason: "unavailable" };
+  }
+  return { ok: true, verb: input.verb, resolvedAt: result.job.updatedAt, mutatedSpec: false,
+    reviewedCandidateIds: [], jobAction: action };
 }
 
 export async function disposeDocketItem(
@@ -234,6 +277,19 @@ export async function disposeDocketItem(
   const until = input.snoozeUntil?.trim() || null;
 
   try {
+    if (input.verb === "still_waiting" || input.verb === "stop_watching") {
+      if (input.origin !== "open_job" || !input.jobId || !deps.jobs) {
+        return { ok: false, reason: "unsupported-mutation" };
+      }
+      const result = await applyAttentionDisposition(deps.jobs, {
+        mode: "watching", mutationId, projectId: input.projectId, jobId: input.jobId, actor,
+        disposition: input.verb === "still_waiting"
+          ? { kind: "checked-still-waiting" }
+          : { kind: "stop-watching" },
+      });
+      return attentionMutationResult(input, result,
+        input.verb === "still_waiting" ? "watch_checked" : "stop_watching");
+    }
     if (input.origin === "master_sprint") {
       const completing =
         input.verb === "complete" ||

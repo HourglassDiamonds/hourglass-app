@@ -181,17 +181,35 @@ export function masterSprintDocketItems(
 }
 
 export function isAuthoritativeTodayCard(
-  item: Pick<CosDocketItemView, "origin" | "todayDocketVersion" | "briefingPacket">,
+  item: Pick<CosDocketItemView, "origin" | "todayDocketVersion" | "briefingPacket" | "job">,
 ): boolean {
   if (item.todayDocketVersion !== TODAY_DOCKET_VERSION) return false;
   if (item.origin === "master_sprint") return true;
+  if (item.origin === "open_job" && item.job?.attentionMode && item.job.attentionMode !== "action") return true;
   return item.briefingPacket != null;
 }
 
 export function isAuthoritativeWatchingCard(
-  item: Pick<CosWatchingItem, "todayDocketVersion" | "briefingPacket">,
+  item: Pick<CosWatchingItem, "todayDocketVersion" | "briefingPacket" | "attention">,
 ): boolean {
-  return item.todayDocketVersion === TODAY_DOCKET_VERSION && item.briefingPacket != null;
+  return item.todayDocketVersion === TODAY_DOCKET_VERSION &&
+    (item.briefingPacket != null || item.attention?.canonical === true);
+}
+
+function attentionWatchingItems(loop: CosOperatingLoopView, occupied: ReadonlySet<string>): CosWatchingItem[] {
+  return (loop.attentionItems ?? [])
+    .filter((item) => item.status === "scheduled-later" || item.status === "still-waiting")
+    .filter((item) => !occupied.has(item.jobId))
+    .map((item) => ({
+      id: `attention:${item.jobId}`,
+      title: item.projectTitle,
+      detail: item.status === "scheduled-later"
+        ? `${item.subject} · Scheduled for later.`
+        : `${item.subject} · No authoritative resolution has been observed.`,
+      projectId: item.projectId,
+      todayDocketVersion: TODAY_DOCKET_VERSION,
+      attention: item,
+    }));
 }
 
 export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDocketView {
@@ -224,7 +242,12 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
 
 export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketView {
   const finalized = finalizeTodayDocket(loop);
-  const actionableLive = finalized.upNext.filter(isActionableTodayDocketItem);
+  const terminalAttentionIds = new Set((loop.attentionItems ?? [])
+    .filter((item) => item.status === "terminal-resolved")
+    .map((item) => item.jobId));
+  const actionableLive = finalized.upNext
+    .filter((item) => !item.job || !terminalAttentionIds.has(item.job.id))
+    .filter(isActionableTodayDocketItem);
   const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - actionableLive.length);
   const sprint = masterSprintDocketItems(loop, unused);
   const queue = [...actionableLive, ...sprint];
@@ -233,13 +256,18 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   const showDisconnected = loop.status === "disconnected";
   const showCaughtUp = !showDisconnected && actionableLive.length === 0 && sprint.length === 0;
 
+  const occupied = new Set([
+    ...finalized.upNext.map((item) => item.job?.id ?? item.id),
+    ...finalized.watching.map((item) => item.attention?.jobId ?? item.id),
+  ]);
+  const watching = [...finalized.watching, ...attentionWatchingItems(loop, occupied)];
   return authoritativeTodayDocket({
     todayDocketVersion: TODAY_DOCKET_VERSION,
     title: COS_DOCKET_TITLE,
     items,
     queuedCount,
-    watchingCount: finalized.watching.length,
-    watching: finalized.watching,
+    watchingCount: watching.length,
+    watching,
     showCaughtUp,
     showDisconnected,
     caughtUpHeading: COS_CAUGHT_UP_HEADING,

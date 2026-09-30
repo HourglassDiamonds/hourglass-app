@@ -122,7 +122,7 @@ function fakeAuthority(): CaptureCommitAuthority {
   const jobs = { async createJob(input: { mutationId: string }) { const duplicate = mutations.has(input.mutationId); mutations.add(input.mutationId); return { ok: true as const, status: duplicate ? "already-present" as const : "created" as const, job: { jobId: JOB } }; } } as unknown as ProjectJobWriter;
   const notes = { async addManualNote() { return { ok: true as const, status: "inserted" as const, noteId: NOTE }; } } as unknown as ClientMemoryNoteWriter;
   const readWorld = {
-    async getPersonProfile(id: string) { return id === PERSON ? { ok: true as const, profile: {} } : { ok: false as const, reason: "not-found" as const }; },
+    async getPersonProfile(id: string) { return id === PERSON ? { ok: true as const, profile: { person: { roles: ["client"] } } } : { ok: false as const, reason: "not-found" as const }; },
     async getProjectDesk(id: string) { return id === PROJECT ? { ok: true as const, desk: { people: [{ personId: PERSON }] } } : { ok: false as const, reason: "not-found" as const }; },
   } as unknown as Pick<ConciergeSolWorld, "getPersonProfile" | "getProjectDesk">;
   return { actor: "founder", world: readWorld, jobs, notes };
@@ -157,10 +157,10 @@ describe("Quick Capture application integration", () => {
     const retry = prepareConfirmation(request.captureId, prepared.rows, () => { throw new Error("Must reuse IDs"); });
     assert.deepEqual(retry.input, prepared.input);
     const result = await actions.saveAction(retry.input);
-    assert.deepEqual(result.items.map(row => row.status), ["saved", "saved", "needs-review"]);
+    assert.deepEqual(result.items.map(row => row.status), ["saved", "saved"]);
     const rendered = applyConfirmation(prepared.rows, prepared.input, result);
     assert.deepEqual(rendered.map(row => row.selected), [false, false, false]);
-    assert.match(reviewIssue(rendered[2]) ?? "", /Reminder persistence/);
+    assert.match(reviewIssue(rendered[2]) ?? "", /When should Continuum remind you/i);
     assert.equal(writes, 1);
     assert.equal(auth, 3);
   });

@@ -81,6 +81,7 @@ export class InMemoryProjectJobStore {
       newState: job.state,
       changedAt: job.createdAt,
       changedBy: job.createdBy,
+      operation: { prior: null, next: clone(job) },
     });
     return { status: "created", job: clone(job) };
   }
@@ -110,6 +111,7 @@ export class InMemoryProjectJobStore {
       newState: input.next.state,
       changedAt: input.changedAt,
       changedBy: input.changedBy,
+      operation: { prior: clone(input.prior), next: clone(input.next) },
     });
     return { status: "updated", job: clone(input.next) };
   }

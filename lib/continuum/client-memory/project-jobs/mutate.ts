@@ -96,6 +96,8 @@ export type OpenJobMutationRecord = {
   newState: OpenJobState;
   changedAt: string;
   changedBy: string;
+  /** In-memory parity with the durable operation snapshot used for audit/history. */
+  operation?: { prior: ProjectJob | null; next: ProjectJob };
 };
 
 export type ApplyOpenJobMutationInput = {

@@ -17,6 +17,8 @@ import {
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { OpenJobActor } from "@/lib/continuum/client-memory/project-jobs/types";
 import { completionWriterFor } from "./complete";
+import { attentionModeOf } from "@/lib/continuum/client-memory/project-jobs/attention";
+import { attentionPresentationStatus } from "./attention-presentation";
 import type { CosTop5Item, RankedActionable } from "./types";
 
 const WHY_ORDER = [
@@ -103,5 +105,7 @@ export function presentTop5Item(
     completable: writer != null,
     writer,
     mutationId,
+    attentionMode: attentionModeOf(item.job),
+    attentionStatus: attentionPresentationStatus(item.job, new Date(nowIso)),
   };
 }

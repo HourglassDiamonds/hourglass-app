@@ -69,6 +69,31 @@ function BriefingBody({ briefing }: { briefing: TodayRenderedBriefing }) {
   );
 }
 
+function WatchingDispositionActions({ item, action }: {
+  item: CosDocketItemView;
+  action?: CompleteAction;
+}) {
+  if (item.job?.attentionMode !== "watching") return null;
+  return (
+    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-5">
+      {[["still_waiting", "Still waiting"], ["resolved", "Resolved"], ["stop_watching", "Stop watching"]].map(([verb, label]) => (
+        <form action={action} key={verb} className="inline">
+          <input type="hidden" name="verb" value={verb} />
+          <input type="hidden" name="origin" value="open_job" />
+          <input type="hidden" name="itemId" value={item.id} />
+          <input type="hidden" name="projectId" value={item.job?.projectId ?? ""} />
+          <input type="hidden" name="jobId" value={item.job?.id ?? ""} />
+          <input type="hidden" name="candidateIds" value="" />
+          <input type="hidden" name="mutationId" value={item.job?.mutationId ?? ""} />
+          <button type="submit" className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
+            {label}
+          </button>
+        </form>
+      ))}
+    </div>
+  );
+}
+
 function DocketItem({
   item,
   index,
@@ -91,6 +116,11 @@ function DocketItem({
     controls.completableJob &&
     (controls.family === "open_job" || controls.family === "generic");
   const briefing = item.briefing;
+  const attentionChip = item.job?.attentionStatus === "checkpoint-due"
+    ? "CHECKPOINT DUE"
+    : item.job?.attentionStatus === "actionable-now" && item.job.attentionMode === "reminder"
+      ? "REMINDER"
+      : null;
   const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
   return (
     <li
@@ -108,7 +138,7 @@ function DocketItem({
       <div className="min-w-0 overflow-x-hidden">
         <BriefingHeader
           name={briefing ? [briefing.displayName, briefing.projectName].filter((row, i, all) => row && all.indexOf(row) === i).join(" / ") : item.subject}
-          chip={briefing?.stateChip ?? (item.origin === "open_job" ? "YOUR MOVE" : null)}
+          chip={briefing?.stateChip ?? attentionChip ?? (item.origin === "open_job" ? "YOUR MOVE" : null)}
         />
         {item.cosBriefing && briefing ? (
           <CosBriefingBlock briefing={item.cosBriefing} />
@@ -130,7 +160,9 @@ function DocketItem({
         {packet ? (
           <CosAskConcierge packet={packet} cosBriefing={item.cosBriefing ?? null} askAction={askAction} />
         ) : null}
-        <CosDocketActions item={item} disposeAction={disposeAction} />
+        {item.job?.attentionMode === "watching"
+          ? <WatchingDispositionActions item={item} action={disposeAction} />
+          : <CosDocketActions item={item} disposeAction={disposeAction} />}
         {item.decision ? (
           <CosFounderAttentionControls
             item={item.decision}
@@ -295,7 +327,7 @@ export function ChiefOfStaffToday({
           ) : null}
         </div>
       ) : null}
-      <CosWatchingList watching={docket.watching} askAction={askAction} />
+      <CosWatchingList watching={docket.watching} askAction={askAction} disposeAction={disposeAction} />
     </section>
   );
 }

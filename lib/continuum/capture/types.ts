@@ -22,12 +22,13 @@ export type CaptureEntityResolution =
   | { status: "unresolved"; mention: string };
 
 export type CaptureScheduledTiming =
-  | { kind: "date-only"; originalWording: string; date: DateOnly }
-  | { kind: "exact-instant"; originalWording: string; instantAt: string; timezone: string };
+  | { kind: "date-only"; originalWording: string; date: DateOnly; timezone?: string; referenceInstant?: string }
+  | { kind: "exact-instant"; originalWording: string; instantAt: string; timezone: string; referenceInstant?: string };
 /** Instants require an explicit offset. Never copy instantAt into job dueAt. */
 export type CaptureTiming = CaptureScheduledTiming
   | { kind: "unspecified"; originalWording: string }
-  | { kind: "checkpoint"; originalWording: string; condition: string; checkAt?: CaptureScheduledTiming };
+  | { kind: "checkpoint"; originalWording: string; condition: string; checkAt?: CaptureScheduledTiming;
+      timezone?: string; referenceInstant?: string };
 
 export type CaptureProposedItem = {
   itemId: string;

@@ -7,6 +7,7 @@ import {
   type CaptureProposal,
   type CaptureProposedItem,
   type CaptureRequest,
+  type CaptureTiming,
 } from "./types";
 import { isCaptureProposal, isCaptureRequest } from "./validate";
 
@@ -32,7 +33,8 @@ export async function interpretCapture(
     if (!isCaptureProposal(parsed) || parsed.captureId !== request.captureId) {
       return fallbackProposal(request, "Interpretation needs review.");
     }
-    const resolved = await resolveProposal(deps.world, parsed, request.context);
+    const reviewed = applyCaptureSafety(parsed, request);
+    const resolved = await resolveProposal(deps.world, reviewed, request.context);
     return isCaptureProposal(resolved)
       ? resolved
       : fallbackProposal(request, "Resolved entities need review.");
@@ -46,16 +48,71 @@ function interpretationPrompt(request: CaptureRequest): string {
     "Convert the founder input into one or more independent capture proposals.",
     "Return JSON only, matching the CaptureProposal contract.",
     'Shape: {version:1,captureId:string,canonical:false,items:[{itemId:string,kind:"action"|"reminder"|"watching"|"note",sourceExcerpt:string,title:string,content:string,confidence:number,entityResolution?:{status:"unresolved",mention:string},timing?:Timing,clarification?:{question:string}}]}.',
-    'Timing is {kind:"date-only",originalWording:string,date:"YYYY-MM-DD"} or {kind:"exact-instant",originalWording:string,instantAt:ISO timestamp with offset,timezone:IANA timezone} or {kind:"checkpoint",originalWording:string,condition:string,checkAt?:date-only or exact-instant timing} or {kind:"unspecified",originalWording:string}.',
+    'Timing is {kind:"date-only",originalWording:string,date:"YYYY-MM-DD",timezone?:IANA timezone,referenceInstant?:ISO timestamp with offset} or {kind:"exact-instant",originalWording:string,instantAt:ISO timestamp with offset,timezone:IANA timezone,referenceInstant?:ISO timestamp with offset} or {kind:"checkpoint",originalWording:string,condition:string,checkAt?:date-only or exact-instant timing,timezone?:IANA timezone,referenceInstant?:ISO timestamp with offset} or {kind:"unspecified",originalWording:string}.',
     "Use unique itemIds containing only letters, digits, underscores or hyphens (maximum 128 characters), titles at most 160 characters, nonempty sourceExcerpt/content, confidence from 0 to 1. Omit absent optional fields; do not use null or extra keys. At most 100 items.",
     `Set version=${CAPTURE_CONTRACT_VERSION}, captureId=${request.captureId}, canonical=false.`,
     "Kinds: action, reminder, watching, note. Split distinct asks into distinct items.",
+    "Use reminder only when the founder explicitly asks to be reminded. Use watching only for an explicit dependency to observe. Ordinary dated work remains an action.",
+    "A reminder needs a date or exact instant. A vague daypart such as morning needs clarification unless an exact time is stated.",
+    "Watching uses checkpoint timing. Keep the condition epistemically neutral: absence of observed evidence is not proof that someone has not responded.",
     "Never claim an identity match. Put named entities in entityResolution as unresolved.",
     "For both kinds use mention 'person: NAME | project: PROJECT'.",
     "Use date-only only for dates without a time; exact-instant for a stated time; checkpoint for conditional watching.",
     "Never convert an exact time into a date-only value.",
     `Reference time: ${request.referenceTime}. Timezone: ${request.timezone}.`,
   ].join("\n");
+}
+
+function applyCaptureSafety(proposal: CaptureProposal, request: CaptureRequest): CaptureProposal {
+  return {
+    ...proposal,
+    items: proposal.items.map((item) => {
+      const source = item.sourceExcerpt || request.text;
+      const explicitKind = /\bremind\s+me\b/i.test(source)
+        ? "reminder" as const
+        : /^(?:please\s+)?watch\b|\bwatch\s+for\b/i.test(source.trim())
+          ? "watching" as const
+          : item.kind;
+      const timing = withTrustedTimingContext(item.timing, request);
+      let clarification = item.clarification;
+      if (explicitKind === "reminder") {
+        if (!timing || timing.kind === "unspecified" || timing.kind === "checkpoint") {
+          clarification = { question: "When should Continuum remind you?" };
+        } else if (/\b(?:morning|afternoon|evening|tonight)\b/i.test(timing.originalWording) && timing.kind !== "exact-instant") {
+          clarification = { question: `What exact time did you mean by “${timing.originalWording}”?` };
+        }
+      }
+      if (explicitKind === "watching" && timing?.kind !== "checkpoint") {
+        clarification = { question: "What condition should Continuum watch for?" };
+      }
+      return { ...item, kind: explicitKind, ...(timing ? { timing } : {}), ...(clarification ? { clarification } : {}) };
+    }),
+  };
+}
+
+function withTrustedTimingContext(timing: CaptureTiming | undefined, request: CaptureRequest): CaptureTiming | undefined {
+  if (!timing) return undefined;
+  if (timing.kind === "unspecified") return timing;
+  if (timing.kind === "checkpoint") {
+    return {
+      ...timing,
+      timezone: timing.timezone ?? request.timezone,
+      referenceInstant: request.referenceTime,
+      checkAt: timing.checkAt ? withTrustedScheduledContext(timing.checkAt, request) : undefined,
+    };
+  }
+  return withTrustedScheduledContext(timing, request);
+}
+
+function withTrustedScheduledContext(
+  timing: Exclude<CaptureTiming, { kind: "unspecified" | "checkpoint" }>,
+  request: CaptureRequest,
+) {
+  return {
+    ...timing,
+    timezone: timing.timezone ?? request.timezone,
+    referenceInstant: request.referenceTime,
+  };
 }
 
 function parseJson(text: string): unknown {

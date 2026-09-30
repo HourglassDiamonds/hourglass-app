@@ -52,6 +52,8 @@ export const COS_FOUNDER_VERBS = [
   "snooze",
   "dismiss",
   "disregard",
+  "still_waiting",
+  "stop_watching",
 ] as const;
 
 export type CosFounderVerb = (typeof COS_FOUNDER_VERBS)[number];

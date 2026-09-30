@@ -35,6 +35,7 @@ import {
 } from "./present";
 import type { ActionableRanker, CosOperatingLoopView, CosProjectContext } from "./types";
 import { COS_OPERATING_LOOP_CONTRACT_VERSION, COS_TOP_5_LIMIT } from "./types";
+import { presentAttentionJobs } from "./attention-presentation";
 
 function lifecycleByProjectFrom(
   projects: ReadonlyMap<string, CosProjectContext>,
@@ -278,6 +279,16 @@ export function composeCosOperatingLoop(
     evidenceTexts: input.evidenceTexts,
     knownPeople: input.knownPeople,
   });
+  const projections = [...moderated.brief, ...moderated.watching]
+    .map((item) => item.briefingPacket?.projection)
+    .filter((projection): projection is NonNullable<typeof projection> => Boolean(projection));
+  const attentionItems = presentAttentionJobs({
+    jobs: input.jobs,
+    projects,
+    nowIso: input.nowIso,
+    projections,
+    newMutationId,
+  });
 
   if (top.length === 0) {
     return {
@@ -298,6 +309,7 @@ export function composeCosOperatingLoop(
       masterSprint,
       lifecycleByProject,
       ...liveTruth,
+      attentionItems,
     };
   }
 
@@ -319,6 +331,7 @@ export function composeCosOperatingLoop(
     masterSprint,
     lifecycleByProject,
     ...liveTruth,
+    attentionItems,
   };
 }
 
