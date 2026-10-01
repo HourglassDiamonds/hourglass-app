@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import GlobalPressureMeter from "./components/global-pressure-meter";
+import { BufferHealthVisual } from "./components/buffer-health-view";
 import LedgerIndexesSection from "./components/ledger-indexes-section";
 import LedgerShell from "./components/ledger-shell";
 import SystemTemperature from "./components/system-temperature";
@@ -93,6 +94,12 @@ export default function LedgerPage() {
       </section>
 
       <SystemTemperature />
+
+      <section className="border-b border-[#e4dbcf] py-16 md:py-20">
+        <div className="mx-auto max-w-[920px]">
+          <BufferHealthVisual compact />
+        </div>
+      </section>
 
       <LedgerIndexesSection />
 

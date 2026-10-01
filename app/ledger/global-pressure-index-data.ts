@@ -108,6 +108,7 @@ export function computeGpiReading(
 }
 
 export const GPI_WEIGHTED_TOTAL = computeGpiWeightedTotal();
+/** @deprecated Archived numerical reading; never import into public monitor views. */
 export const GPI_COMPUTED_READING = computeGpiReading();
 
 export const GPI_CALCULATION_ROWS = GPI_CATEGORIES.map((category) => ({

@@ -7,8 +7,8 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
 export const ISI_UPDATED_LABEL = "";
@@ -129,6 +129,7 @@ export const ISI_WHAT_WOULD_EASE = [
   },
 ] as const;
 
+/** @deprecated Archived numerical calculation rows; not public monitor data. */
 export const ISI_CALCULATION_ROWS = [
   {
     category: "Grid & Transmission",
@@ -213,9 +214,11 @@ export const ISI_FOOTER_NOTE =
   "The Infrastructure Strain Monitor is an editorial framework. It tracks physical-system constraints — whether growth is supported by available capacity, slowed by bottlenecks, or operating with narrowing flexibility beneath still-functioning systems.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const ISI_SERIES: LedgerMonitorSeries = {
+export const ISI_SERIES = defineLedgerMonitorSeries({
   id: "infrastructure-strain",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Tracks physical constraints across power, transmission, data centers, cooling, transport, labor, and large-load interconnection.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -396,6 +399,6 @@ export const ISI_SERIES: LedgerMonitorSeries = {
       ],
     },
   ],
-};
+});
 
 export const ISI_SNAPSHOT = latestSnapshot(ISI_SERIES);

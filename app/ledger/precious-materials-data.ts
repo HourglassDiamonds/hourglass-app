@@ -7,12 +7,13 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
 export const PMI_UPDATED_LABEL = "";
 
+/** @deprecated Archived numerical artifact; never render on public monitor surfaces. */
 export const PMI_MARKET_PRESSURE = {
   score: 85,
   status: "Strategically Firm",
@@ -27,6 +28,14 @@ export const PMI_METALS_PRESSURE = [
   { metal: "Silver Pressure", score: 78, state: "Elevated" },
   { metal: "Platinum / Palladium", score: 72, state: "Firm" },
 ] as const;
+
+export const PMI_SILVER_UPDATE = {
+  status: "Not updated this cycle",
+  lastUpdated: LEDGER_EVIDENCE_CUTOFF,
+  sources: [],
+  rationale:
+    "No dated, source-aware silver print is present in the repository evidence for this review cycle. No price or reserve condition is inferred.",
+} as const;
 
 export const PMI_DIAMOND_SPLIT = [
   { segment: "Premium Natural", score: 78, note: "Selectively firm in key sizes" },
@@ -71,6 +80,7 @@ export const PMI_WHAT_TO_WATCH = [
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
 ] as const;
 
+/** @deprecated Archived numerical calculation rows; not public monitor data. */
 export const PMI_CALCULATION_ROWS = [
   { component: "Metals complex", weight: "30%", note: "Gold, silver, platinum, palladium" },
   { component: "Diamond market stress", weight: "35%", note: "Natural, lab-grown, segmented demand" },
@@ -85,9 +95,11 @@ export const PMI_FOOTER_METHOD_NOTE =
   "The Precious Materials Monitor is a qualitative editorial framework for fine jewelry sourcing orientation — not commodity speculation.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const PMI_SERIES: LedgerMonitorSeries = {
+export const PMI_SERIES = defineLedgerMonitorSeries({
   id: "precious-materials",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Tracks qualitative material conditions across precious metals, natural and lab-grown diamonds, jewelry demand, and sourcing constraints.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -253,6 +265,6 @@ export const PMI_SERIES: LedgerMonitorSeries = {
       ],
     },
   ],
-};
+});
 
 export const PMI_SNAPSHOT = latestSnapshot(PMI_SERIES);

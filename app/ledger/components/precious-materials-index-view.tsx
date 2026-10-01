@@ -7,6 +7,7 @@ import {
   PMI_CROSS_SYSTEM_PRESSURE,
   PMI_FOOTER_METHOD_NOTE,
   PMI_SNAPSHOT,
+  PMI_SILVER_UPDATE,
   PMI_SOURCES_NOTE,
   PMI_WHAT_MOVED,
   PMI_WHAT_TO_WATCH,
@@ -33,8 +34,8 @@ const MATERIAL_STATES = [
   },
   {
     name: "Silver",
-    level: "Elevated",
-    body: "Elevated pressure continues beside gold, with industrial and monetary demand keeping conditions firm rather than soft.",
+    level: PMI_SILVER_UPDATE.status,
+    body: PMI_SILVER_UPDATE.rationale,
   },
   {
     name: "Platinum / Palladium",

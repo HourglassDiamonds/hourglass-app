@@ -7,8 +7,8 @@ import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
   LEDGER_METHOD_NOTICE,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
 export const GPM_DISPLAY_TITLE = "Global Pressure Monitor";
@@ -94,9 +94,11 @@ export const GPM_WATCHING_BLOCKS = [
 ] as const;
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const GPM_SERIES: LedgerMonitorSeries = {
+export const GPM_SERIES = defineLedgerMonitorSeries({
   id: "global-pressure",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Tracks external threat pressure and the degree to which it transmits into energy, finance, supply, and normal system function.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -348,6 +350,6 @@ export const GPM_SERIES: LedgerMonitorSeries = {
       ],
     },
   ],
-};
+});
 
 export const GPM_SNAPSHOT = latestSnapshot(GPM_SERIES);

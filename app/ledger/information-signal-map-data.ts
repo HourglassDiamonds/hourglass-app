@@ -8,8 +8,8 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
 export const ISM_UPDATED_LABEL = "";
@@ -132,9 +132,11 @@ export const ISM_HUB_DESCRIPTION =
   "High-attention / Physical evidence converging — $100+ oil, disruption of Saudi Arabia’s principal Hormuz-bypass route, and a 10-year that crossed 5% are cross-confirmed, while duration and policy path remain uncertain.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const ISM_SERIES: LedgerMonitorSeries = {
+export const ISM_SERIES = defineLedgerMonitorSeries({
   id: "information-signal-map",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Maps narrative convergence, divergence, and evidence quality across institutional, market, infrastructure, and mainstream information layers.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -324,6 +326,6 @@ export const ISM_SERIES: LedgerMonitorSeries = {
       ],
     },
   ],
-};
+});
 
 export const ISM_SNAPSHOT = latestSnapshot(ISM_SERIES);

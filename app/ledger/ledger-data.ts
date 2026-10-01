@@ -9,26 +9,7 @@
  * only composite numerical reading.
  */
 
-import {
-  GPI_CALIBRATION_NOTE,
-  GPI_COMPUTED_READING,
-  GPI_METHODOLOGY_SHORT,
-} from "./global-pressure-index-data";
 import { LEDGER_EVIDENCE_CUTOFF_LABEL } from "./ledger-monitor-framework";
-
-export {
-  GPI_CALCULATION_ROWS,
-  GPI_CALCULATION_TOTAL,
-  GPI_CALIBRATION_NOTE,
-  GPI_CATEGORIES,
-  GPI_COMPUTED_READING,
-  GPI_METHODOLOGY_PRINCIPLES,
-  GPI_METHODOLOGY_SHORT,
-  GPI_RECALIBRATION_DATE,
-  GPI_WEIGHTED_TOTAL,
-  computeGpiReading,
-  computeGpiWeightedTotal,
-} from "./global-pressure-index-data";
 
 export type LedgerIndexId =
   | "global-pressure"
@@ -36,6 +17,7 @@ export type LedgerIndexId =
   | "ai-capability"
   | "precious-materials"
   | "infrastructure-strain"
+  | "buffer-health"
   | "global-water-stress";
 
 export type RecentReading = {
@@ -134,6 +116,9 @@ const SCALE_GRADIENT_INFRASTRUCTURE =
 const SCALE_GRADIENT_WATER =
   "linear-gradient(90deg, #8aa0b0 0%, #a8b4a8 30%, #c4b896 55%, #b08a6a 75%, #7a5a48 100%)";
 
+const SCALE_GRADIENT_BUFFER =
+  "linear-gradient(90deg, #d9d2c8 0%, #b8b1a7 45%, #7d8f8a 100%)";
+
 export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
   {
     id: "global-pressure",
@@ -149,9 +134,10 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     intro:
       "A qualitative monitor of external threat pressure and systemic transmission. This page does not publish a numerical index.",
     updatedLabel: "",
-    // Archived numerical series — still derived for rebuild work; not rendered publicly.
-    reading: GPI_COMPUTED_READING,
-    readingLabel: "Pressure Reading",
+    // Compatibility-only fields for the legacy index shape. Archived numerical
+    // GPI data lives only in global-pressure-index-data.ts and archived views.
+    reading: 0,
+    readingLabel: "No public numerical reading",
     status: "Very high external pressure / Broader energy transmission",
     weeklyDelta: 0,
     weeklyDeltaLabel: "Qualitative monitor",
@@ -184,27 +170,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
         value: "Functioning credit markets; no confirmed systemic financial event",
       },
     ],
-    // Preserved for archived numerical meter — not rendered on the public monitor.
-    recentReadings: [
-      {
-        week: "This Week",
-        degrees: GPI_COMPUTED_READING,
-        state: "High Heat",
-        annotation: "Methodology recalibrated",
-      },
-      { week: "Last Week", degrees: 93, state: "Elevated" },
-      { week: "2 Weeks Ago", degrees: 91, state: "Elevated" },
-      { week: "3 Weeks Ago", degrees: 91, state: "Elevated" },
-    ],
-    benchmarks: [
-      { name: "Stable Expansion", score: 50, note: "Low pressure", tier: "quiet" },
-      { name: "Eurozone Debt Crisis", score: 70, note: "2011–12", tier: "mid" },
-      { name: "Cold War Peaks", score: 82, note: "Proxy heat", tier: "mid" },
-      { name: "Covid Shock", score: 91, note: "2020", tier: "high" },
-      { name: "2008 Collapse", score: 96, note: "Credit seizure", tier: "high" },
-    ],
-    calibrationNote: GPI_CALIBRATION_NOTE,
-    methodologyReference: GPI_METHODOLOGY_SHORT,
+    recentReadings: [],
     seriesAnnotation:
       "Earlier numerical GPI readings are archived and should not be interpreted as comparable to System Temperature. This page publishes qualitative status only.",
     watchingSectionTitle: "What We're Watching",
@@ -479,6 +445,47 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     watchingSectionTitle: "What We're Watching",
   },
   {
+    id: "buffer-health",
+    slug: "buffer-health",
+    seoTitle: "Buffer Health / Remaining Slack",
+    seoDescription:
+      "Hourglass Ledger Buffer Health — qualitative remaining slack across households, labor, food, energy, grid, and the financial system.",
+    displayTitle: "Buffer Health / Remaining Slack",
+    subnavLabel: "Buffer Health",
+    hubDescription:
+      "How much capacity remains to absorb additional pressure. Energy is Low; households, food, and grid are Thinning; labor and the financial system are Healthy.",
+    kicker: "The Ledger Intelligence System",
+    intro:
+      "A qualitative framework for remaining system slack. It can inform a future functioning review but cannot add System Temperature degrees.",
+    updatedLabel: "",
+    // Compatibility-only fields for the legacy index shape. Public Buffer Health
+    // surfaces never render or convert these values into a numerical reading.
+    reading: 0,
+    readingLabel: "No numerical reading",
+    status: "Uneven and thinning; energy buffers low",
+    weeklyDelta: 0,
+    scaleLabels: ["Critical", "Low", "Thinning", "Healthy", "Full"],
+    scaleGradient: SCALE_GRADIENT_BUFFER,
+    summary:
+      "Systems remain functional, but reserve capacity is uneven and thinning; energy buffers are low.",
+    summaryCompact: "Uneven and thinning reserve capacity; energy buffers Low.",
+    weeklyNote:
+      "October 1 evidence establishes six qualitative domain states. Buffer Health remains independent from the 74° System Temperature reading.",
+    weeklyNoteCompact: "Six sourced reserve states; no temperature-degree effect.",
+    methodPills: [
+      { label: "Monitor Type", value: "Qualitative remaining-slack framework" },
+      { label: "Temperature Weight", value: "None" },
+      { label: "Current Direction", value: "Uneven and thinning" },
+    ],
+    recentReadings: [],
+    editorialBlocks: [
+      {
+        title: "Functioning review only",
+        body: "Buffer evidence may inform a future editorial review of Systems Functioning; it does not mechanically change degrees.",
+      },
+    ],
+  },
+  {
     id: "global-water-stress",
     slug: "global-water-stress",
     seoTitle: "Global Water Stress Monitor",
@@ -546,8 +553,6 @@ export function getLedgerIndexBySlug(slug: string): LedgerIndexDefinition | unde
 
 export const LEDGER_HUB_INDEXES = LEDGER_INDEXES;
 
-/** @deprecated Use ledger-data — re-exports for gradual migration */
-export const GLOBAL_PRESSURE_INDEX = getLedgerIndex("global-pressure").reading;
 export const PRESSURE_STATUS = getLedgerIndex("global-pressure").status;
 export const WEEKLY_DELTA = getLedgerIndex("global-pressure").weeklyDelta;
 export const GPI_UPDATED_LABEL = getLedgerIndex("global-pressure").updatedLabel;
@@ -558,8 +563,6 @@ export const GPI_SUMMARY_COMPACT = getLedgerIndex("global-pressure").summaryComp
 export const GPI_WEEKLY_NOTE_BODY = getLedgerIndex("global-pressure").weeklyNote;
 export const GPI_INTRO = getLedgerIndex("global-pressure").intro;
 export const GPI_METHOD_PILLS = getLedgerIndex("global-pressure").methodPills;
-export const GPI_RECENT_READINGS = getLedgerIndex("global-pressure").recentReadings;
-export const GPI_BENCHMARKS = getLedgerIndex("global-pressure").benchmarks ?? [];
 
 export const QUIET_METRICS = [
   {

@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, it } from "node:test";
-import { fileURLToPath } from "node:url";
 import {
   bandForDegrees,
   channelContribution,
@@ -11,6 +10,7 @@ import {
   PRESSURE_MIDPOINTS,
   publishTemperatureReading,
   SYSTEM_TEMPERATURE_READING,
+  SYSTEM_TEMPERATURE_METHODOLOGY_SHORT,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
@@ -33,8 +33,7 @@ import {
 } from "./fixtures";
 import type { ChannelAssessment, SystemTemperatureSnapshot } from "./types";
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const ledgerRoot = path.resolve(here, "..");
+const ledgerRoot = path.resolve(process.cwd(), "app", "ledger");
 
 function readLedger(rel: string): string {
   return readFileSync(path.join(ledgerRoot, rel), "utf8");
@@ -484,6 +483,7 @@ describe("August 24, 2026 snapshot (history unchanged)", () => {
   it("does not let Information Signal or Water change degrees", () => {
     assert.ok(!("information-signal" in TEMPERATURE_CHANNEL_WEIGHTS));
     assert.ok(!("global-water-stress" in TEMPERATURE_CHANNEL_WEIGHTS));
+    assert.ok(!("buffer-health" in TEMPERATURE_CHANNEL_WEIGHTS));
     const channelIds = SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24.channels.map(
       (channel) => String(channel.id),
     );
@@ -498,6 +498,52 @@ describe("August 24, 2026 snapshot (history unchanged)", () => {
     assert.equal(financial?.pressure, "high");
     assert.equal(materials?.pressure, "elevated");
     assert.equal(materials?.transmission, "contained");
+  });
+
+  it("keeps historical readings 66, 69, 70, and 74 unchanged", () => {
+    assert.deepEqual(
+      SYSTEM_TEMPERATURE_SNAPSHOTS.map((snapshot) =>
+        computeTemperatureDegrees(snapshot),
+      ),
+      [66, 69, 70, 74],
+    );
+  });
+
+  it("allows functioningLabel to change without changing degrees", () => {
+    const changed = {
+      ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+      functioningLabel: "Functioning label under editorial review",
+    };
+    assert.equal(
+      computeTemperatureDegrees(changed),
+      computeTemperatureDegrees(SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16),
+    );
+  });
+
+  it("does not rewrite functioningLabel when degrees change", () => {
+    const changed = {
+      ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+      editorialOverrideDegrees: {
+        degrees: 75,
+        reason: "Test fixture proving label and degree independence",
+      },
+    };
+    const reading = publishTemperatureReading(changed, { previousDegrees: 74 });
+    assert.notEqual(reading.degrees, 74);
+    assert.equal(reading.functioningLabel, "Systems Functioning");
+  });
+
+  it("caps rising financial pressure while transmission remains partial", () => {
+    assert.equal(
+      channelContribution({
+        id: "financial-economic",
+        pressure: "critical",
+        transmission: "partial",
+        transmissionExplanation: "Test fixture",
+        coolingNotes: "Test fixture",
+      }),
+      TRANSMISSION_CAPS.partial,
+    );
   });
 });
 
@@ -575,6 +621,7 @@ describe("September 16, 2026 published reading", () => {
     );
     assert.equal(channelIds.includes("information-signal"), false);
     assert.equal(channelIds.includes("global-water-stress"), false);
+    assert.match(SYSTEM_TEMPERATURE_METHODOLOGY_SHORT, /Information Signal sets confidence only/);
   });
 
   it("appends after August 12 / 18 / 24 and does not invent a September 2 reading", () => {
@@ -612,6 +659,7 @@ describe("Public route wiring", () => {
       "precious-materials-index/page.tsx",
       "infrastructure-strain-index/page.tsx",
       "global-water-stress/page.tsx",
+      "buffer-health/page.tsx",
     ];
     for (const route of routes) {
       const source = readLedger(route);
@@ -626,6 +674,34 @@ describe("Public route wiring", () => {
     const pageContent = readLedger("components/ledger-index-page.tsx");
     assert.doesNotMatch(pageContent, /import LedgerIndexMeter/);
     assert.match(pageContent, /no longer renders numerical meters/);
+  });
+
+  it("keeps archived numerical artifacts out of public routes and views", () => {
+    const files = [
+      "page.tsx",
+      "components/global-pressure-monitor.tsx",
+      "components/information-signal-map-view.tsx",
+      "components/precious-materials-index-view.tsx",
+      "components/infrastructure-strain-index-view.tsx",
+      "components/ai-capability-acceleration-index-view.tsx",
+      "components/global-water-stress-view.tsx",
+      "components/buffer-health-view.tsx",
+      "global-pressure-index/page.tsx",
+      "information-signal-map/page.tsx",
+      "precious-materials-index/page.tsx",
+      "infrastructure-strain-index/page.tsx",
+      "ai-capability-acceleration-index/page.tsx",
+      "global-water-stress/page.tsx",
+      "buffer-health/page.tsx",
+    ];
+    for (const file of files) {
+      const source = readLedger(file);
+      assert.doesNotMatch(
+        source,
+        /GPI_COMPUTED_READING|ISI_CALCULATION_ROWS|PMI_MARKET_PRESSURE/,
+        file,
+      );
+    }
   });
 });
 

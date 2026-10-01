@@ -7,8 +7,8 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
@@ -212,6 +212,7 @@ export const ACAI_ABOVE_85 = [
   },
 ] as const;
 
+/** @deprecated Archived numerical calculation rows; not public monitor data. */
 export const ACAI_CALCULATION_ROWS = [
   {
     category: "Frontier Models",
@@ -370,9 +371,11 @@ export const ACAI_SECTION_SUBTITLES = {
 } as const;
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const ACAI_SERIES: LedgerMonitorSeries = {
+export const ACAI_SERIES = defineLedgerMonitorSeries({
   id: "ai-capability",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Tracks AI capability, deployment, security gating, and the physical infrastructure constraints that shape operational adoption.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -560,6 +563,6 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
       ],
     },
   ],
-};
+});
 
 export const ACAI_SNAPSHOT = latestSnapshot(ACAI_SERIES);

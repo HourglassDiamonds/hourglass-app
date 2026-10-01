@@ -6,6 +6,7 @@ const HUB_METHOD_NOTICE =
 
 function hubCardKind(id: string): string {
   if (id === "information-signal") return "Map";
+  if (id === "buffer-health") return "Framework";
   return "Monitor";
 }
 
@@ -31,9 +32,10 @@ export default function LedgerIndexesSection() {
           The Ledger monitoring system
         </h2>
         <p className="mt-4 max-w-[36rem] text-[0.95rem] leading-[1.85] text-[#6f6760]">
-          Six Ledger surfaces — clarifying pressure, narrative, capability,
-          material conditions, physical infrastructure, and water through qualitative
-          states, direction, documented evidence, and defined change triggers.
+          Seven Ledger surfaces — clarifying pressure, narrative, capability,
+          material conditions, physical infrastructure, remaining slack, and water
+          through qualitative states, direction, documented evidence, and defined
+          change triggers.
         </p>
         <p className="ledger-hub-method-notice" role="note">
           {HUB_METHOD_NOTICE}

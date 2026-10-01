@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   GPI_CATEGORIES,
   GPI_COMPUTED_READING,
@@ -35,9 +37,9 @@ describe("Global Pressure Index weighted reading (archived numerical series)", (
     assert.equal(GPI_COMPUTED_READING, 84);
   });
 
-  it("preserves archived numerical fields without publishing them as the public title", () => {
+  it("quarantines archived numerical fields from public index data", () => {
     const gpi = getLedgerIndex("global-pressure");
-    assert.equal(gpi.reading, GPI_COMPUTED_READING);
+    assert.equal(gpi.reading, 0);
     assert.equal(gpi.displayTitle, GPM_DISPLAY_TITLE);
     assert.equal(
       gpi.status,
@@ -46,8 +48,16 @@ describe("Global Pressure Index weighted reading (archived numerical series)", (
     assert.equal(gpi.updatedLabel, "");
     assert.doesNotMatch(gpi.updatedLabel, /updated weekly/i);
     assert.doesNotMatch(gpi.seoDescription, /84°/);
-    assert.equal(gpi.recentReadings[0]?.degrees, 84);
-    assert.equal(gpi.recentReadings[1]?.degrees, 93);
+    assert.deepEqual(gpi.recentReadings, []);
+    const publicData = readFileSync(
+      path.resolve(process.cwd(), "app", "ledger", "ledger-data.ts"),
+      "utf8",
+    );
+    assert.doesNotMatch(publicData, /GPI_COMPUTED_READING/);
+    assert.doesNotMatch(
+      publicData,
+      /from\s+["']\.\/global-pressure-index-data["']/,
+    );
   });
 });
 

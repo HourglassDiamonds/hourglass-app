@@ -8,8 +8,8 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
 
 export const GWS_DISPLAY_TITLE = "Global Water Stress Monitor";
@@ -133,9 +133,11 @@ export const GWS_FOOTER_NOTE =
   "The Global Water Stress Monitor is a qualitative evidence layer and does not publish a degree score. Physical effects on power and freight appear on the Infrastructure monitor; security implications appear only where they are independently warranted.";
 
 /** Append-only public series. This is the first published snapshot. */
-export const GWS_SERIES: LedgerMonitorSeries = {
+export const GWS_SERIES = defineLedgerMonitorSeries({
   id: "global-water-stress",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Tracks water stress as a qualitative physical evidence layer, including transmission into power, freight, food, municipal supply, and security.",
   snapshots: [
     {
       reviewDate: "August 18, 2026",
@@ -301,6 +303,6 @@ export const GWS_SERIES: LedgerMonitorSeries = {
       ],
     },
   ],
-};
+});
 
 export const GWS_SNAPSHOT = latestSnapshot(GWS_SERIES);
