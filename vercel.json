@@ -5,6 +5,10 @@
       "schedule": "0 13 * * 1"
     },
     {
+      "path": "/api/cron/review-velocity",
+      "schedule": "30 13 * * 1"
+    },
+    {
       "path": "/api/cron/shape-studio-capture-cleanup",
       "schedule": "15 4 * * *"
     },

@@ -29,6 +29,9 @@ export {
   CONCIERGE_REPAIRS_PATH,
 };
 
+export const CONCIERGE_LOCAL_AUTHORITY_PATH =
+  "/executive-dashboard/concierge/local-authority";
+
 export const OPERATING_DESTINATION_IDS = [
   "today",
   "projects",
@@ -60,6 +63,11 @@ export type OperatingToolLink = {
 };
 
 export const OPERATING_TOOL_LINKS: readonly OperatingToolLink[] = [
+  {
+    id: "local-authority",
+    label: "Local Authority",
+    href: CONCIERGE_LOCAL_AUTHORITY_PATH,
+  },
   { id: "gmail", label: "Gmail", href: CONCIERGE_GMAIL_PATH },
   { id: "inbox", label: "Inbox", href: conciergeInboxPath() },
   { id: "calendar", label: "Calendar", href: CONCIERGE_CALENDAR_PATH },

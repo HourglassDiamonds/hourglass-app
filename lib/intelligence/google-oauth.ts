@@ -41,10 +41,16 @@ const ANALYTICS_READONLY_SCOPE =
 export const GSC_READONLY_SCOPE =
   "https://www.googleapis.com/auth/webmasters.readonly";
 
-/** Intelligence OAuth scopes — GA4 + Search Console weekly ingest. */
+// Google exposes no narrower read-only GBP review scope. Application code uses
+// business.manage only for accounts.locations.reviews.list and performs no writes.
+export const GBP_BUSINESS_MANAGE_SCOPE =
+  "https://www.googleapis.com/auth/business.manage";
+
+/** Intelligence OAuth scopes — existing GA4/GSC reads plus GBP review reads. */
 export const INTELLIGENCE_OAUTH_SCOPES = [
   ANALYTICS_READONLY_SCOPE,
   GSC_READONLY_SCOPE,
+  GBP_BUSINESS_MANAGE_SCOPE,
 ] as const;
 
 let authClient: OAuth2Client | null = null;

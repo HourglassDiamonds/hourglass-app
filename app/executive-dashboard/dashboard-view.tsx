@@ -1,9 +1,14 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import Header from "../shared-components/Header";
 import type {
   ExecutiveDashboardData,
   MetricField,
 } from "@/lib/intelligence/dashboard-data";
+import type {
+  ReviewAuthorityData,
+  ReviewWindow,
+} from "@/lib/intelligence/review-velocity/types";
 
 const SURFACE_BORDER = "border-[#e4dbcf]/62";
 const SURFACE_BG = "bg-white/32";
@@ -134,18 +139,20 @@ function WeeklySignalPanel({
 }
 
 function SectionPanel({
+  id,
   eyebrow,
   title,
   note,
   children,
 }: {
+  id?: string;
   eyebrow: string;
   title: string;
   note?: string;
   children: ReactNode;
 }) {
   return (
-    <section className="border-t border-[#e4dbcf]/55 pt-20 md:pt-24 lg:pt-28">
+    <section id={id} className="scroll-mt-8 border-t border-[#e4dbcf]/55 pt-20 md:pt-24 lg:pt-28">
       <p className="text-[10px] uppercase tracking-[0.36em] text-[#8a8176]">
         {eyebrow}
       </p>
@@ -223,6 +230,63 @@ function InsightBlock({
   );
 }
 
+function formatUnavailableReason(window: ReviewWindow): string {
+  const match = window.unavailableReason?.match(/^Snapshots since (\d{4}-\d{2}-\d{2})$/);
+  if (match) {
+    return `Snapshots since ${new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      year: "numeric",
+      timeZone: "UTC",
+    }).format(new Date(`${match[1]}T00:00:00Z`))}`;
+  }
+  return "Unavailable";
+}
+
+export function reviewWindowLabel(window: ReviewWindow): string {
+  return window.reviewsAdded == null
+    ? formatUnavailableReason(window)
+    : `+${window.reviewsAdded}`;
+}
+
+export function ReviewAuthoritySummary({ data }: { data: ReviewAuthorityData }) {
+  const hourglass = data.rows.find((row) => row.role === "self");
+  const competitors = data.rows.filter((row) => row.role === "competitor");
+  return (
+    <div className="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+      <div className={`rounded-sm border ${SURFACE_BORDER} ${SURFACE_BG} px-6 py-6`}>
+        <p className={`text-[9.5px] uppercase tracking-[0.3em] ${MUTED_LABEL}`}>
+          Hourglass Diamonds reviews
+        </p>
+        <p className="mt-4 font-serif text-[1.5rem] text-[#1f1c19]">
+          {hourglass?.rating == null
+            ? "Unavailable"
+            : `${hourglass.rating.toFixed(1)} · ${hourglass.totalReviews ?? "—"} reviews`}
+        </p>
+        <p className={`mt-3 text-[11.5px] leading-[1.6] ${MUTED_TREND}`}>
+          {hourglass
+            ? `${reviewWindowLabel(hourglass.windows[3])} over 3 months · ${hourglass.pace}`
+            : "No review evidence loaded"}
+        </p>
+      </div>
+      <div className={`rounded-sm border ${SURFACE_BORDER} ${SURFACE_BG} px-6 py-4`}>
+        <p className={`border-b border-[#ebe5dc]/65 py-3 text-[9.5px] uppercase tracking-[0.3em] ${MUTED_LABEL}`}>
+          Tracked competitors · 3m
+        </p>
+        <ul>
+          {competitors.map((row) => (
+            <li key={row.placeId} className="flex items-center justify-between gap-5 border-b border-[#ebe5dc]/65 py-3 last:border-b-0">
+              <span className="text-[0.86rem] text-[#2a2620]">{row.business}</span>
+              <span className={`text-right text-[0.76rem] ${MUTED_TREND}`}>
+                {reviewWindowLabel(row.windows[3])}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   data: ExecutiveDashboardData;
   isLive: boolean;
@@ -265,6 +329,7 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
 
         <div className="mt-24 space-y-24 md:mt-28 md:space-y-28 lg:mt-32 lg:space-y-32">
           <SectionPanel
+            id="search-authority"
             eyebrow="Search"
             title="Search + Authority Momentum"
             note={d.searchAuthority.sectionNote}
@@ -530,50 +595,20 @@ export function ExecutiveDashboardView({ data: d, isLive, weekLabel }: Props) {
           <SectionPanel
             eyebrow="Local"
             title="Local Authority"
-            note={d.localAuthority.sectionNote}
+            note={`${d.localAuthority.sectionNote} Full history, corroboration evidence, and action management live in Continuum.`}
           >
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 lg:gap-6">
-              <MetricCard
-                {...metricCardProps("Google Reviews", d.localAuthority.googleReviews)}
-              />
-              <MetricCard
-                {...metricCardProps("Profile Views", d.localAuthority.profileViews)}
-              />
-              <MetricCard
-                {...metricCardProps(
-                  "Website Clicks (GBP)",
-                  d.localAuthority.websiteClicksFromGbp,
-                )}
-              />
-              <MetricCard
-                {...metricCardProps(
-                  "Direction Requests",
-                  d.localAuthority.directionRequests,
-                  "airy",
-                )}
-              />
-              <MetricCard
-                {...metricCardProps("Calls", d.localAuthority.calls, "tight")}
-              />
-              <MetricCard
-                {...metricCardProps(
-                  "Review Velocity",
-                  d.localAuthority.reviewVelocity,
-                )}
-              />
-              <MetricCard
-                {...metricCardProps(
-                  "Unanswered Items",
-                  d.localAuthority.unansweredItems,
-                )}
-              />
-              <MetricCard
-                {...metricCardProps("Post Cadence", d.localAuthority.postCadence)}
-              />
+            <ReviewAuthoritySummary data={d.localAuthority.reviewAuthority} />
+            <p className={`mt-5 text-[11px] leading-[1.7] ${MUTED_TREND}`}>
+              Public review activity is a directional proxy for customer activity, not sales.
+            </p>
+            <div className="mt-8 max-w-sm">
               <MetricCard
                 {...metricCardProps("Map Pack Trend", d.localAuthority.mapPackTrend)}
               />
             </div>
+            <Link href="/executive-dashboard/concierge/local-authority" className="mt-7 inline-flex min-h-11 items-center text-[10px] uppercase tracking-[0.26em] text-[#75644f] transition-colors hover:text-[#1f1d1a]">
+              Open Continuum Local Authority →
+            </Link>
           </SectionPanel>
 
           <SectionPanel

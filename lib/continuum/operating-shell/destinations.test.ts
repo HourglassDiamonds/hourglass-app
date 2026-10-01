@@ -8,6 +8,7 @@ import {
   CONCIERGE_CLIENTS_PATH,
   CONCIERGE_HOME_PATH,
   CONCIERGE_HUB_PATH,
+  CONCIERGE_LOCAL_AUTHORITY_PATH,
   CONCIERGE_PERSONAL_PATH,
   CONCIERGE_PROJECTS_PATH,
   CONCIERGE_REPAIRS_PATH,
@@ -43,10 +44,10 @@ describe("Founder operating destinations", () => {
     assert.equal(CONCIERGE_PERSONAL_PATH, "/executive-dashboard/concierge/personal");
   });
 
-  it("keeps Gmail Inbox Calendar Reconstruction Passkeys and Digital Card as secondary tools", () => {
+  it("keeps Local Authority and operational utilities as secondary tools", () => {
     assert.deepEqual(
       OPERATING_TOOL_LINKS.map((row) => row.id),
-      ["gmail", "inbox", "calendar", "reconstruction", "passkeys", "card"],
+      ["local-authority", "gmail", "inbox", "calendar", "reconstruction", "passkeys", "card"],
     );
     assert.equal(
       OPERATING_TOOL_LINKS.some((row) => row.id === "today"),
@@ -82,6 +83,7 @@ describe("Founder operating destinations", () => {
     );
     assert.equal(operatingDestinationForPath(`${CONCIERGE_HOME_PATH}/gmail`), null);
     assert.equal(operatingDestinationForPath(`${CONCIERGE_HOME_PATH}/calendar`), null);
+    assert.equal(operatingDestinationForPath(CONCIERGE_LOCAL_AUTHORITY_PATH), null);
     assert.equal(operatingDestinationForPath("/executive-dashboard/security/passkeys"), null);
   });
 

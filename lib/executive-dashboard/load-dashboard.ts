@@ -4,6 +4,7 @@ import { buildExecutiveDashboardPayload } from "@/lib/intelligence/map-report-to
 import { formatWeekLabel } from "@/lib/intelligence/week-ranges";
 import { getLatestWeeklyReport } from "@/lib/supabase/intelligence";
 import type { ExecutiveDashboardPayload } from "@/lib/intelligence/dashboard-data";
+import { loadReviewAuthorityData } from "@/lib/intelligence/review-velocity/repository";
 import {
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
   getExecutiveDashboardAccessDecision,
@@ -31,5 +32,17 @@ export async function loadAuthenticatedExecutiveDashboardPayload(): Promise<Exec
   const weekLabel = report
     ? formatWeekLabel({ start: report.week_start, end: report.week_end })
     : undefined;
-  return buildExecutiveDashboardPayload(report, weekLabel);
+  const payload = buildExecutiveDashboardPayload(report, weekLabel);
+  try {
+    const reviewAuthority = await loadReviewAuthorityData();
+    if (reviewAuthority.rows.length) {
+      payload.display.localAuthority.reviewAuthority = reviewAuthority;
+    }
+  } catch (error) {
+    console.warn(
+      "[hourglass:intelligence] Review authority unavailable:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+  return payload;
 }

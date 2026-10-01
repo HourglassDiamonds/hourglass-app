@@ -1,0 +1,20 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "app/api/cron/review-velocity/route.ts",
+    "app/executive-dashboard/dashboard-view.tsx",
+    "lib/executive-dashboard/load-dashboard.ts",
+    "lib/intelligence/dashboard-data.ts",
+    "lib/intelligence/dashboard-snapshot.ts",
+    "lib/intelligence/env.ts",
+    "lib/intelligence/google-oauth.ts",
+    "lib/intelligence/map-report-to-dashboard.ts",
+    "lib/intelligence/review-velocity/**/*.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
+}

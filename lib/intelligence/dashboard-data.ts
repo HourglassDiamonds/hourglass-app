@@ -6,6 +6,8 @@ import type {
   SnapshotMetric,
 } from "./dashboard-snapshot";
 import { BRAND_QUERY_PATTERNS } from "./dashboard-snapshot";
+import type { ReviewAuthorityData } from "./review-velocity/types";
+import { TRACKED_PLACE_NAMES } from "./review-velocity/types";
 
 export type MetricStatus =
   | "Stable"
@@ -47,9 +49,43 @@ export const SUBSCRIBERS_NOT_CONNECTED: MetricField = {
 /** Verified public rating; GMB API not wired yet. */
 export const STATIC_GOOGLE_REVIEWS: MetricField = {
   value: "5.0",
-  trendLine: "5 stars · verified rating",
-  status: "Stable",
-  sourceLabel: "Static",
+  trendLine: "Fallback only until an observed rating is stored",
+  sourceLabel: "Static fallback",
+};
+
+function unavailableReviewWindow(months: 3 | 6 | 12 | 24) {
+  return {
+    months,
+    method: "unavailable" as const,
+    reviewsAdded: null,
+    coverageDays: 0,
+    monthlyRate: null,
+    unavailableReason: "No review history yet",
+  };
+}
+
+export const REVIEW_AUTHORITY_PLACEHOLDER: ReviewAuthorityData = {
+  rows: TRACKED_PLACE_NAMES.map((business, index) => ({
+    placeId: `unconfigured-${index}`,
+    googlePlaceId: null,
+    role: index === 0 ? "self" as const : "competitor" as const,
+    business,
+    rating: index === 0 ? 5 : null,
+    ratingEvidence: index === 0 ? "static-fallback" as const : "unavailable" as const,
+    totalReviews: null,
+    totalReviewsEvidence: "unavailable" as const,
+    windows: {
+      3: unavailableReviewWindow(3),
+      6: unavailableReviewWindow(6),
+      12: unavailableReviewWindow(12),
+      24: unavailableReviewWindow(24),
+    },
+    pace: "unavailable" as const,
+    latestReviewAt: null,
+    latestSnapshotAt: null,
+  })),
+  shareOfTrackedReviewGrowth: null,
+  shareWindowMonths: 6,
 };
 
 export function gmbNotConnected(label: string): MetricField {
@@ -183,6 +219,7 @@ export type DiamondStudioSection = {
 
 export type LocalAuthoritySection = {
   sectionNote: string;
+  reviewAuthority: ReviewAuthorityData;
   googleReviews: MetricField;
   profileViews: MetricField;
   websiteClicksFromGbp: MetricField;
@@ -349,7 +386,8 @@ export const PLACEHOLDER_DASHBOARD_DATA: ExecutiveDashboardData = {
   },
   localAuthority: {
     sectionNote:
-      "Google rating shown at 5.0 / 5 stars (verified). GBP insights await Google Business Profile API.",
+      "Review observations replace fallback values as soon as legitimate Places or Business Profile data is stored.",
+    reviewAuthority: REVIEW_AUTHORITY_PLACEHOLDER,
     googleReviews: STATIC_GOOGLE_REVIEWS,
     profileViews: gmbNotConnected("Profile views"),
     websiteClicksFromGbp: gmbNotConnected("Website clicks"),
@@ -516,7 +554,8 @@ export function displayFromSnapshot(
     },
     localAuthority: {
       sectionNote:
-        "Google rating at 5.0 / 5 stars (verified). GBP metrics populate when Google Business Profile API is wired.",
+        "Review observations replace fallback values as soon as legitimate Places or Business Profile data is stored.",
+      reviewAuthority: REVIEW_AUTHORITY_PLACEHOLDER,
       googleReviews: STATIC_GOOGLE_REVIEWS,
       profileViews: snapshotMetricToField(s.localAuthority.profileViews),
       websiteClicksFromGbp: snapshotMetricToField(

@@ -35,6 +35,18 @@ export function getGoogleOAuthRedirectUri(): string | undefined {
   return trimmed(process.env.GOOGLE_OAUTH_REDIRECT_URI);
 }
 
+export function getGooglePlacesApiKey(): string | undefined {
+  return trimmed(process.env.GOOGLE_PLACES_API_KEY);
+}
+
+export function getGbpAccountId(): string | undefined {
+  return trimmed(process.env.GBP_ACCOUNT_ID);
+}
+
+export function getGbpLocationId(): string | undefined {
+  return trimmed(process.env.GBP_LOCATION_ID);
+}
+
 export function getCronSecret(): string | null {
   return trimmed(process.env.CRON_SECRET) ?? null;
 }
