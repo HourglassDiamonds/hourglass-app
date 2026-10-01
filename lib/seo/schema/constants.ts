@@ -11,8 +11,9 @@ export const DIAMOND_INTELLIGENCE_APP_ID = `${SITE_URL}/diamond-intelligence#sof
 export const DIAMOND_SHAPE_STUDIO_APP_ID = `${SITE_URL}/diamond-shape-studio#software`;
 
 export const DIAMOND_INTELLIGENCE_NAME = "Diamond Intelligence";
+export const DIAMOND_INTELLIGENCE_ALTERNATE_NAME = "Analyze Sparkle";
 export const DIAMOND_INTELLIGENCE_DESCRIPTION =
-  "Upload an original GIA, IGI, or GCAL 8X grading report and receive independent interpretation of light performance, proportions, craftsmanship, and purchase context through Hourglass standards.";
+  "Upload an original GIA, IGI, or GCAL 8X grading report and receive structured interpretation of light performance, proportions, craftsmanship, and purchase context through Hourglass standards.";
 
 export const ORGANIZATION_NAME = "Hourglass Diamonds";
 export const PERSON_NAME = "Justin Smith";

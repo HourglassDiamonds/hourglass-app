@@ -39,5 +39,11 @@ export function pageMetadata(input: {
       description: input.description,
       url: input.path,
     },
+    twitter: {
+      card: "summary_large_image",
+      title: openGraphTitle,
+      description: input.description,
+      images: [DEFAULT_OG_IMAGE.url],
+    },
   };
 }

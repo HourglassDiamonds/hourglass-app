@@ -16,6 +16,7 @@ import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
 import Header from "../../shared-components/Header";
 import ArticleAuthorByline from "../components/ArticleAuthorByline";
+import ArticleFaqSection from "../components/ArticleFaqSection";
 import ArticleHeroImage from "../components/ArticleHeroImage";
 import {
   ArticleEditorialImage,
@@ -34,6 +35,7 @@ import {
   articleVisualBreadcrumbs,
   resolveRelatedReading,
 } from "@/lib/diamond-guide/guide-architecture";
+import { articleFaqsForSlug } from "@/lib/seo/article-faqs";
 
 type ArticlePageProps = {
   params: Promise<{
@@ -114,6 +116,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     VISUAL_BLOCK_TYPES.has(block.type),
   );
   const isCohesionArticle = slug === COHESION_SLUG;
+  const articleFaqs = articleFaqsForSlug(slug);
 
   const proseWrapClass = isCohesionArticle
     ? "mx-auto max-w-[40rem]"
@@ -232,6 +235,8 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
               );
             })}
           </div>
+
+          <ArticleFaqSection items={articleFaqs} />
 
           <RelatedReadingSection
             reading={resolveRelatedReading(article)}

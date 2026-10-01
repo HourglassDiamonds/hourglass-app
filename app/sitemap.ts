@@ -9,25 +9,24 @@ import {
 import { DIAMOND_GUIDE_CATEGORIES } from "@/lib/seo/diamond-guide-metadata";
 import { SITE_URL } from "@/lib/seo/site-metadata";
 
-const lastModified = new Date();
-
 export default function sitemap(): MetadataRoute.Sitemap {
   const corePages: MetadataRoute.Sitemap = [
-    { url: `${SITE_URL}/`, priority: 1, lastModified },
-    { url: `${SITE_URL}/the-house`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/our-approach`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/engagement-rings`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/custom-design`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/concierge`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/diamond-studio`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/diamond-shape-studio`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/diamond-intelligence`, priority: 0.9, lastModified },
-    { url: `${SITE_URL}/diamond-guide`, priority: 0.85, lastModified },
-    { url: `${SITE_URL}/diamond-guide/all`, priority: 0.82, lastModified },
-    { url: `${SITE_URL}/whispered-praise`, priority: 0.85, lastModified },
-    { url: `${SITE_URL}/ledger`, priority: 0.75, lastModified },
-    { url: `${SITE_URL}/privacy`, priority: 0.4, lastModified },
-    { url: `${SITE_URL}/continuum`, priority: 0.4, lastModified },
+    { url: `${SITE_URL}/`, priority: 1 },
+    { url: `${SITE_URL}/the-house`, priority: 0.9 },
+    { url: `${SITE_URL}/our-approach`, priority: 0.9 },
+    { url: `${SITE_URL}/engagement-rings`, priority: 0.9 },
+    { url: `${SITE_URL}/custom-design`, priority: 0.9 },
+    { url: `${SITE_URL}/concierge`, priority: 0.9 },
+    { url: `${SITE_URL}/diamond-studio`, priority: 0.9 },
+    { url: `${SITE_URL}/diamond-shape-studio`, priority: 0.9 },
+    { url: `${SITE_URL}/diamond-intelligence`, priority: 0.9 },
+    { url: `${SITE_URL}/diamond-guide`, priority: 0.85 },
+    { url: `${SITE_URL}/diamond-guide/all`, priority: 0.82 },
+    { url: `${SITE_URL}/whispered-praise`, priority: 0.85 },
+    { url: `${SITE_URL}/ledger`, priority: 0.75 },
+    { url: `${SITE_URL}/privacy`, priority: 0.4 },
+    { url: `${SITE_URL}/terms`, priority: 0.4 },
+    { url: `${SITE_URL}/continuum`, priority: 0.4 },
   ];
 
   // Hub and episodes enter the sitemap only while the public experience is live.
@@ -35,7 +34,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     corePages.push({
       url: `${SITE_URL}/conversations`,
       priority: 0.8,
-      lastModified,
     });
   }
 
@@ -43,7 +41,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     (index) => ({
       url: `${SITE_URL}/ledger/${index.slug}`,
       priority: 0.7,
-      lastModified,
     }),
   );
 
@@ -52,12 +49,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
       {
         url: `${SITE_URL}/diamond-guide/${category.segment}`,
         priority: 0.8,
-        lastModified,
       },
       {
         url: `${SITE_URL}/diamond-guide/${category.segment}/all`,
         priority: 0.75,
-        lastModified,
       },
     ],
   );
@@ -65,7 +60,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const articlePages: MetadataRoute.Sitemap = articles.map((article) => ({
     url: `${SITE_URL}/diamond-guide/${article.slug}`,
     priority: 0.7,
-    lastModified,
   }));
 
   const conversationPages: MetadataRoute.Sitemap =
@@ -75,7 +69,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
           priority: 0.75,
           lastModified: episode.publishedAt
             ? new Date(episode.publishedAt)
-            : lastModified,
+            : undefined,
         }))
       : [];
 

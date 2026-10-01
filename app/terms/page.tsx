@@ -1,4 +1,13 @@
+import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo/site-metadata";
 import Header from "../shared-components/Header";
+
+export const metadata: Metadata = pageMetadata({
+  title: "Terms",
+  description:
+    "Terms for using the Hourglass Diamonds website and its educational guidance, custom design information, imagery, and written content.",
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

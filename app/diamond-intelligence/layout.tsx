@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
+import {
+  DIAMOND_INTELLIGENCE_ALTERNATE_NAME,
+  DIAMOND_INTELLIGENCE_DESCRIPTION,
+  DIAMOND_INTELLIGENCE_NAME,
+} from "@/lib/seo/schema/constants";
 import DiamondIntelligenceJsonLd from "./components/DiamondIntelligenceJsonLd";
 import DiamondStudioSuiteShell from "../diamond-studio/components/DiamondStudioSuiteShell";
-
-const DIAMOND_INTELLIGENCE_DESCRIPTION =
-  "Upload an original GIA, IGI, or GCAL 8X grading report PDF and review the diamond through Hourglass standards.";
 
 const DIAMOND_INTELLIGENCE_OG_IMAGE = {
   url: "https://www.hourglassdiamonds.com/og/diamond-intelligence-og.jpg",
@@ -14,21 +16,21 @@ const DIAMOND_INTELLIGENCE_OG_IMAGE = {
 } as const;
 
 export const metadata: Metadata = {
-  title: "Diamond Intelligence",
+  title: `${DIAMOND_INTELLIGENCE_ALTERNATE_NAME} | ${DIAMOND_INTELLIGENCE_NAME}`,
   description: DIAMOND_INTELLIGENCE_DESCRIPTION,
   alternates: {
     canonical: "/diamond-intelligence",
   },
   openGraph: {
     ...DEFAULT_OPEN_GRAPH,
-    title: "Diamond Intelligence",
+    title: `${DIAMOND_INTELLIGENCE_ALTERNATE_NAME} | ${DIAMOND_INTELLIGENCE_NAME} | Hourglass Diamonds`,
     description: DIAMOND_INTELLIGENCE_DESCRIPTION,
     url: "/diamond-intelligence",
     images: [DIAMOND_INTELLIGENCE_OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Diamond Intelligence",
+    title: `${DIAMOND_INTELLIGENCE_ALTERNATE_NAME} | ${DIAMOND_INTELLIGENCE_NAME} | Hourglass Diamonds`,
     description: DIAMOND_INTELLIGENCE_DESCRIPTION,
     images: [DIAMOND_INTELLIGENCE_OG_IMAGE.url],
   },

@@ -28,6 +28,7 @@
     "agent-os:measurement-smoke": "npx tsx scripts/agent-os-measurement-smoke.ts",
     "agent-os:fan-out": "npx tsx scripts/agent-os-fan-out-coverage.ts",
     "agent-os:tech-seo": "npx tsx scripts/agent-os-tech-seo-audit.ts",
+    "indexnow:submit": "npx tsx scripts/submit-indexnow.ts",
     "agent-os:content-roi": "npx tsx scripts/agent-os-content-roi.ts",
     "client-memory:import": "npx tsx scripts/continuum-client-memory-import.ts",
     "agent-os:client-attention": "npx tsx scripts/agent-os-client-attention.ts",

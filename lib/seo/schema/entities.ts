@@ -20,6 +20,7 @@ import {
   businessStreetAddressLine,
   CHARLOTTE_METRO_AREA_SERVED,
   DIAMOND_INTELLIGENCE_APP_ID,
+  DIAMOND_INTELLIGENCE_ALTERNATE_NAME,
   DIAMOND_INTELLIGENCE_DESCRIPTION,
   DIAMOND_INTELLIGENCE_NAME,
   DIAMOND_SHAPE_STUDIO_APP_ID,
@@ -203,11 +204,28 @@ export function diamondIntelligenceApplicationNode(): JsonLdValue {
     "@type": "SoftwareApplication",
     "@id": DIAMOND_INTELLIGENCE_APP_ID,
     name: DIAMOND_INTELLIGENCE_NAME,
+    alternateName: DIAMOND_INTELLIGENCE_ALTERNATE_NAME,
     description: DIAMOND_INTELLIGENCE_DESCRIPTION,
     url: absoluteUrl("/diamond-intelligence"),
-    applicationCategory: "DesignApplication",
+    applicationCategory: "EducationalApplication",
     operatingSystem: "Web",
     provider: { "@id": ORGANIZATION_ID },
+    creator: { "@id": PERSON_ID },
+  };
+}
+
+export function diamondIntelligenceWebPageNode(): JsonLdValue {
+  return {
+    "@type": "WebPage",
+    "@id": `${absoluteUrl("/diamond-intelligence")}#webpage`,
+    url: absoluteUrl("/diamond-intelligence"),
+    name: `${DIAMOND_INTELLIGENCE_ALTERNATE_NAME} | ${DIAMOND_INTELLIGENCE_NAME} | ${ORGANIZATION_NAME}`,
+    description: DIAMOND_INTELLIGENCE_DESCRIPTION,
+    isPartOf: { "@id": WEBSITE_ID },
+    about: { "@id": DIAMOND_INTELLIGENCE_APP_ID },
+    mainEntity: { "@id": DIAMOND_INTELLIGENCE_APP_ID },
+    author: { "@id": PERSON_ID },
+    publisher: { "@id": ORGANIZATION_ID },
   };
 }
 

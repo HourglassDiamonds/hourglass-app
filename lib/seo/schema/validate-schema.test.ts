@@ -112,6 +112,8 @@ describe("structured data builders", () => {
       "radiant-diamond-guide",
       "round-diamond-guide",
       "what-is-diamond-fluorescence",
+      "what-is-diamond-clarity",
+      "what-is-diamond-cut",
       "when-fluorescence-improves-a-diamond",
       "fluorescence-in-natural-vs-lab-diamonds",
       "why-work-with-a-graduate-gemologist",
