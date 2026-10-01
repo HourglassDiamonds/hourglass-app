@@ -98,6 +98,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "sharp": "^0.34.5",
+    "supabase": "2.119.0",
     "tailwindcss": "^4",
     "to-ico": "^1.1.5",
     "typescript": "^5"
