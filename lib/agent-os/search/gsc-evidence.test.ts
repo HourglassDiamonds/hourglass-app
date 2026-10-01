@@ -58,6 +58,12 @@ describe("GSC permission / mutation boundaries", () => {
     assert.equal(/auth\/webmasters'/.test(SETUP_MJS), false);
   });
 
+  it("standalone OAuth setup requests every canonical Intelligence scope", () => {
+    for (const scope of INTELLIGENCE_OAUTH_SCOPES) {
+      assert.match(SETUP_MJS, new RegExp(scope.replaceAll(".", "\\.")));
+    }
+  });
+
   it("GSC client has no mutation APIs, URL Inspection, or Indexing API", () => {
     assert.equal(/sitemaps\.submit/.test(GSC_TS), false);
     assert.equal(/sites\.add/.test(GSC_TS), false);

@@ -1,5 +1,5 @@
 /**
- * GA4 + Search Console OAuth setup with manual callback fallback.
+ * GA4 + Search Console + Business Profile OAuth setup with manual callback fallback.
  * Usage: node scripts/google-oauth-setup.mjs
  *
  * Requires in .env.local: GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
@@ -10,9 +10,13 @@ import { createInterface } from "readline/promises";
 import { resolve } from "path";
 import { stdin as input, stdout as output } from "process";
 
+// Keep aligned with INTELLIGENCE_OAUTH_SCOPES in
+// lib/intelligence/google-oauth.ts. This standalone Node script cannot import
+// the application's TypeScript module without adding a build/runtime loader.
 const INTELLIGENCE_SCOPES = [
   "https://www.googleapis.com/auth/analytics.readonly",
   "https://www.googleapis.com/auth/webmasters.readonly",
+  "https://www.googleapis.com/auth/business.manage",
 ];
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -146,6 +150,9 @@ function scopeFlags(scopeField) {
   return {
     hasAnalytics: scopes.some((s) => s.includes("analytics")),
     hasWebmasters: scopes.some((s) => s.includes("webmasters")),
+    hasBusinessManage: scopes.includes(
+      "https://www.googleapis.com/auth/business.manage",
+    ),
   };
 }
 
@@ -184,15 +191,19 @@ function writeRefreshTokenToEnvLocal(refreshToken) {
   process.env.GOOGLE_REFRESH_TOKEN = refreshToken;
 }
 
-function requireDualScopes(scopeField, phase) {
-  const { hasAnalytics, hasWebmasters } = scopeFlags(scopeField);
+function requireIntelligenceScopes(scopeField, phase) {
+  const { hasAnalytics, hasWebmasters, hasBusinessManage } =
+    scopeFlags(scopeField);
   console.log(`analytics.readonly (${phase}):`, hasAnalytics ? "yes" : "no");
   console.log(`webmasters.readonly (${phase}):`, hasWebmasters ? "yes" : "no");
-  if (!hasAnalytics || !hasWebmasters) {
+  console.log(`business.manage (${phase}):`, hasBusinessManage ? "yes" : "no");
+  if (!hasAnalytics || !hasWebmasters || !hasBusinessManage) {
     console.error(
-      "\nDual scope required. Revoke Hourglass access at https://myaccount.google.com/permissions",
+      "\nAll Intelligence scopes are required. Revoke Hourglass access at https://myaccount.google.com/permissions",
     );
-    console.error("Re-run this script and approve BOTH Analytics and Search Console.");
+    console.error(
+      "Re-run this script and approve Analytics, Search Console, and Business Profile.",
+    );
     process.exit(1);
   }
 }
@@ -234,7 +245,9 @@ async function main() {
 
   const { url: authUrl, params } = buildIntelligenceAuthUrl(clientId, redirectUri);
 
-  console.log("\nHourglass Intelligence OAuth setup (GA4 + Search Console)\n");
+  console.log(
+    "\nHourglass Intelligence OAuth setup (GA4 + Search Console + Business Profile)\n",
+  );
   console.log("Query parameters:", [...params.keys()].join(", "));
   console.log("response_type:", params.get("response_type"));
   console.log("access_type:", params.get("access_type"));
@@ -245,7 +258,9 @@ async function main() {
   );
   console.log("\n1. Open this URL in your browser:\n");
   console.log(authUrl);
-  console.log("\n2. Approve BOTH Analytics and Search Console on the consent screen.");
+  console.log(
+    "\n2. Approve Analytics, Search Console, and Business Profile on the consent screen.",
+  );
   console.log(
     "3. Copy the localhost callback URL (contains code=) — paste below or pass as argv.",
   );
@@ -308,7 +323,7 @@ async function main() {
     process.exit(1);
   }
 
-  requireDualScopes(scope, "exchange");
+  requireIntelligenceScopes(scope, "exchange");
 
   const refreshed = await refreshAccessToken({
     clientId,
@@ -317,7 +332,7 @@ async function main() {
   });
   console.log("\nScopes on refresh:");
   console.log("  " + formatScopes(refreshed.scope ?? ""));
-  requireDualScopes(refreshed.scope ?? scope, "refresh");
+  requireIntelligenceScopes(refreshed.scope ?? scope, "refresh");
 
   writeRefreshTokenToEnvLocal(refreshToken);
   console.log("\nSaved GOOGLE_REFRESH_TOKEN to .env.local");
