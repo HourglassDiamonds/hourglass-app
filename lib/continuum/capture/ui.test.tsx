@@ -35,12 +35,12 @@ function proposal(items: CaptureProposedItem[]): CaptureProposal {
 }
 
 describe("Quick Capture UI", () => {
-  it("renders a single capture surface, honest engine state, voice seam, and all manual paths", () => {
+  it("renders a single capture surface, active voice input, and all manual paths", () => {
     const html = renderToStaticMarkup(createElement(QuickCapture));
     assert.match(html, /Tell Continuum what happened/);
     assert.match(html, /Capture engine connection pending/);
     assert.match(html, /Speak your capture/);
-    assert.match(html, /disabled/);
+    assert.doesNotMatch(html, /voice input coming soon/i);
     assert.match(html, /Add manually/);
     for (const label of ["Inbox", "Add action", "Add Note", "Add Client", "My Card"]) {
       assert.match(html, new RegExp(label));

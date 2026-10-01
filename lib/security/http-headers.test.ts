@@ -51,6 +51,12 @@ describe("site-wide security headers", () => {
       headerValue(EXECUTIVE_DASHBOARD_SECURITY_HEADERS, "Content-Security-Policy"),
       /frame-ancestors 'none'/,
     );
+    const permissions = headerValue(
+      EXECUTIVE_DASHBOARD_SECURITY_HEADERS,
+      "Permissions-Policy",
+    );
+    assert.match(permissions, /microphone=\(self\)/);
+    assert.match(permissions, /camera=\(\)/);
   });
 
   it("does not block same-origin Ring Studio or camera capture", () => {

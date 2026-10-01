@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useId, useState, useTransition } from "react";
+import { useEffect, useId, useRef, useState, useTransition } from "react";
 import type { CaptureCommitInput, CaptureCommitResult, CaptureProposal, CaptureRequest } from "@/lib/continuum/capture/types";
 import { conciergeAddClientPath, conciergeAddNotePickerPath, conciergeCreateActionPath, conciergeInboxPath } from "@/lib/continuum/client-memory/read/presentation";
 import { conciergeMyCardPath } from "@/lib/continuum/digital-card/paths";
@@ -19,6 +19,25 @@ export type QuickCaptureProps = {
   saveAction?: (confirmation: CaptureCommitInput) => Promise<CaptureCommitResult>;
   entityLabels?: CaptureEntityLabels;
 };
+
+type VoicePhase = "idle" | "recording" | "transcribing" | "ready" | "error";
+
+const VOICE_CAPTURE_MAX_MS = 90_000;
+const VOICE_TRANSCRIBE_PATH =
+  "/executive-dashboard/concierge/capture/transcribe";
+
+function preferredRecordingType(): string | undefined {
+  if (typeof MediaRecorder === "undefined") return undefined;
+  return ["audio/webm;codecs=opus", "audio/mp4", "audio/ogg;codecs=opus"].find(
+    (type) => MediaRecorder.isTypeSupported(type),
+  );
+}
+
+function recordingFileName(type: string): string {
+  if (type.startsWith("audio/mp4")) return "quick-capture.m4a";
+  if (type.startsWith("audio/ogg")) return "quick-capture.ogg";
+  return "quick-capture.webm";
+}
 
 const MANUAL_ACTIONS = [
   ["Inbox", conciergeInboxPath()],
@@ -63,9 +82,127 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
   const [error, setError] = useState<string>();
   const [pending, startTransition] = useTransition();
   const [operation, setOperation] = useState<"propose" | "save">();
+  const [provenance, setProvenance] = useState<"text" | "voice">("text");
+  const [voicePhase, setVoicePhase] = useState<VoicePhase>("idle");
+  const [voiceMessage, setVoiceMessage] = useState<string>();
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const cancelRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const connected = Boolean(proposeAction && saveAction);
   const selected = rows.filter((row) => row.selected && !isSaved(row));
   const selectedBlocked = selected.some(reviewIssue);
+
+  function releaseVoiceResources() {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = null;
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
+    recorderRef.current = null;
+  }
+
+  useEffect(() => () => {
+    cancelRef.current = true;
+    const recorder = recorderRef.current;
+    if (recorder?.state === "recording") recorder.stop();
+    releaseVoiceResources();
+  }, []);
+
+  async function transcribeRecording(blob: Blob) {
+    setVoicePhase("transcribing");
+    setVoiceMessage("Turning your recording into text…");
+    const type = blob.type || "audio/webm";
+    const form = new FormData();
+    form.set("audio", blob, recordingFileName(type));
+    try {
+      const response = await fetch(VOICE_TRANSCRIBE_PATH, {
+        method: "POST",
+        body: form,
+        credentials: "same-origin",
+      });
+      const result = (await response.json()) as {
+        ok?: boolean;
+        text?: unknown;
+      };
+      if (!response.ok || !result.ok || typeof result.text !== "string" || !result.text.trim()) {
+        throw new Error("transcription-unavailable");
+      }
+      setText(result.text.trim());
+      setProvenance("voice");
+      setRows([]);
+      setCaptureId(undefined);
+      setVoicePhase("ready");
+      setVoiceMessage("Transcription ready. Review or edit it, then prepare the capture.");
+    } catch {
+      setVoicePhase("error");
+      setVoiceMessage("Continuum couldn’t transcribe that recording. Try again or type your capture.");
+    }
+  }
+
+  async function startRecording() {
+    setVoiceMessage(undefined);
+    if (
+      typeof MediaRecorder === "undefined" ||
+      !navigator.mediaDevices?.getUserMedia
+    ) {
+      setVoicePhase("error");
+      setVoiceMessage("Voice capture isn’t supported in this browser. You can still type your capture.");
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      chunksRef.current = [];
+      cancelRef.current = false;
+      const type = preferredRecordingType();
+      const recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+      recorderRef.current = recorder;
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) chunksRef.current.push(event.data);
+      };
+      recorder.onstop = () => {
+        const cancelled = cancelRef.current;
+        const chunks = chunksRef.current;
+        const mimeType = recorder.mimeType || chunks[0]?.type || "audio/webm";
+        chunksRef.current = [];
+        releaseVoiceResources();
+        if (cancelled) {
+          setVoicePhase("idle");
+          setVoiceMessage("Recording cancelled. Nothing was uploaded or saved.");
+          return;
+        }
+        const blob = new Blob(chunks, { type: mimeType });
+        if (!blob.size) {
+          setVoicePhase("error");
+          setVoiceMessage("No audio was captured. Try again or type your capture.");
+          return;
+        }
+        void transcribeRecording(blob);
+      };
+      recorder.start(250);
+      setVoicePhase("recording");
+      setVoiceMessage("Listening… Speak naturally, then stop when you’re finished.");
+      timerRef.current = setTimeout(() => {
+        if (recorder.state === "recording") recorder.stop();
+      }, VOICE_CAPTURE_MAX_MS);
+    } catch (cause) {
+      releaseVoiceResources();
+      setVoicePhase("error");
+      setVoiceMessage(
+        cause instanceof DOMException && cause.name === "NotAllowedError"
+          ? "Microphone access was denied. Allow access in your browser settings or type your capture."
+          : "Continuum couldn’t start the microphone. Try again or type your capture.",
+      );
+    }
+  }
+
+  function stopRecording(cancelled: boolean) {
+    const recorder = recorderRef.current;
+    if (!recorder || recorder.state !== "recording") return;
+    cancelRef.current = cancelled;
+    recorder.stop();
+  }
 
   function propose() {
     const value = text.trim();
@@ -80,7 +217,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
         const proposal = await proposeAction({
           captureId: nextCaptureId,
           text: value,
-          provenance: "text",
+          provenance,
           referenceTime: new Date().toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         });
@@ -115,14 +252,32 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
           <h2 id={`${inputId}-heading`} className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">Quick Capture</h2>
           <p className="mt-2 text-[13px] leading-relaxed text-[#a99b8d]">Tell Continuum once. Review everything before it becomes part of your record.</p>
         </div>
-        <button type="button" disabled aria-label="Speak your capture — voice input coming soon" title="Voice input coming soon" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#5b5045] px-4 text-[10px] uppercase tracking-[0.2em] text-[#8d8073] opacity-70">
-          <span aria-hidden="true" className="text-base leading-none">◉</span> Speak
-        </button>
+        {voicePhase === "recording" ? (
+          <div className="flex shrink-0 gap-2">
+            <button type="button" onClick={() => stopRecording(false)} className="inline-flex min-h-11 items-center rounded-full bg-[#b09265] px-4 text-[10px] uppercase tracking-[0.2em] text-[#191612]">
+              Stop
+            </button>
+            <button type="button" onClick={() => stopRecording(true)} className="inline-flex min-h-11 items-center rounded-full border border-[#5b5045] px-4 text-[10px] uppercase tracking-[0.2em] text-[#c4b7aa]">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button type="button" onClick={startRecording} disabled={voicePhase === "transcribing" || pending} aria-label="Speak your capture" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#5b5045] px-4 text-[10px] uppercase tracking-[0.2em] text-[#c4b7aa] disabled:cursor-not-allowed disabled:opacity-45">
+            <span aria-hidden="true" className="text-base leading-none">●</span>
+            {voicePhase === "transcribing" ? "Transcribing…" : voicePhase === "ready" ? "Speak again" : "Speak"}
+          </button>
+        )}
       </div>
+
+      {voiceMessage ? (
+        <p role={voicePhase === "error" ? "alert" : "status"} aria-live="polite" className={`mt-3 text-[12px] leading-relaxed ${voicePhase === "error" ? "text-[#d7a879]" : "text-[#a99b8d]"}`}>
+          {voiceMessage}
+        </p>
+      ) : null}
 
       <div className="mt-5 rounded-[1.35rem] border border-[#4b4138] bg-[#211d19]/80 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.14)] focus-within:border-[#806b4e] sm:p-4">
         <label htmlFor={inputId} className="sr-only">Tell Continuum what happened</label>
-        <textarea id={inputId} value={text} onChange={(event) => setText(event.target.value)} rows={4} placeholder="Tell Continuum what happened…" className="block w-full resize-y bg-transparent px-1 py-1 text-[16px] leading-relaxed text-[#efe8de] outline-none placeholder:text-[#74695f]" />
+        <textarea id={inputId} value={text} onChange={(event) => { setText(event.target.value); setProvenance("text"); }} rows={4} placeholder="Tell Continuum what happened…" className="block w-full resize-y bg-transparent px-1 py-1 text-[16px] leading-relaxed text-[#efe8de] outline-none placeholder:text-[#74695f]" />
         <div className="mt-3 flex flex-col gap-3 border-t border-[#3b342e] pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[11px] leading-relaxed text-[#81756b]">
             {connected ? "Nothing is saved until you review and confirm." : "Capture engine connection pending. Manual actions remain available below."}

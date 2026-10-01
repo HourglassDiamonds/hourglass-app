@@ -39,7 +39,7 @@ export const EXECUTIVE_DASHBOARD_SECURITY_HEADERS: SecurityHeader[] = [
   {
     key: "Permissions-Policy",
     value:
-      "camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()",
+      "camera=(), microphone=(self), geolocation=(), payment=(), usb=(), browsing-topics=()",
   },
   {
     key: "Content-Security-Policy",
