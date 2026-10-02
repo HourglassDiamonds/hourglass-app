@@ -11,6 +11,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
+import { bufferSourcesFor } from "./buffer-health-data";
 
 export const GWS_DISPLAY_TITLE = "Global Water Stress Monitor";
 
@@ -23,13 +24,13 @@ export const GWS_INTRO =
 export const GWS_CURRENT_STATE = "High water stress / Multi-system transmission";
 
 export const GWS_CURRENT_DIRECTION =
-  "Uneven — Colorado still severe / Texas industrial-use enforcement";
+  "Uneven — structural water stress / Food buffers mixed and thinning";
 
 export const GWS_SUMMARY =
-  "Water stress is high and transmitting into multiple systems, but the map remains highly uneven. Colorado River conditions stay severe: Lake Powell around 22% full and Lake Mead around 26% as of the September 8 Reclamation weekly, with total system storage near 31%; Upper Basin officials agreed on September 15 to continue Flaming Gorge emergency releases to protect Powell. That is adaptation inside structural shortage, not recovery. Texas is now enforcing data-center water reporting — industrial-use transmission, not a statewide municipal collapse. Europe retains high seasonal stress with previously confirmed power, freight, and agricultural transmission. Tigris–Euphrates remains materially improved and structurally vulnerable. FAO’s August Food Price Index at 133.3 is a cross-system food/agriculture signal, not a new water temperature weight. Water remains qualitative and receives no System Temperature weight.";
+  "Water stress remains high and highly uneven. The October pass does not establish a new hydrologic regime, but it refreshes the food-transmission layer: observed U.S. corn stocks rebuilt while wheat stocks and production were lower; rice and global cereal balances remain forecasts; observed fertilizer prices, trade delays, and Gulf-corridor exposure add pressure without proving physical food shortage. Previously reviewed Colorado, Texas, Europe, and Tigris–Euphrates conditions remain the water baseline. Water stays qualitative and receives no System Temperature weight.";
 
 export const GWS_WEEKLY_SIGNAL =
-  "Colorado remains a severe structural shortage with emergency releases continuing. Texas data-center water enforcement is the new industrial-use print. Do not ratchet the whole water monitor because one region stays severe. Tigris–Euphrates remains the hydrologic counter-signal. Water is an evidence layer, not a sixth temperature weight.";
+  "Food buffers are mixed and thinning: observed corn rebuilding offsets weaker wheat, while rice and global cereal balances remain forecast and fertilizer/corridor pressure has not produced verified shortage. The underlying water map remains uneven. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_CATEGORIES = [
   {
@@ -250,7 +251,7 @@ export const GWS_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "September 16, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "September 16, 2026",
       currentState: GWS_CURRENT_STATE,
       currentDirection: GWS_CURRENT_DIRECTION,
       previousState: "High water stress / Multi-system transmission",
@@ -301,6 +302,17 @@ export const GWS_SERIES = defineLedgerMonitorSeries({
             "FAO index up from 130.8 in July, with weather, Middle East conflict, and Black Sea logistics among pressures",
         },
       ],
+    },
+    {
+      reviewDate: "October 1, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GWS_CURRENT_STATE,
+      currentDirection: GWS_CURRENT_DIRECTION,
+      previousState: "High water stress / Multi-system transmission",
+      materialChangeSummary:
+        "No new hydrologic regime is established. The food-transmission layer is refreshed: observed corn stocks rebuilt while wheat weakened; rice and global cereal balances remain forecasts; observed fertilizer and Gulf-corridor pressure has not produced a verified physical shortage. Water remains qualitative with no System Temperature weight.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: bufferSourcesFor("food"),
     },
   ],
 });

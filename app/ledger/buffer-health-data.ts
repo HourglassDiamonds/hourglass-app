@@ -54,6 +54,16 @@ export type BufferDomain = {
   rationale: string;
 };
 
+export type BufferHealthHistoricalSnapshot = {
+  reviewDate: string;
+  evidenceCutoff: string;
+  domains: readonly {
+    id: BufferDomainId;
+    label: string;
+    reserveState: BufferReserveState;
+  }[];
+};
+
 export const BUFFER_HEALTH_GUARDRAILS = {
   systemTemperatureWeight: null,
   automaticDegreeConversion: false,
@@ -402,6 +412,31 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
     ],
   },
 ] as const;
+
+/** Reuse the approved October evidence pass without duplicating source records. */
+export function bufferSourcesFor(
+  ...domainIds: readonly BufferDomainId[]
+): readonly BufferEvidenceSource[] {
+  return BUFFER_HEALTH_DOMAINS.filter((domain) =>
+    domainIds.includes(domain.id),
+  ).flatMap((domain) => [...domain.sources]);
+}
+
+/**
+ * Formal Buffer Health history is append-only. October 1 is the first
+ * baseline; do not backfill earlier states from narrative evidence.
+ */
+export const BUFFER_HEALTH_FORMAL_SNAPSHOTS: readonly BufferHealthHistoricalSnapshot[] = [
+  {
+    reviewDate: BUFFER_HEALTH_EVIDENCE_CUTOFF,
+    evidenceCutoff: BUFFER_HEALTH_EVIDENCE_CUTOFF,
+    domains: BUFFER_HEALTH_DOMAINS.map(({ id, label, reserveState }) => ({
+      id,
+      label,
+      reserveState,
+    })),
+  },
+];
 
 export const BUFFER_HEALTH_SNAPSHOT: LedgerMonitorSnapshot = {
   definition:

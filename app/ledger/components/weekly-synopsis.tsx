@@ -1,19 +1,19 @@
 export const WEEKLY_SYNOPSIS = {
   eyebrow: "Weekly Synopsis",
   headline:
-    "Energy disruption broadens as financial transmission deepens.",
+    "October evidence confirms 74° as counterbuffers hold.",
   blocks: [
     {
       title: "What changed",
-      body: "Evidence reviewed through September 16, 2026. The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. Brent established a $100+ regime around $108. Hormuz commodity traffic printed four vessels. The U.S. 10-year crossed 5% on September 15 and a September 15–16 Fed hike became nearly fully priced; the 10-year retreated just below 5% on the morning of September 16 without reversing that financial pressure. EIA forecasts record electricity demand; Texas is gating data-center power and water. Gold fell toward the high-$4,200s. Credit, funding, equities, and earnings continue to function. Physical oil continues clearing. System Temperature is 74°, High, Systems Functioning, Confidence Moderate — +4° from the August 24 published reading of 70°.",
+      body: "Evidence reviewed through October 1, 2026. East-West Pipeline operations and Yanbu loadings resumed, cooling the outage-specific risk, while inventory depletion, limited effective spare production, weak refined-product inventories, and constrained routing keep energy buffers Low. The Fed hike was realized and the 10-year remained elevated. Observed credit spreads stayed contained, lagged financial stress stayed below normal, funding remained orderly, and provisional labor evidence remained functional. System Temperature is 74°, High, Systems Functioning, Confidence Moderate — 0° from the September 16 reading of 74°.",
     },
     {
-      title: "Why temperature rose — and why not more",
-      body: "Geo/energy moved from severe/partial to severe/broad after Saudi Arabia’s principal Hormuz-bypass route was disrupted and oil established a $100+ regime. Financial pressure moved from high/partial to very-high/partial as the 10-year crossed 5% and hike odds reversed the August 18 path. Infrastructure, materials, and Technology/AI hold their August 24 discrete states. What kept the reading from moving higher: functioning credit and funding, resilient equities and earnings, physical oil still clearing, Texas load-gating rather than grid failure, and gold’s decline as a rates disconfirmation rather than a materials increment.",
+      title: "Why temperature held",
+      body: "All five assignments hold: Geopolitics / energy / supply Severe / Broad; Financial & economic transmission Very-high / Partial; Physical infrastructure High / Partial; Commodities / materials Elevated / Contained; Technology / AI High / Partial. Low energy slack and elevated yields prevent cooling. Restored Yanbu flows, contained spreads and stress, functional labor, expired Carolinas grid interventions, mixed food buffers, and no new AI transmission prevent escalation.",
     },
     {
       title: "What to watch next",
-      body: "Whether the principal East-West Pipeline / Yanbu route resumes on a days-to-weeks timeline. Independently trackable Hormuz transit versus a deeper single-digit print. Whether the 10-year holds near 5% after the September Fed decision. Texas data-center water/power compliance versus re-admission of load. Colorado Powell protection via Flaming Gorge releases. Whether lab safety-coordination becomes an operational slowdown or remains a statement.",
+      body: "Whether observed East-West Pipeline / Yanbu restoration persists and inventories rebuild; whether contained credit spreads and below-normal stress survive elevated yields; whether Carolinas-style grid interventions recur outside exceptional weather; whether fertilizer or corridor pressure becomes verified food shortage; and whether AI containment or deployment produces a new external-transmission step.",
     },
   ],
 } as const;

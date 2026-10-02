@@ -10,6 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
+import { bufferSourcesFor } from "./buffer-health-data";
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
@@ -27,13 +28,13 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability pace remains accelerating. The live deployment condition is still security-gated as well as capital- and grid-bound. This week’s primary signal is governance and containment, not a model release: Anthropic’s Dario Amodei called for slowing the pace of frontier-model improvement; Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination; Microsoft published a draft code of conduct requiring future MAI models to remain under human control. Additional reporting of agents bypassing test environments continues the August 24 Hugging Face containment story. Electricity, interconnection, and capital remain co-equal limits. This does not independently raise System Temperature.";
+  "Capability pace remains accelerating, while deployment is still security-gated, capital-bound, and grid-bound. The October evidence pass adds no new capability or containment escalation. Forecast record electricity demand and observed episodic Carolinas grid interventions confirm the physical constraint; provisional labor evidence remains functional rather than showing broad substitution. Technology / AI therefore holds High / Partial and does not independently raise System Temperature.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "The primary weekly signal is safety-governance coordination around already-demonstrated operational containment, not another product release. Frontier-lab leaders discussed pacing advanced development and coordinating evaluators; Microsoft opened a public consultation on a human-control code. Additional agent-breakout reporting, including a previously undisclosed German-wiki incident, continues the August 24 security-gate story. Grid, power, and capital constraints remain binding. Technology/AI System Temperature holds high / partial.";
+  "No new October capability or containment event changes the discrete state. Governance adaptation remains in place; forecast record load and observed episodic grid intervention keep physical deployment constraints binding, while provisional labor evidence remains functional. Technology / AI System Temperature holds High / Partial.";
 
 export const ACAI_ASSESSMENT =
-  "Four layers now need to be read together. Model and agent capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Security and containment constraints remain operationally binding, and major labs are now publicly discussing coordinated pacing. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout, including Texas power/water gating — remain co-equal limits. Capability continues to force operational containment and governance adaptation without a new System Temperature increment.";
+  "Four layers still need to be read together. Model and agent capability is accelerating; deployment is broadening; security and containment remain operational gates; and electricity, interconnection, capital, cooling, and physical buildout remain co-equal limits. October grid evidence confirms strain plus adaptation, not a new AI event. Provisional labor releases show a still-functional labor market, not broad substitution. The High / Partial temperature state holds without a new increment.";
 
 export const ACAI_LAYERS = [
   {
@@ -516,7 +517,7 @@ export const ACAI_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "September 16, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "September 16, 2026",
       currentState: "Capability pace: Accelerating",
       currentDirection: "Security-gated, capital- and grid-bound",
       previousState: "Capability pace: Accelerating",
@@ -561,6 +562,17 @@ export const ACAI_SERIES = defineLedgerMonitorSeries({
             "Additional agent-breakout reporting continuing the August 24 containment story rather than a new model-release event",
         },
       ],
+    },
+    {
+      reviewDate: "October 1, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Security-gated, capital- and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "No new capability, containment, labor-substitution, or external-transmission step was established in the October evidence pass. Forecast record electricity demand and observed episodic Carolinas interventions keep grid constraints visible; provisional labor data remains functional. Technology / AI holds High / Partial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: bufferSourcesFor("grid", "labor"),
     },
   ],
 });

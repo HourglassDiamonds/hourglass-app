@@ -15,6 +15,7 @@ import {
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+  SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01,
   SYSTEM_TEMPERATURE_SNAPSHOTS,
   TEMPERATURE_BANDS,
   TEMPERATURE_CHANNEL_WEIGHTS,
@@ -500,12 +501,12 @@ describe("August 24, 2026 snapshot (history unchanged)", () => {
     assert.equal(materials?.transmission, "contained");
   });
 
-  it("keeps historical readings 66, 69, 70, and 74 unchanged", () => {
+  it("keeps historical readings and appends the October 74", () => {
     assert.deepEqual(
       SYSTEM_TEMPERATURE_SNAPSHOTS.map((snapshot) =>
         computeTemperatureDegrees(snapshot),
       ),
-      [66, 69, 70, 74],
+      [66, 69, 70, 74, 74],
     );
   });
 
@@ -553,18 +554,22 @@ describe("September 16, 2026 published reading", () => {
       SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.channels,
     );
     assert.equal(Number(weighted.toFixed(1)), 73.7);
-    assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 74);
-    assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, 4);
-    assert.equal(SYSTEM_TEMPERATURE_READING.previousDegrees, 70);
-    assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
+    const reading = publishTemperatureReading(
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+      { previousDegrees: 70 },
+    );
+    assert.equal(reading.degrees, 74);
+    assert.equal(reading.weeklyDelta, 4);
+    assert.equal(reading.previousDegrees, 70);
+    assert.equal(reading.bandLabel, "High");
     assert.equal(
-      SYSTEM_TEMPERATURE_READING.functioningLabel,
+      reading.functioningLabel,
       "Systems Functioning",
     );
-    assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
-    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "September 16, 2026");
-    assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
-    assert.equal(SYSTEM_TEMPERATURE_READING.validation.issues.length, 0);
+    assert.equal(reading.confidence, "moderate");
+    assert.equal(reading.evidenceCutoff, "September 16, 2026");
+    assert.equal(reading.validation.ok, true);
+    assert.equal(reading.validation.issues.length, 0);
     assert.ok(!SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.editorialOverrideDegrees);
   });
 
@@ -625,16 +630,52 @@ describe("September 16, 2026 published reading", () => {
   });
 
   it("appends after August 12 / 18 / 24 and does not invent a September 2 reading", () => {
-    assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS.length, 4);
+    assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS.length, 5);
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[0]?.reviewDate, "August 12, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[1]?.reviewDate, "August 18, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[2]?.reviewDate, "August 24, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[3]?.reviewDate, "September 16, 2026");
+    assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[4]?.reviewDate, "October 1, 2026");
     assert.equal(
       SYSTEM_TEMPERATURE_SNAPSHOTS.some(
         (snapshot) => snapshot.reviewDate === "September 2, 2026",
       ),
       false,
+    );
+  });
+});
+
+describe("October 1, 2026 published reading", () => {
+  it("publishes 74° / High / Systems Functioning / Moderate with a 0° delta", () => {
+    assert.equal(computeTemperatureDegrees(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01), 74);
+    assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 74);
+    assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, 0);
+    assert.equal(SYSTEM_TEMPERATURE_READING.previousDegrees, 74);
+    assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
+    assert.equal(SYSTEM_TEMPERATURE_READING.functioningLabel, "Systems Functioning");
+    assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
+    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "October 1, 2026");
+    assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
+    assert.ok(!SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.editorialOverrideDegrees);
+  });
+
+  it("preserves all five September channel assignments", () => {
+    const assignments = SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.channels.map(
+      ({ id, pressure, transmission }) => [id, pressure, transmission],
+    );
+    assert.deepEqual(assignments, [
+      ["geopolitics-energy-supply", "severe", "broad"],
+      ["financial-economic", "very-high", "partial"],
+      ["physical-infrastructure", "high", "partial"],
+      ["commodities-materials", "elevated", "contained"],
+      ["technology-ai", "high", "partial"],
+    ]);
+  });
+
+  it("keeps the append-only degree history at 66, 69, 70, 74, 74", () => {
+    assert.deepEqual(
+      SYSTEM_TEMPERATURE_SNAPSHOTS.map(computeTemperatureDegrees),
+      [66, 69, 70, 74, 74],
     );
   });
 });
@@ -706,9 +747,9 @@ describe("Public route wiring", () => {
 });
 
 describe("Hub / monitor status sync", () => {
-  it("keeps evidence cutoff at September 16, 2026", async () => {
+  it("keeps evidence cutoff at October 1, 2026", async () => {
     const { LEDGER_EVIDENCE_CUTOFF } = await import("../ledger-monitor-framework");
-    assert.equal(LEDGER_EVIDENCE_CUTOFF, "September 16, 2026");
+    assert.equal(LEDGER_EVIDENCE_CUTOFF, "October 1, 2026");
   });
 
   it("has no stale public interim-methodology language", () => {
@@ -767,7 +808,7 @@ describe("Hub / monitor status sync", () => {
       assert.doesNotMatch(source, /LedgerIndexMeter/);
     }
     const hub = readLedger("components/weekly-synopsis.tsx");
-    assert.match(hub, /September 16, 2026/);
+    assert.match(hub, /October 1, 2026/);
     assert.match(hub, /74°/);
     assert.doesNotMatch(hub, /72°/);
   });

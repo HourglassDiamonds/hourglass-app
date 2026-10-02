@@ -31,4 +31,40 @@ describe("public Ledger monitor snapshot contract", () => {
       assert.ok(Array.isArray(snapshot.sources));
     }
   });
+
+  it("publishes October 1 as the latest review for every updated public monitor", () => {
+    const updatedSeries = [
+      GPM_SERIES,
+      ISM_SERIES,
+      ACAI_SERIES,
+      PMI_SERIES,
+      ISI_SERIES,
+      GWS_SERIES,
+    ];
+    for (const series of updatedSeries) {
+      const latest = series.snapshots.at(-1);
+      assert.equal(latest?.reviewDate, "October 1, 2026", series.id);
+      assert.equal(latest?.evidenceCutoff, "October 1, 2026", series.id);
+      assert.equal(
+        series.snapshots.at(-2)?.reviewDate,
+        "September 16, 2026",
+        `${series.id} must append rather than replace September history`,
+      );
+    }
+  });
+
+  it("retains evidence posture labels on October sources where applicable", () => {
+    const octoberSources = [
+      ...GPM_SERIES.snapshots.at(-1)!.sources,
+      ...ISM_SERIES.snapshots.at(-1)!.sources,
+      ...ACAI_SERIES.snapshots.at(-1)!.sources,
+      ...PMI_SERIES.snapshots.at(-1)!.sources,
+      ...ISI_SERIES.snapshots.at(-1)!.sources,
+      ...GWS_SERIES.snapshots.at(-1)!.sources,
+    ];
+    const labels = new Set(octoberSources.map((source) => source.evidenceLabel));
+    for (const label of ["Observed", "Provisional", "Lagged", "Forecast"] as const) {
+      assert.ok(labels.has(label), `missing ${label} evidence label`);
+    }
+  });
 });

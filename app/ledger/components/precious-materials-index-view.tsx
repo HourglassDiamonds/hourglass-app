@@ -29,8 +29,8 @@ const INTRO =
 const MATERIAL_STATES = [
   {
     name: "Gold",
-    level: "Rate-sensitive cooling / Fiscal-confidence bid fading",
-    body: "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it disconfirms a simple war-to-gold bid.",
+    level: "Rate-sensitive / Contained",
+    body: "The realized Fed hike and elevated 10-year preserve the rate-sensitive gold treatment. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment. Contained spreads and below-normal lagged financial stress argue against a generalized materials crisis.",
   },
   {
     name: "Silver",

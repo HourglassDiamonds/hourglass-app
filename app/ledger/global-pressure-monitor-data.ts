@@ -10,6 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
+import { bufferSourcesFor } from "./buffer-health-data";
 
 export const GPM_DISPLAY_TITLE = "Global Pressure Monitor";
 
@@ -19,7 +20,7 @@ export const GPM_SEO_DESCRIPTION =
   "Hourglass Ledger Global Pressure Monitor — qualitative status of external threat pressure and systemic transmission.";
 
 export const GPM_HUB_DESCRIPTION =
-  "Very high external pressure / Broader energy transmission — Saudi Arabia’s principal Hormuz-bypass route is disrupted and oil is in a $100+ regime, while credit, funding, and equities continue to function.";
+  "Very high external pressure / Broader energy transmission — energy buffers remain low despite restored East-West Pipeline and Yanbu flows, while credit, funding, and labor continue to function.";
 
 export const GPM_KICKER = "The Ledger Intelligence System";
 
@@ -34,23 +35,23 @@ export const GPM_CURRENT_STATE =
 export const GPM_CURRENT_DIRECTION_LABEL = "Current Direction";
 
 export const GPM_CURRENT_DIRECTION =
-  "Energy disruption broadening / Adaptation still limiting systemic failure";
+  "Energy buffers low / Restored bypass and contained financial stress limit escalation";
 
 export const GPM_LEAD =
-  "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. The East-West Pipeline was shut after attacks, and shipping sources reported oil loadings at Yanbu suspended. That is disruption of the principal bypass, not a confirmed total failure of all alternate routing. Kpler showed Hormuz commodity-vessel traffic at four on Monday, versus roughly 130–140 daily before the conflict. Brent settled around $108.75 on September 15 and remained in a $100+ regime on the morning of September 16. Libya halted three fields after a pipeline-valve protest. Half of Russia’s top diesel-producing refineries cut or halted output after drone strikes. Credit, funding, and equities continue to function; this is broader energy-supply transmission, not a confirmed financial-system seizure.";
+  "Energy buffers remain low after large oil-inventory draws, limited effective spare production, weak refined-product inventories, and constrained routing. Observed East-West Pipeline operations and Yanbu loadings resumed by late September, restoring part of the principal Hormuz bypass and cooling the outage-specific risk. The September Fed hike and elevated 10-year yield preserve financial pressure, but observed credit spreads remain contained, lagged financial stress remains below normal, funding is orderly, and labor is still functional. External pressure remains very high with broad energy transmission, not a confirmed financial-system seizure.";
 
 export const GPM_WHAT_CHANGED =
-  "Since the August 24 review, Saudi Arabia’s principal Hormuz-bypass route was disrupted. The East-West Pipeline shutdown and reported Yanbu loading suspension moved oil from the August 24 ~$92–93 band into a $100+ regime (Brent around $108). Already-depressed Hormuz commodity traffic fell further, to four vessels on Monday from ten a day earlier. Libya field shutdowns and Russian diesel-refinery damage added supply pressure in the same energy channel. Houthi strikes continued and Hormuz talks stalled. Credit and funding still function. Physical oil continues clearing. Energy-supply transmission is now broader than the prior partial state. Analyst $120/$130 oil paths are scenarios, not forecasts.";
+  "Since September 16, East-West Pipeline operations and Yanbu loadings resumed, restoring part of the routing buffer. That is real cooling evidence, but energy remains Low-buffer because inventories, effective spare production, refined products, and routing still have little slack. The Fed hike was realized and the 10-year remained elevated; contained spreads, below-normal lagged stress, orderly funding, and functional labor kept financial transmission partial. The channel states therefore hold. Analyst price paths remain scenarios, not forecasts.";
 
 export const GPM_THREAT_PANEL = {
   title: "Threat Pressure",
   level: "Very High",
   listLabel: "Drivers",
   items: [
-    "East-West Pipeline shut; Yanbu loadings reported suspended — principal Hormuz-bypass route disrupted",
-    "Hormuz commodity-vessel traffic at four on Monday vs ~130–140 daily pre-conflict",
-    "Brent around $108 — a $100+ regime still in place on the morning of September 16",
-    "Libya field shutdowns and Russian diesel-refinery outages in the same energy-supply channel",
+    "Large inventory draws and limited effective spare production leave energy buffers Low",
+    "East-West Pipeline operations and Yanbu loadings resumed — observed cooling, not full normalization",
+    "Weak refined-product inventories and constrained routing preserve broad energy transmission",
+    "Fertilizer and Gulf-corridor pressure remain visible without a verified physical food shortage",
   ],
 } as const;
 
@@ -59,10 +60,10 @@ export const GPM_TRANSMISSION_PANEL = {
   level: "Broad (energy supply) / Partial (financial path)",
   listLabel: "Evidence",
   items: [
-    "Energy-price transmission is now in a $100+ oil regime, with diesel futures sharply higher",
-    "Multi-corridor supply pressure: Hormuz, Red Sea/Yanbu, Libya, and Russian refining",
-    "Credit, funding, and equities continue to function; no confirmed financial-system seizure",
-    "Pipeline repair estimates range from very soon to about eight weeks; physical oil continues clearing",
+    "The Fed hike and elevated 10-year yield preserve very-high financial pressure",
+    "Observed corporate spreads remain contained; lagged financial stress remains below normal",
+    "Funding markets remain orderly and labor remains functional",
+    "Carolinas grid interventions were episodic and expired without national grid failure",
   ],
 } as const;
 
@@ -73,7 +74,7 @@ export const GPM_WATCHING_TITLE = "What We're Watching";
 export const GPM_WATCHING_BLOCKS = [
   {
     title: "East-West Pipeline / Yanbu restoration",
-    body: "Whether the principal East-West Pipeline / Yanbu route resumes on a days-to-weeks timeline, or whether a multi-week outage keeps the $100+ oil regime in place. Analyst $120/$130 paths are scenarios, not forecasts.",
+    body: "Whether observed East-West Pipeline / Yanbu restoration persists and rebuilds routing slack, or fails again while Hormuz traffic remains constrained. Analyst price paths are scenarios, not forecasts.",
   },
   {
     title: "Hormuz transit vs continued restriction",
@@ -85,7 +86,7 @@ export const GPM_WATCHING_BLOCKS = [
   },
   {
     title: "Credit, stress & volatility confirmation",
-    body: "Whether corporate-credit spreads, financial-stress measures, or funding markets begin confirming a seizure. Absent that, financial-system stress stays below crisis bands.",
+    body: "Whether observed corporate-credit spreads, lagged financial-stress measures, or funding markets begin confirming a seizure. Absent that, financial-system stress stays below crisis bands.",
   },
   {
     title: "Supply-chain transmission beyond energy",
@@ -289,7 +290,7 @@ export const GPM_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "September 16, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "September 16, 2026",
       currentState: GPM_CURRENT_STATE,
       currentDirection: GPM_CURRENT_DIRECTION,
       previousState: "Very high external pressure / Cross-system transmission emerging",
@@ -348,6 +349,16 @@ export const GPM_SERIES = defineLedgerMonitorSeries({
             "Morning-of-September-16 confirmation: oil remained in a $100+ regime while the U.S. 10-year retreated just below 5% — a print move, not a cooling of energy or financial pressure levels",
         },
       ],
+    },
+    {
+      reviewDate: "October 1, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GPM_CURRENT_STATE,
+      currentDirection: GPM_CURRENT_DIRECTION,
+      previousState: "Very high external pressure / Broader energy transmission",
+      materialChangeSummary: GPM_WHAT_CHANGED,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: bufferSourcesFor("energy", "financial-system", "labor", "grid", "food"),
     },
   ],
 });

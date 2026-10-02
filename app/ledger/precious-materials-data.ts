@@ -10,6 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
+import { bufferSourcesFor } from "./buffer-health-data";
 
 export const PMI_UPDATED_LABEL = "";
 
@@ -56,23 +57,23 @@ export const PMI_RECENT_READINGS = [
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer. Gold is not a simple war-to-price story this week; it is falling as yields and hike odds rise.";
+  "Material markets remain connected to broader macro and reserve-asset conditions, but jewelry sourcing follows its own segmented logic. The realized Fed hike and elevated 10-year are Financial evidence; contained spreads and below-normal lagged stress prevent that rates event from becoming a separate precious-materials escalation.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher Treasury yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it is disconfirming, because geopolitical risk is high while gold is falling.",
+  "The realized Fed hike and elevated 10-year yield preserve the rate-sensitive precious-materials treatment. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment. Observed contained spreads and lagged below-normal financial stress also argue against recasting the move as a generalized materials crisis.",
   "World Gold Council Q2 2026 data show official-sector purchases of 289t, supporting the structural reserve-demand read beneath near-term price action.",
   "Natural-diamond markets remain segmented rather than broadly recovered or collapsed. Rapaport’s August RAPI rose 0.5% for 1-carat goods — the first monthly increase in about 15 months — with 0.30-carat +2% and 0.50-carat +2.5% as supply cuts bite; 3-carat slipped 0.4%. De Beers H1 realized price was $105/ct, down 32%. Larger/higher-quality natural goods remain comparatively resilient; commercial goods stay price-sensitive. This is not a generic diamond shortage.",
   "Lab-grown continues to track wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change this week — strategically firm and highly segmented remains the posture.",
-  "Gold around ~$4,270–$4,300 is rate-sensitive cooling, not a monocausal war bid. Do not double-count this as a materials System Temperature increment.",
+  "No materials-regime change in the October evidence pass — strategically firm and highly segmented remains the posture.",
+  "The Fed hike and elevated long yields remain a Financial-channel event. Do not double-count them as a precious-materials System Temperature increment.",
   "Natural diamonds should be read as segmented: August RAPI showed a first 1-carat monthly rise in 15 months and stronger smalls, not generic scarcity.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold holds the high-$4,200s or recovers toward $4,400+ if hike odds or yields reverse.",
+  "Whether precious-material price action separates from the already-counted rates and dollar event.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
   "Whether the August 1-carat RAPI rise broadens, or whether commercial goods stall again.",
   "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
@@ -230,7 +231,7 @@ export const PMI_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "September 16, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "September 16, 2026",
       currentState: "Strategically firm / Highly segmented",
       currentDirection: "Rate-sensitive gold cooling / Diamonds still segmented",
       previousState: "Strategically firm / Highly segmented",
@@ -261,6 +262,39 @@ export const PMI_SERIES = defineLedgerMonitorSeries({
           url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
           supports:
             "Producer-economics context remaining segmented: H1 realized $105/ct, down 32%, with commercial goods still pressured by lab-grown competition",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 1, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Rate-sensitive / Diamonds still segmented",
+      previousState: "Strategically firm / Highly segmented",
+      materialChangeSummary:
+        "No precious-materials regime change and no new System Temperature materials increment. The realized Fed hike and elevated 10-year remain Financial-channel evidence; observed contained spreads and lagged below-normal stress argue against a generalized seizure. The latest approved diamond evidence remains segmented rather than generically scarce.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        ...bufferSourcesFor("financial-system"),
+        {
+          institution: "Rapaport USA / GlobeNewswire",
+          title: "Diamond Price Recovery Broadens Further in August",
+          date: "September 2, 2026 (reviewed October 1, 2026)",
+          dataPeriod: "August 2026",
+          evidenceLabel: "Lagged",
+          url: "https://lifestyle.pspl.com/story/829646/diamond-price-recovery-broadens-further-in-august/",
+          supports:
+            "Natural-diamond evidence remains segmented: firmer smalls and 1-carat goods did not establish generic scarcity.",
+        },
+        {
+          institution: "De Beers Group",
+          title: "Interim financial results for 2026",
+          date: "H1 2026 results (reviewed October 1, 2026)",
+          dataPeriod: "First half 2026",
+          evidenceLabel: "Lagged",
+          url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
+          supports:
+            "Producer economics and commercial-goods pressure remain segmented rather than a broad materials shortage.",
         },
       ],
     },

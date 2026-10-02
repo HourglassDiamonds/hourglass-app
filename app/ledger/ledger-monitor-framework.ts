@@ -9,7 +9,7 @@
 export const LEDGER_METHODOLOGY_VERSION = "qualitative-v1";
 
 /** Shared evidence cutoff for the current public review cycle. */
-export const LEDGER_EVIDENCE_CUTOFF = "September 16, 2026";
+export const LEDGER_EVIDENCE_CUTOFF = "October 1, 2026";
 
 export const LEDGER_EVIDENCE_CUTOFF_LABEL = `Evidence reviewed through ${LEDGER_EVIDENCE_CUTOFF}`;
 
@@ -63,6 +63,10 @@ export type LedgerEvidenceSource = {
   url?: string;
   /** Which current claim this source supports */
   supports: string;
+  /** Evidence posture when the source is time-sensitive or not final. */
+  evidenceLabel?: "Observed" | "Estimated" | "Forecast" | "Provisional" | "Lagged";
+  /** Period represented by the observation, distinct from publication date. */
+  dataPeriod?: string;
 };
 
 export type LedgerMonitorSnapshot = {

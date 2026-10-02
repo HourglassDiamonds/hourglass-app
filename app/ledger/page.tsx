@@ -3,10 +3,12 @@ import Link from "next/link";
 import GlobalPressureMeter from "./components/global-pressure-meter";
 import { BufferHealthVisual } from "./components/buffer-health-view";
 import LedgerIndexesSection from "./components/ledger-indexes-section";
+import LedgerHistoryComparison from "./components/ledger-history-comparison";
 import LedgerShell from "./components/ledger-shell";
 import SystemTemperature from "./components/system-temperature";
 import WeeklySynopsis from "./components/weekly-synopsis";
 import { QUIET_METRICS, TRACK_TOPICS } from "./constants";
+import { buildLedgerHistoricalComparisons } from "./historical-comparison";
 
 export const metadata: Metadata = {
   title: "Hourglass Ledger — Calm intelligence for a volatile world",
@@ -34,6 +36,8 @@ const LEDGER_JSON_LD = {
 };
 
 export default function LedgerPage() {
+  const historicalComparisons = buildLedgerHistoricalComparisons();
+
   return (
     <LedgerShell>
       <script
@@ -100,6 +104,8 @@ export default function LedgerPage() {
           <BufferHealthVisual compact />
         </div>
       </section>
+
+      <LedgerHistoryComparison comparisons={historicalComparisons} />
 
       <LedgerIndexesSection />
 
