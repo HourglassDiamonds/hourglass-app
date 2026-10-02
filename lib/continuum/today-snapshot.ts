@@ -9,6 +9,16 @@ import type { CosTodayDocketView } from "@/lib/continuum/chief-of-staff/operatin
 export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v3" as const;
 export const TODAY_SNAPSHOT_KEY = "founder_today_v1" as const;
 
+const DISPLAY_COMPATIBLE_READ_MODEL_VERSIONS = new Set([
+  "continuum-today-read-model-v1",
+  "continuum-today-read-model-v2",
+  CONTINUUM_TODAY_READ_MODEL_VERSION,
+]);
+
+export function isTodaySnapshotDisplayCompatibleVersion(value: unknown): value is string {
+  return typeof value === "string" && DISPLAY_COMPATIBLE_READ_MODEL_VERSIONS.has(value);
+}
+
 const DROP_KEYS = new Set([
   "sourceEvents",
   "authorOwnedText",
@@ -28,7 +38,7 @@ const DROP_KEYS = new Set([
 const MAX_TEXT = 800;
 
 export type TodaySnapshotPayload = {
-  readModelVersion: typeof CONTINUUM_TODAY_READ_MODEL_VERSION;
+  readModelVersion: string;
   validUntil: string | null;
   docket: CosTodayDocketView;
 };
@@ -82,7 +92,7 @@ export function serializedTodaySnapshotBytes(payload: TodaySnapshotPayload): num
 export function readTodaySnapshotPayload(value: unknown): TodaySnapshotPayload | null {
   if (!value || typeof value !== "object") return null;
   const row = value as { readModelVersion?: unknown; validUntil?: unknown; docket?: unknown };
-  if (row.readModelVersion !== CONTINUUM_TODAY_READ_MODEL_VERSION) return null;
+  if (!isTodaySnapshotDisplayCompatibleVersion(row.readModelVersion)) return null;
   if (
     row.validUntil !== undefined &&
     row.validUntil !== null &&
@@ -108,13 +118,15 @@ export function decideSnapshotUse(input: {
   nowIso?: string;
 }): TodaySnapshotUse {
   if (!input.record) return "miss";
-  if (input.record.readModelVersion !== CONTINUUM_TODAY_READ_MODEL_VERSION) return "miss";
+  if (!isTodaySnapshotDisplayCompatibleVersion(input.record.readModelVersion)) return "miss";
   if (!readTodaySnapshotPayload(input.record.payload)) return "miss";
   const now = Date.parse(input.nowIso ?? new Date().toISOString());
   const validUntil = Date.parse(input.record.payload.validUntil ?? "");
   if (Number.isFinite(validUntil) && (!Number.isFinite(now) || now >= validUntil))
     return "miss";
   if (!input.liveWatermark) return "miss";
+  if (input.record.readModelVersion !== CONTINUUM_TODAY_READ_MODEL_VERSION)
+    return "refreshing";
   if (input.record.sourceWatermark === input.liveWatermark) return "current";
   return "refreshing";
 }

@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { describe, it } from "node:test";
+import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 import { shouldPollTodayFreshness, shouldSwapTodayAfterRecompute } from "./today-refresh";
 import { deriveTodayFreshnessInvalidation } from "@/lib/continuum/gmail/freshness-cycle";
@@ -114,6 +115,21 @@ describe("Today navigation read model", () => {
     );
   });
 
+  it("does not await a slow recompute before the persisted docket is usable", async () => {
+    resetTodayReadModelCache();
+    let finish!: () => void;
+    const slowRecompute = new Promise<void>((resolve) => {
+      finish = resolve;
+    });
+    const startedAt = performance.now();
+    assert.equal(beginTodayRecompute("v3", () => slowRecompute), true);
+    const usableAfterMs = performance.now() - startedAt;
+    assert.ok(usableAfterMs < 50, `background start blocked for ${usableAfterMs}ms`);
+    assert.equal(todayRecomputeInFlight(), true);
+    finish();
+    await waitForTodayRecompute();
+  });
+
   it("keeps the last composed loop when background recomposition fails", async () => {
     resetTodayReadModelCache();
     storeCachedTodayLoop("v1", 1_000, loop("last known"));
@@ -176,6 +192,10 @@ describe("Today navigation read model", () => {
     assert.ok(snapshot > refreshing);
     assert.ok(rebuild > snapshot);
     assert.match(fn, /scheduleTodayRebuild/);
+    assert.doesNotMatch(
+      fn,
+      /snapshotUse === "refreshing"\s*&&\s*snapshot\.sourceWatermark === watermark/,
+    );
     assert.match(load, /from "next\/server"/);
     const ui = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/components/gmail-operating-freshness.tsx"),

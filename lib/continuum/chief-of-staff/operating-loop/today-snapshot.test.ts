@@ -10,6 +10,7 @@ import {
   decideSnapshotUse,
   projectTodaySnapshot,
   publishWinsRace,
+  readTodaySnapshotPayload,
   serializedTodaySnapshotBytes,
   type TodaySnapshotRecord,
 } from "@/lib/continuum/today-snapshot";
@@ -187,6 +188,36 @@ describe("persisted Today snapshot", () => {
         liveWatermark: "v1",
       }),
       "miss",
+    );
+    assert.equal(
+      readTodaySnapshotPayload({
+        readModelVersion: "continuum-today-read-model-v0",
+        docket: { items: [], watching: [] },
+      }),
+      null,
+    );
+  });
+
+  it("renders a structurally valid v1 snapshot as labeled stale while v3 rebuilds", () => {
+    const legacy = record("old", "continuum-today-read-model-v1");
+    legacy.payload = {
+      readModelVersion: "continuum-today-read-model-v1",
+      validUntil: null,
+      docket: docket(),
+    };
+    assert.ok(readTodaySnapshotPayload(legacy.payload));
+    assert.equal(
+      decideSnapshotUse({ record: legacy, liveWatermark: "live" }),
+      "refreshing",
+    );
+  });
+
+  it("reuses a persisted current-model snapshot when the watermark still matches", () => {
+    const stored = record("live");
+    assert.equal(stored.readModelVersion, CONTINUUM_TODAY_READ_MODEL_VERSION);
+    assert.equal(
+      decideSnapshotUse({ record: stored, liveWatermark: "live" }),
+      "current",
     );
   });
 

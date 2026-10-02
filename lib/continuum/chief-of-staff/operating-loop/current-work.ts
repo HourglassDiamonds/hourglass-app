@@ -535,7 +535,10 @@ export function projectCurrentWork(
           (sameScope(o, e) &&
             (o.actor === "founder" || (e.hasAttachments && o.kind === "cad"))),
       );
-      dependency = founderCommitmentDependency(text);
+      // An attachment-bearing fulfillment can carry quoted promise text;
+      // that text cannot reopen the same obligation it just satisfied.
+      // Text-only messages may still establish a genuine new commitment.
+      dependency = e.hasAttachments ? null : founderCommitmentDependency(text);
       actor = dependency ? "founder" : actor;
     } else continue;
     // A changed blocker replaces only its own scoped stage obligation.

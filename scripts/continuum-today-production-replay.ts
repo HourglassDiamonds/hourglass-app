@@ -22,6 +22,7 @@ import { hashEmail, hashStoredPersonEmail } from "../lib/continuum/client-memory
 import { loadProjectJobs } from "../lib/continuum/client-memory/project-jobs/load";
 import { composeCosOperatingLoop } from "../lib/continuum/chief-of-staff/operating-loop/compose";
 import { composeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/docket";
+import { finalizeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/today-docket-boundary";
 import type { CosProjectContext } from "../lib/continuum/chief-of-staff/operating-loop/types";
 import { generatedOperatingMailHashesFromEnv } from "../lib/continuum/gmail/candidates/generated-source";
 import { parseGmailCandidateSourceRef } from "../lib/continuum/gmail/candidates/source-ref";
@@ -458,6 +459,7 @@ async function main() {
     vendorDirectory: ["vlora"],
   });
   const docket = composeTodayDocket(loop);
+  const finalized = finalizeTodayDocket(loop);
   const upNext = docket.items.map((item) => ({
     subject: item.subject,
     headline: clip(item.headline),
@@ -473,7 +475,9 @@ async function main() {
     chip: item.briefing?.stateChip ?? null,
   }));
   const named = (needle: RegExp) => {
-    const item = docket.items.find((row) => needle.test(hayOf(row)));
+    const item =
+      docket.items.find((row) => needle.test(hayOf(row))) ??
+      finalized.upNext.find((row) => needle.test(hayOf(row)));
     const watch = docket.watching.find((row) => needle.test(hayOf(row)));
     return {
       lane: item ? "up_next" : watch ? "watching" : "absent",

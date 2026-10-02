@@ -200,11 +200,17 @@ describe("Phase 2 current truth through reducer and final docket", () => {
   });
   it("founder delivery attachment closes the same-CAD shop obligation", () => {
     const request = event("request", "Please send the CAD.", 10, "founder");
-    const deliveredToClient = event("client-delivery", "", 11, "founder", {
-      semanticClass: "founder_fulfills_commitment",
-      attachmentFilenames: ["image0.jpeg"],
-      hasAttachments: true,
-    });
+    const deliveredToClient = event(
+      "client-delivery",
+      "I'll send those. Attached.",
+      11,
+      "founder",
+      {
+        semanticClass: "founder_fulfills_commitment",
+        attachmentFilenames: ["image0.jpeg"],
+        hasAttachments: true,
+      },
+    );
     const projection = project([request, deliveredToClient]);
     assert.equal(projection.activeObligations.length, 0);
     assert.equal(projection.historicalObligations.at(-1)?.status, "satisfied");

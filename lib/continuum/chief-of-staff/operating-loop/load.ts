@@ -252,11 +252,11 @@ async function commitComposedLoop(
 
 async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boolean> {
   if (!shouldScheduleTodayRecompute(watermark, now.getTime())) return false;
-  const [desk, store] = await Promise.all([
-    getAuthenticatedProjectDeskReader(),
-    getAuthenticatedCandidateStore(),
-  ]);
   const run = async () => {
+    const [desk, store] = await Promise.all([
+      getAuthenticatedProjectDeskReader(),
+      getAuthenticatedCandidateStore(),
+    ]);
     for (let attempt = 0; attempt < 2; attempt += 1) {
       const evaluation = await beginTodayRecomputeAttempt((evaluationTime) =>
         liveWatermark(watermark, evaluationTime),
@@ -352,7 +352,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
         readModelWatermark: snapshot.sourceWatermark,
       };
     }
-    if (snapshot && snapshotUse === "refreshing" && snapshot.sourceWatermark === watermark) {
+    if (snapshot && snapshotUse === "refreshing") {
       const scheduled = watermark ? await scheduleTodayRebuild(now, watermark) : false;
       return {
         docket: snapshot.payload.docket,
