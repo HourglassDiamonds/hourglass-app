@@ -37,6 +37,20 @@ const LIVE_FACT_CONCURRENCY = 4;
 const INDEX_SELECT =
   "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, has_attachments";
 
+export type TodayLiveEnrichmentDiagnostics = {
+  requestedThreadCount: number;
+  completedThreadCount: number;
+  failedThreadCount: number;
+  missingIndexedThreadCount: number;
+  missingLiveMessageThreadCount: number;
+  threadFetches: number;
+  durationMs: number;
+  failuresByCode: Readonly<Record<string, number>>;
+  sizeBuckets: Readonly<Record<"small" | "medium" | "large", { completed: number; failed: number }>>;
+  attachmentThreads: { completed: number; failed: number };
+  nonAttachmentThreads: { completed: number; failed: number };
+};
+
 function indexedDirection(
   value: unknown,
   fromEmailHash?: string | null,
@@ -361,13 +375,73 @@ export async function loadLiveTodayOperationalFacts(
   options: {
     createBatch?: () => Promise<LiveSourceViewerBatch | null>;
     requireComplete?: boolean;
+    threadIds?: readonly string[];
+    onDiagnostics?: (diagnostics: TodayLiveEnrichmentDiagnostics) => void;
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
-  const threadIds = [...new Set(base.keys())].sort();
-  if (threadIds.length === 0) return out;
+  const threadIds = [
+    ...new Set((options.threadIds ?? [...base.keys()]).map((threadId) => threadId.trim()).filter(Boolean)),
+  ].sort();
+  const startedAt = Date.now();
+  const failuresByCode: Record<string, number> = {};
+  const sizeBuckets = {
+    small: { completed: 0, failed: 0 },
+    medium: { completed: 0, failed: 0 },
+    large: { completed: 0, failed: 0 },
+  };
+  const attachmentThreads = { completed: 0, failed: 0 };
+  const nonAttachmentThreads = { completed: 0, failed: 0 };
+  let completedThreadCount = 0;
+  let failedThreadCount = 0;
+  let missingIndexedThreadCount = 0;
+  let missingLiveMessageThreadCount = 0;
+  const recordOutcome = (
+    current: TodayGmailThreadContext | undefined,
+    completed: boolean,
+    failureCode?: string,
+  ) => {
+    const size = current?.messages?.length ?? 0;
+    const bucket = size <= 5 ? "small" : size <= 20 ? "medium" : "large";
+    sizeBuckets[bucket][completed ? "completed" : "failed"] += 1;
+    const attachmentBucket = current?.messages?.some((message) => message.hasAttachments === true)
+      ? attachmentThreads
+      : nonAttachmentThreads;
+    attachmentBucket[completed ? "completed" : "failed"] += 1;
+    if (completed) completedThreadCount += 1;
+    else {
+      failedThreadCount += 1;
+      const code = failureCode ?? "unknown";
+      failuresByCode[code] = (failuresByCode[code] ?? 0) + 1;
+    }
+  };
+  const emitDiagnostics = (threadFetches: number) => {
+    try {
+      options.onDiagnostics?.({
+        requestedThreadCount: threadIds.length,
+        completedThreadCount,
+        failedThreadCount,
+        missingIndexedThreadCount,
+        missingLiveMessageThreadCount,
+        threadFetches,
+        durationMs: Date.now() - startedAt,
+        failuresByCode,
+        sizeBuckets,
+        attachmentThreads,
+        nonAttachmentThreads,
+      });
+    } catch {
+      // Aggregate observability must never change publication truth.
+    }
+  };
+  if (threadIds.length === 0) {
+    emitDiagnostics(0);
+    return out;
+  }
   const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
   if (!batch) {
+    for (const threadId of threadIds) recordOutcome(out.get(threadId), false, "batch-unavailable");
+    emitDiagnostics(0);
     if (options.requireComplete) throw new Error("today-live-enrichment-unavailable");
     return out;
   }
@@ -378,7 +452,12 @@ export async function loadLiveTodayOperationalFacts(
     while (cursor < threadIds.length) {
       const threadId = threadIds[cursor++]!;
       const current = out.get(threadId);
-      if (!current?.messages?.length) continue;
+      if (!current?.messages?.length) {
+        incomplete = true;
+        missingIndexedThreadCount += 1;
+        recordOutcome(current, false, "missing-indexed-context");
+        continue;
+      }
       out.set(threadId, { ...current, liveEnrichmentAttempted: true });
       const fetched = await batch.fetchThread({
         threadId,
@@ -391,11 +470,14 @@ export async function loadLiveTodayOperationalFacts(
       });
       if (!fetched.ok) {
         incomplete = true;
+        recordOutcome(current, false, fetched.safeErrorCode);
         continue;
       }
       const liveById = new Map(fetched.messages.map((message) => [message.messageId, message]));
-      if (current.messages.some((message) => !liveById.has(message.messageId))) {
+      const missingLiveMessage = current.messages.some((message) => !liveById.has(message.messageId));
+      if (missingLiveMessage) {
         incomplete = true;
+        missingLiveMessageThreadCount += 1;
       }
       const messages = current.messages.map((message) => {
         const live = liveById.get(message.messageId);
@@ -451,11 +533,13 @@ export async function loadLiveTodayOperationalFacts(
           ]),
         ],
       });
+      recordOutcome(current, !missingLiveMessage, missingLiveMessage ? "missing-live-message" : undefined);
     }
   };
   await Promise.all(
     Array.from({ length: Math.min(LIVE_FACT_CONCURRENCY, threadIds.length) }, () => worker()),
   );
+  emitDiagnostics(batch.metrics?.threadFetches ?? threadIds.length);
   if (options.requireComplete && incomplete) {
     throw new Error("today-live-enrichment-incomplete");
   }

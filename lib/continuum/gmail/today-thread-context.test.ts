@@ -292,9 +292,14 @@ describe("Today live Gmail rebuild batch", () => {
         loadLiveTodayOperationalFacts(base, {
           requireComplete: true,
           createBatch: async () => ({
+            credentialLoads: 1,
+            metrics: { threadFetches: 0 },
             async fetchThread({ threadId }) {
               if (threadId === "thread-b") {
-                return { ok: false, reason: "unavailable" } as never;
+                return {
+                  ok: false,
+                  safeErrorCode: "unavailable",
+                } as const;
               }
               return {
                 ok: true,
@@ -324,5 +329,208 @@ describe("Today live Gmail rebuild batch", () => {
         }),
       /today-live-enrichment-incomplete/,
     );
+  });
+
+  it("does not let an unrelated historical timeout veto a required subset", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      [
+        "required-thread",
+        {
+          messages: [
+            {
+              messageId: "required-message",
+              sentAt: "2026-09-29T12:00:00.000Z",
+              direction: "inbound",
+              hasAttachments: true,
+            },
+          ],
+        },
+      ],
+      [
+        "historical-thread",
+        {
+          messages: [
+            {
+              messageId: "historical-message",
+              sentAt: "2024-01-01T12:00:00.000Z",
+              direction: "inbound",
+            },
+          ],
+        },
+      ],
+    ]);
+    const fetched: string[] = [];
+    const diagnostics: unknown[] = [];
+    const result = await loadLiveTodayOperationalFacts(base, {
+      threadIds: ["required-thread"],
+      requireComplete: true,
+      onDiagnostics: (value) => diagnostics.push(value),
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 1 },
+        async fetchThread({ threadId, indexed }) {
+          fetched.push(threadId);
+          if (threadId === "historical-thread") {
+            return { ok: false, safeErrorCode: "thread-fetch-failed" } as const;
+          }
+          return {
+            ok: true,
+            safeErrorCode: null,
+            threadId,
+            indexedSubject: null,
+            messages: indexed.map((message) => ({
+              messageId: message.messageId,
+              threadId,
+              sentAt: message.sentAt,
+              fromRaw: "Shop <shop@example.test>",
+              fromEmail: "shop@example.test",
+              to: [],
+              cc: [],
+              subject: message.subject,
+              plainText: "New CAD attached.",
+              snippet: "",
+              attachments: [
+                { filename: "current-cad.pdf", mimeType: "application/pdf" },
+              ],
+            })),
+            gmailMutation: false,
+            plaintextPersisted: false,
+            cursorUnchanged: true,
+            readOnly: true,
+          };
+        },
+      }),
+    });
+
+    assert.deepEqual(fetched, ["required-thread"]);
+    assert.equal(
+      result.get("historical-thread")?.liveEnrichmentAttempted,
+      undefined,
+    );
+    assert.deepEqual(result.get("required-thread")?.attachmentFilenames, [
+      "current-cad.pdf",
+    ]);
+    assert.equal(diagnostics.length, 1);
+    assert.equal(
+      (diagnostics[0] as { requestedThreadCount: number }).requestedThreadCount,
+      1,
+    );
+  });
+
+  it("blocks publication when a required thread times out", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      [
+        "required-thread",
+        {
+          messages: [
+            {
+              messageId: "required-message",
+              sentAt: "2026-09-29T12:00:00.000Z",
+              direction: "inbound",
+            },
+          ],
+        },
+      ],
+    ]);
+    let diagnostics: { failuresByCode: Readonly<Record<string, number>> } | null = null;
+
+    await assert.rejects(
+      () =>
+        loadLiveTodayOperationalFacts(base, {
+          threadIds: ["required-thread"],
+          requireComplete: true,
+          onDiagnostics: (value) => {
+            diagnostics = value;
+          },
+          createBatch: async () => ({
+            credentialLoads: 1,
+            metrics: { threadFetches: 1 },
+            async fetchThread() {
+              return {
+                ok: false,
+                safeErrorCode: "thread-fetch-failed",
+              } as const;
+            },
+          }),
+        }),
+      /today-live-enrichment-incomplete/,
+    );
+    assert.equal(diagnostics?.failuresByCode["thread-fetch-failed"], 1);
+  });
+
+  it("reuses persisted indexed context outside the required live set", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      [
+        "persisted-thread",
+        {
+          subject: "Persisted subject",
+          attachmentFilenames: ["persisted-cad.pdf"],
+          messages: [
+            {
+              messageId: "persisted-message",
+              sentAt: "2026-09-20T12:00:00.000Z",
+              direction: "inbound",
+              operationalText: "Persisted validated evidence",
+            },
+          ],
+        },
+      ],
+      [
+        "required-thread",
+        {
+          messages: [
+            {
+              messageId: "required-message",
+              sentAt: "2026-09-29T12:00:00.000Z",
+              direction: "inbound",
+            },
+          ],
+        },
+      ],
+    ]);
+    const fetched: string[] = [];
+    const result = await loadLiveTodayOperationalFacts(base, {
+      threadIds: ["required-thread"],
+      requireComplete: true,
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 1 },
+        async fetchThread({ threadId, indexed }) {
+          fetched.push(threadId);
+          return {
+            ok: true,
+            safeErrorCode: null,
+            threadId,
+            indexedSubject: null,
+            messages: indexed.map((message) => ({
+              messageId: message.messageId,
+              threadId,
+              sentAt: message.sentAt,
+              fromRaw: "Shop <shop@example.test>",
+              fromEmail: "shop@example.test",
+              to: [],
+              cc: [],
+              subject: message.subject,
+              plainText: "Current operational evidence",
+              snippet: "",
+              attachments: [],
+            })),
+            gmailMutation: false,
+            plaintextPersisted: false,
+            cursorUnchanged: true,
+            readOnly: true,
+          };
+        },
+      }),
+    });
+
+    assert.deepEqual(fetched, ["required-thread"]);
+    assert.equal(
+      result.get("persisted-thread")?.messages?.[0]?.operationalText,
+      "Persisted validated evidence",
+    );
+    assert.deepEqual(result.get("persisted-thread")?.attachmentFilenames, [
+      "persisted-cad.pdf",
+    ]);
   });
 });

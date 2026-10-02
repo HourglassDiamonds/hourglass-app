@@ -552,8 +552,8 @@ async function main() {
   expect(proofs.grant.ball !== "client", "grant-not-client-wait");
   expect(proofs.duane.lane === "watching" && proofs.duane.ball === "vendor_shop", "duane-vendor-shop");
   expect(
-    proofs.sarah.lane === "up_next" && proofs.sarah.next === "founder_review",
-    "sarah-founder-review",
+    proofs.sarah.lane === "watching" && proofs.sarah.ball === "vendor_shop",
+    "sarah-vendor-shop",
   );
   expect(!/price|timeline|next steps/i.test(proofs.sarah.copy ?? ""), "sarah-no-generic-copy");
   expect(proofs.nathan.lane === "watching" && proofs.nathan.ball === "vendor_shop", "nathan-vendor-shop");

@@ -23,11 +23,10 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { tagStoredGeneratedOperatingMailCandidates } from "@/lib/continuum/gmail/candidates/tag-stored-generated-load";
 import {
   loadIndexedTodayThreadContext,
-  loadLiveExternalThreadIdentity,
   loadLiveTodayOperationalFacts,
-  mergeTodayThreadContext,
 } from "@/lib/continuum/gmail/today-thread-context";
-import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
+import { requiredTodayLiveThreadIds } from "@/lib/continuum/gmail/today-required-thread-set";
+import { emitTodayLiveEnrichmentDiagnostics } from "@/lib/continuum/today-enrichment-telemetry";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
 import {
   CURRENT_OPERATING_BACKLOG,
@@ -43,6 +42,7 @@ import {
 } from "@/lib/continuum/today-snapshot-store";
 import { composeCosOperatingLoop } from "./compose";
 import { composeTodayDocket, type CosTodayDocketView } from "./docket";
+import { finalizeTodayDocket } from "./today-docket-boundary";
 import {
   beginTodayRecompute,
   chooseTodayNavigation,
@@ -101,6 +101,19 @@ function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
     (threadId) =>
       loop.threadContext?.get(threadId)?.liveEnrichmentAttempted !== true,
   );
+}
+
+function requiredLiveThreadIds(
+  loop: CosOperatingLoopView,
+  candidates: readonly ContinuumCandidate[],
+): string[] {
+  const docket = finalizeTodayDocket(loop);
+  return requiredTodayLiveThreadIds({
+    ...docket,
+    candidates,
+    associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
+    unresolvedIdentityThreadIds: unassignedLiveIdentityThreadIds(loop),
+  });
 }
 
 function disconnectedLoop(): CosOperatingLoopView {
@@ -177,10 +190,7 @@ async function rebuildTodayLoop(
     client,
     listed,
   );
-  const indexedContext = await loadLiveTodayOperationalFacts(
-    await loadIndexedTodayThreadContext(candidates),
-    { requireComplete: true },
-  );
+  const indexedContext = await loadIndexedTodayThreadContext(candidates);
   const founderCorrections = client ? await loadFounderCorrectionEvents(client) : [];
   const composeInput = {
     founderCorrections,
@@ -192,20 +202,28 @@ async function rebuildTodayLoop(
     threadContext: indexedContext,
     knownPeople,
   };
+  let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
-  const unassignedThreads = unassignedLiveIdentityThreadIds(loop);
-  if (unassignedThreads.length > 0) {
-    const live = new Map<string, TodayGmailThreadContext>();
-    for (const threadId of unassignedThreads) {
-      const identity = await loadLiveExternalThreadIdentity(threadId);
-      if (identity) live.set(threadId, identity);
-    }
-    if (live.size > 0) {
-      loop = composeCosOperatingLoop({
-        ...composeInput,
-        threadContext: mergeTodayThreadContext(indexedContext, live),
-      });
-    }
+  const enrichedThreadIds = new Set<string>();
+  for (let pass = 0; pass < 2; pass += 1) {
+    const required = requiredLiveThreadIds(loop, candidates);
+    const pending = required.filter(
+      (threadId) => !enrichedThreadIds.has(threadId),
+    );
+    if (pending.length === 0) break;
+    threadContext = await loadLiveTodayOperationalFacts(threadContext, {
+      threadIds: pending,
+      requireComplete: true,
+      onDiagnostics: emitTodayLiveEnrichmentDiagnostics,
+    });
+    for (const threadId of pending) enrichedThreadIds.add(threadId);
+    loop = composeCosOperatingLoop({ ...composeInput, threadContext });
+  }
+  const unresolvedRequired = requiredLiveThreadIds(loop, candidates).filter(
+    (threadId) => !enrichedThreadIds.has(threadId),
+  );
+  if (unresolvedRequired.length > 0) {
+    throw new Error("today-live-enrichment-required-set-moved");
   }
   return loop;
 }
