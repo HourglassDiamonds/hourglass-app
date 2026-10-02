@@ -1159,32 +1159,35 @@ function classifySituation(input: {
     associatedSubjects.find((subject) => clientLabelFromHgdSubject(subject)) ??
     thread?.subject ??
     null;
+  const scopedCadIds = identityLabel?.cadId
+    ? [identityLabel.cadId]
+    : [
+        ...currentCadTokensFromIdentityHay([
+          thread?.subject,
+          ...associatedSubjects,
+          ...attachmentNames,
+          ...input.rows.map((row) => row.evidenceBasis.matchedText),
+          ...input.rows.map((row) =>
+            row.payload.kind === "structured_spec"
+              ? row.payload.proposedValue
+              : row.payload.kind === "project_context"
+                ? row.payload.value
+                : "",
+          ),
+        ]),
+        ...input.rows.flatMap((row) =>
+          `${row.evidenceBasis.matchedText} ${
+            row.payload.kind === "structured_spec" ? row.payload.proposedValue : ""
+          }`.match(/\bC\d{5,}\b/gi) ?? [],
+        ),
+      ];
   const loopSourceEvents = sourceEventsForWorkLoop(input.sourceEvents ?? [], {
     key: input.key,
     threadIds: associatedThreadIds,
-    cadIds: [
-      ...(identityLabel?.cadId ? [identityLabel.cadId] : []),
-      ...currentCadTokensFromIdentityHay([
-        thread?.subject,
-        ...associatedSubjects,
-        ...attachmentNames,
-        ...input.rows.map((row) => row.evidenceBasis.matchedText),
-        ...input.rows.map((row) =>
-          row.payload.kind === "structured_spec"
-            ? row.payload.proposedValue
-            : row.payload.kind === "project_context"
-              ? row.payload.value
-              : "",
-        ),
-      ]),
-      ...input.rows.flatMap((row) =>
-        `${row.evidenceBasis.matchedText} ${
-          row.payload.kind === "structured_spec" ? row.payload.proposedValue : ""
-        }`.match(/\bC\d{5,}\b/gi) ?? [],
-      ),
-    ],
+    cadIds: scopedCadIds,
     projectId: attribution.projectId,
     personLabel: identityLabel?.name ?? project?.personName ?? null,
+    strictCadMatch: Boolean(identityLabel?.cadId),
   });
   const sourceCurrent = loopSourceEvents.some(isOperationalSourceEvent);
   const identityPeople = identityPeopleFor(project, input.rows, input.projects, null);

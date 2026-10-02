@@ -269,13 +269,22 @@ async function loadIndexedThreadContext(
   const loadThreads = async (threadIds: readonly string[]) => {
     for (let index = 0; index < threadIds.length; index += CHUNK) {
       const chunk = threadIds.slice(index, index + CHUNK);
-      const { data, error } = await client
-        .from("continuum_gmail_messages")
-        .select(INDEX_SELECT)
-        .in("thread_id", chunk)
-        .order("sent_at", { ascending: false });
-      if (error || !data) continue;
-      ingest(data as Record<string, unknown>[]);
+      try {
+        const data = await collectPagedRows(async (from, to) => {
+          const { data: page, error } = await client
+            .from("continuum_gmail_messages")
+            .select(INDEX_SELECT)
+            .in("thread_id", chunk)
+            .order("sent_at", { ascending: false })
+            .order("message_id", { ascending: true })
+            .range(from, to);
+          if (error) throw new Error(error.message);
+          return (page ?? []) as Record<string, unknown>[];
+        });
+        ingest(data);
+      } catch {
+        continue;
+      }
     }
   };
   await loadThreads(ids.threadIds);
@@ -297,14 +306,26 @@ async function loadIndexedThreadContext(
   if (extra.length > 0) await loadThreads(extra);
   for (let index = 0; index < [...out.keys()].length; index += CHUNK) {
     const chunk = [...out.keys()].slice(index, index + CHUNK);
-    const { data, error } = await client
-      .from("continuum_gmail_attachments")
-      .select("thread_id, message_id, filename")
-      .in("thread_id", chunk);
-    if (error || !data) continue;
+    let data: Record<string, unknown>[];
+    try {
+      data = await collectPagedRows(async (from, to) => {
+        const { data: page, error } = await client
+          .from("continuum_gmail_attachments")
+          .select("thread_id, message_id, filename")
+          .in("thread_id", chunk)
+          .order("thread_id", { ascending: true })
+          .order("message_id", { ascending: true })
+          .order("filename", { ascending: true })
+          .range(from, to);
+        if (error) throw new Error(error.message);
+        return (page ?? []) as Record<string, unknown>[];
+      });
+    } catch {
+      continue;
+    }
     const byThread = new Map<string, string[]>();
     const byMessage = new Map<string, string[]>();
-    for (const row of data as Record<string, unknown>[]) {
+    for (const row of data) {
       const threadId = String(row.thread_id ?? "").trim();
       const messageId = String(row.message_id ?? "").trim();
       const filename = String(row.filename ?? "").trim();
@@ -423,7 +444,8 @@ async function main() {
     const { data, error } = await client
       .from(CONTINUUM_CANDIDATES_TABLE)
       .select("*")
-      .order("source_timestamp", { ascending: false })
+      .order("created_at", { ascending: true })
+      .order("candidate_id", { ascending: true })
       .range(from, to);
     if (error) throw new Error(error.message);
     return data ?? [];
@@ -529,7 +551,10 @@ async function main() {
   expect(proofs.grant.lane === "watching" && proofs.grant.ball === "vendor_shop", "grant-vendor-shop");
   expect(proofs.grant.ball !== "client", "grant-not-client-wait");
   expect(proofs.duane.lane === "watching" && proofs.duane.ball === "vendor_shop", "duane-vendor-shop");
-  expect(proofs.sarah.lane === "watching" && proofs.sarah.ball === "vendor_shop", "sarah-vendor-shop");
+  expect(
+    proofs.sarah.lane === "up_next" && proofs.sarah.next === "founder_review",
+    "sarah-founder-review",
+  );
   expect(!/price|timeline|next steps/i.test(proofs.sarah.copy ?? ""), "sarah-no-generic-copy");
   expect(proofs.nathan.lane === "watching" && proofs.nathan.ball === "vendor_shop", "nathan-vendor-shop");
   expect(proofs.tim.lane === "up_next" && proofs.tim.next === "founder_communication", "tim-place-order");

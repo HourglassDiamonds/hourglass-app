@@ -361,6 +361,7 @@ export function sourceEventsForWorkLoop(
     cadIds?: readonly string[];
     projectId?: string | null;
     personLabel?: string | null;
+    strictCadMatch?: boolean;
   },
 ): SourceCommunicationEvent[] {
   const threads = new Set(input.threadIds ?? []);
@@ -375,6 +376,13 @@ export function sourceEventsForWorkLoop(
     /* project key without id on events still matches projectId field */
   }
   return events.filter((event) => {
+    if (
+      input.strictCadMatch === true &&
+      cads.size > 0 &&
+      !event.cadIds.some((cad) => cads.has(cad.toUpperCase()))
+    ) {
+      return false;
+    }
     const targetProject = projectId || keyProject || null;
     if (targetProject) {
       if (event.projectId === targetProject) return true;

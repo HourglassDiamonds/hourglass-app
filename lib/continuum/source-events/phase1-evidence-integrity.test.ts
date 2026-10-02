@@ -212,6 +212,16 @@ describe("Phase 1 production-shaped evidence integrity", () => {
     assert.deepEqual(matched.map((row) => row.cadIds[0]), ["C026143"]);
     assert.deepEqual(
       sourceEventsForWorkLoop(all, {
+        key: "project:shared-project",
+        projectId: "shared-project",
+        threadIds: ["sarah-one", "sarah-two"],
+        cadIds: ["C026143"],
+        strictCadMatch: true,
+      }).map((row) => row.cadIds[0]),
+      ["C026143"],
+    );
+    assert.deepEqual(
+      sourceEventsForWorkLoop(all, {
         key: "project:project-one",
         projectId: "project-one",
         cadIds: ["C026143"],

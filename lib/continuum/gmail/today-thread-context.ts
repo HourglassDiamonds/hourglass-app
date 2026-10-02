@@ -16,6 +16,7 @@ import {
 } from "@/lib/continuum/candidates/founder-attention";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { collectPagedRows } from "@/lib/continuum/candidates/page";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import {
@@ -187,24 +188,36 @@ function ingestIndexedRows(
 
 export async function loadIndexedTodayThreadContext(
   candidates: readonly ContinuumCandidate[],
+  options: {
+    client?: NonNullable<ReturnType<typeof getSupabaseAdmin>>;
+  } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const ids = collectExactGmailIds(candidates);
   const out = new Map<string, TodayGmailThreadContext>();
   if (ids.threadIds.length === 0 && ids.messageIds.length === 0) return out;
-  const client = getSupabaseAdmin();
+  const client = options.client ?? getSupabaseAdmin();
   if (!client) return out;
 
   const founderHashes = founderEmailHashes();
   const loadThreads = async (threadIds: readonly string[]) => {
     for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
       const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
-      const { data, error } = await client
-        .from("continuum_gmail_messages")
-        .select(INDEX_SELECT)
-        .in("thread_id", chunk)
-        .order("sent_at", { ascending: false });
-      if (error || !data) continue;
-      ingestIndexedRows(out, data as Record<string, unknown>[], founderHashes);
+      try {
+        const data = await collectPagedRows(async (from, to) => {
+          const { data: page, error } = await client
+            .from("continuum_gmail_messages")
+            .select(INDEX_SELECT)
+            .in("thread_id", chunk)
+            .order("sent_at", { ascending: false })
+            .order("message_id", { ascending: true })
+            .range(from, to);
+          if (error) throw new Error(error.message);
+          return (page ?? []) as Record<string, unknown>[];
+        });
+        ingestIndexedRows(out, data, founderHashes);
+      } catch {
+        continue;
+      }
     }
   };
 
@@ -250,14 +263,26 @@ async function loadIndexedAttachmentFilenames(
   if (threadIds.length === 0) return;
   for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
     const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
-      const { data, error } = await client
-        .from("continuum_gmail_attachments")
-        .select("thread_id, message_id, filename")
-        .in("thread_id", chunk);
-    if (error || !data) continue;
+    let data: Record<string, unknown>[];
+    try {
+      data = await collectPagedRows(async (from, to) => {
+        const { data: page, error } = await client
+          .from("continuum_gmail_attachments")
+          .select("thread_id, message_id, filename")
+          .in("thread_id", chunk)
+          .order("thread_id", { ascending: true })
+          .order("message_id", { ascending: true })
+          .order("filename", { ascending: true })
+          .range(from, to);
+        if (error) throw new Error(error.message);
+        return (page ?? []) as Record<string, unknown>[];
+      });
+    } catch {
+      continue;
+    }
     const byThread = new Map<string, string[]>();
     const byMessage = new Map<string, string[]>();
-    for (const row of data as Record<string, unknown>[]) {
+    for (const row of data) {
       const threadId = String(row.thread_id ?? "").trim();
       const messageId = String(row.message_id ?? "").trim();
       const filename = String(row.filename ?? "").trim();
