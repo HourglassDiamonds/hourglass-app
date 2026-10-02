@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import robots from "./robots";
 import sitemap from "./sitemap";
+import { LEDGER_INDEXES } from "./ledger/ledger-data";
 
 const ORIGIN = "https://www.hourglassdiamonds.com";
 
@@ -34,6 +35,9 @@ describe("public search discovery", () => {
       "/ledger/buffer-health",
     ]) {
       assert.ok(urls.includes(`${ORIGIN}${path}`));
+    }
+    for (const index of LEDGER_INDEXES) {
+      assert.ok(urls.includes(`${ORIGIN}/ledger/${index.slug}`));
     }
     assert.equal(urls.includes(`${ORIGIN}/executive-dashboard/concierge/local-authority`), false);
     assert.equal(urls.includes(`${ORIGIN}/api/cron/review-velocity`), false);
