@@ -532,7 +532,8 @@ export function projectCurrentWork(
         "satisfied",
         (o) =>
           /headed to you|\b(?:shipped|mailed)\b/i.test(text) ||
-          (sameScope(o, e) && o.actor === "founder"),
+          (sameScope(o, e) &&
+            (o.actor === "founder" || (e.hasAttachments && o.kind === "cad"))),
       );
       dependency = founderCommitmentDependency(text);
       actor = dependency ? "founder" : actor;

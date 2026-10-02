@@ -51,6 +51,9 @@ function allowedDevOriginsFromEnv(): string[] | undefined {
 const allowedDevOrigins = allowedDevOriginsFromEnv();
 
 const nextConfig: NextConfig = {
+  typescript: {
+    tsconfigPath: "tsconfig.build.json",
+  },
   ...(allowedDevOrigins ? { allowedDevOrigins } : {}),
   images: {
     qualities: [75, 95, 100],

@@ -496,7 +496,7 @@ async function main() {
     dylon: named(/Dylon|C025610/i),
     grant: named(/Grant|C025885|SP13477/i),
     duane: named(/Duane|C026350/i),
-    sarah: named(/Sarah|C026143/i),
+    sarah: named(/Sarah|S\.?\s*Leishman|C026143/i),
     nathan: named(/Nate|Nathan|C026176|Dagger/i),
     tim: named(/Tim|Jenn|C025964/i),
     madi: named(/\bMadi\b|C026000|C017756/i),
@@ -520,15 +520,15 @@ async function main() {
   ) => {
     if (!ok) failures.push(label);
   };
-  expect(proofs.dylon.lane === "up_next" && proofs.dylon.next === "founder_review", "dylon-founder-review");
+  expect(proofs.dylon.lane === "watching" && proofs.dylon.ball === "vendor_shop", "dylon-vendor-shop");
   expect(!/send me the stl/i.test(proofs.dylon.copy ?? ""), "dylon-no-old-stl-copy");
-  expect(proofs.grant.lane === "up_next" && proofs.grant.next === "founder_review", "grant-founder-review");
+  expect(proofs.grant.lane === "watching" && proofs.grant.ball === "vendor_shop", "grant-vendor-shop");
   expect(proofs.grant.ball !== "client", "grant-not-client-wait");
-  expect(proofs.duane.lane === "up_next" && proofs.duane.next === "founder_review", "duane-founder-review");
+  expect(proofs.duane.lane === "watching" && proofs.duane.ball === "vendor_shop", "duane-vendor-shop");
   expect(proofs.sarah.lane === "watching" && proofs.sarah.ball === "vendor_shop", "sarah-vendor-shop");
   expect(!/price|timeline|next steps/i.test(proofs.sarah.copy ?? ""), "sarah-no-generic-copy");
   expect(proofs.nathan.lane === "watching" && proofs.nathan.ball === "vendor_shop", "nathan-vendor-shop");
-  expect(proofs.tim.lane === "watching" && proofs.tim.ball === "vendor_shop", "tim-vendor-shop");
+  expect(proofs.tim.lane === "up_next" && proofs.tim.next === "founder_communication", "tim-place-order");
   expect(proofs.madi.lane === "watching" && proofs.madi.ball === "client", "madi-client-wait");
   expect(proofs.abbey.lane === "absent", "abbey-absent");
   expect(proofs.jesse.lane === "absent", "jesse-absent");
