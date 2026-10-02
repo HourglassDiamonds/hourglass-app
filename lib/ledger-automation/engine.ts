@@ -212,6 +212,9 @@ function classify(
   if (temperature.proposedConfidence === "low" && temperature.previousConfidence !== "low") reasons.push("Overall confidence drops below the existing threshold.");
   if (temperature.validationIssues.length > 0) reasons.push("System Temperature validation produced an issue.");
   if (checks.some((check) => check.normalizedObservation?.significance === "MATERIAL")) reasons.push("New evidence would introduce a materially new claim.");
+  if (checks.some((check) =>
+    check.status === "MANUAL_REVIEW_REQUIRED" && check.metadata.adapterId === "ledger-live-hybrid-v1.1"
+  )) reasons.push("One or more live or retained manual observations require founder interpretation under the existing methodology.");
 
   if (reasons.length > 0) return { classification: "APPROVAL_REQUIRED", reasons, failed: requiredFailure };
   if (checks.some((check) => check.normalizedObservation?.significance === "MINOR")) {
@@ -224,7 +227,11 @@ export async function runLedgerAutomation(input: RunEngineInput): Promise<Ledger
   const runKey = buildRunKey(input.scheduledDate, input.runType);
   const runId = runKey.replaceAll(":", "-");
   const allChecks = await Promise.all(
-    input.registry.map((source) => input.adapter.check(source, { runType: input.runType, checkedAt: input.startedAt })),
+    input.registry.map((source) => input.adapter.check(source, {
+      runType: input.runType,
+      checkedAt: input.startedAt,
+      runId,
+    })),
   );
   const checks = input.runType === "FRIDAY_DELTA" ? checksForFriday(allChecks) : allChecks;
   const monitors = buildMonitorProposals(checks, input.previousReview);
@@ -245,7 +252,7 @@ export async function runLedgerAutomation(input: RunEngineInput): Promise<Ledger
     evidenceReferences: checks.filter((check) => !check.failure).map((check) => check.sourceId),
   };
   const packet: LedgerEvidencePacket = {
-    schemaVersion: "ledger-automation-v1",
+    schemaVersion: "ledger-automation-v1.1",
     runId,
     runKey,
     runType: input.runType,

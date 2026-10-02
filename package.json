@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "ledger:dry-run": "npx tsx scripts/ledger-dry-run.ts",
     "generate:geller-repair-catalog": "npx tsx scripts/generate-geller-repair-catalog.ts",
     "generate:diamond-studio-og": "node scripts/generate-diamond-studio-og.mjs",
     "generate:diamond-intelligence-og": "node scripts/generate-diamond-intelligence-og.mjs",

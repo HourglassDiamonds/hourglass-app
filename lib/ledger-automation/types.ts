@@ -27,6 +27,25 @@ export type LedgerRunState =
 
 export type SourceFreshness = "CURRENT" | "STALE" | "UNKNOWN";
 export type SourceFailure = { code: string; message: string; retryable: boolean };
+export type LedgerSourceMode = "LIVE" | "MANUAL_APPROVED" | "DERIVED" | "DISABLED";
+export type LedgerSourceStatus =
+  | "OK"
+  | "STALE"
+  | "UNAVAILABLE"
+  | "INVALID"
+  | "RATE_LIMITED"
+  | "AUTH_REQUIRED"
+  | "MANUAL_REVIEW_REQUIRED";
+export type LedgerLiveProvider =
+  | "BEA_PERSONAL_INCOME"
+  | "BLS_EMPLOYMENT"
+  | "BLS_JOLTS"
+  | "EIA_PETROLEUM"
+  | "EIA_STEO"
+  | "EIA_ELECTRICITY"
+  | "TREASURY_YIELD_CURVE"
+  | "FRED_HIGH_YIELD_OAS"
+  | "FRED_FINANCIAL_STRESS";
 
 export type NormalizedLedgerObservation = {
   summary: string;
@@ -47,8 +66,15 @@ export type LedgerSourceDefinition = {
   monitorId: LedgerIndexId;
   bufferDomainId?: BufferDomainId;
   sourceName: string;
+  sourceAuthority: string;
   sourceLocation: string;
+  sourceUrl: string;
   sourceType: "PUBLICATION" | "DATASET" | "INTERNAL_FIXTURE";
+  sourceMode: LedgerSourceMode;
+  liveProvider?: LedgerLiveProvider;
+  accessMethod: string;
+  updateFrequency: string;
+  credentialEnv?: "BEA_API_KEY" | "EIA_API_KEY" | "FRED_API_KEY";
   reliability: "HIGH" | "MODERATE" | "LOW";
   required: boolean;
   maxAgeDays: number;
@@ -63,22 +89,41 @@ export type LedgerSourceCheck = {
   monitorId: LedgerIndexId;
   bufferDomainId?: BufferDomainId;
   sourceName: string;
+  sourceAuthority: string;
   sourceLocation: string;
+  sourceUrl: string;
   sourceType: LedgerSourceDefinition["sourceType"];
+  sourceMode: LedgerSourceMode;
   checkedAt: string;
+  fetchedAt: string;
   observationTimestamp: string | null;
   rawObservation: string | null;
+  rawValue: unknown;
+  rawPayload: unknown;
   normalizedObservation: NormalizedLedgerObservation | null;
+  normalizedValue: unknown;
+  unit: string | null;
   reliability: LedgerSourceDefinition["reliability"];
+  confidence: LedgerSourceDefinition["reliability"];
   required: boolean;
   freshness: SourceFreshness;
+  sourceFreshness: SourceFreshness;
+  status: LedgerSourceStatus;
   failure: SourceFailure | null;
+  failureReason: string | null;
+  metadata: Readonly<Record<string, unknown>>;
   contradictorySourceIds: readonly string[];
+};
+
+export type LedgerAdapterContext = {
+  runType: LedgerRunType;
+  checkedAt: string;
+  runId?: string;
 };
 
 export type LedgerSourceAdapter = {
   adapterId: string;
-  check(source: LedgerSourceDefinition, context: { runType: LedgerRunType; checkedAt: string }): Promise<LedgerSourceCheck>;
+  check(source: LedgerSourceDefinition, context: LedgerAdapterContext): Promise<LedgerSourceCheck>;
 };
 
 export type MonitorProposal = {
@@ -125,7 +170,7 @@ export type LedgerPublicationPreview = {
 };
 
 export type LedgerEvidencePacket = {
-  schemaVersion: "ledger-automation-v1";
+  schemaVersion: "ledger-automation-v1" | "ledger-automation-v1.1";
   runId: string;
   runKey: string;
   runType: LedgerRunType;
