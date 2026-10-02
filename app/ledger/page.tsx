@@ -5,45 +5,37 @@ import { BufferHealthVisual } from "./components/buffer-health-view";
 import LedgerIndexesSection from "./components/ledger-indexes-section";
 import LedgerHistoryComparison from "./components/ledger-history-comparison";
 import LedgerShell from "./components/ledger-shell";
+import JsonLd from "@/app/shared-components/JsonLd";
 import SystemTemperature from "./components/system-temperature";
 import WeeklySynopsis from "./components/weekly-synopsis";
 import { QUIET_METRICS, TRACK_TOPICS } from "./constants";
 import { buildLedgerHistoricalComparisons } from "./historical-comparison";
+import {
+  buildLedgerHubJsonLd,
+  LEDGER_HUB_DESCRIPTION,
+  LEDGER_HUB_PATH,
+  ledgerMetadata,
+} from "./ledger-seo";
+import { LEDGER_INDEXES } from "./ledger-data";
 
-export const metadata: Metadata = {
-  title: "Hourglass Ledger — Calm intelligence for a volatile world",
-  description:
-    "The Ledger: a weekly signal brief on markets, infrastructure, energy, AI, commodities, and global systems from Hourglass Diamonds.",
-  alternates: {
-    canonical: "/ledger",
-  },
-  openGraph: {
-    url: "/ledger",
-  },
-};
+export const metadata: Metadata = ledgerMetadata({
+  path: LEDGER_HUB_PATH,
+  description: LEDGER_HUB_DESCRIPTION,
+});
 
-const LEDGER_JSON_LD = {
-  "@context": "https://schema.org",
-  "@type": "WebPage",
-  name: "Hourglass Ledger",
-  alternateName: "The Ledger",
-  description:
-    "Weekly intelligence on markets, infrastructure, AI, energy, and global systems.",
-  publisher: {
-    "@type": "Organization",
-    name: "Hourglass Diamonds",
-  },
-};
+const LEDGER_JSON_LD = buildLedgerHubJsonLd(
+  LEDGER_INDEXES.map((index) => ({
+    name: index.displayTitle,
+    path: `/ledger/${index.slug}`,
+  })),
+);
 
 export default function LedgerPage() {
   const historicalComparisons = buildLedgerHistoricalComparisons();
 
   return (
     <LedgerShell>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(LEDGER_JSON_LD) }}
-      />
+      <JsonLd data={LEDGER_JSON_LD} />
 
       {/* Hero */}
       <section className="border-b border-[#e4dbcf] pb-20 pt-14 md:pb-24 md:pt-20">

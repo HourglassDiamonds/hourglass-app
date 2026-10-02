@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 
-const LEDGER_DESCRIPTION =
-  "Weekly intelligence on markets, infrastructure, AI, energy, and global systems — from Hourglass Diamonds.";
+import { LEDGER_HUB_DESCRIPTION } from "./ledger-seo";
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | Hourglass Ledger",
-    default: "Hourglass Ledger",
+    template: "%s | Ledger | Hourglass Diamonds",
+    default: "Ledger: Systems Monitoring | Hourglass Diamonds",
   },
-  description: LEDGER_DESCRIPTION,
+  description: LEDGER_HUB_DESCRIPTION,
   openGraph: {
-    title: "Hourglass Ledger",
-    description: LEDGER_DESCRIPTION,
+    title: "Ledger: Systems Monitoring | Hourglass Diamonds",
+    description: LEDGER_HUB_DESCRIPTION,
     type: "website",
   },
 };

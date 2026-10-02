@@ -9,9 +9,11 @@ export default function LedgerIndexBreadcrumb({
 }: LedgerIndexBreadcrumbProps) {
   return (
     <nav className="ledger-index-breadcrumb" aria-label="Breadcrumb">
-      <Link href="/ledger">The Ledger</Link>
+      <Link href="/">Home</Link>
       <span className="ledger-index-breadcrumb-sep">/</span>
-      <span>{current}</span>
+      <Link href="/ledger">Ledger</Link>
+      <span className="ledger-index-breadcrumb-sep">/</span>
+      <span aria-current="page">{current}</span>
     </nav>
   );
 }
