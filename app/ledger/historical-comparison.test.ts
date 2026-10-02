@@ -99,7 +99,7 @@ describe("Ledger historical shadow comparison", () => {
     assert.doesNotMatch(html, /data-buffer-shadow-overlay/);
   });
 
-  it("mounts the comparison on the public Ledger hub only", () => {
+  it("mounts the comparison on the public Ledger hub and Buffer Health route", () => {
     const ledgerRoot = path.resolve(process.cwd(), "app", "ledger");
     const hub = readFileSync(path.join(ledgerRoot, "page.tsx"), "utf8");
     const bufferRoute = readFileSync(
@@ -107,7 +107,7 @@ describe("Ledger historical shadow comparison", () => {
       "utf8",
     );
     assert.match(hub, /<LedgerHistoryComparison comparisons=/);
-    assert.doesNotMatch(bufferRoute, /LedgerHistoryComparison/);
+    assert.match(bufferRoute, /<LedgerHistoryComparison comparisons=/);
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.reviewDate, "October 1, 2026");
   });
 });
