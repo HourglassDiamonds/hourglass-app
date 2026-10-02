@@ -1,10 +1,7 @@
 /** Non-index Ledger copy — index readings live in ledger-data.ts */
 export {
-  GLOBAL_PRESSURE_INDEX,
-  GPI_BENCHMARKS,
   GPI_INTRO,
   GPI_METHOD_PILLS,
-  GPI_RECENT_READINGS,
   GPI_SCALE_GRADIENT,
   GPI_SCALE_LABELS,
   GPI_SUMMARY,

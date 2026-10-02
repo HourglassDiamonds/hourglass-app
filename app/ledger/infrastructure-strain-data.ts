@@ -7,9 +7,10 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
+import { bufferSourcesFor } from "./buffer-health-data";
 
 export const ISI_UPDATED_LABEL = "";
 
@@ -24,10 +25,10 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Public infrastructure strain remains high and multi-regional, with active adaptation. EIA’s September 9 STEO forecasts record U.S. electricity sales of 4,135 billion kWh in 2026 and 4,211 billion kWh in 2027, driven in significant part by data-center development and manufacturing. Texas is enforcing data-center water reporting and had paused new data-center grid connections pending a power/water audit — gating load, not a grid failure. EIA lowered its West South Central sales path after that pause. Previously scored PJM congestion and European water-to-power effects remain in the picture. Energy shipping and refining constraints are counted on Global Pressure rather than added again here. Systems function; there is no synchronized grid failure.";
+  "Public infrastructure strain remains high, with active adaptation and thinner grid reserve. Repeated September Carolinas interventions and record regional loads are observed evidence of episodic stress. The orders expired without national grid failure, and forecast planning adequacy remains intact across much of the system. Forecast record electricity demand and Texas power/water gating remain structural constraints. Provisional labor evidence is still functional. Physical Infrastructure holds High / Partial.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "The live U.S. evidence is now EIA record-demand confirmation plus Texas power/water gating of data centers. That is active adaptation under high strain, not expired July emergency orders and not a failing grid. Internal System Temperature infrastructure holds high / partial.";
+  "Observed Carolinas interventions confirm episodic extreme-weather strain, while their expiration and forecast planning adequacy argue against a failing national grid. Record-load forecasts remain explicit forecasts, and provisional labor data remains functional. Physical Infrastructure holds High / Partial.";
 
 export const ISI_CATEGORIES = [
   {
@@ -129,6 +130,7 @@ export const ISI_WHAT_WOULD_EASE = [
   },
 ] as const;
 
+/** @deprecated Archived numerical calculation rows; not public monitor data. */
 export const ISI_CALCULATION_ROWS = [
   {
     category: "Grid & Transmission",
@@ -213,9 +215,11 @@ export const ISI_FOOTER_NOTE =
   "The Infrastructure Strain Monitor is an editorial framework. It tracks physical-system constraints — whether growth is supported by available capacity, slowed by bottlenecks, or operating with narrowing flexibility beneath still-functioning systems.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const ISI_SERIES: LedgerMonitorSeries = {
+export const ISI_SERIES = defineLedgerMonitorSeries({
   id: "infrastructure-strain",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Tracks physical constraints across power, transmission, data centers, cooling, transport, labor, and large-load interconnection.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -360,7 +364,7 @@ export const ISI_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "September 16, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "September 16, 2026",
       currentState: "High infrastructure strain",
       currentDirection: "Active adaptation / Power-water co-constraint tightening",
       previousState: "High infrastructure strain",
@@ -395,7 +399,18 @@ export const ISI_SERIES: LedgerMonitorSeries = {
         },
       ],
     },
+    {
+      reviewDate: "October 1, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain",
+      currentDirection: "Episodic grid stress / Active adaptation",
+      previousState: "High infrastructure strain",
+      materialChangeSummary:
+        "Repeated September Carolinas interventions and record regional loads show thinning extreme-weather margin. The observed orders expired without national grid failure; forecast national and SERC-East planning adequacy remains intact under modeled mitigations. Provisional labor evidence remains functional. Physical Infrastructure holds High / Partial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: bufferSourcesFor("grid", "labor"),
+    },
   ],
-};
+});
 
 export const ISI_SNAPSHOT = latestSnapshot(ISI_SERIES);

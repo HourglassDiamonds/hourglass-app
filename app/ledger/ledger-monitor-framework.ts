@@ -9,7 +9,7 @@
 export const LEDGER_METHODOLOGY_VERSION = "qualitative-v1";
 
 /** Shared evidence cutoff for the current public review cycle. */
-export const LEDGER_EVIDENCE_CUTOFF = "September 16, 2026";
+export const LEDGER_EVIDENCE_CUTOFF = "October 1, 2026";
 
 export const LEDGER_EVIDENCE_CUTOFF_LABEL = `Evidence reviewed through ${LEDGER_EVIDENCE_CUTOFF}`;
 
@@ -63,9 +63,25 @@ export type LedgerEvidenceSource = {
   url?: string;
   /** Which current claim this source supports */
   supports: string;
+  /** Evidence posture when the source is time-sensitive or not final. */
+  evidenceLabel?: "Observed" | "Estimated" | "Forecast" | "Provisional" | "Lagged";
+  /** Period represented by the observation, distinct from publication date. */
+  dataPeriod?: string;
 };
 
 export type LedgerMonitorSnapshot = {
+  /** What the monitor measures and what it does not claim to measure. */
+  definition: string;
+  /** Public status label for this review. */
+  status: string;
+  /** Editorial confidence in the evidence available for this review. */
+  confidence: string;
+  /** Evidence conditions that would justify a more concerning assessment. */
+  escalationCriteria: string;
+  /** Evidence conditions that would justify a less concerning assessment. */
+  easingCriteria: string;
+  /** Date this snapshot was last reviewed or updated. */
+  lastUpdated: string;
   reviewDate: string;
   evidenceCutoff: string;
   currentState: string;
@@ -76,6 +92,27 @@ export type LedgerMonitorSnapshot = {
   methodologyVersion: string;
 };
 
+type LegacyLedgerMonitorSnapshot = Omit<
+  LedgerMonitorSnapshot,
+  | "definition"
+  | "status"
+  | "confidence"
+  | "escalationCriteria"
+  | "easingCriteria"
+  | "lastUpdated"
+> &
+  Partial<
+    Pick<
+      LedgerMonitorSnapshot,
+      | "definition"
+      | "status"
+      | "confidence"
+      | "escalationCriteria"
+      | "easingCriteria"
+      | "lastUpdated"
+    >
+  >;
+
 /**
  * Append-only series container. New reviews should push a new snapshot;
  * do not mutate prior entries in place.
@@ -85,6 +122,38 @@ export type LedgerMonitorSeries = {
   methodologyVersion: string;
   snapshots: readonly LedgerMonitorSnapshot[];
 };
+
+type LedgerMonitorSeriesInput = Omit<LedgerMonitorSeries, "snapshots"> & {
+  /** Stable definition inherited by snapshots that predate the expanded schema. */
+  definition: string;
+  snapshots: readonly LegacyLedgerMonitorSnapshot[];
+};
+
+const NOT_YET_FORMALIZED = "Not yet formalized";
+
+/**
+ * Normalizes pre-contract history into the public snapshot contract without
+ * inventing evidence. Missing historical confidence or trigger fields remain
+ * visibly unformalized rather than being inferred after the fact.
+ */
+export function defineLedgerMonitorSeries(
+  series: LedgerMonitorSeriesInput,
+): LedgerMonitorSeries {
+  return {
+    id: series.id,
+    methodologyVersion: series.methodologyVersion,
+    snapshots: series.snapshots.map((snapshot) => ({
+      ...snapshot,
+      definition: snapshot.definition ?? series.definition,
+      status: snapshot.status ?? snapshot.currentState,
+      confidence: snapshot.confidence ?? NOT_YET_FORMALIZED,
+      escalationCriteria:
+        snapshot.escalationCriteria ?? NOT_YET_FORMALIZED,
+      easingCriteria: snapshot.easingCriteria ?? NOT_YET_FORMALIZED,
+      lastUpdated: snapshot.lastUpdated ?? snapshot.reviewDate,
+    })),
+  };
+}
 
 export function latestSnapshot(
   series: LedgerMonitorSeries,

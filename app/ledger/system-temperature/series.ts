@@ -666,24 +666,149 @@ export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16: SystemTemperatureSnapshot =
       "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further and oil established a $100+ regime. Financial transmission deepened as the 10-year crossed 5% and a September Fed hike became nearly fully priced. Credit, funding, equities, and earnings continue to function. Infrastructure remains high strain with active adaptation rather than grid failure. Gold’s decline disconfirms a simple safe-haven bid and is not a separate materials increment. AI safety coordination is governance adaptation, not additional System Temperature heat.",
   };
 
+/**
+ * October 1, 2026 review — append-only confirmation of the September 16
+ * channel assignments. New evidence changed the balance of supporting and
+ * cooling facts, but not any discrete pressure or transmission state.
+ */
+export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01: SystemTemperatureSnapshot =
+  {
+    reviewDate: "October 1, 2026",
+    evidenceCutoff: "October 1, 2026",
+    methodologyVersion: SYSTEM_TEMPERATURE_METHODOLOGY_VERSION,
+    channels: [
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.channels[0],
+        materialChange: false,
+        transmissionExplanation:
+          "Geopolitics / energy / supply remains severe / broad. Large oil-inventory draws, limited effective spare production, weak refined-product inventories, and constrained routing confirm depleted energy buffers. East-West Pipeline operations and Yanbu loadings resumed by late September, restoring part of the bypass and cooling the outage-specific risk, but not enough reserve capacity or corridor normalization is established to lower the channel.",
+        coolingNotes:
+          "Observed East-West Pipeline and Yanbu restoration is meaningful cooling evidence. Strong U.S. crude production and improving U.S. natural-gas storage also absorb some pressure. Those counterbuffers keep the energy reserve state above Critical, but do not reverse the broader supply transmission already incorporated on September 16.",
+        evidenceRefs: [
+          "IEA Oil Market Report — September 2026 (estimated)",
+          "EIA Weekly Petroleum Status Report Sep 30, 2026 (provisional)",
+          "EIA September 2026 Short-Term Energy Outlook (forecast)",
+          "Seatrade Maritime News: Saudi resumes loadings in Yanbu Sep 30, 2026 (observed)",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.channels[1],
+        materialChange: false,
+        transmissionExplanation:
+          "Financial & economic transmission remains very-high / partial. The September Federal Reserve hike confirmed the policy tightening that had been nearly fully priced at the prior review, while the 10-year yield remained elevated through September 30. The realized hike and long-yield pressure preserve the channel assignment without adding a second increment.",
+        coolingNotes:
+          "Observed corporate credit spreads remained contained, the lagged St. Louis Fed Financial Stress Index remained below its normal reference level, and money-market implementation remained orderly. Labor also remained functional: unemployment was 4.1%, August payroll growth was positive, and late-September claims stayed low. There is no verified funding freeze, bank seizure, or broad credit event.",
+        evidenceRefs: [
+          "Federal Reserve September 2026 policy decision (observed)",
+          "U.S. Treasury Daily Treasury Par Yield Curve Sep 30, 2026 (observed)",
+          "ICE BofA US High Yield OAS through Sep 24, 2026 (observed)",
+          "St. Louis Fed Financial Stress Index through Sep 18, 2026 (lagged)",
+          "Department of Labor weekly claims Oct 1, 2026 (provisional)",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.channels[2],
+        materialChange: false,
+        transmissionExplanation:
+          "Physical infrastructure remains high / partial. Repeated September Carolinas reliability interventions and record regional loads show thinner extreme-weather margin, while record national generation and load growth remain forecast. The interventions were episodic and expired; no synchronized or national grid failure occurred.",
+        coolingNotes:
+          "National and SERC-East planning adequacy remains intact under modeled mitigations. The Carolinas orders expired, operators adapted, and labor-market evidence remains functional. This is active adaptation with thinning grid reserve, not infrastructure dysfunction.",
+        evidenceRefs: [
+          "DOE Carolinas grid intervention Sep 19, 2026 (observed)",
+          "NERC 2026 Summer Reliability Assessment (forecast)",
+          "EIA record electricity generation outlook Sep 9, 2026 (forecast)",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.channels[3],
+        materialChange: false,
+        transmissionExplanation:
+          "Commodities / materials remains elevated / contained. Wheat and rice buffers are thinner, corn stocks rebuilt, and global cereal stocks still provide meaningful reserve. Fertilizer prices, trade delays, and Gulf corridor exposure add pressure without establishing a physical food shortage. Precious-materials evidence remains segmented and rate-sensitive rather than a separate system-wide increment.",
+        coolingNotes:
+          "Observed U.S. corn-stock rebuilding and forecast global cereal reserve offset thinner wheat and rice buffers. Fertilizer and corridor pressure is not proof of shortage. Gold and other precious-material moves remain part of the already-counted rates and dollar transmission unless a distinct materials-regime break is verified.",
+        evidenceRefs: [
+          "USDA Grain Stocks and Small Grains Annual Summary Sep 30, 2026 (observed)",
+          "USDA Rice Market Outlook Sep 18, 2026 (forecast)",
+          "FAO Cereal Supply and Demand Brief Sep 2026 (forecast)",
+          "FAO fertilizer access statement Sep 24, 2026 (observed)",
+          "precious-materials monitor",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.channels[4],
+        materialChange: false,
+        transmissionExplanation:
+          "Technology / AI remains high / partial. The October evidence pass does not establish a new capability, containment, labor-substitution, or external infrastructure transmission step beyond the operational security and governance state already incorporated on August 24 and confirmed on September 16.",
+        coolingNotes:
+          "Human-control proposals, lab coordination, and physical deployment gates remain adaptation. Grid, water, capital, and organizational constraints continue to limit deployment. No new evidence warrants either escalation or cooling of the discrete Technology / AI assignment.",
+        evidenceRefs: [
+          "ai-capability monitor",
+          "EIA record electricity generation outlook Sep 9, 2026 (forecast)",
+          "Department of Labor weekly claims Oct 1, 2026 (provisional)",
+        ],
+      },
+    ],
+    confidence: "moderate",
+    confidenceRationale:
+      "The October 1 pass adds observed Yanbu / East-West restoration, the realized Fed hike, elevated long yields, contained spreads, below-normal lagged financial stress, functional labor, episodic Carolinas grid interventions, and mixed food-buffer evidence. The evidence is sufficient to confirm the five channel assignments, while provisional, lagged, and forecast inputs and uneven corridor durability keep confidence at Moderate. Information Signal adds no degrees.",
+    activeEvents: SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16.activeEvents.map(
+      (event) => {
+        if (event.id === "saudi-east-west-pipeline-yanbu-2026") {
+          return {
+            ...event,
+            lastMaterialChangeReview: "October 1, 2026",
+            notes:
+              "East-West Pipeline operations and Yanbu loadings resumed, cooling the outage-specific risk and restoring part of the routing buffer. Energy buffers remain low and the broader severe / broad channel state does not cool.",
+          };
+        }
+        if (event.id === "sovereign-duration-repricing-2026") {
+          return {
+            ...event,
+            lastMaterialChangeReview: "October 1, 2026",
+            notes:
+              "The September Fed hike was realized and the 10-year remained elevated through September 30. Contained spreads, below-normal lagged stress, and orderly funding keep transmission partial rather than systemic.",
+          };
+        }
+        return event;
+      },
+    ),
+    coolingReview: {
+      improved:
+        "East-West Pipeline operations and Yanbu loadings resumed, restoring part of the principal bypass. U.S. corn stocks rebuilt, U.S. crude production stayed strong, and natural-gas storage improved.",
+      normalized:
+        "Corporate credit spreads remained contained, measured financial stress remained below normal, funding markets stayed orderly, and labor remained functional.",
+      failedToTransmit:
+        "The energy shock still has not produced a funding seizure or broad credit event. Fertilizer and corridor pressure has not produced a verified physical food shortage. Carolinas grid stress remained episodic rather than national failure.",
+      absorbed:
+        "Operators restored Yanbu loadings, grid interventions expired, planning adequacy remained intact, and cereal and energy counterbuffers continued to absorb part of the pressure.",
+      decayed:
+        "The East-West / Yanbu outage is no longer described as an unresolved shutdown. Its restart is cooling evidence, but low energy buffers, inventory depletion, and constrained routing prevent a channel downgrade. No prior event receives a new additive increment merely for persisting.",
+    },
+    pressureLabel: "High Pressure",
+    functioningLabel: "Systems Functioning",
+    explanation:
+      "October evidence confirms the September channel states without adding heat: energy buffers are low despite the Yanbu / East-West restart; the Fed hike and elevated 10-year preserve financial pressure while spreads, stress, funding, and labor remain functional; Carolinas grid stress was episodic; food buffers are mixed and thinning; Technology / AI remains high / partial. The result holds at 74° with Moderate confidence.",
+  };
+
 export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] =
   [
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+    SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01,
   ];
 
 export const SYSTEM_TEMPERATURE_READING: SystemTemperatureReading =
-  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16, {
+  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01, {
     previousDegrees: computeTemperatureDegrees(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
     ),
   });
 
 /** Public hub interpretation under System Temperature. Not a methodology input. */
 export const SYSTEM_TEMPERATURE_LEDGER_NOTE =
-  "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. Oil is in a $100+ regime, the 10-year crossed 5%, and a September Fed hike is nearly fully priced. Credit, funding, equities, and earnings continue to function. Physical oil continues clearing. Infrastructure operators are gating load rather than failing. Gold is falling as yields rise — not a separate materials increment."
+  "The October 1 review holds every channel assignment. Yanbu and East-West flows resumed, but energy buffers remain low after large inventory draws. The Fed hike and elevated 10-year preserve financial pressure, while contained spreads, below-normal lagged stress, orderly funding, and functional labor prevent escalation. Carolinas grid stress was episodic, food buffers are mixed and thinning, precious materials remain contained, and Technology / AI stays high / partial.";
 
 if (!SYSTEM_TEMPERATURE_READING.validation.ok) {
   throw new Error(

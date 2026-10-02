@@ -8,9 +8,10 @@
 import {
   LEDGER_EVIDENCE_CUTOFF,
   LEDGER_METHODOLOGY_VERSION,
+  defineLedgerMonitorSeries,
   latestSnapshot,
-  type LedgerMonitorSeries,
 } from "./ledger-monitor-framework";
+import { bufferSourcesFor } from "./buffer-health-data";
 
 export const ISM_UPDATED_LABEL = "";
 
@@ -22,16 +23,16 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "Physical energy-market and rates evidence is more cross-confirmed than in August: Brent is in a $100+ regime, Hormuz commodity traffic printed four vessels, Saudi Arabia’s principal Hormuz-bypass route is disrupted, and the U.S. 10-year crossed 5% on September 15. Trajectory, duration, and policy response remain uncertain — pipeline repair estimates span very soon to eight weeks, Hormuz talks stalled, the 10-year retreated just below 5% on the morning of September 16, and the September 15–16 Fed decision had not been published at cutoff. Gold is falling while geopolitical risk is high, which is a real disconfirmation. AI coverage mixes agent-containment incidents with lab safety-coordination. Confidence stays Moderate. Information Signal adds no degrees.";
+  "The October evidence pass separates confirmed developments from remaining uncertainty. Observed East-West Pipeline and Yanbu restoration cools the outage narrative, while estimated inventory depletion and provisional refined-product data keep energy buffers low. The Fed hike is now realized and the 10-year remains elevated, but observed spreads, lagged stress, and orderly funding disconfirm a crisis frame. Forecast grid and food balances remain explicitly labeled. AI remains High / Partial. Confidence stays Moderate; Information Signal adds no degrees.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Hormuz remains extremely constrained on independently trackable shipping; Saudi Arabia’s principal Hormuz-bypass route is disrupted; Brent is above $100; the 10-year crossed 5% on September 15; credit and equities are still functioning.",
+    body: "Energy buffers are low; East-West Pipeline and Yanbu flows have resumed; the Fed hike and elevated 10-year preserve rates pressure; credit, funding, and labor remain functional.",
   },
   {
     title: "Divergence",
-    body: "Repair-timeline claims for the Saudi pipeline range from very soon to about eight weeks. Analyst $120/$130 oil paths are scenarios, not a settled market fact. AI coverage mixes additional agent-breakout reporting with proposed slowdowns and safety coordination. Gold is falling despite elevated geopolitical risk.",
+    body: "Restored bypass flows are meaningful cooling evidence but do not by themselves rebuild depleted inventories or spare capacity. Forecast food and grid adequacy should not be presented as observed shortage or failure. AI governance evidence does not establish a new deployment escalation.",
   },
   {
     title: "Underweighted",
@@ -42,15 +43,15 @@ export const ISM_SIGNAL_GRID = [
 export const ISM_SOURCE_STACK = [
   {
     title: "Institutional",
-    body: "Emphasizes stalled Hormuz talks, Houthi strikes, Texas data-center water enforcement, EIA record electricity demand, and a nearly fully priced September Fed hike — with little agreement on how long the Saudi pipeline outage lasts.",
+    body: "Emphasizes observed Yanbu restoration, the realized Fed hike, provisional energy inventories, forecast electricity demand, and the distinction between low reserve capacity and system failure.",
   },
   {
     title: "Market",
-    body: "Emphasizes $100+ oil, the 10-year’s September 15 print above 5%, diesel futures sharply higher, still-functioning credit, and resilient earnings — linking energy pressure to term premia more tightly than to funding stress.",
+    body: "Emphasizes elevated long yields, contained observed credit spreads, below-normal lagged financial stress, and orderly funding — linking rates pressure more tightly to duration than to seizure.",
   },
   {
     title: "Infrastructure",
-    body: "Emphasizes EIA record load, Texas power/water gating of data centers, and operator adaptation rather than grid collapse.",
+    body: "Emphasizes forecast record load, observed episodic Carolinas interventions, and operator adaptation rather than national grid collapse.",
   },
   {
     title: "Mainstream",
@@ -78,7 +79,7 @@ export const ISM_NARRATIVE_MAP = [
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "Physical energy and rates evidence converged further while duration and policy path stayed uncertain. Independently trackable Hormuz traffic, $100+ oil, Yanbu loadings, and the 10-year’s September 15 print above 5% now tell one physical story. Gold’s decline and resilient equities are the main disconfirmations of a simple crisis frame. Density remains high; confidence stays Moderate; Information Signal adds no degrees.";
+  "The policy outcome and Yanbu restoration are now observed rather than unresolved. That improves clarity without lowering the assessed channel states: low energy slack and elevated long yields persist, while contained spreads, below-normal lagged stress, functional labor, and expired grid interventions disconfirm a generalized failure frame. Confidence remains Moderate; Information Signal adds no degrees.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
@@ -124,17 +125,19 @@ export const ISM_FOOTER_NOTE =
 export const ISM_CURRENT_STATE = "High-attention / Physical evidence converging";
 
 export const ISM_CURRENT_DIRECTION =
-  "Energy and rates prints clearer / Duration and policy path still uncertain";
+  "Observed restoration and policy outcome clearer / Reserve durability still uncertain";
 
 export const ISM_HUB_STATUS = ISM_CURRENT_STATE;
 
 export const ISM_HUB_DESCRIPTION =
-  "High-attention / Physical evidence converging — $100+ oil, disruption of Saudi Arabia’s principal Hormuz-bypass route, and a 10-year that crossed 5% are cross-confirmed, while duration and policy path remain uncertain.";
+  "High-attention / Physical evidence converging — Yanbu restoration and the Fed hike are observed, while low energy slack and elevated long yields coexist with contained financial stress.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
-export const ISM_SERIES: LedgerMonitorSeries = {
+export const ISM_SERIES = defineLedgerMonitorSeries({
   id: "information-signal-map",
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+  definition:
+    "Maps narrative convergence, divergence, and evidence quality across institutional, market, infrastructure, and mainstream information layers.",
   snapshots: [
     {
       reviewDate: "August 3, 2026",
@@ -279,7 +282,7 @@ export const ISM_SERIES: LedgerMonitorSeries = {
     },
     {
       reviewDate: "September 16, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "September 16, 2026",
       currentState: ISM_CURRENT_STATE,
       currentDirection: ISM_CURRENT_DIRECTION,
       previousState: "High-attention / Uneven clarity",
@@ -323,7 +326,18 @@ export const ISM_SERIES: LedgerMonitorSeries = {
         },
       ],
     },
+    {
+      reviewDate: "October 1, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: ISM_CURRENT_STATE,
+      currentDirection: ISM_CURRENT_DIRECTION,
+      previousState: "High-attention / Physical evidence converging",
+      materialChangeSummary:
+        "Observed Yanbu / East-West restoration and the realized Fed hike resolve two September uncertainties. Estimated energy depletion, provisional product inventories, forecast grid and food balances, lagged stress, and observed market and labor evidence remain explicitly separated. Confidence stays Moderate; Information Signal adds no degrees.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: bufferSourcesFor("energy", "financial-system", "labor", "grid", "food"),
+    },
   ],
-};
+});
 
 export const ISM_SNAPSHOT = latestSnapshot(ISM_SERIES);

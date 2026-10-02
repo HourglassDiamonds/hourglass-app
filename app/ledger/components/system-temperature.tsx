@@ -4,6 +4,7 @@
  */
 
 import Link from "next/link";
+import { SYSTEMS_FUNCTIONING_BUFFER_QUALIFIER } from "../buffer-health-data";
 import {
   SYSTEM_TEMPERATURE_LEDGER_NOTE,
   SYSTEM_TEMPERATURE_METHODOLOGY_POINTS,
@@ -96,6 +97,22 @@ export default function SystemTemperature() {
 
           <p className="mt-6 max-w-[44rem] text-[0.95rem] leading-[1.85] text-[#5c554d]">
             {reading.explanation}
+          </p>
+          <p
+            className="mt-3 max-w-[44rem] text-[0.92rem] leading-[1.75] text-[#5c554d]"
+            data-systems-functioning-qualifier="true"
+          >
+            {SYSTEMS_FUNCTIONING_BUFFER_QUALIFIER}
+          </p>
+          <p className="mt-3 text-[0.88rem] leading-[1.75] text-[#6f6760]">
+            Functioning and remaining slack are reviewed separately. See the{" "}
+            <Link
+              href="/ledger/buffer-health"
+              className="underline decoration-[#d4c9bb] underline-offset-4 hover:text-[#1f1d1a]"
+            >
+              Buffer Health framework
+            </Link>
+            .
           </p>
 
           <div className="mt-8 border-t border-[#e4dbcf] pt-6">

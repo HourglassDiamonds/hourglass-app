@@ -7,6 +7,7 @@ import {
   PMI_CROSS_SYSTEM_PRESSURE,
   PMI_FOOTER_METHOD_NOTE,
   PMI_SNAPSHOT,
+  PMI_SILVER_UPDATE,
   PMI_SOURCES_NOTE,
   PMI_WHAT_MOVED,
   PMI_WHAT_TO_WATCH,
@@ -28,13 +29,13 @@ const INTRO =
 const MATERIAL_STATES = [
   {
     name: "Gold",
-    level: "Rate-sensitive cooling / Fiscal-confidence bid fading",
-    body: "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it disconfirms a simple war-to-gold bid.",
+    level: "Rate-sensitive / Contained",
+    body: "The realized Fed hike and elevated 10-year preserve the rate-sensitive gold treatment. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment. Contained spreads and below-normal lagged financial stress argue against a generalized materials crisis.",
   },
   {
     name: "Silver",
-    level: "Elevated",
-    body: "Elevated pressure continues beside gold, with industrial and monetary demand keeping conditions firm rather than soft.",
+    level: PMI_SILVER_UPDATE.status,
+    body: PMI_SILVER_UPDATE.rationale,
   },
   {
     name: "Platinum / Palladium",
