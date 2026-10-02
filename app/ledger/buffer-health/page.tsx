@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import BufferHealthView from "../components/buffer-health-view";
+import LedgerHistoryComparison from "../components/ledger-history-comparison";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
+import { buildLedgerHistoricalComparisons } from "../historical-comparison";
 
 export const metadata: Metadata = {
   title: "Buffer Health / Remaining Slack",
@@ -12,9 +14,12 @@ export const metadata: Metadata = {
 };
 
 export default function BufferHealthPage() {
+  const historicalComparisons = buildLedgerHistoricalComparisons();
+
   return (
     <LedgerShell activeIndexId="buffer-health">
       <BufferHealthView />
+      <LedgerHistoryComparison comparisons={historicalComparisons} />
       <LedgerPageFooter />
     </LedgerShell>
   );
