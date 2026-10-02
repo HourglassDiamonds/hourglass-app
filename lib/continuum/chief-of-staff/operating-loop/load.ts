@@ -54,6 +54,7 @@ import {
   waitForTodayRecompute,
 } from "./today-read-model";
 import { parseGmailWebHref } from "./evidence";
+import { parseGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import { selectMasterSprintCapacityItems } from "./master-sprint";
 import {
   COS_DISCONNECTED_DETAIL,
@@ -65,21 +66,32 @@ import {
   type CosOperatingLoopView,
 } from "./types";
 
-function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
+function unassignedLiveIdentityThreadIds(
+  docket: ReturnType<typeof finalizeTodayDocket>,
+  loop: CosOperatingLoopView,
+): string[] {
   const ids = new Set<string>();
   const add = (value: string | null | undefined) => {
     const id = value?.trim() ?? "";
     if (id) ids.add(id);
   };
   const addHref = (href: string | null | undefined) => {
-    const parsed = parseGmailWebHref(href ?? "");
-    if (parsed?.threadId) add(parsed.threadId);
+    const ref = href ?? "";
+    add(
+      parseGmailCandidateSourceRef(ref)?.threadId ??
+        parseGmailWebHref(ref)?.threadId,
+    );
   };
-  for (const item of composeTodayDocket(loop).items) {
+  for (const item of docket.upNext) {
     const unresolved =
       item.subject === "Unassigned" ||
-      (!item.brief?.personLabel && !item.brief?.organizationLabel);
-    if (!unresolved && item.subject !== "Unassigned") continue;
+      item.briefingPacket?.entityType === "unknown" ||
+      Boolean(
+        item.brief &&
+          !item.brief.personLabel &&
+          !item.brief.organizationLabel,
+      );
+    if (!unresolved) continue;
     add(item.brief?.recoveredGmailThreadId);
     add(item.brief?.canonicalGmailThreadId);
     for (const beat of item.brief?.evidence ?? []) {
@@ -92,10 +104,13 @@ function unassignedLiveIdentityThreadIds(loop: CosOperatingLoopView): string[] {
     }
     addHref(item.decision?.sourceHref);
   }
-  for (const brief of loop.brief) {
-    if (brief.personLabel || brief.organizationLabel) continue;
-    add(brief.recoveredGmailThreadId);
-    add(brief.canonicalGmailThreadId);
+  for (const item of docket.watching) {
+    if (item.briefingPacket?.entityType !== "unknown") continue;
+    for (const ref of item.briefingPacket.sourceRefs) addHref(ref);
+    for (const event of item.briefingPacket.sourceEvents ?? []) {
+      add(event.threadId);
+      addHref(event.sourceRef);
+    }
   }
   return [...ids].filter(
     (threadId) =>
@@ -112,7 +127,7 @@ function requiredLiveThreadIds(
     ...docket,
     candidates,
     associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
-    unresolvedIdentityThreadIds: unassignedLiveIdentityThreadIds(loop),
+    unresolvedIdentityThreadIds: unassignedLiveIdentityThreadIds(docket, loop),
   });
 }
 

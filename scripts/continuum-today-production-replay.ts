@@ -23,10 +23,12 @@ import { loadProjectJobs } from "../lib/continuum/client-memory/project-jobs/loa
 import { composeCosOperatingLoop } from "../lib/continuum/chief-of-staff/operating-loop/compose";
 import { composeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/docket";
 import { finalizeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/today-docket-boundary";
+import { parseGmailWebHref } from "../lib/continuum/chief-of-staff/operating-loop/evidence";
 import type { CosProjectContext } from "../lib/continuum/chief-of-staff/operating-loop/types";
 import { generatedOperatingMailHashesFromEnv } from "../lib/continuum/gmail/candidates/generated-source";
 import { parseGmailCandidateSourceRef } from "../lib/continuum/gmail/candidates/source-ref";
 import { withIndexedGeneratedOperatingMail } from "../lib/continuum/gmail/candidates/tag-stored-generated";
+import { classifyTodayLiveThreadFrontier } from "../lib/continuum/gmail/today-required-thread-set";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "../lib/continuum/runtime-env";
 import { projectGmailSourceEvents } from "../lib/continuum/source-events/gmail";
 import type { SourceCommunicationEvent } from "../lib/continuum/source-events/types";
@@ -36,6 +38,94 @@ const MESSAGES_PER_THREAD = 80;
 const INDEX_SELECT =
   "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, has_attachments";
 const EMAIL_HASH_RE = /^[a-f0-9]{64}$/;
+
+function unassignedLiveIdentityThreadIds(
+  docket: ReturnType<typeof finalizeTodayDocket>,
+  loop: ReturnType<typeof composeCosOperatingLoop>,
+): string[] {
+  const ids = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const id = value?.trim() ?? "";
+    if (id) ids.add(id);
+  };
+  const addHref = (href: string | null | undefined) => {
+    const ref = href ?? "";
+    add(
+      parseGmailCandidateSourceRef(ref)?.threadId ??
+        parseGmailWebHref(ref)?.threadId,
+    );
+  };
+  for (const item of docket.upNext) {
+    const unresolved =
+      item.subject === "Unassigned" ||
+      item.briefingPacket?.entityType === "unknown" ||
+      Boolean(
+        item.brief &&
+          !item.brief.personLabel &&
+          !item.brief.organizationLabel,
+      );
+    if (!unresolved) continue;
+    add(item.brief?.recoveredGmailThreadId);
+    add(item.brief?.canonicalGmailThreadId);
+    for (const beat of item.brief?.evidence ?? []) {
+      if (beat.generatedSource !== true) addHref(beat.sourceHref);
+    }
+    for (const action of item.brief?.actions ?? []) {
+      if (action.kind === "open_email") addHref(action.href);
+    }
+    addHref(item.decision?.sourceHref);
+  }
+  for (const item of docket.watching) {
+    if (item.briefingPacket?.entityType !== "unknown") continue;
+    for (const ref of item.briefingPacket.sourceRefs) addHref(ref);
+    for (const event of item.briefingPacket.sourceEvents ?? []) {
+      add(event.threadId);
+      addHref(event.sourceRef);
+    }
+  }
+  return [...ids].filter(
+    (threadId) =>
+      loop.threadContext?.get(threadId)?.liveEnrichmentAttempted !== true,
+  );
+}
+
+function priorBroadIdentityThreadIds(
+  loop: ReturnType<typeof composeCosOperatingLoop>,
+): string[] {
+  const ids = new Set<string>();
+  const add = (value: string | null | undefined) => {
+    const id = value?.trim() ?? "";
+    if (id) ids.add(id);
+  };
+  const addRef = (value: string | null | undefined) => {
+    const ref = value ?? "";
+    add(
+      parseGmailCandidateSourceRef(ref)?.threadId ??
+        parseGmailWebHref(ref)?.threadId,
+    );
+  };
+  for (const item of composeTodayDocket(loop).items) {
+    const unresolved =
+      item.subject === "Unassigned" ||
+      (!item.brief?.personLabel && !item.brief?.organizationLabel);
+    if (!unresolved) continue;
+    add(item.brief?.recoveredGmailThreadId);
+    add(item.brief?.canonicalGmailThreadId);
+    for (const beat of item.brief?.evidence ?? []) {
+      if (beat.generatedSource !== true) addRef(beat.sourceHref);
+    }
+    for (const action of item.brief?.actions ?? []) {
+      if (action.kind === "open_email") addRef(action.href);
+    }
+    addRef(item.decision?.sourceHref);
+  }
+  for (const brief of loop.brief) {
+    if (brief.personLabel || brief.organizationLabel) continue;
+    add(brief.recoveredGmailThreadId);
+    add(brief.canonicalGmailThreadId);
+  }
+  return [...ids];
+}
 
 const PROOF_MESSAGES = [
   { id: "1a0c52c12690a0f5", label: "Dylon", cad: "C025610" },
@@ -482,6 +572,13 @@ async function main() {
   });
   const docket = composeTodayDocket(loop);
   const finalized = finalizeTodayDocket(loop);
+  const frontier = classifyTodayLiveThreadFrontier({
+    ...finalized,
+    candidates,
+    associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
+    unresolvedIdentityThreadIds: unassignedLiveIdentityThreadIds(finalized, loop),
+    priorBroadIdentityThreadIds: priorBroadIdentityThreadIds(loop),
+  });
   const upNext = docket.items.map((item) => ({
     subject: item.subject,
     headline: clip(item.headline),
@@ -576,6 +673,25 @@ async function main() {
     proofs,
     traces,
   };
+  if (process.argv.includes("--frontier-summary")) {
+    process.stdout.write(
+      `${JSON.stringify(
+        {
+          verdict: result.verdict,
+          priorBroadThreadCount: frontier.priorBroadThreadCount,
+          requiredThreadCount: frontier.requiredThreadIds.length,
+          requiredMissingIndexedCount: frontier.requiredThreadIds.filter(
+            (threadId) => !threadContext.has(threadId),
+          ).length,
+          counts: frontier.counts,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    if (failures.length > 0) process.exitCode = 2;
+    return;
+  }
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
   if (failures.length > 0) process.exitCode = 2;
 }
