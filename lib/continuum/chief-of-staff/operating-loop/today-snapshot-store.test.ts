@@ -29,7 +29,7 @@ before(async () => {
 });
 
 const ISO = "2026-09-23T00:00:00.000Z";
-const LIVE = [1, ISO, ISO, 1, ISO, ISO, ISO, ISO, 1, ISO].join("|");
+const LIVE = [1, ISO, ISO, 1, ISO, 1, ISO, ISO, ISO, ISO, 1, ISO].join("|");
 
 function emptyDocket(overrides: Partial<CosTodayDocketView> = {}): CosTodayDocketView {
   return {
@@ -218,7 +218,7 @@ describe("today snapshot first-seed race", () => {
       composedAt: ISO,
     });
 
-    assert.equal(result, "published");
+    assert.equal(result, "current");
     assert.equal(client.updateCount(), 0);
     assert.equal(client.current()?.source_watermark.token, LIVE);
     assert.equal(client.current()?.read_model_version, CONTINUUM_TODAY_READ_MODEL_VERSION);
@@ -349,7 +349,8 @@ describe("today snapshot version upgrade", () => {
       composedAt: ISO,
     });
 
-    assert.equal(result, "published");
+    assert.equal(result, "current");
+    assert.equal(client.updateCount(), 0);
     assert.equal(client.current()?.read_model_version, CONTINUUM_TODAY_READ_MODEL_VERSION);
     assert.equal(client.current()?.source_watermark.token, LIVE);
   });
@@ -371,7 +372,7 @@ describe("today snapshot version upgrade", () => {
       composedAt: ISO,
     });
 
-    assert.equal(result, "published");
+    assert.equal(result, "current");
     assert.equal(client.updateCount(), 0);
     assert.equal(client.current()?.read_model_version, CONTINUUM_TODAY_READ_MODEL_VERSION);
     assert.equal(client.current()?.updated_at, "winner-time");
@@ -395,7 +396,7 @@ describe("today snapshot version upgrade", () => {
       composedAt: ISO,
     });
 
-    assert.equal(result, "published");
+    assert.equal(result, "lost-race");
     assert.equal(client.updateCount(), 0);
     assert.equal(client.current()?.source_watermark.token, "newer-than-live");
     assert.equal(client.current()?.read_model_version, CONTINUUM_TODAY_READ_MODEL_VERSION);
@@ -453,6 +454,52 @@ describe("today snapshot version upgrade", () => {
     assert.equal(result, "published");
     assert.equal(client.current()?.read_model_version, CONTINUUM_TODAY_READ_MODEL_VERSION);
     assert.notEqual(client.current()?.read_model_version, LEGACY_VERSION);
+  });
+
+  it("keeps one immutable winner when an older same-watermark run finishes last", async () => {
+    const winnerPayload: TodaySnapshotPayload = {
+      ...payload,
+      docket: emptyDocket({ queuedCount: 17, caughtUpHeading: "winner-with-nathan" }),
+    };
+    const latePayload: TodaySnapshotPayload = {
+      ...payload,
+      docket: emptyDocket({ queuedCount: 18, caughtUpHeading: "late-without-nathan" }),
+    };
+    const winner = seeded(LIVE);
+    winner.payload = winnerPayload;
+    winner.composed_at = "2026-09-23T00:00:02.000Z";
+    winner.updated_at = "2026-09-23T00:00:03.000Z";
+    const client = createClient({ row: winner });
+
+    const result = await publishPersistedTodaySnapshot(client as never, {
+      composedWatermark: LIVE,
+      payload: latePayload,
+      composedAt: "2026-09-23T00:00:01.000Z",
+    });
+
+    assert.equal(result, "current");
+    assert.equal(client.updateCount(), 0);
+    assert.equal(client.current()?.payload.docket.queuedCount, 17);
+    assert.equal(client.current()?.payload.docket.caughtUpHeading, "winner-with-nathan");
+  });
+
+  it("converges repeated identical-source publication attempts on one singleton row", async () => {
+    const client = createClient({ row: seeded("older-watermark") });
+    const first = await publishPersistedTodaySnapshot(client as never, {
+      composedWatermark: LIVE,
+      payload,
+      composedAt: ISO,
+    });
+    const second = await publishPersistedTodaySnapshot(client as never, {
+      composedWatermark: LIVE,
+      payload,
+      composedAt: ISO,
+    });
+
+    assert.equal(first, "published");
+    assert.equal(second, "current");
+    assert.equal(client.updateCount(), 1);
+    assert.equal(client.current()?.source_watermark.token, LIVE);
   });
 
   it("does not let a background publish downgrade the current model to v1", async () => {

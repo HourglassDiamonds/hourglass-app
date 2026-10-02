@@ -236,7 +236,9 @@ export async function loadIndexedTodayThreadContext(
     const { data, error } = await client
       .from("continuum_gmail_messages")
       .select(INDEX_SELECT)
-      .in("message_id", chunk);
+      .in("message_id", chunk)
+      .order("message_id", { ascending: true })
+      .order("thread_id", { ascending: true });
     if (error || !data) continue;
     for (const threadId of ingestIndexedRows(
       out,
@@ -259,7 +261,7 @@ async function loadIndexedAttachmentFilenames(
   client: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
   out: Map<string, TodayGmailThreadContext>,
 ): Promise<void> {
-  const threadIds = [...out.keys()];
+  const threadIds = [...out.keys()].sort();
   if (threadIds.length === 0) return;
   for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
     const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
@@ -358,14 +360,20 @@ export async function loadLiveTodayOperationalFacts(
   base: ReadonlyMap<string, TodayGmailThreadContext>,
   options: {
     createBatch?: () => Promise<LiveSourceViewerBatch | null>;
+    requireComplete?: boolean;
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
-  const threadIds = [...new Set(base.keys())];
+  const threadIds = [...new Set(base.keys())].sort();
+  if (threadIds.length === 0) return out;
   const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
-  if (!batch) return out;
+  if (!batch) {
+    if (options.requireComplete) throw new Error("today-live-enrichment-unavailable");
+    return out;
+  }
   const extracted = new Map<string, string | null>();
   let cursor = 0;
+  let incomplete = false;
   const worker = async () => {
     while (cursor < threadIds.length) {
       const threadId = threadIds[cursor++]!;
@@ -381,8 +389,14 @@ export async function loadLiveTodayOperationalFacts(
           subject: message.subject ?? current.subject ?? null,
         })),
       });
-      if (!fetched.ok) continue;
+      if (!fetched.ok) {
+        incomplete = true;
+        continue;
+      }
       const liveById = new Map(fetched.messages.map((message) => [message.messageId, message]));
+      if (current.messages.some((message) => !liveById.has(message.messageId))) {
+        incomplete = true;
+      }
       const messages = current.messages.map((message) => {
         const live = liveById.get(message.messageId);
         if (!live) return message;
@@ -442,5 +456,8 @@ export async function loadLiveTodayOperationalFacts(
   await Promise.all(
     Array.from({ length: Math.min(LIVE_FACT_CONCURRENCY, threadIds.length) }, () => worker()),
   );
+  if (options.requireComplete && incomplete) {
+    throw new Error("today-live-enrichment-incomplete");
+  }
   return out;
 }

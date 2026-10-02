@@ -35,7 +35,7 @@ type SnapshotIdentity = {
   payload: TodaySnapshotPayload | null;
 };
 
-type PublishResult = "published" | "stale" | "lost-race" | "unavailable";
+type PublishResult = "published" | "current" | "stale" | "lost-race" | "unavailable";
 
 function winnerIsCurrent(winner: SnapshotIdentity | null, live: string): boolean {
   if (!winner) return false;
@@ -150,8 +150,12 @@ async function publishCompatible(
   },
   live: string,
 ): Promise<PublishResult> {
+  // One immutable winner per source watermark. Re-running the same source
+  // state must not replace its docket with a different enrichment outcome.
+  if (winnerIsCurrent(observed, live)) return "current";
   const atWrite = await readSnapshotIdentity(client);
   if (!atWrite || !isCurrentVersion(atWrite)) return "lost-race";
+  if (atWrite.updatedAt !== observed.updatedAt) return "lost-race";
   if (
     !publishWinsRace({
       composedWatermark: input.composedWatermark,
@@ -163,6 +167,8 @@ async function publishCompatible(
     return "lost-race";
   }
   const wrote = await conditionalUpdate(client, snapshotWrite(input), {
+    version: atWrite.readModelVersion,
+    updatedAt: atWrite.updatedAt,
     watermark: atWrite.sourceWatermark,
   });
   return wrote ? "published" : "lost-race";
@@ -191,7 +197,8 @@ async function upgradeIncompatible(
 
   const winner = await readSnapshotIdentity(client);
   if (!winner) return "lost-race";
-  if (isCurrentVersion(winner)) return "published";
+  if (winnerIsCurrent(winner, live)) return "current";
+  if (isCurrentVersion(winner)) return "lost-race";
 
   const retried = await conditionalUpdate(client, snapshotWrite(input), {
     version: winner.readModelVersion,
@@ -199,7 +206,7 @@ async function upgradeIncompatible(
   });
   if (retried) return "published";
   const after = await readSnapshotIdentity(client);
-  if (after && winnerIsCurrent(after, live)) return "published";
+  if (after && winnerIsCurrent(after, live)) return "current";
   return "lost-race";
 }
 
@@ -242,7 +249,7 @@ export async function publishPersistedTodaySnapshot(
 
     observed = await readSnapshotIdentity(client);
     if (!observed) return "lost-race";
-    if (winnerIsCurrent(observed, live)) return "published";
+    if (winnerIsCurrent(observed, live)) return "current";
     if (!isCurrentVersion(observed)) return upgradeIncompatible(client, observed, input, live);
   } else if (!isCurrentVersion(observed)) {
     return upgradeIncompatible(client, observed, input, live);

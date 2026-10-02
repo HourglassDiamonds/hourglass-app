@@ -179,6 +179,7 @@ async function rebuildTodayLoop(
   );
   const indexedContext = await loadLiveTodayOperationalFacts(
     await loadIndexedTodayThreadContext(candidates),
+    { requireComplete: true },
   );
   const founderCorrections = client ? await loadFounderCorrectionEvents(client) : [];
   const composeInput = {
@@ -231,11 +232,13 @@ async function commitComposedLoop(
   if (!composedWatermark || loop.status === "disconnected") return "skipped";
   const live = await liveWatermark(composedWatermark, evaluationTime);
   if (live !== composedWatermark) return "moved";
-  storeCachedTodayLoop(composedWatermark, Date.now(), loop);
   const client = getSupabaseAdmin();
-  if (!client) return "published";
+  if (!client) {
+    storeCachedTodayLoop(composedWatermark, Date.now(), loop);
+    return "published";
+  }
   try {
-    await publishPersistedTodaySnapshot(client, {
+    const result = await publishPersistedTodaySnapshot(client, {
       composedWatermark,
       payload: projectTodaySnapshot(
         composeTodayDocket(loop),
@@ -244,10 +247,16 @@ async function commitComposedLoop(
       composedAt,
       evaluationTime: evaluationTime.toISOString(),
     });
+    if (result === "published") {
+      storeCachedTodayLoop(composedWatermark, Date.now(), loop);
+      return "published";
+    }
+    if (result === "current") return "published";
+    if (result === "stale" || result === "lost-race") return "moved";
   } catch {
     // A missing table or a lost race leaves the previous snapshot in place.
   }
-  return "published";
+  return "skipped";
 }
 
 async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boolean> {

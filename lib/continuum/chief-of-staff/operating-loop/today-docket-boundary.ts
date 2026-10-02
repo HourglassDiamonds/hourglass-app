@@ -1568,7 +1568,7 @@ function deriveSeedBriefing(seed: TodayDocketSeed, loop: CosOperatingLoopView): 
 }
 
 function compareSeeds(left: TodayDocketSeed, right: TodayDocketSeed): number {
-  return compareTodayRank(
+  const ranked = compareTodayRank(
     {
       priority: priorityInputFromSeed(left),
       score: seedScore(left),
@@ -1580,6 +1580,8 @@ function compareSeeds(left: TodayDocketSeed, right: TodayDocketSeed): number {
       activityMs: seedActivityMs(right),
     },
   );
+  if (ranked !== 0) return ranked;
+  return left.id.localeCompare(right.id);
 }
 
 function promoteTriggeredCheckpoints(

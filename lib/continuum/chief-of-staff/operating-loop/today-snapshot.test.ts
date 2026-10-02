@@ -326,6 +326,7 @@ describe("persisted Today snapshot", () => {
     const watermark = readFileSync(join(ROOT, "lib/continuum/today-source-watermark.ts"), "utf8");
     const review = readFileSync(join(ROOT, "lib/continuum/candidates/review.ts"), "utf8");
     assert.match(watermark, /continuum_gmail_messages/);
+    assert.match(watermark, /continuum_gmail_attachments/);
     assert.match(watermark, /indexed_at/);
     assert.match(watermark, /continuum_candidates/);
     assert.match(watermark, /reviewed_at/);

@@ -248,4 +248,81 @@ describe("Today live Gmail rebuild batch", () => {
     });
     assert.equal(result.get("thread-a")?.subject, "Indexed subject");
   });
+
+  it("rejects a partial live batch when completeness is required for publication", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      [
+        "thread-a",
+        {
+          subject: "Indexed A",
+          messages: [
+            {
+              messageId: "message-a",
+              sentAt: "2026-09-22T20:00:00.000Z",
+              direction: "inbound",
+              labelIds: [],
+              fromEmailHash: null,
+              subject: "Indexed A",
+              hasAttachments: false,
+            },
+          ],
+        },
+      ],
+      [
+        "thread-b",
+        {
+          subject: "Nathan / C026176",
+          messages: [
+            {
+              messageId: "message-b",
+              sentAt: "2026-09-22T21:00:00.000Z",
+              direction: "outbound",
+              labelIds: [],
+              fromEmailHash: null,
+              subject: "Nathan / C026176",
+              hasAttachments: true,
+            },
+          ],
+        },
+      ],
+    ]);
+
+    await assert.rejects(
+      () =>
+        loadLiveTodayOperationalFacts(base, {
+          requireComplete: true,
+          createBatch: async () => ({
+            async fetchThread({ threadId }) {
+              if (threadId === "thread-b") {
+                return { ok: false, reason: "unavailable" } as never;
+              }
+              return {
+                ok: true,
+                indexedSubject: "Indexed A",
+                messages: [
+                  {
+                    messageId: "message-a",
+                    threadId: "thread-a",
+                    sentAt: "2026-09-22T20:00:00.000Z",
+                    fromRaw: "Shop <shop@example.test>",
+                    fromEmail: "shop@example.test",
+                    to: [],
+                    cc: [],
+                    subject: "Indexed A",
+                    plainText: "CAD attached.",
+                    snippet: "",
+                    attachments: [],
+                  },
+                ],
+                gmailMutation: false,
+                plaintextPersisted: false,
+                cursorUnchanged: true,
+                readOnly: true,
+              };
+            },
+          }),
+        }),
+      /today-live-enrichment-incomplete/,
+    );
+  });
 });
