@@ -651,6 +651,10 @@ describe("October 1, 2026 published reading", () => {
     assert.equal(SYSTEM_TEMPERATURE_READING.degrees, 74);
     assert.equal(SYSTEM_TEMPERATURE_READING.weeklyDelta, 0);
     assert.equal(SYSTEM_TEMPERATURE_READING.previousDegrees, 74);
+    assert.match(
+      readLedger("components/system-temperature.tsx"),
+      /Previous reading: \{reading\.previousDegrees\}°/,
+    );
     assert.equal(SYSTEM_TEMPERATURE_READING.bandLabel, "High");
     assert.equal(SYSTEM_TEMPERATURE_READING.functioningLabel, "Systems Functioning");
     assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
