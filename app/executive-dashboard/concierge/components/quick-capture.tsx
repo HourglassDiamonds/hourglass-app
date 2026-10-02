@@ -90,6 +90,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
   const chunksRef = useRef<Blob[]>([]);
   const cancelRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inputRevisionRef = useRef(0);
   const connected = Boolean(proposeAction && saveAction);
   const selected = rows.filter((row) => row.selected && !isSaved(row));
   const selectedBlocked = selected.some(reviewIssue);
@@ -100,6 +101,15 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
     recorderRef.current = null;
+  }
+
+  function replaceCaptureInput(value: string, source: "text" | "voice") {
+    inputRevisionRef.current += 1;
+    setText(value);
+    setProvenance(source);
+    setRows([]);
+    setCaptureId(undefined);
+    setError(undefined);
   }
 
   useEffect(() => () => {
@@ -119,6 +129,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
       const response = await fetch(VOICE_TRANSCRIBE_PATH, {
         method: "POST",
         body: form,
+        cache: "no-store",
         credentials: "same-origin",
       });
       const result = (await response.json()) as {
@@ -128,10 +139,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
       if (!response.ok || !result.ok || typeof result.text !== "string" || !result.text.trim()) {
         throw new Error("transcription-unavailable");
       }
-      setText(result.text.trim());
-      setProvenance("voice");
-      setRows([]);
-      setCaptureId(undefined);
+      replaceCaptureInput(result.text.trim(), "voice");
       setVoicePhase("ready");
       setVoiceMessage("Transcription ready. Review or edit it, then prepare the capture.");
     } catch {
@@ -150,6 +158,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
       setVoiceMessage("Voice capture isn’t supported in this browser. You can still type your capture.");
       return;
     }
+    replaceCaptureInput("", "voice");
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
@@ -208,6 +217,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
     const value = text.trim();
     if (!value || !proposeAction) return;
     const nextCaptureId = crypto.randomUUID();
+    const requestRevision = inputRevisionRef.current;
     setError(undefined);
     setRows([]);
     setCaptureId(undefined);
@@ -221,9 +231,11 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
           referenceTime: new Date().toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         });
+        if (inputRevisionRef.current !== requestRevision) return;
         setCaptureId(nextCaptureId);
         setRows(startReview(proposal, nextCaptureId));
       } catch {
+        if (inputRevisionRef.current !== requestRevision) return;
         setError("Continuum couldn’t prepare this capture. Your words are still here—try again.");
       }
     });
@@ -277,12 +289,12 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
 
       <div className="mt-5 rounded-[1.35rem] border border-[#4b4138] bg-[#211d19]/80 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.14)] focus-within:border-[#806b4e] sm:p-4">
         <label htmlFor={inputId} className="sr-only">Tell Continuum what happened</label>
-        <textarea id={inputId} value={text} onChange={(event) => { setText(event.target.value); setProvenance("text"); }} rows={4} placeholder="Tell Continuum what happened…" className="block w-full resize-y bg-transparent px-1 py-1 text-[16px] leading-relaxed text-[#efe8de] outline-none placeholder:text-[#74695f]" />
+        <textarea id={inputId} value={text} onChange={(event) => replaceCaptureInput(event.target.value, "text")} disabled={voicePhase === "recording" || voicePhase === "transcribing"} rows={4} placeholder="Tell Continuum what happened…" className="block w-full resize-y bg-transparent px-1 py-1 text-[16px] leading-relaxed text-[#efe8de] outline-none placeholder:text-[#74695f] disabled:opacity-60" />
         <div className="mt-3 flex flex-col gap-3 border-t border-[#3b342e] pt-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[11px] leading-relaxed text-[#81756b]">
             {connected ? "Nothing is saved until you review and confirm." : "Capture engine connection pending. Manual actions remain available below."}
           </p>
-          <button type="button" onClick={propose} disabled={!connected || !text.trim() || pending} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.25)] disabled:cursor-not-allowed disabled:opacity-35">
+          <button type="button" onClick={propose} disabled={!connected || !text.trim() || pending || voicePhase === "recording" || voicePhase === "transcribing"} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.25)] disabled:cursor-not-allowed disabled:opacity-35">
             {pending && operation === "propose" ? "Reviewing…" : "Review capture"}
           </button>
         </div>

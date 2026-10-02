@@ -25,10 +25,22 @@ describe("Quick Capture voice integration", () => {
   });
 
   it("places a successful transcript into the existing reviewed capture path", () => {
-    assert.match(component, /setText\(result\.text\.trim\(\)\)/);
-    assert.match(component, /setProvenance\("voice"\)/);
+    assert.match(component, /replaceCaptureInput\(result\.text\.trim\(\), "voice"\)/);
     assert.match(component, /provenance,/);
     assert.match(component, /Save selected/);
     assert.doesNotMatch(component, /saveAction\([^)]*result\.text/);
+  });
+
+  it("invalidates stale text and proposals across voice and manual input changes", () => {
+    assert.match(component, /inputRevisionRef\.current \+= 1/);
+    assert.match(component, /replaceCaptureInput\("", "voice"\)/);
+    assert.ok(
+      component.indexOf('replaceCaptureInput("", "voice")') <
+        component.indexOf("getUserMedia({ audio: true })"),
+    );
+    assert.match(component, /replaceCaptureInput\(event\.target\.value, "text"\)/);
+    assert.match(component, /if \(inputRevisionRef\.current !== requestRevision\) return/);
+    assert.match(component, /cache: "no-store"/);
+    assert.match(component, /voicePhase === "recording" \|\| voicePhase === "transcribing"/);
   });
 });
