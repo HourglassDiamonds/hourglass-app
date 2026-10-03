@@ -32,6 +32,8 @@ import {
   type TodayBriefingPacket,
 } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
 import { runAuthenticatedSterlingQuery } from "@/lib/continuum/sterling/server";
+import { parseSterlingIntent } from "@/lib/continuum/sterling/engine";
+import type { SterlingResponse } from "@/lib/continuum/sterling/types";
 
 export async function askConcierge(
   input:
@@ -51,6 +53,13 @@ export async function askConcierge(
   const mode = typeof input === "string" ? "conversation" : input.mode ?? "conversation";
   const history = typeof input === "string" ? [] : input.history ?? [];
   const todayContext = typeof input === "string" ? undefined : input.todayContext;
+  const conditionalHoldIntent = mode === "conversation"
+    && !todayContext
+    && parseSterlingIntent(query) === "conditional-hold";
+  if (conditionalHoldIntent) {
+    const sterling = await runAuthenticatedSterlingQuery(query);
+    if (sterling) return presentSterling(sterling);
+  }
   const operation = mode === "conversation" || todayContext ? proposeFounderOperation(query) : null;
   if (operation) {
     const result = await executeAuthenticatedFounderOperation(operation, refreshTodayAfterFounderMutation);
@@ -89,28 +98,9 @@ export async function askConcierge(
       },
     };
   }
-  if (mode === "conversation") {
+  if (mode === "conversation" && !conditionalHoldIntent) {
     const sterling = await runAuthenticatedSterlingQuery(query);
-    if (sterling) {
-      return {
-        kind: "conversation",
-        mode: "conversation",
-        text: sterling.summary,
-        actions: [],
-        brainDump: null,
-        sterling,
-        writesCanonical: false,
-        telemetry: {
-          requestModel: sterling.telemetry.model,
-          brain: "fallback",
-          promptTokens: sterling.telemetry.promptTokens,
-          completionTokens: sterling.telemetry.completionTokens,
-          latencyMs: sterling.telemetry.latencyMs,
-          toolCount: sterling.telemetry.toolsInvoked.length,
-          toolNames: sterling.telemetry.toolsInvoked,
-        },
-      };
-    }
+    if (sterling) return presentSterling(sterling);
   }
   const birthdayIntent = parseAskConciergeIntent(query);
   if (history.length === 0 && birthdayIntent.kind !== "unsupported") {
@@ -132,4 +122,25 @@ export async function askConcierge(
     world: loaded.world,
     brain,
   });
+}
+
+function presentSterling(sterling: SterlingResponse): ConciergeSolAnswer {
+  return {
+    kind: "conversation",
+    mode: "conversation",
+    text: sterling.summary,
+    actions: [],
+    brainDump: null,
+    sterling,
+    writesCanonical: false,
+    telemetry: {
+      requestModel: sterling.telemetry.model,
+      brain: "fallback",
+      promptTokens: sterling.telemetry.promptTokens,
+      completionTokens: sterling.telemetry.completionTokens,
+      latencyMs: sterling.telemetry.latencyMs,
+      toolCount: sterling.telemetry.toolsInvoked.length,
+      toolNames: sterling.telemetry.toolsInvoked,
+    },
+  };
 }

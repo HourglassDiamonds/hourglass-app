@@ -56,6 +56,7 @@ function resolveJob(query: string, truth: SterlingTruth): ProjectJob | null {
 }
 
 function parseResumeTime(text: string, now: Date): string | null {
+  if (/\blater today\b/i.test(text)) return new Date(now.getTime() + 4 * 60 * 60 * 1000).toISOString();
   const local = localParts(now, "America/New_York");
   let addDays: number | null = null; let hour = 9;
   if (/\btomorrow\b/i.test(text)) addDays = 1;
