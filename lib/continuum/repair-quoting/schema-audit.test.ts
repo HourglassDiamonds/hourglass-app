@@ -15,6 +15,10 @@ describe("Repair quote SQL", () => {
     ),
     "utf8",
   );
+  const archive = readFileSync(
+    resolve(process.cwd(), "lib/supabase/continuum-repair-quote-archive.sql"),
+    "utf8",
+  );
 
   it("records applied V1 schema without a price catalog", () => {
     assert.match(sql, /APPLIED TO PRODUCTION 2026-09-09/);
@@ -128,5 +132,23 @@ describe("Repair quote SQL", () => {
     assert.doesNotMatch(hardening, /grant delete/i);
     assert.doesNotMatch(hardening, /grant update on table public\.continuum_repair_quote_mutations/i);
     assert.doesNotMatch(hardening, /grant execute .* to (?:anon|authenticated|public)/i);
+  });
+
+  it("keeps quote archive additive, unapplied, and separate from quote status", () => {
+    assert.match(archive, /UNAPPLIED/);
+    assert.match(archive, /20261003220000 continuum_repair_quote_archive_v1/);
+    assert.match(archive, /add column if not exists archived_at timestamptz/);
+    assert.match(archive, /add column if not exists archived_by text/);
+    assert.match(archive, /'archive', 'restore'/);
+    assert.match(archive, /new\.state is not distinct from old\.state/);
+    assert.match(archive, /new\.calculation/);
+    assert.match(archive, /new\.line/);
+    assert.match(archive, /new\.override/);
+    assert.match(archive, /raise exception 'issued-quote-immutable'/);
+    assert.match(archive, /raise exception 'voided-quote-immutable'/);
+    assert.match(archive, /revoke execute on function[\s\S]*from public, anon, authenticated/i);
+    assert.match(archive, /grant execute on function[\s\S]*to service_role/i);
+    assert.doesNotMatch(archive, /delete from|drop table|create policy/i);
+    assert.doesNotMatch(archive, /update\s+public\.continuum_repair_quotes\s+set\s+state/i);
   });
 });
