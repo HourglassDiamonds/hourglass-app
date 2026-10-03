@@ -28,16 +28,67 @@ describe("Sterling conditional holds", () => {
   });
   it("does not pretend SMS is observable", () => { const row = parseConditionalHold("Hold off until I text Ben again", TRUTH, NOW); assert.equal(row.kind, "clarification"); assert.match(row.kind === "clarification" ? row.message : "", /cannot observe.*SMS|cannot observe.*text/i); });
   it("offers a manual or email alternative for SMS", () => { const row = parseConditionalHold("Hold off until I text Ben again", TRUTH, NOW); assert.match(row.kind === "clarification" ? row.message : "", /manually confirm.*email/i); });
+  it("validates unsupported SMS before requiring a canonical job", () => {
+    const row = parseConditionalHold("Hold off until I text Ben again", { ...TRUTH, openJobs: [], today: [] }, NOW);
+    assert.equal(row.kind, "clarification");
+    if (row.kind === "clarification") {
+      assert.match(row.message, /cannot observe.*SMS|cannot observe.*text/i);
+      assert.match(row.message, /Ben/);
+      assert.doesNotMatch(row.message, /Which active job/i);
+    }
+  });
+  it("keeps unsupported SMS as the blocker when Ben has ambiguous jobs", () => {
+    const other = { ...JOB, jobId: "job-ben-2", subject: "Review Ben's CAD", createdMutationId: "mutation-2" };
+    const row = parseConditionalHold("Hold off until I text Ben again", { ...TRUTH, openJobs: [JOB, other] }, NOW);
+    assert.equal(row.kind, "clarification");
+    assert.match(row.kind === "clarification" ? row.message : "", /cannot observe.*SMS|cannot observe.*text/i);
+  });
+  it("uses prior hold context for a manual-confirmation follow-up", () => {
+    const other = { ...JOB, jobId: "job-alex", projectId: "project-alex", subject: "Call Alex", associatedPersonId: "person-alex", sourceRef: "gmail-thread:thread-alex", createdMutationId: "mutation-2" };
+    const row = parseConditionalHold(
+      "Okay, hold it until I tell you I contacted him.",
+      { ...TRUTH, openJobs: [JOB, other] },
+      NOW,
+      "Hold off until I text Ben again.",
+    );
+    assert.equal(row.kind, "proposal");
+    if (row.kind === "proposal") {
+      assert.equal(row.job.jobId, JOB.jobId);
+      assert.equal(row.condition.kind, "until_founder_contact");
+    }
+  });
   it("proposes a founder-email hold", () => assert.equal(proposal("Hold Ben until I email Ben again").condition.kind, "until_founder_contact"));
+  it("treats founder-originated Gmail as a supported contact trigger", () => {
+    const row = proposal("Hold this until I email Ben again");
+    assert.equal(row.condition.kind, "until_founder_contact");
+    if (row.condition.kind === "until_founder_contact") assert.deepEqual(row.condition.observableSources, ["gmail", "founder_note"]);
+  });
   it("proposes an external-reply hold", () => assert.equal(proposal("Hold Ben until Ben replies").condition.kind, "until_external_reply"));
   it("proposes a CAD delivery hold", () => assert.equal(proposal("Hold Ben until the CAD arrives").condition.kind, "until_source_event"));
   it("rejects unobservable payment clearing", () => assert.equal(parseConditionalHold("Hold Ben until payment clears", TRUTH, NOW).kind, "clarification"));
+  it("surfaces unsupported payment before irrelevant job clarification", () => {
+    const row = parseConditionalHold("Hold this until payment clears", { ...TRUTH, openJobs: [], today: [] }, NOW);
+    assert.equal(row.kind, "clarification");
+    assert.match(row.kind === "clarification" ? row.message : "", /not an observable Continuum event/i);
+  });
+  it("surfaces an unsupported arbitrary event before job clarification", () => {
+    const row = parseConditionalHold("Hold this until the appraisal is accepted", { ...TRUTH, openJobs: [], today: [] }, NOW);
+    assert.equal(row.kind, "clarification");
+    assert.match(row.kind === "clarification" ? row.message : "", /cannot observe that event reliably/i);
+  });
   it("resolves tomorrow afternoon in New York", () => { const row = proposal("Hold Ben until tomorrow afternoon"); assert.equal(row.condition.kind, "until_time"); if (row.condition.kind === "until_time") assert.equal(row.condition.resumeAt, "2026-10-04T19:00:00.000Z"); });
   it("treats snooze as an explicit time-bounded hold", () => { const row = proposal("Snooze Ben until tomorrow afternoon"); assert.equal(row.condition.kind, "until_time"); });
   it("uses the established four-hour window for later today", () => { const row = proposal("Snooze Ben until later today"); assert.equal(row.condition.kind, "until_time"); if (row.condition.kind === "until_time") assert.equal(row.condition.resumeAt, "2026-10-03T18:00:00.000Z"); });
   it("resolves next Monday morning", () => { const row = proposal("Hold Ben until Monday morning"); assert.equal(row.condition.kind, "until_time"); if (row.condition.kind === "until_time") assert.equal(row.condition.resumeAt, "2026-10-05T13:00:00.000Z"); });
   it("asks when this is ambiguous", () => assert.equal(parseConditionalHold("Hold this until Monday", { ...TRUTH, openJobs: [JOB, { ...JOB, jobId: "other", subject: "Call Alex" }] }, NOW).kind, "clarification"));
   it("builds a founder-review proposal without mutation", () => { const result = runSterling({ truth: TRUTH, intent: "conditional-hold", query: "Hold Ben until Ben replies", now: NOW }); assert.equal(result.proposals[0]?.kind, "conditional_hold"); assert.equal(result.proposals[0]?.status, "review-required"); });
+  it("creates no proposal for unsupported SMS", () => {
+    const result = runSterling({ truth: TRUTH, intent: "conditional-hold", query: "Hold off until I text Ben again", now: NOW });
+    assert.equal(result.proposals.length, 0);
+    assert.equal(result.telemetry.proposalCount, 0);
+    assert.match(result.findings[0]?.whyItMatters ?? "", /cannot observe.*SMS|cannot observe.*text/i);
+    assert.doesNotMatch(result.findings[0]?.whyItMatters ?? "", /monitor(?:ing)? SMS/i);
+  });
   it("suppresses held jobs from Today collection", () => assert.equal(collectCanonicalActionables({ jobs: [JOB], projects: new Map(), nowIso: NOW.toISOString(), heldJobIds: new Set([JOB.jobId]) }).length, 0));
   it("does not suppress an unheld job", () => assert.equal(collectCanonicalActionables({ jobs: [JOB], projects: new Map(), nowIso: NOW.toISOString(), heldJobIds: new Set() }).length, 1));
   it("ignores source events from before activation", () => assert.equal(matchHoldCondition({ condition: external(), activatedAt: NOW.toISOString(), events: [event({ timestamp: "2026-10-03T13:59:59.000Z" })], now: NOW }), null));

@@ -19,6 +19,7 @@ import type { SterlingOwner, SterlingResponse, SterlingTodayItem, SterlingTruth 
 export async function runAuthenticatedSterlingQuery(
   query: string,
   now = new Date(),
+  queryContext = "",
 ): Promise<SterlingResponse | null> {
   const intent = parseSterlingIntent(query);
   if (!intent) return null;
@@ -33,6 +34,7 @@ export async function runAuthenticatedSterlingQuery(
     modelOverride: process.env.STERLING_MODEL,
     now,
     query,
+    queryContext,
     proposalHistory,
   });
   if (!ledger.ok) {

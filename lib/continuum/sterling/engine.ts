@@ -54,6 +54,7 @@ export function runSterling(input: {
   runId?: string;
   proposalHistory?: readonly SterlingProposalRecord[];
   query?: string;
+  queryContext?: string;
 }): SterlingResponse {
   const started = Date.now();
   const now = input.now ?? new Date(input.truth.generatedAt);
@@ -61,7 +62,7 @@ export function runSterling(input: {
   const runId = input.runId ?? randomUUID();
   const ledgerPreferences = deriveLedgerPreferenceSignals(input.proposalHistory ?? []);
   const holdResult = input.intent === "conditional-hold"
-    ? parseConditionalHold(input.query ?? "", input.truth, now)
+    ? parseConditionalHold(input.query ?? "", input.truth, now, input.queryContext)
     : null;
   const allFindings = input.intent === "conditional-hold"
     ? holdFindings(holdResult)

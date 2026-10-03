@@ -11,4 +11,8 @@ describe("conditional hold migration", () => {
     assert.match(askActions, /parseSterlingIntent\(query\) === "conditional-hold"/);
     assert.ok(askActions.indexOf("const conditionalHoldIntent") < askActions.indexOf("const operation ="));
   });
+  it("passes only bounded prior hold context for anaphoric follow-ups", () => {
+    assert.match(askActions, /conditionalHoldContext\(query, history\)/);
+    assert.match(askActions, /turn\.role === "founder" && parseSterlingIntent\(turn\.text\) === "conditional-hold"/);
+  });
 });

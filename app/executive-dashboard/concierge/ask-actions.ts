@@ -57,7 +57,7 @@ export async function askConcierge(
     && !todayContext
     && parseSterlingIntent(query) === "conditional-hold";
   if (conditionalHoldIntent) {
-    const sterling = await runAuthenticatedSterlingQuery(query);
+    const sterling = await runAuthenticatedSterlingQuery(query, new Date(), conditionalHoldContext(query, history));
     if (sterling) return presentSterling(sterling);
   }
   const operation = mode === "conversation" || todayContext ? proposeFounderOperation(query) : null;
@@ -122,6 +122,13 @@ export async function askConcierge(
     world: loaded.world,
     brain,
   });
+}
+
+function conditionalHoldContext(query: string, history: readonly ConciergeSolHistoryTurn[]): string {
+  if (!/\b(?:it|this|that|him|her|them)\b/i.test(query)) return "";
+  return [...history].reverse().find((turn) =>
+    turn.role === "founder" && parseSterlingIntent(turn.text) === "conditional-hold"
+  )?.text ?? "";
 }
 
 function presentSterling(sterling: SterlingResponse): ConciergeSolAnswer {
