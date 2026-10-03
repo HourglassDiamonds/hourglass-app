@@ -13,6 +13,7 @@ import {
   startReview,
 } from "../../../app/executive-dashboard/concierge/components/quick-capture-state";
 import type { CaptureProposal, CaptureProposedItem } from "./types";
+import { appendSpeechTranscript } from "../../../app/executive-dashboard/concierge/components/use-speech-input";
 
 const personId = "11111111-1111-4111-8111-111111111111";
 const projectId = "22222222-2222-4222-8222-222222222222";
@@ -48,13 +49,20 @@ describe("Quick Capture UI", () => {
     const html = renderToStaticMarkup(createElement(QuickCapture));
     assert.match(html, /Tell Continuum what happened/);
     assert.match(html, /Capture engine connection pending/);
-    assert.match(html, /Speak your capture/);
+    assert.match(html, /Voice input is not available in this browser/);
     assert.match(html, /disabled/);
+    assert.match(html, /Voice input is unavailable here; typing still works/);
     assert.match(html, /Add manually/);
     for (const label of ["Inbox", "Add action", "Add Note", "Add Client", "My Card"]) {
       assert.match(html, new RegExp(label));
     }
     assert.doesNotMatch(html, /chat|assistant|message bubble/i);
+  });
+
+  it("appends a bounded speech transcript without replacing the founder’s original words", () => {
+    assert.equal(appendSpeechTranscript("Call Sam", " tomorrow "), "Call Sam tomorrow");
+    assert.equal(appendSpeechTranscript("", "Call Sam"), "Call Sam");
+    assert.equal(appendSpeechTranscript("Call Sam", "   "), "Call Sam");
   });
 
   it("keeps ambiguous and unresolved identities visibly blocked and unselected", () => {
@@ -66,9 +74,9 @@ describe("Quick Capture UI", () => {
       item({ itemId: "resolved", entityResolution: { status: "resolved", personId, projectId, evidence: "Existing records matched" } }),
     ]), "capture-1");
     assert.equal(rows[0].selected, false);
-    assert.match(reviewIssue(rows[0]) ?? "", /Choose who or which project/);
+    assert.match(reviewIssue(rows[0]) ?? "", /more than one possible match/);
     assert.equal(rows[1].selected, false);
-    assert.match(reviewIssue(rows[1]) ?? "", /not linked/);
+    assert.match(reviewIssue(rows[1]) ?? "", /could not link/);
     assert.equal(rows[2].selected, true);
     assert.equal(reviewIssue(rows[2]), undefined);
   });

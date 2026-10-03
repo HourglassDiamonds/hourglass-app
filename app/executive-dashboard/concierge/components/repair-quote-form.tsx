@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useId, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useId, useRef, useState, useTransition, type KeyboardEvent } from "react";
 import {
   saveRepairQuote,
   searchGellerLines,
@@ -68,20 +68,31 @@ export function RepairQuoteForm({
     null as SaveRepairQuoteState,
   );
   const errorRef = useRef<HTMLParagraphElement>(null);
+  const searchRequest = useRef(0);
 
   useEffect(() => {
     if (state?.message) errorRef.current?.focus();
   }, [state?.message]);
 
+  useEffect(() => {
+    const nextQuery = query.trim();
+    if (selected || nextQuery.length < 2) return;
+    const timer = window.setTimeout(() => runSearch(nextQuery), 250);
+    return () => window.clearTimeout(timer);
+  }, [query, selected]);
+
   function runSearch(nextQuery: string) {
+    const request = ++searchRequest.current;
     startSearch(async () => {
       const result = await searchGellerLines(nextQuery);
+      if (request !== searchRequest.current) return;
       setHits(result.hits);
       setUnique(result.unique);
     });
   }
 
   function selectHit(hit: GellerSearchHit) {
+    searchRequest.current += 1;
     setSelected(hit);
     setRepairType(hit.inferredRepairType);
     setMetalFamily(hit.inferredMetalFamily);
@@ -120,10 +131,18 @@ export function RepairQuoteForm({
                 : null,
             costBasis: "geller_cost_columns",
           },
-        });
+          });
+
+  function preventAccidentalSubmit(event: KeyboardEvent<HTMLFormElement>) {
+    if (event.key !== "Enter") return;
+    const target = event.target;
+    if (!(target instanceof HTMLInputElement)) return;
+    if (target.type === "submit" || target.type === "button") return;
+    event.preventDefault();
+  }
 
   return (
-    <form action={formAction} className="flex min-h-[70vh] flex-col" noValidate>
+    <form action={formAction} className="flex min-h-[70vh] flex-col" noValidate onKeyDown={preventAccidentalSubmit}>
       <input type="hidden" name="projectId" value={projectId} />
       <input type="hidden" name="mutationId" value={mutationId} />
       <input type="hidden" name="costBasis" value="geller_cost_columns" />
@@ -155,8 +174,7 @@ export function RepairQuoteForm({
             const next = event.target.value;
             setQuery(next);
             setSelected(null);
-            if (next.trim().length >= 2) runSearch(next);
-            else setHits([]);
+            if (next.trim().length < 2) setHits([]);
           }}
           placeholder='14k yellow size up 1 narrow 0-4 stones'
           className="mt-2 w-full min-h-12 rounded-[18px] border border-white/10 bg-[#1d1916] px-4 text-[15px] text-[#efe8de] outline-none focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
@@ -196,7 +214,7 @@ export function RepairQuoteForm({
       ) : null}
 
       {selected ? (
-        <section className="mt-8 rounded-[18px] border border-white/10 px-4 py-4">
+        <section className="mt-8 border-y border-white/[0.07] py-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
             Selected source line
           </p>
@@ -205,14 +223,17 @@ export function RepairQuoteForm({
             {selected.taskDescription}
           </p>
           <p className="mt-2 text-[13px] text-[#8d8073]">{GELLER_BLUE_BOOK.editionLabel}</p>
-          <dl className="mt-4 space-y-2">
+          <details className="mt-3">
+            <summary className="inline-flex min-h-11 cursor-pointer items-center text-[11px] text-[#8d8073]">Source pricing</summary>
+            <dl className="mt-2 space-y-2">
             <PreviewRow label="Price Labor" value={formatUsdCents(selected.amounts.priceLaborCents)} />
             <PreviewRow label="Price Parts" value={formatUsdCents(selected.amounts.pricePartsCents)} />
             <PreviewRow label="Price Other" value={formatUsdCents(selected.amounts.priceOtherCents)} />
             <PreviewRow label="Cost Labor" value={formatUsdCents(selected.amounts.costLaborCents)} />
             <PreviewRow label="Cost Parts" value={formatUsdCents(selected.amounts.costPartsCents)} />
             <PreviewRow label="Cost Other" value={formatUsdCents(selected.amounts.costOtherCents)} />
-          </dl>
+            </dl>
+          </details>
         </section>
       ) : (
         <p className="mt-6 text-[15px] leading-relaxed text-[#c4b7aa]">
@@ -383,18 +404,6 @@ export function RepairQuoteForm({
         charge. Express is not enabled. Platinum has no synthetic dynamic model.
       </p>
 
-      <fieldset className="mt-8">
-        <legend className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
-          Geller Express
-        </legend>
-        <label className="mt-3 flex min-h-11 items-start gap-3">
-          <input type="checkbox" name="expressSelected" value="yes" className="mt-1" />
-          <span className="text-[15px] leading-relaxed text-[#c4b7aa]">
-            Apply Express. Hourglass does not enable this yet; selecting it fails closed.
-          </span>
-        </label>
-      </fieldset>
-
       <label className="mt-8 block">
         <span className="text-[11px] uppercase tracking-[0.18em] text-[#8d8073]">
           Manual override
@@ -428,7 +437,7 @@ export function RepairQuoteForm({
         </p>
       ) : null}
 
-      <div className="hg-concierge-savebar sticky bottom-0 z-10 mt-8 -mx-5 flex gap-3 bg-[#14110f] px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="hg-concierge-savebar sticky bottom-[calc(3.25rem+env(safe-area-inset-bottom))] z-10 mt-8 -mx-5 flex gap-3 bg-[#14110f] px-5 pt-4 pb-3 md:bottom-0 md:pb-[max(1rem,env(safe-area-inset-bottom))]">
         <button
           type="submit"
           disabled={pending || !selected || (preview != null && !preview.ok)}

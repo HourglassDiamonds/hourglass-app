@@ -102,7 +102,7 @@ export function parseRepairQuoteIntent(input: RepairQuoteToolInput): {
   const fromSize =
     typeof input.fromSize === "number" && Number.isFinite(input.fromSize)
       ? input.fromSize
-      : parseSize(raw, /from\s+(?:a\s+)?(\d+(?:\.\d+)?)/);
+      : parseSize(raw, /(?:from|size)\s+(?:a\s+)?(\d+(?:\.\d+)?)/);
   const toSize =
     typeof input.toSize === "number" && Number.isFinite(input.toSize)
       ? input.toSize

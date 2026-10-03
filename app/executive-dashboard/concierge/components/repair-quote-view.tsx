@@ -26,8 +26,8 @@ import {
 import type { RepairQuote } from "@/lib/continuum/repair-quoting/types";
 import {
   conciergeNewRepairQuotePath,
+  conciergePreviousRepairQuotesPath,
   conciergeRepairQuotePath,
-  conciergeRepairQuotesPath,
 } from "@/lib/continuum/client-memory/read/presentation";
 
 export function RepairQuotesSection({
@@ -106,12 +106,22 @@ export function RepairQuoteDetail({
         <p className="mt-1 text-[15px] leading-relaxed text-[#c4b7aa]">{personName}</p>
       ) : null}
 
-      <dl className="mt-8 space-y-4">
+      <dl className="mt-8 space-y-4 border-y border-white/[0.07] py-5">
+        <Row label={FINAL_QUOTE_LABEL} value={repairQuoteAmountLabel(quote)} />
         <Row label="Repair type" value={repairQuoteTypeLabel(quote.repairType)} />
         <Row label="Metal" value={repairMetalLabel(quote.metalFamily)} />
+        <Row label="Description" value={calc.sourceTaskDescription} />
+        <Row label="Created" value={formatQuoteDate(quote.createdAt)} />
+        {quote.issuedAt ? <Row label="Issued" value={formatQuoteDate(quote.issuedAt)} /> : null}
+      </dl>
+
+      <details className="mt-6 border-b border-white/[0.06] pb-5">
+        <summary className="inline-flex min-h-11 cursor-pointer items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
+          Pricing evidence
+        </summary>
+        <dl className="mt-4 space-y-4">
         <Row label="Source edition" value={quote.sourceEditionLabel} />
         <Row label="Source SKU" value={quote.sourceSku} />
-        <Row label="Source task" value={calc.sourceTaskDescription} />
         <Row label="Price Labor" value={formatUsdCents(calc.sourceAmounts.priceLaborCents)} />
         <Row label="Price Parts" value={formatUsdCents(calc.sourceAmounts.pricePartsCents)} />
         <Row label="Price Other" value={formatUsdCents(calc.sourceAmounts.priceOtherCents)} />
@@ -183,19 +193,27 @@ export function RepairQuoteDetail({
             />
           </>
         ) : null}
-        <Row label={FINAL_QUOTE_LABEL} value={repairQuoteAmountLabel(quote)} />
-        {quote.issuedAt ? <Row label="Issued" value={quote.issuedAt} /> : null}
-      </dl>
+        </dl>
+      </details>
       <p className="mt-8">
         <Link
-          href={conciergeRepairQuotesPath(quote.projectId)}
+          href={conciergePreviousRepairQuotesPath()}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
         >
-          All repair quotes
+          Previous Quotes
         </Link>
       </p>
     </article>
   );
+}
+
+function formatQuoteDate(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
 }
 
 function Row({ label, value }: { label: string; value: string }) {

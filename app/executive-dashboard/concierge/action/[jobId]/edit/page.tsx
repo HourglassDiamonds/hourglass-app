@@ -1,14 +1,11 @@
 import { randomUUID } from "node:crypto";
-import Link from "next/link";
 import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
 import { getAuthenticatedProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/load-writer";
-import {
-  CONCIERGE_HOME_PATH,
-  isProjectIdParam,
-} from "@/lib/continuum/client-memory/read/presentation";
+import { isProjectIdParam } from "@/lib/continuum/client-memory/read/presentation";
 import { ConciergeShell } from "../../../components/concierge-shell";
 import { ConciergeUnavailable } from "../../../components/client-profile-view";
 import { EditActionForm } from "../../../components/edit-action-form";
+import { ConciergeBackLink } from "../../../components/concierge-back-link";
 
 export const dynamic = "force-dynamic";
 
@@ -84,13 +81,7 @@ export default async function ConciergeEditActionPage({
 
   return (
     <ConciergeShell>
-      <Link
-        href={CONCIERGE_HOME_PATH}
-        aria-label="Back to Command Center"
-        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        ← Command Center
-      </Link>
+      <ConciergeBackLink />
       <div className="hg-concierge-fade mt-8">
         <h1 className="font-serif text-[2.15rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#efe8de]">
           Edit action

@@ -62,10 +62,10 @@ export function reviewIssue(row: CaptureReviewItem): string | undefined {
   if (row.item.kind === "hold") return row.item.clarification?.question;
   const resolution = row.item.entityResolution;
   if (resolution?.status === "ambiguous") {
-    return "Choose who or which project you mean by editing your capture and reviewing it again.";
+    return "Continuum found more than one possible match. Add a full name or project detail, then review again.";
   }
   if (resolution?.status === "unresolved") {
-    return "This identity is not linked. Add more detail to your capture and review it again.";
+    return "Continuum could not link this name. Add a full name or project detail, then review again.";
   }
   if (row.item.clarification) return row.item.clarification.question;
   if (row.result?.status === "needs-review") return row.result.message;

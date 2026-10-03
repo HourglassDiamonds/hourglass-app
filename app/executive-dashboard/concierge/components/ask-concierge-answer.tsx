@@ -160,7 +160,7 @@ function SterlingAnswer({ response }: { response: SterlingResponse }) {
           {response.priorities.map((priority, index) => (
             <li
               key={priority.id}
-              className="rounded-[18px] border border-white/[0.08] bg-[#1d1916] px-4 py-4"
+              className="border-t border-white/[0.06] py-4 first:border-t-0"
             >
               <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">
                 {index + 1} · {priority.owner} · {priority.confidence} confidence
@@ -198,7 +198,7 @@ function SterlingAnswer({ response }: { response: SterlingResponse }) {
                 Proposed fix: {finding.proposedFix}
               </p>
               {finding.proposal ? (
-                <article className="mt-4 rounded-[18px] bg-white/[0.035] px-4 py-4" data-sterling-inline-proposal="">
+                <article className="mt-4 border-l border-[#ad9164]/35 pl-4" data-sterling-inline-proposal="">
                   <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">Suggested cleanup</p>
                   <p className="mt-2 text-[14px] leading-relaxed text-[#efe8de]">{finding.proposal.proposedState}</p>
                   <p className="mt-1 text-[12px] leading-relaxed text-[#8d8073]">{finding.proposal.reason}</p>
@@ -232,7 +232,8 @@ function EvidenceDetails({
   evidence: readonly string[];
   canonicalIds: readonly string[];
 }) {
-  const rows = [...evidence, ...canonicalIds.map((id) => `Canonical ID: ${id}`)].filter(Boolean);
+  void canonicalIds;
+  const rows = [...evidence].filter(Boolean);
   if (rows.length === 0) return null;
   return (
     <details className="mt-3 text-[12px] leading-relaxed text-[#8d8073]">

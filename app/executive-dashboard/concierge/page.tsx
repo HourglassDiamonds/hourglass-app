@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { calendarFeedbackCommitments, calendarFeedbackMaterialKey } from "@/lib/continuum/calendar/today-upcoming";
 import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
@@ -9,6 +10,10 @@ import { CommandCenterHome } from "./components/command-center-home";
 import { ConciergeShell } from "./components/concierge-shell";
 import { CosFeedbackSettle } from "./components/cos-feedback-settle";
 import { GmailOperatingFreshness } from "./components/gmail-operating-freshness";
+import {
+  ConditionalHoldPanel,
+  ConditionalHoldPanelFallback,
+} from "./components/conditional-hold-panel";
 
 export const fetchCache = "force-no-store";
 
@@ -28,6 +33,9 @@ export default async function ConciergeHomePage() {
         watermark={today.readModelWatermark}
         calendarKey={calendarFeedbackMaterialKey(calendarFeedbackCommitments(upcoming))}
       />
+      <Suspense fallback={<ConditionalHoldPanelFallback />}>
+        <ConditionalHoldPanel />
+      </Suspense>
       <CommandCenterHome
         model={model}
         docket={today.docket}

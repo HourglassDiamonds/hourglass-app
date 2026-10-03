@@ -184,10 +184,20 @@ export function CosDocketActions({
     evidence,
     controls.relatedEmailSources,
   );
+  const primaryAction = visibleActions[0] ?? visibleFallback[0] ?? null;
+  const secondaryActions = [
+    ...visibleActions.filter((action) => action !== primaryAction),
+    ...visibleFallback.filter((action) => action !== primaryAction),
+  ];
+  const hasMore = Boolean(
+    secondaryActions.length > 0 ||
+    viewerRequest ||
+    controls.relatedEmailSources.length > 0 ||
+    item.job?.editHref,
+  );
   return (
     <div className="hg-cos-founder-actions mt-2 min-w-0">
-      {visibleActions.length > 0 || visibleFallback.length > 0 ? (
-        <div className="flex min-w-0 flex-wrap items-center gap-x-5" data-cos-founder-family={controls.family}>
+      <div className="flex min-w-0 flex-wrap items-center gap-x-5" data-cos-founder-family={controls.family}>
           {controls.confirmPerson ? (
             <Link
               href={controls.confirmPerson.href}
@@ -197,27 +207,14 @@ export function CosDocketActions({
               Confirm person
             </Link>
           ) : null}
-          {visibleActions.map((action) => (
+          {primaryAction ? (
             <ActionButton
-              key={action.verb}
-              action={action}
+              action={primaryAction}
               item={item}
               disposeAction={disposeAction}
-              className={buttonClass(action.emphasis)}
+              className={buttonClass(primaryAction.emphasis)}
             />
-          ))}
-          {visibleFallback.map((action) => (
-            <ActionButton
-              key={action.verb}
-              action={action}
-              item={item}
-              disposeAction={disposeAction}
-              className={buttonClass(action.emphasis)}
-            />
-          ))}
-        </div>
-      ) : null}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-5">
+          ) : null}
         {controls.openProjectHref ? (
           <Link
             href={controls.openProjectHref}
@@ -226,31 +223,49 @@ export function CosDocketActions({
             Open project
           </Link>
         ) : null}
-        {viewerRequest ? (
-          <CosViewEmailControl
-            sources={viewerRequest.sources}
-            request={viewerRequest}
-          />
-        ) : null}
-        {controls.relatedEmailSources.map((source) => (
-          <a
-            key={source.href}
-            href={source.href}
-            target="_blank"
-            rel="noreferrer"
-            data-cos-related-email=""
-            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]"
-          >
-            {RELATED_EMAIL_LABEL}
-          </a>
-        ))}
-        {item.job?.editHref ? (
-          <Link
-            href={item.job.editHref}
-            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-          >
-            Edit
-          </Link>
+        {hasMore ? (
+          <details className="min-w-0" data-cos-more-actions="">
+            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[10px] uppercase tracking-[0.18em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
+              More
+            </summary>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-5">
+              {secondaryActions.map((action) => (
+                <ActionButton
+                  key={action.verb}
+                  action={action}
+                  item={item}
+                  disposeAction={disposeAction}
+                  className={buttonClass(action.emphasis)}
+                />
+              ))}
+              {viewerRequest ? (
+                <CosViewEmailControl
+                  sources={viewerRequest.sources}
+                  request={viewerRequest}
+                />
+              ) : null}
+              {controls.relatedEmailSources.map((source) => (
+                <a
+                  key={source.href}
+                  href={source.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  data-cos-related-email=""
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]"
+                >
+                  {RELATED_EMAIL_LABEL}
+                </a>
+              ))}
+              {item.job?.editHref ? (
+                <Link
+                  href={item.job.editHref}
+                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                >
+                  Edit
+                </Link>
+              ) : null}
+            </div>
+          </details>
         ) : null}
         {evidence ? (
           <details className="hg-cos-evidence inline min-w-0 align-middle">

@@ -7,7 +7,7 @@ import { runConciergeSol } from "./runtime";
 import { executeConciergeTool } from "./tool-runtime";
 import { CONCIERGE_WRITE_TOOL_NAMES } from "./tools";
 import type { ReasoningBrain } from "./types";
-import { deterministicToolPlan } from "./fallback";
+import { deterministicToolPlan, repairConversationQuery } from "./fallback";
 import {
   TRAVIS_PERSON_ID as PERSON_ID,
   createTravisSolWorld,
@@ -43,6 +43,24 @@ class ScriptedSol implements ReasoningBrain {
 }
 
 describe("Concierge Sol runtime", () => {
+  it("retains the repair description across a concise follow-up", () => {
+    const query = repairConversationQuery("Yes", [
+      { role: "founder", text: "14k yellow gold ring, size 6 to 7.5, 2mm shank" },
+      { role: "concierge", text: "Is this a laser sizing?" },
+    ]);
+    assert.match(query, /size 6 to 7\.5/);
+    const plan = deterministicToolPlan({
+      query: "Yes",
+      mode: "conversation",
+      history: [
+        { role: "founder", text: "14k yellow gold ring, size 6 to 7.5, 2mm shank" },
+        { role: "concierge", text: "Is this a laser sizing?" },
+      ],
+    });
+    assert.equal(plan[0]?.name, "get_repair_quote");
+    assert.match(String(plan[0]?.arguments.query), /Yes/);
+  });
+
   it("answers November birthdays from the birthday tool", async () => {
     const answer = await runConciergeSol({
       query: "Who has a birthday in November?",

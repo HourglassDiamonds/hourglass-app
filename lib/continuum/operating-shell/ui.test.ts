@@ -13,6 +13,7 @@ import { composeContinuumHome } from "../dashboard/compose";
 import { composeCosOperatingLoop } from "../chief-of-staff/operating-loop/compose";
 import { CURRENT_PROJECT_OPERATING_GROUP_LABELS } from "../client-memory/open-projects/operating-groups";
 import type { CurrentProjectCard } from "../client-memory/open-projects/card";
+import type { OpenProjectWorkItem } from "../client-memory/open-projects/select";
 import {
   CONCIERGE_ASK_PATH,
   OPERATING_DESTINATIONS,
@@ -48,6 +49,32 @@ function card(): CurrentProjectCard {
     actionDueAt: null,
     waitingSince: null,
     updatedAt: null,
+  };
+}
+
+function repairWork(): OpenProjectWorkItem {
+  return {
+    projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    title: "Lee / Spiegel",
+    people: [{
+      personId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      displayName: "Lee Spiegel",
+    }],
+    lifecycleStage: "intake",
+    lifecycleLabel: "Intake",
+    projectWork: {
+      connected: true,
+      unresolvedCount: 1,
+      activeCount: 1,
+      deferredCount: 0,
+      waitingOn: { founder: 1, hourglass: 0, client: 0, vendor: 0, unknown: 0 },
+      blocked: false,
+      dueSoonCount: 0,
+      pastDueCount: 0,
+      forgottenRiskCount: 0,
+      nextDueAt: null,
+    },
+    href: "/executive-dashboard/concierge/projects/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
   };
 }
 
@@ -156,22 +183,19 @@ describe("Founder Operating UX V1 shell", () => {
     const page = read(join("repairs", "page.tsx"));
     const html = renderToStaticMarkup(
       createElement(RepairsHome, {
-        current: [card()],
-        issued: [],
-        other: [],
+        current: [repairWork()],
         quotesConnected: true,
       }),
     );
     assert.match(page, /projectKind === "repair_service"/);
     assert.match(page, /getAuthenticatedRepairQuoteReader/);
-    assert.match(page, /OpenProjectsHome|composeCurrentProjectCards/);
     assert.match(page, /AskConciergeShell/);
     assert.match(page, /Describe the repair, client, and relevant details/);
     assert.doesNotMatch(page, /create table|continuum_repairs[^_]/);
     assert.match(html, />Repairs</);
-    assert.match(html, /Current repairs/);
-    assert.match(html, /Issued quotes/);
-    assert.match(html, /Repair quotes|New repair quote/);
+    assert.match(html, /Active repairs/);
+    assert.match(html, /Previous Quotes/);
+    assert.doesNotMatch(html, /Issued quotes/);
     assert.match(
       html,
       /\/executive-dashboard\/concierge\/projects\/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\/repair/,
@@ -204,7 +228,8 @@ describe("Founder Operating UX V1 shell", () => {
     assert.match(nav, /return <a \{\.\.\.props\}/);
     assert.match(ask, /value=\{query\}/);
     assert.match(ask, /onChange=\{\(event\) => setQuery\(event\.target\.value\)\}/);
-    assert.doesNotMatch(ask, /readOnly|disabled=\{/);
+    assert.doesNotMatch(ask, /readOnly/);
+    assert.match(ask, /disabled=\{pending/);
     assert.match(capture, /value=\{text\}/);
     assert.match(capture, /onChange=\{\(event\) => setText\(event\.target\.value\)\}/);
   });

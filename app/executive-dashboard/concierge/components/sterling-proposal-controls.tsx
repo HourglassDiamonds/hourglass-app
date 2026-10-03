@@ -10,13 +10,14 @@ import type { SterlingProposal } from "@/lib/continuum/sterling/types";
 const initialState: SterlingProposalActionState = null;
 type ReviewMode = "idle" | "edit" | "defer";
 type ReviewIntent = "approve" | "edit_and_approve" | "defer" | "reject";
-const SECONDARY_BUTTON = "min-h-10 rounded-full px-3 text-[11px] text-[#a99b8d] outline-none transition hover:text-[#efe8de] focus-visible:text-[#efe8de] disabled:cursor-not-allowed disabled:opacity-45";
+const SECONDARY_BUTTON = "min-h-11 px-3 text-[11px] text-[#a99b8d] outline-none transition hover:text-[#efe8de] focus-visible:text-[#efe8de] disabled:cursor-not-allowed disabled:opacity-45";
 
 export function SterlingProposalControls({ proposal }: { proposal: SterlingProposal }) {
   const [state, action, pending] = useActionState(reviewSterlingProposalAction, initialState);
   const [mode, setMode] = useState<ReviewMode>("idle");
   const [intent, setIntent] = useState<ReviewIntent>();
   const [slow, setSlow] = useState(false);
+  const [deferPreset, setDeferPreset] = useState("tomorrow");
   const [clientDurationMs, setClientDurationMs] = useState<number>();
   const startedAt = useRef<number | undefined>(undefined);
 
@@ -33,11 +34,11 @@ export function SterlingProposalControls({ proposal }: { proposal: SterlingPropo
   }, [state]);
 
   if (proposal.persistence !== "persisted") {
-    return <p className="mt-3 text-[12px] leading-relaxed text-[#8d8073]">This recommendation is advisory because durable review is unavailable.</p>;
+    return <p className="mt-3 text-[12px] leading-relaxed text-[#8d8073]">This is advice only; review actions are unavailable right now.</p>;
   }
 
   const editable = proposal.proposedAction.kind === "update_job" || proposal.proposedAction.kind === "create_projectless_job";
-  const editLabel = proposal.proposedAction.kind === "update_job" ? "Waiting owner" : "Action title";
+  const editLabel = proposal.proposedAction.kind === "update_job" ? "Waiting on" : "Action title";
   const editPlaceholder = proposal.proposedAction.kind === "update_job"
     ? proposal.proposedAction.waitingOnActor ?? "founder"
     : proposal.proposedAction.kind === "create_projectless_job" ? proposal.proposedAction.subject : "";
@@ -59,7 +60,7 @@ export function SterlingProposalControls({ proposal }: { proposal: SterlingPropo
       <form action={action} onSubmit={() => { startedAt.current = performance.now(); setClientDurationMs(undefined); setSlow(false); }}>
         <input type="hidden" name="proposalId" value={proposal.proposalId} />
         <div className="flex flex-wrap items-center gap-1">
-          <button name="reviewAction" value="approve" disabled={pending} onClick={() => setIntent("approve")} className="min-h-10 rounded-full bg-[#ad9164] px-4 text-[11px] text-[#17120e] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.24)] disabled:cursor-not-allowed disabled:opacity-45">Approve</button>
+          <button name="reviewAction" value="approve" disabled={pending} onClick={() => setIntent("approve")} className="min-h-11 rounded-[12px] bg-[#ad9164] px-4 text-[11px] text-[#17120e] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.24)] disabled:cursor-not-allowed disabled:opacity-45">Approve</button>
           {editable ? <button type="button" disabled={pending} onClick={() => setMode(mode === "edit" ? "idle" : "edit")} className={SECONDARY_BUTTON}>Edit</button> : null}
           <button type="button" disabled={pending} onClick={() => setMode(mode === "defer" ? "idle" : "defer")} className={SECONDARY_BUTTON}>Defer</button>
           {proposal.kind === "conditional_hold" ? <span className="text-[10px] text-[#74695f]">Choose a different review time</span> : null}
@@ -70,19 +71,19 @@ export function SterlingProposalControls({ proposal }: { proposal: SterlingPropo
           <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end" data-sterling-edit="">
             <label className="min-w-0 flex-1 text-[10px] uppercase tracking-[0.16em] text-[#8d8073]" htmlFor={`sterling-edit-${proposal.proposalId}`}>
               {editLabel}
-              <input id={`sterling-edit-${proposal.proposalId}`} name="editedValue" defaultValue={editPlaceholder} maxLength={160} required disabled={pending} className="mt-1 block min-h-10 w-full rounded-[12px] border border-white/[0.1] bg-[#171411] px-3 text-[13px] normal-case tracking-normal text-[#efe8de]" />
+              <input id={`sterling-edit-${proposal.proposalId}`} name="editedValue" defaultValue={editPlaceholder} maxLength={160} required disabled={pending} className="mt-1 block min-h-11 w-full rounded-[12px] border border-white/[0.1] bg-[#171411] px-3 text-[13px] normal-case tracking-normal text-[#efe8de]" />
             </label>
-            <button name="reviewAction" value="edit_and_approve" disabled={pending} onClick={() => setIntent("edit_and_approve")} className="min-h-10 rounded-full border border-[#ad9164]/50 px-4 text-[11px] text-[#ad9164] disabled:opacity-45">Approve edit</button>
+            <button name="reviewAction" value="edit_and_approve" disabled={pending} onClick={() => setIntent("edit_and_approve")} className="min-h-11 rounded-[12px] border border-[#ad9164]/50 px-4 text-[11px] text-[#ad9164] disabled:opacity-45">Approve edit</button>
           </div>
         ) : null}
 
         {mode === "defer" ? (
           <div className="mt-3 flex flex-col gap-2 sm:flex-row" data-sterling-defer="">
-            <select name="deferPreset" defaultValue="tomorrow" disabled={pending} aria-label="Defer until" className="min-h-10 rounded-[12px] border border-white/[0.1] bg-[#171411] px-3 text-[12px] text-[#c4b7aa]">
+            <select name="deferPreset" value={deferPreset} onChange={(event) => setDeferPreset(event.target.value)} disabled={pending} aria-label="Defer until" className="min-h-11 rounded-[12px] border border-white/[0.1] bg-[#171411] px-3 text-[12px] text-[#c4b7aa]">
               <option value="later-today">Later today</option><option value="tomorrow">Tomorrow</option><option value="custom">Custom time</option>
             </select>
-            <input name="deferUntil" type="datetime-local" aria-label="Custom defer time" disabled={pending} className="min-h-10 rounded-[12px] border border-white/[0.1] bg-[#171411] px-3 text-[12px] text-[#c4b7aa]" />
-            <button name="reviewAction" value="defer" disabled={pending} onClick={() => setIntent("defer")} className="min-h-10 rounded-full border border-white/[0.12] px-4 text-[11px] text-[#c4b7aa] disabled:opacity-45">Confirm defer</button>
+            {deferPreset === "custom" ? <input name="deferUntil" type="datetime-local" aria-label="Custom defer time" required disabled={pending} className="min-h-11 rounded-[12px] border border-white/[0.1] bg-[#171411] px-3 text-[12px] text-[#c4b7aa]" /> : null}
+            <button name="reviewAction" value="defer" disabled={pending} onClick={() => setIntent("defer")} className="min-h-11 rounded-[12px] border border-white/[0.12] px-4 text-[11px] text-[#c4b7aa] disabled:opacity-45">Confirm defer</button>
           </div>
         ) : null}
       </form>

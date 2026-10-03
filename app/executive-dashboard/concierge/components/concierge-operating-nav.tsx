@@ -13,6 +13,7 @@ import {
 } from "@/lib/continuum/operating-shell/destinations";
 import { ConciergeSignOut } from "./concierge-sign-out";
 import { ContinuumMark } from "./continuum-mark";
+import { ConciergeNavigationHistory } from "./concierge-navigation-history";
 
 const navLinkClass =
   "inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.22em] outline-none transition-colors duration-200";
@@ -82,6 +83,7 @@ export function ConciergeOperatingNav() {
 
   return (
     <>
+      <ConciergeNavigationHistory />
       <header
         data-operating-nav="desktop"
         className="sticky top-0 z-30 hidden border-b border-white/[0.08] bg-[#14110f]/95 pt-[env(safe-area-inset-top)] backdrop-blur-[8px] md:block"

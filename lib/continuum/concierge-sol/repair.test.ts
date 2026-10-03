@@ -38,4 +38,14 @@ describe("Concierge deterministic repair quoting", () => {
     if (result.quoted) return;
     assert.equal(result.reason, "same-size");
   });
+
+  it("understands natural size-to-size wording", () => {
+    const intent = parseRepairQuoteIntent({
+      query: "14k yellow gold ring, size 6 to 7.5, 2mm shank",
+    });
+    assert.equal(intent.repairType, "sizing");
+    assert.equal(intent.fromSize, 6);
+    assert.equal(intent.toSize, 7.5);
+    assert.equal(intent.direction, "larger");
+  });
 });

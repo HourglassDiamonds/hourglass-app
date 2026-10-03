@@ -59,7 +59,7 @@ export async function reviewSterlingProposalAction(
     Math.round((performance.now() - dependenciesStarted) * 10) / 10,
   );
   if (!ledger.ok || !jobs.ok || !candidates.ok) {
-    return finish({ ok: false, message: ledger.ok ? "Sterling approval service is unavailable." : ledger.reason === "not-activated" ? "Sterling approval storage has not been migrated yet." : "Sign in and try again." });
+    return finish({ ok: false, message: ledger.ok ? "This change cannot be reviewed right now." : ledger.reason === "not-activated" ? "Review history is not available yet." : "Sign in and try again." });
   }
   const service = new SterlingApprovalService({
     repository: ledger.repository,
@@ -99,12 +99,12 @@ export async function reviewSterlingProposalAction(
       await refreshTodayAfterFounderMutation().catch(() => undefined);
     }
     const message = result.status === "executed"
-      ? "Approved and applied through the canonical Continuum service."
+      ? "Approved and applied."
       : result.status === "approved-unexecuted"
-        ? "Approval recorded. This proposal type has no supported canonical executor."
+        ? "Approval recorded. This change still needs to be completed manually."
         : result.status === "rejected"
-          ? "Rejected. No canonical state changed."
-          : "Deferred. No canonical state changed.";
+          ? "Dismissed. Nothing changed."
+          : "Deferred. Nothing changed.";
     return finish({ ok: true, message, status: result.status });
   }
   return finish({ ok: false, message: result.message, status: result.status });

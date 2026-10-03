@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, useTransition, type FormEvent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, useTransition, type FormEvent } from "react";
 import { askConcierge } from "../ask-actions";
 import { AskConciergeAnswerView, type AskAnswer } from "./ask-concierge-answer";
 import {
@@ -10,6 +10,7 @@ import {
 import type { ConciergeAskMode } from "@/lib/continuum/client-memory/read/presentation";
 import type { ConciergeSolHistoryTurn } from "@/lib/continuum/concierge-sol/types";
 import { CONCIERGE_SOL_PENDING_MESSAGE } from "@/lib/continuum/concierge-sol/types";
+import { appendSpeechTranscript, useSpeechInput } from "./use-speech-input";
 
 const EXAMPLES = [
   "What are the top 3 things I need to do on Monday?",
@@ -38,11 +39,19 @@ export function AskConciergeShell({
   const [query, setQuery] = useState(initialQuery);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string>();
+  const askingRef = useRef(false);
+  const autoAskedRef = useRef("");
   const resolvedPlaceholder = placeholder ?? EXAMPLES[0];
+  const insertTranscript = useCallback((transcript: string) => {
+    setQuery((current) => appendSpeechTranscript(current, transcript));
+  }, []);
+  const speech = useSpeechInput(insertTranscript);
 
   useEffect(() => {
     const trimmed = initialQuery.trim();
-    if (!trimmed) return;
+    if (!trimmed || autoAskedRef.current === trimmed) return;
+    autoAskedRef.current = trimmed;
     submit(trimmed, []);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-ask from Home hub q=
   }, [initialQuery]);
@@ -62,23 +71,32 @@ export function AskConciergeShell({
   }
 
   function submit(trimmed: string, prior: Turn[]) {
+    if (askingRef.current) return;
+    askingRef.current = true;
+    setError(undefined);
+    const optimistic = [...prior, { role: "founder", text: trimmed, answer: null } as Turn];
+    setTurns(optimistic);
     startTransition(async () => {
-      const next = await askConcierge({
-        query: trimmed,
-        mode,
-        history: historyFrom(prior),
-      });
-      if (next.kind === "conversation" && next.refreshToday) router.refresh();
-      setTurns([
-        ...prior,
-        { role: "founder", text: trimmed, answer: null },
-        { role: "concierge", text: "", answer: next },
-      ]);
+      try {
+        const next = await askConcierge({
+          query: trimmed,
+          mode,
+          history: historyFrom(prior),
+        });
+        if (next.kind === "conversation" && next.refreshToday) router.refresh();
+        setTurns([...optimistic, { role: "concierge", text: "", answer: next }]);
+      } catch {
+        setError("Concierge couldn’t answer just now. Your question is still here—try again.");
+        setQuery(trimmed);
+      } finally {
+        askingRef.current = false;
+      }
     });
   }
 
   function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (askingRef.current) return;
     const trimmed = query.trim();
     if (!trimmed) return;
     submit(trimmed, turns);
@@ -117,6 +135,7 @@ export function AskConciergeShell({
             name="ask"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            disabled={pending}
             autoComplete="off"
             autoCorrect="off"
             spellCheck={false}
@@ -125,26 +144,34 @@ export function AskConciergeShell({
             className="min-h-14 w-full rounded-[22px] border border-white/[0.08] bg-[#1d1916] px-5 text-[17px] text-[#efe8de] outline-none placeholder:text-[#7d7268] focus-visible:border-[#ad9164]/70 focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.22)]"
           />
           <button
+            type="button"
+            onClick={speech.start}
+            disabled={!speech.available || speech.listening || pending}
+            aria-label={speech.available ? "Speak to Concierge" : "Voice input is not available in this browser"}
+            title={speech.available ? "Speak to Concierge" : "Voice input is not available in this browser"}
+            className="shrink-0 px-1 text-[11px] text-[#a99b8d] outline-none hover:text-[#efe8de] disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {speech.listening ? "Listening…" : "Speak"}
+          </button>
+          <button
             type="submit"
+            disabled={pending || !query.trim()}
             className="shrink-0 px-1 text-[11px] uppercase tracking-[0.22em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
           >
-            Ask
+            {pending ? "Asking…" : "Ask"}
           </button>
         </div>
       </form>
+      {speech.error ? <p className="mt-2 text-[12px] text-[#d7a879]" role="status">{speech.error}</p> : null}
       {pending ? (
         <p className="mt-4 text-[14px] leading-relaxed text-[#c4b7aa]" role="status">
           {mode === "conversation" ? CONCIERGE_SOL_PENDING_MESSAGE : ASK_PENDING_MESSAGE}
         </p>
+      ) : error ? (
+        <p className="mt-4 text-[13px] leading-relaxed text-[#d7a879]" role="alert">{error}</p>
       ) : last?.answer || earlier.length > 0 ? null : mode === "conversation" ? (
         <p className="mt-4 text-[12px] leading-relaxed text-[#7d7268]">
-          {EXAMPLES[0]}
-          <br />
-          {EXAMPLES[1]}
-          <br />
-          {EXAMPLES[2]}
-          <br />
-          {EXAMPLES[3]}
+          Ask naturally. Concierge will answer first and show evidence only when it helps.
         </p>
       ) : null}
     </section>

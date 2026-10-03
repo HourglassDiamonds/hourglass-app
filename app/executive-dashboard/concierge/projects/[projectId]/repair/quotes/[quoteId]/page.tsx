@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
-import Link from "next/link";
 import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
 import { getAuthenticatedRepairQuoteReader } from "@/lib/continuum/repair-quoting/load";
 import {
-  conciergeRepairQuotesPath,
+  conciergePreviousRepairQuotesPath,
   isProjectIdParam,
 } from "@/lib/continuum/client-memory/read/presentation";
 import { ConciergeShell } from "../../../../../components/concierge-shell";
+import { ConciergeBackLink } from "../../../../../components/concierge-back-link";
 import { ConciergeUnavailable } from "../../../../../components/client-profile-view";
 import { RepairQuoteDetail } from "../../../../../components/repair-quote-view";
 import { RepairQuoteReviewActions } from "../../../../../components/repair-quote-review-actions";
@@ -97,12 +97,10 @@ export default async function ConciergeRepairQuotePage({
 
   return (
     <ConciergeShell>
-      <Link
-        href={conciergeRepairQuotesPath(projectId)}
-        className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.24em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-      >
-        ← Repair quotes
-      </Link>
+      <ConciergeBackLink
+        href={conciergePreviousRepairQuotesPath()}
+        label="Previous Quotes"
+      />
       <div className="hg-concierge-fade mt-8">
         {query.saved ? (
           <p className="mb-4 text-[15px] leading-relaxed text-[#c4b7aa]" role="status">

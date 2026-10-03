@@ -6,7 +6,7 @@
 import { parseAskConciergeIntent } from "@/lib/continuum/client-memory/ask/intent";
 import type { ConciergeToolCall, ConciergeSolMode } from "./types";
 import { parseRepairQuoteIntent } from "./repair";
-import { resolveConversationSlots } from "./conversation";
+import { clipHistory, resolveConversationSlots } from "./conversation";
 import type { ConciergeSolHistoryTurn } from "./types";
 
 export function deterministicToolPlan(input: {
@@ -34,9 +34,10 @@ export function deterministicToolPlan(input: {
     return calls;
   }
 
-  const repair = parseRepairQuoteIntent({ query });
+  const repairQuery = repairConversationQuery(query, input.history);
+  const repair = parseRepairQuoteIntent({ query: repairQuery });
   if (repair.repairType === "sizing" && (repair.direction || (repair.fromSize != null && repair.toSize != null))) {
-    call("get_repair_quote", { query });
+    call("get_repair_quote", { query: repairQuery });
     return calls;
   }
 
@@ -97,4 +98,31 @@ export function deterministicToolPlan(input: {
     return calls;
   }
   return calls;
+}
+
+export function repairConversationQuery(
+  query: string,
+  history?: readonly ConciergeSolHistoryTurn[] | null,
+): string {
+  const current = query.trim();
+  const currentIntent = parseRepairQuoteIntent({ query: current });
+  if (
+    currentIntent.repairType === "sizing" &&
+    (currentIntent.direction ||
+      (currentIntent.fromSize != null && currentIntent.toSize != null))
+  ) {
+    return current;
+  }
+  if (!/^(yes|yes it is|laser|correct|that'?s right|no|no it isn'?t)[.!\s]*$/i.test(current)) {
+    return current;
+  }
+  const turns = clipHistory(history);
+  for (let index = turns.length - 1; index >= 0; index -= 1) {
+    const turn = turns[index];
+    if (!turn || turn.role !== "founder") continue;
+    const prior = parseRepairQuoteIntent({ query: turn.text });
+    if (prior.repairType !== "sizing") continue;
+    return `${turn.text} ${current}`.trim();
+  }
+  return current;
 }

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useId, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useId, useState, useTransition } from "react";
 import type { CaptureCommitInput, CaptureCommitResult, CaptureProposal, CaptureRequest } from "@/lib/continuum/capture/types";
 import { conciergeAddClientPath, conciergeAddNotePickerPath, conciergeAskPath, conciergeCreateActionPath, conciergeInboxPath } from "@/lib/continuum/client-memory/read/presentation";
 import { conciergeMyCardPath } from "@/lib/continuum/digital-card/paths";
@@ -12,6 +13,7 @@ import {
   type CaptureEntityLabels, type CaptureReviewItem,
 } from "./quick-capture-state";
 import { SterlingProposalControls } from "./sterling-proposal-controls";
+import { appendSpeechTranscript, useSpeechInput } from "./use-speech-input";
 
 export type QuickCaptureProps = {
   /** Proposal-only engine action. It must return the locked non-canonical contract. */
@@ -56,6 +58,15 @@ function EntitySummary({ row, labels }: { row: CaptureReviewItem; labels?: Captu
   return chips.length ? <p className="mt-2 text-[12px] text-[#a99989]">{chips.join(" · ")}</p> : null;
 }
 
+function AskConciergeButton({ query, disabled }: { query: string; disabled: boolean }) {
+  const router = useRouter();
+  return (
+    <button type="button" onClick={() => router.push(conciergeAskPath({ q: query.trim() }))} disabled={disabled} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.25)] disabled:cursor-not-allowed disabled:opacity-35">
+      Ask Concierge
+    </button>
+  );
+}
+
 export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickCaptureProps = {}) {
   const inputId = useId();
   const [text, setText] = useState("");
@@ -66,11 +77,18 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
   const [operation, setOperation] = useState<"propose" | "save">();
   const [slow, setSlow] = useState(false);
   const [lastDurationMs, setLastDurationMs] = useState<number>();
+  const [editingSingle, setEditingSingle] = useState(false);
+  const [capturedByVoice, setCapturedByVoice] = useState(false);
   const connected = Boolean(proposeAction && saveAction);
   const selected = rows.filter((row) => row.selected && !isSaved(row));
   const selectedBlocked = selected.some(reviewIssue);
   const hasBlockedRows = rows.some((row) => !isSaved(row) && Boolean(reviewIssue(row)));
   const advisoryInput = captureInputLooksLikeAdvisory(text);
+  const insertTranscript = useCallback((transcript: string) => {
+    setText((current) => appendSpeechTranscript(current, transcript));
+    setCapturedByVoice(true);
+  }, []);
+  const speech = useSpeechInput(insertTranscript);
 
   useEffect(() => {
     if (!pending) {
@@ -84,23 +102,20 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
   function propose() {
     const value = text.trim();
     if (!value) return;
-    if (captureInputLooksLikeAdvisory(value)) {
-      window.location.assign(conciergeAskPath({ q: value }));
-      return;
-    }
     if (!proposeAction) return;
     const started = performance.now();
     const nextCaptureId = crypto.randomUUID();
     setError(undefined);
     setRows([]);
     setCaptureId(undefined);
+    setEditingSingle(false);
     setOperation("propose");
     startTransition(async () => {
       try {
         const proposal = await proposeAction({
           captureId: nextCaptureId,
           text: value,
-          provenance: "text",
+          provenance: capturedByVoice ? "voice" : "text",
           referenceTime: new Date().toISOString(),
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
         });
@@ -124,7 +139,12 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
         const prepared = prepareConfirmation(captureId, rows, () => crypto.randomUUID());
         setRows(prepared.rows);
         const result = await saveAction(prepared.input);
-        setRows(applyConfirmation(prepared.rows, prepared.input, result));
+        const confirmed = applyConfirmation(prepared.rows, prepared.input, result);
+        setRows(confirmed);
+        if (confirmed.every(isSaved)) {
+          setText("");
+          setCapturedByVoice(false);
+        }
       } catch {
         setError("Nothing was marked saved. Review the selected items and try again.");
       } finally {
@@ -140,10 +160,13 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
           <h2 id={`${inputId}-heading`} className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">Quick Capture</h2>
           <p className="mt-2 text-[13px] leading-relaxed text-[#a99b8d]">Capture a fact, note, commitment, or action. Questions belong in Ask Concierge above.</p>
         </div>
-        <button type="button" disabled aria-label="Speak your capture — voice input coming soon" title="Voice input coming soon" className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#5b5045] px-4 text-[10px] uppercase tracking-[0.2em] text-[#8d8073] opacity-70">
-          <span aria-hidden="true" className="text-base leading-none">◉</span> Speak
+        <button type="button" onClick={speech.start} disabled={!speech.available || speech.listening || pending} aria-label={speech.available ? "Speak your capture" : "Voice input is not available in this browser"} title={speech.available ? "Speak your capture" : "Voice input is not available in this browser"} className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-[#5b5045] px-4 text-[10px] uppercase tracking-[0.2em] text-[#a99b8d] disabled:cursor-not-allowed disabled:opacity-55">
+          <span aria-hidden="true" className="text-base leading-none">◉</span> {speech.listening ? "Listening…" : "Speak"}
         </button>
       </div>
+
+      {!speech.available ? <p className="mt-2 text-right text-[11px] text-[#74695f]">Voice input is unavailable here; typing still works.</p> : null}
+      {speech.error ? <p role="status" className="mt-2 text-right text-[11px] text-[#d7a879]">{speech.error}</p> : null}
 
       <div className="mt-5 rounded-[1.35rem] border border-[#4b4138] bg-[#211d19]/80 p-3 shadow-[0_18px_50px_rgba(0,0,0,0.14)] focus-within:border-[#806b4e] sm:p-4">
         <label htmlFor={inputId} className="sr-only">Tell Continuum what happened</label>
@@ -156,9 +179,13 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
                 ? "Nothing is saved until you review and confirm."
                 : "Capture engine connection pending. Manual actions remain available below."}
           </p>
-          <button type="button" onClick={propose} disabled={(!connected && !advisoryInput) || !text.trim() || pending} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.25)] disabled:cursor-not-allowed disabled:opacity-35">
-            {pending && operation === "propose" ? "Reviewing…" : advisoryInput ? "Ask Concierge" : "Review capture"}
-          </button>
+          {advisoryInput ? (
+            <AskConciergeButton query={text} disabled={!text.trim() || pending} />
+          ) : (
+            <button type="button" onClick={propose} disabled={!connected || !text.trim() || pending} className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.25)] disabled:cursor-not-allowed disabled:opacity-35">
+              {pending && operation === "propose" ? "Reviewing…" : "Review capture"}
+            </button>
+          )}
         </div>
         <p className="mt-2 px-1 text-[11px] leading-relaxed text-[#74695f]">Unrecognized people and projects stay unlinked. Continuum will not create them here.</p>
       </div>
@@ -202,10 +229,35 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
                         {saved ? <span className="text-[10px] uppercase tracking-[0.18em] text-[#9fb093]">Saved</span> : null}
                       </div>
                       <EntitySummary row={row} labels={entityLabels} />
-                      <label htmlFor={`${cardId}-title`} className="sr-only">Proposed title</label>
-                      <input id={`${cardId}-title`} value={row.item.title} disabled={saved || pending} maxLength={160} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { title: event.target.value }) : item))} className="mt-3 block w-full border-b border-[#4a4037] bg-transparent pb-2 font-serif text-[1.15rem] text-[#efe8de] outline-none focus:border-[#a18760] disabled:opacity-65" />
-                      <label htmlFor={`${cardId}-content`} className="sr-only">Proposed content</label>
-                      <textarea id={`${cardId}-content`} value={row.item.content} disabled={saved || pending} rows={2} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { content: event.target.value }) : item))} className="mt-3 block w-full resize-y bg-transparent text-[14px] leading-relaxed text-[#c9bdb1] outline-none placeholder:text-[#6e635a] disabled:opacity-65" />
+                      {rows.length === 1 && !editingSingle ? (
+                        <div className="mt-3">
+                          <h4 className="font-serif text-[1.15rem] text-[#efe8de]">{row.item.title}</h4>
+                          <p className="mt-2 text-[14px] leading-relaxed text-[#c9bdb1]">{row.item.content}</p>
+                          {!saved ? <div className="mt-3 flex gap-4 text-[10px] uppercase tracking-[0.2em]">
+                            <button type="button" onClick={() => setEditingSingle(true)} disabled={pending} className="min-h-10 text-[#ad9164] disabled:opacity-45">Edit</button>
+                            <button type="button" onClick={() => setRows([])} disabled={pending} className="min-h-10 text-[#8d8073] disabled:opacity-45">Dismiss</button>
+                          </div> : null}
+                        </div>
+                      ) : rows.length > 1 ? (
+                        <div className="mt-3">
+                          <h4 className="font-serif text-[1.05rem] text-[#efe8de]">{row.item.title}</h4>
+                          <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-[#b7aa9c]">{row.item.content}</p>
+                          {!saved ? <details className="mt-2">
+                            <summary className="min-h-9 cursor-pointer py-2 text-[10px] uppercase tracking-[0.18em] text-[#8d8073]">Edit details</summary>
+                            <label htmlFor={`${cardId}-title`} className="sr-only">Proposed title</label>
+                            <input id={`${cardId}-title`} value={row.item.title} disabled={pending} maxLength={160} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { title: event.target.value }) : item))} className="block w-full border-b border-[#4a4037] bg-transparent pb-2 text-[14px] text-[#efe8de] outline-none focus:border-[#a18760]" />
+                            <label htmlFor={`${cardId}-content`} className="sr-only">Proposed content</label>
+                            <textarea id={`${cardId}-content`} value={row.item.content} disabled={pending} rows={2} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { content: event.target.value }) : item))} className="mt-2 block w-full resize-y bg-transparent text-[13px] leading-relaxed text-[#c9bdb1] outline-none" />
+                          </details> : null}
+                        </div>
+                      ) : (
+                        <>
+                          <label htmlFor={`${cardId}-title`} className="sr-only">Proposed title</label>
+                          <input id={`${cardId}-title`} value={row.item.title} disabled={saved || pending} maxLength={160} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { title: event.target.value }) : item))} className="mt-3 block w-full border-b border-[#4a4037] bg-transparent pb-2 font-serif text-[1.15rem] text-[#efe8de] outline-none focus:border-[#a18760] disabled:opacity-65" />
+                          <label htmlFor={`${cardId}-content`} className="sr-only">Proposed content</label>
+                          <textarea id={`${cardId}-content`} value={row.item.content} disabled={saved || pending} rows={2} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { content: event.target.value }) : item))} className="mt-3 block w-full resize-y bg-transparent text-[14px] leading-relaxed text-[#c9bdb1] outline-none placeholder:text-[#6e635a] disabled:opacity-65" />
+                        </>
+                      )}
                       {issue ? <p id={`${cardId}-issue`} role="alert" className="mt-3 border-l border-[#a8784e] pl-3 text-[12px] leading-relaxed text-[#d7a879]">Review required · {issue}</p> : null}
                       {row.item.sterlingProposal ? <SterlingProposalControls proposal={row.item.sterlingProposal} /> : null}
                       {row.result?.status === "failed" ? <p role="alert" className="mt-3 text-[12px] text-[#d7a879]">Not saved · {row.result.message}</p> : null}
@@ -216,7 +268,12 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
             })}
           </div>
 
-          <div className="sticky bottom-3 mt-4 rounded-full border border-[#54493e] bg-[#191612]/95 p-2 shadow-[0_12px_35px_rgba(0,0,0,0.35)] backdrop-blur">
+          <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom))] mt-4 rounded-full border border-[#54493e] bg-[#191612]/95 p-2 shadow-[0_12px_35px_rgba(0,0,0,0.35)] backdrop-blur md:bottom-3">
+            {rows.every(isSaved) ? (
+              <button type="button" onClick={() => { setRows([]); setCaptureId(undefined); setEditingSingle(false); }} className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none">
+                New capture
+              </button>
+            ) : (
             <button type="button" onClick={saveSelected} disabled={!selected.length || selectedBlocked || pending} className="flex min-h-12 w-full items-center justify-center rounded-full bg-[#b09265] px-5 text-[10px] uppercase tracking-[0.22em] text-[#191612] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(239,232,222,0.2)] disabled:cursor-not-allowed disabled:opacity-35">
               {pending && operation === "save"
                 ? "Saving…"
@@ -226,6 +283,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
                     ? "Save item"
                     : `Save selected${selected.length ? ` (${selected.length})` : ""}`}
             </button>
+            )}
           </div>
         </div>
       ) : null}

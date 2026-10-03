@@ -162,3 +162,30 @@ export function destinationBackForPath(pathname: string): DestinationBackLink {
   }
   return { href: CONCIERGE_HOME_PATH, label: "Today" };
 }
+
+export function isConciergeInteriorPath(pathname: string): boolean {
+  const path = normalizeConciergePath(pathname);
+  return path === CONCIERGE_HOME_PATH || path.startsWith(`${CONCIERGE_HOME_PATH}/`);
+}
+
+export function contextualBackLabel(
+  pathname: string,
+  previousPath: string | null,
+): string | null {
+  if (!previousPath || !isConciergeInteriorPath(previousPath)) return null;
+  const current = normalizeConciergePath(pathname);
+  const previous = normalizeConciergePath(previousPath);
+  if (current === previous) return null;
+
+  const project = previous.match(
+    /^\/executive-dashboard\/concierge\/projects\/[^/]+$/,
+  );
+  if (project && current.startsWith(`${previous}/`)) return "Project";
+
+  const client = previous.match(
+    /^\/executive-dashboard\/concierge\/client\/[^/]+$/,
+  );
+  if (client && current.startsWith(`${previous}/`)) return "Client";
+
+  return destinationBackForPath(previous).label;
+}

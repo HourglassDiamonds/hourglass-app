@@ -1,0 +1,32 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "app/executive-dashboard/concierge/action/**/*.tsx",
+    "app/executive-dashboard/concierge/components/ask-concierge-*.tsx",
+    "app/executive-dashboard/concierge/components/concierge-*.tsx",
+    "app/executive-dashboard/concierge/components/conditional-hold-*.tsx",
+    "app/executive-dashboard/concierge/components/cos-docket-actions.tsx",
+    "app/executive-dashboard/concierge/components/quick-capture*.ts*",
+    "app/executive-dashboard/concierge/components/repair*.tsx",
+    "app/executive-dashboard/concierge/components/sterling-proposal-controls.tsx",
+    "app/executive-dashboard/concierge/components/use-speech-input.ts",
+    "app/executive-dashboard/concierge/conditional-hold-actions.ts",
+    "app/executive-dashboard/concierge/loading.tsx",
+    "app/executive-dashboard/concierge/page.tsx",
+    "app/executive-dashboard/concierge/projects/[projectId]/repair/quotes/[quoteId]/page.tsx",
+    "app/executive-dashboard/concierge/repairs/**/*.tsx",
+    "app/executive-dashboard/concierge/sterling-proposal-actions.ts",
+    "lib/continuum/capture/**/*.ts",
+    "lib/continuum/client-memory/read/presentation.ts",
+    "lib/continuum/concierge-sol/**/*.ts",
+    "lib/continuum/operating-shell/**/*.ts",
+    "lib/continuum/repair-quoting/**/*.ts",
+    "lib/continuum/sterling/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}

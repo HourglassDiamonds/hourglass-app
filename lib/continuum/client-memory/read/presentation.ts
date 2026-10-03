@@ -46,6 +46,10 @@ export function conciergeRepairsPath(): string {
   return CONCIERGE_REPAIRS_PATH;
 }
 
+export function conciergePreviousRepairQuotesPath(): string {
+  return `${CONCIERGE_REPAIRS_PATH}/quotes`;
+}
+
 export function conciergeHubPath(): string {
   return CONCIERGE_HUB_PATH;
 }
