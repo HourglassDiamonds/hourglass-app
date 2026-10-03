@@ -23,6 +23,34 @@ function destinationClass(active: boolean): string {
     : `${navLinkClass} text-[#8d8073] hover:text-[#efe8de] focus-visible:text-[#efe8de]`;
 }
 
+function OperatingDestinationLink({
+  destination,
+  active,
+  className,
+}: {
+  destination: (typeof OPERATING_DESTINATIONS)[number];
+  active: boolean;
+  className: string;
+}) {
+  const props = {
+    href: destination.href,
+    "aria-current": active ? ("page" as const) : undefined,
+    "data-operating-destination": destination.id,
+    "data-operating-selected": active ? "true" : "false",
+    className,
+    children: destination.label,
+  };
+
+  // Next 16.3 can blur a just-focused field while an App Router navigation
+  // finishes. A document navigation keeps the mobile keyboard attached when
+  // the founder enters Concierge from another operating surface.
+  if (destination.id === "concierge") {
+    return <a {...props} data-operating-navigation="document" />;
+  }
+
+  return <Link {...props} />;
+}
+
 function ToolsMenu() {
   return (
     <details className="hg-operating-tools relative">
@@ -70,16 +98,12 @@ export function ConciergeOperatingNav() {
             {OPERATING_DESTINATIONS.map((destination) => {
               const active = selected === destination.id;
               return (
-                <Link
+                <OperatingDestinationLink
                   key={destination.id}
-                  href={destination.href}
-                  aria-current={active ? "page" : undefined}
-                  data-operating-destination={destination.id}
-                  data-operating-selected={active ? "true" : "false"}
+                  destination={destination}
+                  active={active}
                   className={destinationClass(active)}
-                >
-                  {destination.label}
-                </Link>
+                />
               );
             })}
           </nav>
@@ -115,17 +139,13 @@ export function ConciergeOperatingNav() {
             const active = selected === destination.id;
             return (
               <li key={destination.id} className="min-w-0">
-                <Link
-                  href={destination.href}
-                  aria-current={active ? "page" : undefined}
-                  data-operating-destination={destination.id}
-                  data-operating-selected={active ? "true" : "false"}
+                <OperatingDestinationLink
+                  destination={destination}
+                  active={active}
                   className={`flex min-h-[3.25rem] items-center justify-center px-1 text-center text-[10px] uppercase tracking-[0.14em] outline-none ${
                     active ? "text-[#efe8de]" : "text-[#8d8073]"
                   }`}
-                >
-                  {destination.label}
-                </Link>
+                />
               </li>
             );
           })}

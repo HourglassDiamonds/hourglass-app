@@ -192,6 +192,21 @@ describe("Founder Operating UX V1 shell", () => {
     assert.equal(CONCIERGE_ASK_PATH, "/executive-dashboard/concierge/ask");
   });
 
+  it("keeps Concierge editable after navigation from Repairs", () => {
+    const nav = read(join("components", "concierge-operating-nav.tsx"));
+    const ask = read(join("components", "ask-concierge-shell.tsx"));
+    const capture = read(join("components", "quick-capture.tsx"));
+
+    assert.match(nav, /destination\.id === "concierge"/);
+    assert.match(nav, /data-operating-navigation="document"/);
+    assert.match(nav, /return <a \{\.\.\.props\}/);
+    assert.match(ask, /value=\{query\}/);
+    assert.match(ask, /onChange=\{\(event\) => setQuery\(event\.target\.value\)\}/);
+    assert.doesNotMatch(ask, /readOnly|disabled=\{/);
+    assert.match(capture, /value=\{text\}/);
+    assert.match(capture, /onChange=\{\(event\) => setText\(event\.target\.value\)\}/);
+  });
+
   it("adds a mobile Home hub without moving Today off its canonical URL", () => {
     const hubPage = read(join("home", "page.tsx"));
     const hub = read(join("components", "mobile-home-hub.tsx"));
