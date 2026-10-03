@@ -2,6 +2,7 @@ import type { ConciergeAskMode } from "@/lib/continuum/client-memory/read/presen
 import { CONCIERGE_ASK_MODES } from "@/lib/continuum/client-memory/read/presentation";
 import { ConciergeShell } from "../components/concierge-shell";
 import { ConciergeAskHome } from "../components/concierge-ask-home";
+import { ConditionalHoldPanel } from "../components/conditional-hold-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ export default async function ConciergeAskPage({
   const query = searchParams ? await searchParams : {};
   return (
     <ConciergeShell variant="home">
+      <ConditionalHoldPanel />
       <ConciergeAskHome
         mode={parseAskMode(query.mode)}
         initialQuery={typeof query.q === "string" ? query.q : ""}

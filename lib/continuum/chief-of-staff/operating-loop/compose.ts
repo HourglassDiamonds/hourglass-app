@@ -87,6 +87,7 @@ export type ComposeCosOperatingLoopInput = {
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
   knownPeople?: readonly TodayKnownPerson[];
+  heldJobIds?: ReadonlySet<string>;
 };
 
 function clientDisplayName(
@@ -228,6 +229,7 @@ export function composeCosOperatingLoop(
     jobs: input.jobs,
     projects,
     nowIso: input.nowIso,
+    heldJobIds: input.heldJobIds,
   });
   const ranked = ranker.rank(actionables, input.nowIso);
   const top = selectTopRanked(ranked, COS_TOP_5_LIMIT);

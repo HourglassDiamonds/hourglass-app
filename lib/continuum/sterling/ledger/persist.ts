@@ -87,7 +87,7 @@ function markPersistence(
 }
 
 function entityVersionOf(action: { kind: string; expectedUpdatedAt?: string }, snapshot: unknown): string | null {
-  if (action.kind === "update_job" && action.expectedUpdatedAt) return action.expectedUpdatedAt;
+  if ((action.kind === "update_job" || action.kind === "activate_hold") && action.expectedUpdatedAt) return action.expectedUpdatedAt;
   if (snapshot && typeof snapshot === "object") {
     const value = snapshot as Record<string, unknown>;
     if (typeof value.reviewedAt === "string") return value.reviewedAt;

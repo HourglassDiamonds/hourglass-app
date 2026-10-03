@@ -4,6 +4,7 @@ import type {
   OpenJobKind,
   ProjectJob,
 } from "@/lib/continuum/client-memory/project-jobs/types";
+import type { ConditionalHoldCondition } from "./holds/types";
 
 export const STERLING_CONTRACT_VERSION = "sterling-v1" as const;
 export const STERLING_PROMPT_VERSION = "sterling-grounding-v1" as const;
@@ -68,7 +69,8 @@ export type SterlingProposalKind =
   | "duplicate_merge"
   | "stale_resolution"
   | "new_projectless_job"
-  | "follow_up";
+  | "follow_up"
+  | "conditional_hold";
 
 export type SterlingProposedAction =
   | {
@@ -88,6 +90,16 @@ export type SterlingProposedAction =
       waitingOnActor: OpenJobActor;
       dueAt: string | null;
       sourceRef: string;
+    }
+  | {
+      kind: "activate_hold";
+      holdId: string;
+      projectId: string | null;
+      jobId: string;
+      expectedUpdatedAt: string;
+      reason: string;
+      condition: ConditionalHoldCondition;
+      sourceRefs: readonly string[];
     }
   | { kind: "unsupported"; reason: string };
 
@@ -146,7 +158,7 @@ export type SterlingRunTelemetry = {
 };
 
 export type SterlingResponse = {
-  kind: "next-three" | "missing" | "waiting" | "captures" | "changed";
+  kind: "next-three" | "missing" | "waiting" | "captures" | "changed" | "conditional-hold";
   headline: string;
   summary: string;
   priorities: readonly SterlingPriority[];

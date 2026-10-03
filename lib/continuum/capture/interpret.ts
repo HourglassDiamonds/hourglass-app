@@ -30,7 +30,7 @@ export async function interpretCapture(
     });
     if (response.turn.kind !== "message") return fallbackProposal(request, "Interpretation needs review.");
     const parsed = parseJson(response.turn.text);
-    if (!isCaptureProposal(parsed) || parsed.captureId !== request.captureId) {
+    if (containsUntrustedHoldPayload(parsed) || !isCaptureProposal(parsed) || parsed.captureId !== request.captureId) {
       return fallbackProposal(request, "Interpretation needs review.");
     }
     const reviewed = applyCaptureSafety(parsed, request);
@@ -41,6 +41,18 @@ export async function interpretCapture(
   } catch {
     return fallbackProposal(request, "Interpretation is temporarily unavailable. Retry your original capture.");
   }
+}
+
+function containsUntrustedHoldPayload(value: unknown): boolean {
+  if (!value || typeof value !== "object" || !Array.isArray((value as { items?: unknown }).items)) return false;
+  return (value as { items: unknown[] }).items.some((item) => Boolean(
+    item
+    && typeof item === "object"
+    && (
+      (item as { kind?: unknown }).kind === "hold"
+      || Object.prototype.hasOwnProperty.call(item, "sterlingProposal")
+    )
+  ));
 }
 
 function interpretationPrompt(request: CaptureRequest): string {

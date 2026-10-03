@@ -1,6 +1,7 @@
 /** Serializable proposals only. No lookup, scheduling, or write authority. */
 import type { ConciergeForegroundModelId } from "../concierge-sol/models";
 import type { DateOnly } from "../date-only";
+import type { SterlingProposal } from "../sterling/types";
 
 export const CAPTURE_CONTRACT_VERSION = 1 as const;
 
@@ -32,13 +33,15 @@ export type CaptureTiming = CaptureScheduledTiming
 
 export type CaptureProposedItem = {
   itemId: string;
-  kind: "action" | "reminder" | "watching" | "note";
+  kind: "action" | "reminder" | "watching" | "note" | "hold";
   sourceExcerpt: string;
   title: string;
   content: string;
   entityResolution?: CaptureEntityResolution;
   timing?: CaptureTiming;
   clarification?: { question: string };
+  /** Trusted server-inserted proposal; never accepted from the reasoning model. */
+  sterlingProposal?: SterlingProposal;
   /** Finite 0..1 interpretation confidence. Never permission to save. */
   confidence: number;
 };

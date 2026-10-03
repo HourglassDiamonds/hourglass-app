@@ -11,6 +11,7 @@ import {
   prepareConfirmation, reviewIssue, startReview,
   type CaptureEntityLabels, type CaptureReviewItem,
 } from "./quick-capture-state";
+import { SterlingProposalControls } from "./sterling-proposal-controls";
 
 export type QuickCaptureProps = {
   /** Proposal-only engine action. It must return the locked non-canonical contract. */
@@ -193,7 +194,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
               return (
                 <article key={row.item.itemId} className={`rounded-[1.2rem] border p-4 ${issue ? "border-[#8e6849] bg-[#2a211a]" : "border-[#443b34] bg-[#211d19]"}`}>
                   <div className="flex items-start gap-3">
-                    {rows.length > 1 ? <input aria-label={`Select ${row.item.title}`} aria-describedby={issue ? `${cardId}-issue` : undefined} type="checkbox" checked={row.selected} disabled={saved || pending} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? { ...item, selected: event.target.checked } : item))} className="mt-1.5 size-5 shrink-0 accent-[#b09265]" /> : null}
+                    {rows.length > 1 ? <input aria-label={`Select ${row.item.title}`} aria-describedby={issue ? `${cardId}-issue` : undefined} type="checkbox" checked={row.selected} disabled={saved || pending || row.item.kind === "hold"} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? { ...item, selected: event.target.checked } : item))} className="mt-1.5 size-5 shrink-0 accent-[#b09265]" /> : null}
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                         <span className="text-[10px] uppercase tracking-[0.22em] text-[#b09265]">{CAPTURE_KIND_LABELS[row.item.kind]}</span>
@@ -206,6 +207,7 @@ export function QuickCapture({ proposeAction, saveAction, entityLabels }: QuickC
                       <label htmlFor={`${cardId}-content`} className="sr-only">Proposed content</label>
                       <textarea id={`${cardId}-content`} value={row.item.content} disabled={saved || pending} rows={2} onChange={(event) => setRows((current) => current.map((item) => item.item.itemId === row.item.itemId ? editReviewItem(item, { content: event.target.value }) : item))} className="mt-3 block w-full resize-y bg-transparent text-[14px] leading-relaxed text-[#c9bdb1] outline-none placeholder:text-[#6e635a] disabled:opacity-65" />
                       {issue ? <p id={`${cardId}-issue`} role="alert" className="mt-3 border-l border-[#a8784e] pl-3 text-[12px] leading-relaxed text-[#d7a879]">Review required · {issue}</p> : null}
+                      {row.item.sterlingProposal ? <SterlingProposalControls proposal={row.item.sterlingProposal} /> : null}
                       {row.result?.status === "failed" ? <p role="alert" className="mt-3 text-[12px] text-[#d7a879]">Not saved · {row.result.message}</p> : null}
                     </div>
                   </div>

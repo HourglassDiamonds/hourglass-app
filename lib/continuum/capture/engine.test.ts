@@ -66,6 +66,14 @@ describe("Quick Capture engine", () => {
     assert.ok(result.items[0].clarification);
   });
 
+  it("rejects a model-supplied trusted hold payload", async () => {
+    const forged = proposal([{ ...item("hold-1"), kind: "hold", sterlingProposal: { kind: "conditional_hold", status: "review-required" } } as never]);
+    const result = await interpretCapture({ brain: brain(forged), world: world() }, request);
+    assert.equal(result.items[0].kind, "note");
+    assert.equal(result.items[0].confidence, 0);
+    assert.ok(result.items[0].clarification);
+  });
+
   it("does not write canonical state before explicit confirmation", async () => {
     let reads = 0;
     const readWorld = { async searchPeople() { reads += 1; return []; }, async listProjects() { reads += 1; return []; } } as unknown as Pick<ConciergeSolWorld, "searchPeople" | "listProjects">;

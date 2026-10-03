@@ -21,6 +21,7 @@ export function collectCanonicalActionables(input: {
   jobs: readonly ProjectJob[] | null | undefined;
   projects: ReadonlyMap<string, CosProjectContext>;
   nowIso: string;
+  heldJobIds?: ReadonlySet<string>;
 }): ActionableWork[] {
   if (input.jobs == null) return [];
   const nowMs = Date.parse(input.nowIso);
@@ -29,6 +30,7 @@ export function collectCanonicalActionables(input: {
   const seen = new Set<string>();
 
   for (const job of input.jobs) {
+    if (input.heldJobIds?.has(job.jobId)) continue;
     if (!isUnresolvedOpenJobState(job.state)) continue;
     if (isDeferredQuiet(job, clock)) continue;
     const attention = evaluateAttentionEligibility(job, { now: new Date(clock) });

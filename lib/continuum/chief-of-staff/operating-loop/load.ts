@@ -16,6 +16,10 @@ import { after } from "next/server";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { SupabaseConditionalHoldRepository } from "@/lib/continuum/sterling/holds/supabase";
+import { reconcileConditionalHolds } from "@/lib/continuum/sterling/holds/reconcile";
+import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/load";
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
@@ -194,12 +198,13 @@ async function rebuildTodayLoop(
         getAuthenticatedProjectDeskReader(),
         getAuthenticatedCandidateStore(),
       ]);
-  const [jobs, summaries, listed, masterSprint, knownPeople] = await Promise.all([
+  const [jobs, summaries, listed, masterSprint, knownPeople, activeHolds] = await Promise.all([
     client ? loadProjectJobs(client) : Promise.resolve(null),
     desk.ok ? desk.reader.listProjects() : Promise.resolve([]),
     store.ok ? store.store.list() : Promise.resolve([] as ContinuumCandidate[]),
     loadMasterSprintCapacity(),
     loadTodayKnownEmailPeople(),
+    client ? loadActiveConditionalHolds(client) : Promise.resolve([]),
   ]);
   const candidates = await tagStoredGeneratedOperatingMailCandidates(
     client,
@@ -216,6 +221,7 @@ async function rebuildTodayLoop(
     masterSprint,
     threadContext: indexedContext,
     knownPeople,
+    heldJobIds: new Set(activeHolds.map((row) => row.entityId)),
   };
   let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
@@ -240,7 +246,41 @@ async function rebuildTodayLoop(
   if (unresolvedRequired.length > 0) {
     throw new Error("today-live-enrichment-required-set-moved");
   }
+  if (client && jobs) {
+    await reconcileConditionalHolds({
+      repository: new SupabaseConditionalHoldRepository(client),
+      jobs,
+      events: sourceEventsIn(loop),
+      now,
+    }).catch(() => []);
+  }
   return loop;
+}
+
+async function loadActiveConditionalHolds(client: SupabaseClient) {
+  try {
+    return await new SupabaseConditionalHoldRepository(client).listActive();
+  } catch {
+    // The additive hold migration may intentionally be unapplied. In that case
+    // Today retains its pre-feature behavior and no work is silently hidden.
+    return [];
+  }
+}
+
+function sourceEventsIn(value: unknown): SourceCommunicationEvent[] {
+  const found = new Map<string, SourceCommunicationEvent>();
+  const visit = (node: unknown, key = ""): void => {
+    if (!node || typeof node !== "object") return;
+    if (Array.isArray(node)) { for (const child of node) visit(child, key); return; }
+    const row = node as Record<string, unknown>;
+    if (key === "sourceEvents" && typeof row.sourceRef === "string" && typeof row.timestamp === "string") {
+      found.set(`${row.sourceRef}|${row.timestamp}`, row as unknown as SourceCommunicationEvent);
+      return;
+    }
+    for (const [childKey, child] of Object.entries(row)) visit(child, childKey);
+  };
+  visit(value);
+  return [...found.values()];
 }
 
 async function liveWatermark(

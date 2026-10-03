@@ -6,6 +6,7 @@ import {
 import type { ContinuumCandidate, OpenJobPayload } from "@/lib/continuum/candidates/types";
 import type { OpenJobActor, ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { fingerprintCanonicalState } from "./fingerprint";
+import { parseConditionalHold } from "./holds/parser";
 import { decisionContextForProposal, deriveLedgerPreferenceSignals } from "./ledger/preferences";
 import type { SterlingProposalRecord } from "./ledger/types";
 import { sterlingModelRoute } from "./model";
@@ -29,10 +30,12 @@ export type SterlingIntent =
   | "waiting-client"
   | "waiting-shop"
   | "captures"
-  | "changed";
+  | "changed"
+  | "conditional-hold";
 
 export function parseSterlingIntent(query: string): SterlingIntent | null {
   const text = query.toLowerCase().replace(/[’']/g, "'");
+  if (/\b(?:hold(?: off)?|pause|snooze|wait (?:until|for)|leave .* alone|don'?t (?:show|surface|bug)|resume .* (?:when|after|once))\b/i.test(text)) return "conditional-hold";
   if (/next\s+(?:three|3)\s+best|what should i do next|top\s+(?:three|3)/i.test(text)) return "next-three";
   if (/what am i missing|what should i clean up|missing\?/i.test(text)) return "missing";
   if (/review (?:my )?recent captures|quick capture|speak capture/i.test(text)) return "captures";
@@ -50,15 +53,21 @@ export function runSterling(input: {
   now?: Date;
   runId?: string;
   proposalHistory?: readonly SterlingProposalRecord[];
+  query?: string;
 }): SterlingResponse {
   const started = Date.now();
   const now = input.now ?? new Date(input.truth.generatedAt);
   const route = sterlingModelRoute(input.modelOverride);
   const runId = input.runId ?? randomUUID();
   const ledgerPreferences = deriveLedgerPreferenceSignals(input.proposalHistory ?? []);
-  const allFindings = applyDecisionContext(detectFindings(input.truth, now), ledgerPreferences);
+  const holdResult = input.intent === "conditional-hold"
+    ? parseConditionalHold(input.query ?? "", input.truth, now)
+    : null;
+  const allFindings = input.intent === "conditional-hold"
+    ? holdFindings(holdResult)
+    : applyDecisionContext(detectFindings(input.truth, now), ledgerPreferences);
   const priorities = input.intent === "next-three" ? nextThree(input.truth, now) : [];
-  const findings = findingsForIntent(allFindings, input.truth, input.intent);
+  const findings = input.intent === "conditional-hold" ? allFindings : findingsForIntent(allFindings, input.truth, input.intent);
   const proposals = findings.flatMap((row) => (row.proposal ? [row.proposal] : []));
   const uncertainty = uncertaintyFor(input.truth, input.intent);
   return {
@@ -88,6 +97,25 @@ export function runSterling(input: {
     },
     ledgerStatus: "not-applicable",
   };
+}
+
+function holdFindings(result: ReturnType<typeof parseConditionalHold> | null): SterlingFinding[] {
+  if (!result) return [];
+  if (result.kind === "clarification") return [{ id: "conditional-hold:clarification", kind: "uncertainty", title: "I need one detail before proposing a hold", whyItMatters: result.message, evidence: [], sourceRefs: [], proposedFix: result.message, proposal: null }];
+  const job = result.job;
+  return [{
+    id: `conditional-hold:${job.jobId}`, kind: "gap", title: `Hold ${job.subject}`,
+    whyItMatters: "This removes the job from active Today while preserving the canonical job and its history.",
+    evidence: job.sourceRef ? [job.sourceRef] : [], sourceRefs: job.sourceRef ? [job.sourceRef] : [],
+    proposedFix: result.proposedState,
+    proposal: proposal({
+      kind: "conditional_hold", entityKind: "job", entityId: job.jobId,
+      currentState: job.state, proposedState: result.proposedState, reason: result.reason,
+      evidence: job.sourceRef ? [job.sourceRef] : [], downstream: "Suppress this job from active Today. Meeting the condition creates a resume-ready state; it does not silently reactivate the job.",
+      canApply: true, currentStateSnapshot: job,
+      proposedAction: { kind: "activate_hold", holdId: deterministicUuid(`hold|${job.jobId}|${result.proposedState}|${job.updatedAt}`), projectId: job.projectId, jobId: job.jobId, expectedUpdatedAt: job.updatedAt, reason: result.reason, condition: result.condition, sourceRefs: job.sourceRef ? [job.sourceRef] : [] },
+    }),
+  }];
 }
 
 function applyDecisionContext(
@@ -561,6 +589,7 @@ function uniqueFindings(rows: SterlingFinding[]): SterlingFinding[] {
 }
 
 function responseKind(intent: SterlingIntent): SterlingResponse["kind"] {
+  if (intent === "conditional-hold") return "conditional-hold";
   if (intent === "next-three") return "next-three";
   if (intent === "missing") return "missing";
   if (intent === "captures") return "captures";
@@ -569,6 +598,7 @@ function responseKind(intent: SterlingIntent): SterlingResponse["kind"] {
 }
 
 function headlineFor(intent: SterlingIntent): string {
+  if (intent === "conditional-hold") return "Conditional hold review";
   if (intent === "next-three") return "Next best work";
   if (intent === "missing") return "What may be missing";
   if (intent === "captures") return "Recent captures in context";
@@ -593,12 +623,14 @@ function summaryFor(
       : `${priorities} grounded ${priorities === 1 ? "priority" : "priorities"}; no padding.`;
   }
   if (intent === "changed") return "No comparison was produced without a canonical prior snapshot.";
+  if (intent === "conditional-hold") return findings === 0 ? "I need more detail before proposing a hold." : "Review the scoped hold below. Nothing changes until you approve it.";
   return findings === 0
     ? "No grounded findings in the current bounded scan."
     : `${findings} grounded ${findings === 1 ? "finding" : "findings"}.`;
 }
 
 function toolsFor(intent: SterlingIntent): string[] {
+  if (intent === "conditional-hold") return ["get_current_today", "get_open_jobs", "propose_conditional_hold"];
   if (intent === "next-three") {
     return ["get_current_today", "get_open_jobs", "get_recent_founder_decisions"];
   }

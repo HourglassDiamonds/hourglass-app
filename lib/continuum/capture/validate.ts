@@ -77,12 +77,14 @@ export function isCaptureTiming(v: unknown): v is CaptureTiming {
       && (x.kind === "date-only" || x.kind === "exact-instant") && isCaptureTiming(x));
 }
 export function isCaptureProposedItem(v: unknown): v is CaptureProposedItem {
-  return row(v) && keys(v, ["itemId", "kind", "sourceExcerpt", "title", "content", "entityResolution", "timing", "clarification", "confidence"])
-    && id(v.itemId) && ["action", "reminder", "watching", "note"].includes(v.kind as string)
+  return row(v) && keys(v, ["itemId", "kind", "sourceExcerpt", "title", "content", "entityResolution", "timing", "clarification", "confidence", "sterlingProposal"])
+    && id(v.itemId) && ["action", "reminder", "watching", "note", "hold"].includes(v.kind as string)
     && text(v.sourceExcerpt) && text(v.title, 160) && text(v.content)
     && typeof v.confidence === "number" && Number.isFinite(v.confidence) && v.confidence >= 0 && v.confidence <= 1
     && optional(v, "entityResolution", isCaptureEntityResolution) && optional(v, "timing", isCaptureTiming)
-    && optional(v, "clarification", x => row(x) && keys(x, ["question"]) && text(x.question));
+    && optional(v, "clarification", x => row(x) && keys(x, ["question"]) && text(x.question))
+    && optional(v, "sterlingProposal", x => row(x) && x.kind === "conditional_hold" && x.status === "review-required")
+    && (v.kind !== "hold" || Boolean(v.sterlingProposal) !== Boolean(v.clarification));
 }
 export function isCaptureProposal(v: unknown): v is CaptureProposal {
   return row(v) && keys(v, ["version", "captureId", "items", "canonical"])

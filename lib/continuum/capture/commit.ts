@@ -38,6 +38,7 @@ export async function commitCapture(deps: CaptureCommitDeps, input: CaptureCommi
 }
 
 async function saveOne(authority: CaptureCommitAuthority, mutationId: string, item: CaptureProposedItem, captureId: string): Promise<CaptureCommitItemResult> {
+  if (item.kind === "hold") return review(item.itemId, "Approve this hold with the Sterling controls on its review card.");
   if (item.clarification) return review(item.itemId, item.clarification.question);
   if (item.entityResolution && item.entityResolution.status !== "resolved") return review(item.itemId, "Resolve the linked person or project before saving.");
   const { personId, projectId } = item.entityResolution ?? {};

@@ -62,6 +62,7 @@ export function SterlingProposalControls({ proposal }: { proposal: SterlingPropo
           <button name="reviewAction" value="approve" disabled={pending} onClick={() => setIntent("approve")} className="min-h-10 rounded-full bg-[#ad9164] px-4 text-[11px] text-[#17120e] outline-none transition hover:bg-[#c0a276] focus-visible:shadow-[0_0_0_3px_rgba(173,145,100,0.24)] disabled:cursor-not-allowed disabled:opacity-45">Approve</button>
           {editable ? <button type="button" disabled={pending} onClick={() => setMode(mode === "edit" ? "idle" : "edit")} className={SECONDARY_BUTTON}>Edit</button> : null}
           <button type="button" disabled={pending} onClick={() => setMode(mode === "defer" ? "idle" : "defer")} className={SECONDARY_BUTTON}>Defer</button>
+          {proposal.kind === "conditional_hold" ? <span className="text-[10px] text-[#74695f]">Choose a different review time</span> : null}
           <button name="reviewAction" value="reject" disabled={pending} onClick={() => setIntent("reject")} className={SECONDARY_BUTTON}>Dismiss</button>
         </div>
 

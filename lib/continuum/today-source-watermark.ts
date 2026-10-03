@@ -50,6 +50,7 @@ export async function readTodaySourceWatermark(
     noteUpdated,
     noteCount,
     elapsedAttentionBoundary,
+    conditionalHoldState,
   ] = await Promise.all([
     exactCount(client, "continuum_candidates"),
     latestIso(client, "continuum_candidates", "created_at"),
@@ -63,6 +64,7 @@ export async function readTodaySourceWatermark(
     latestIso(client, "continuum_source_notes", "updated_at"),
     exactCount(client, "continuum_source_notes"),
     elapsedAttentionBoundaryToken(client, now),
+    conditionalHoldWatermark(client),
   ]);
   return [
     candidateCount,
@@ -77,7 +79,23 @@ export async function readTodaySourceWatermark(
     noteUpdated,
     noteCount,
     elapsedAttentionBoundary,
+    conditionalHoldState,
   ].join("|");
+}
+
+async function conditionalHoldWatermark(client: SupabaseClient): Promise<string> {
+  try {
+    const [count, activated, met, resumed] = await Promise.all([
+      exactCount(client, "continuum_conditional_holds"),
+      latestIso(client, "continuum_conditional_holds", "activated_at"),
+      latestIso(client, "continuum_conditional_holds", "condition_met_at"),
+      latestIso(client, "continuum_conditional_holds", "resumed_at"),
+    ]);
+    return `${count}:${activated}:${met}:${resumed}`;
+  } catch {
+    // Backward compatible while the additive hold migration is unapplied.
+    return "conditional-holds-unavailable";
+  }
 }
 
 async function elapsedAttentionBoundaryToken(client: SupabaseClient, now: Date): Promise<string> {

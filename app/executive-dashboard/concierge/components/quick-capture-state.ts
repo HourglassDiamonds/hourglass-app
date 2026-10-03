@@ -38,6 +38,7 @@ export const CAPTURE_KIND_LABELS = {
   reminder: "Reminder",
   watching: "Watching",
   note: "Note",
+  hold: "Hold",
 } as const;
 
 /** Keep advisory questions out of the mutation-review workflow. */
@@ -58,6 +59,7 @@ export function isSaved(row: CaptureReviewItem): boolean {
 }
 
 export function reviewIssue(row: CaptureReviewItem): string | undefined {
+  if (row.item.kind === "hold") return row.item.clarification?.question;
   const resolution = row.item.entityResolution;
   if (resolution?.status === "ambiguous") {
     return "Choose who or which project you mean by editing your capture and reviewing it again.";
@@ -79,7 +81,7 @@ export function startReview(proposal: CaptureProposal, captureId: string): Captu
   }
   return proposal.items.map((item) => {
     const row = { item, selected: false };
-    return { ...row, selected: !reviewIssue(row) };
+    return { ...row, selected: item.kind !== "hold" && !reviewIssue(row) };
   });
 }
 

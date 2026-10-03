@@ -297,6 +297,26 @@ const cases: readonly { name: string; run: () => void | Promise<void> }[] = [
     name: "ledger-no-history",
     run: () => assert.deepEqual(deriveLedgerPreferenceSignals([]), []),
   },
+  {
+    name: "conditional-hold-observable-email",
+    run: () => {
+      const ben = job("Send Ben the revised estimate", { jobId: "job-ben", projectId: PROJECT_A, updatedAt: NOW.toISOString(), sourceRef: "gmail-thread:ben" });
+      const input = truth([today("job-ben", { id: "job-ben", personName: "Ben", projectId: PROJECT_A })], [ben]);
+      const result = runSterling({ truth: input, intent: "conditional-hold", query: "Hold Ben until Ben replies", now: NOW });
+      observed.push(result);
+      assert.equal(result.proposals[0]?.kind, "conditional_hold");
+      assert.equal(result.proposals[0]?.status, "review-required");
+    },
+  },
+  {
+    name: "conditional-hold-no-fake-sms",
+    run: () => {
+      const ben = job("Send Ben the revised estimate", { jobId: "job-ben", projectId: PROJECT_A, updatedAt: NOW.toISOString() });
+      const result = runSterling({ truth: truth([today("job-ben", { id: "job-ben", personName: "Ben", projectId: PROJECT_A })], [ben]), intent: "conditional-hold", query: "Hold off until I text Ben again", now: NOW });
+      assert.equal(result.proposals.length, 0);
+      assert.match(result.findings[0]?.whyItMatters ?? "", /cannot observe/i);
+    },
+  },
 ];
 
 async function main(): Promise<void> {

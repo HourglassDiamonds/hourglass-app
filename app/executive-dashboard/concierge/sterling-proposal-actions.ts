@@ -42,15 +42,17 @@ export async function reviewSterlingProposalAction(
     return finish({ ok: false, message: "Choose a valid review action." });
   }
   const dependenciesStarted = performance.now();
-  const [ledgerModule, jobsModule, candidatesModule] = await Promise.all([
+  const [ledgerModule, jobsModule, candidatesModule, holdsModule] = await Promise.all([
     import("@/lib/continuum/sterling/ledger/load"),
     import("@/lib/continuum/client-memory/project-jobs/load-writer"),
     import("@/lib/continuum/candidates/load"),
+    import("@/lib/continuum/sterling/holds/load"),
   ]);
-  const [ledger, jobs, candidates] = await Promise.all([
+  const [ledger, jobs, candidates, holds] = await Promise.all([
     ledgerModule.getAuthenticatedSterlingProposalRepository(),
     jobsModule.getAuthenticatedProjectJobWriter(),
     candidatesModule.getAuthenticatedCandidateStore(),
+    holdsModule.getAuthenticatedConditionalHoldRepository(),
   ]);
   dependenciesMs = Math.max(
     0,
@@ -65,6 +67,7 @@ export async function reviewSterlingProposalAction(
     candidates: candidates.store,
     actor: jobs.username,
     onTiming: (timing) => reviewTiming.push(timing),
+    holds: holds.ok ? holds.repository : undefined,
   });
 
   let result;
@@ -91,8 +94,12 @@ export async function reviewSterlingProposalAction(
   }
 
   if (result.ok) {
+    if (result.status === "executed" && result.proposal.originalProposal.proposedAction.kind === "activate_hold") {
+      const { refreshTodayAfterFounderMutation } = await import("@/lib/continuum/chief-of-staff/operating-loop/load");
+      await refreshTodayAfterFounderMutation().catch(() => undefined);
+    }
     const message = result.status === "executed"
-      ? "Approved and applied through the canonical Continuum writer."
+      ? "Approved and applied through the canonical Continuum service."
       : result.status === "approved-unexecuted"
         ? "Approval recorded. This proposal type has no supported canonical executor."
         : result.status === "rejected"

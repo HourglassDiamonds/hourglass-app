@@ -4,6 +4,8 @@ import type { OpenJobActor, ProjectJob } from "@/lib/continuum/client-memory/pro
 import { fingerprintCanonicalState } from "../fingerprint";
 import type { SterlingProposedAction } from "../types";
 import type { SterlingProposalRecord, SterlingProposalRepository } from "./types";
+import { ConditionalHoldService } from "../holds/service";
+import type { ConditionalHoldRepository } from "../holds/types";
 
 export type SterlingReviewInput =
   | { action: "approve"; proposalId: string; note?: string | null }
@@ -37,6 +39,7 @@ export class SterlingApprovalService {
     nowIso?: () => string;
     clockMs?: () => number;
     onTiming?: (timing: SterlingReviewTiming) => void;
+    holds?: ConditionalHoldRepository;
   }) {}
 
   async review(input: SterlingReviewInput): Promise<SterlingReviewResult> {
@@ -142,6 +145,7 @@ export class SterlingApprovalService {
 
   private async currentEntity(action: SterlingProposedAction): Promise<ProjectJob | ContinuumCandidate | null> {
     if (action.kind === "update_job") return this.deps.jobs.getJob(action.projectId, action.jobId);
+    if (action.kind === "activate_hold") return this.deps.jobs.getJob(action.projectId, action.jobId);
     if (action.kind === "create_projectless_job") return this.deps.candidates.get(action.candidateId);
     return null;
   }
@@ -160,6 +164,19 @@ export class SterlingApprovalService {
       });
       if (!result.ok) return { ok: false as const, category: result.code ?? result.reason };
       return { ok: true as const, idempotent: result.status === "already-present" };
+    }
+    if (action.kind === "activate_hold") {
+      if (!this.deps.holds) return { ok: false as const, category: "conditional-holds-not-activated" };
+      const now = (this.deps.nowIso ?? (() => new Date().toISOString()))();
+      const service = new ConditionalHoldService({ repository: this.deps.holds, jobs: this.deps.jobs });
+      const result = await service.activate({
+        holdId: action.holdId, entityType: "job", entityId: action.jobId, projectId: action.projectId,
+        createdAt: now, createdBy: this.deps.actor, reason: action.reason, condition: action.condition,
+        sourceRefs: action.sourceRefs, approvalProposalId: mutationId, provenance: "sterling-founder-approved",
+        activatedAt: now, expectedEntityUpdatedAt: action.expectedUpdatedAt,
+        currentStateFingerprint: fingerprintCanonicalState(await this.deps.jobs.getJob(action.projectId, action.jobId)),
+      });
+      return result.ok ? { ok: true as const, idempotent: result.idempotent } : { ok: false as const, category: result.reason };
     }
     const result = await this.deps.jobs.createJob({
       mutationId,
@@ -205,6 +222,7 @@ export function editSterlingAction(
     if (edited.length > 160) return null;
     return { ...original, subject: edited };
   }
+  if (original.kind === "activate_hold") return null;
   return null;
 }
 

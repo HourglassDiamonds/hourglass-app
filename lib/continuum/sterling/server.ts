@@ -32,6 +32,7 @@ export async function runAuthenticatedSterlingQuery(
     intent,
     modelOverride: process.env.STERLING_MODEL,
     now,
+    query,
     proposalHistory,
   });
   if (!ledger.ok) {
