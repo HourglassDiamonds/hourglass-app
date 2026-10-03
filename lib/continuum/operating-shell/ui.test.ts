@@ -165,6 +165,8 @@ describe("Founder Operating UX V1 shell", () => {
     assert.match(page, /projectKind === "repair_service"/);
     assert.match(page, /getAuthenticatedRepairQuoteReader/);
     assert.match(page, /OpenProjectsHome|composeCurrentProjectCards/);
+    assert.match(page, /AskConciergeShell/);
+    assert.match(page, /Describe the repair, client, and relevant details/);
     assert.doesNotMatch(page, /create table|continuum_repairs[^_]/);
     assert.match(html, />Repairs</);
     assert.match(html, /Current repairs/);

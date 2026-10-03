@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import type { CurrentProjectCard } from "@/lib/continuum/client-memory/open-projects/card";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import {
@@ -29,11 +30,13 @@ export function RepairsHome({
   issued,
   other,
   quotesConnected,
+  children,
 }: {
   current: CurrentProjectCard[];
   issued: RepairsHomeQuote[];
   other: ProjectDeskSummary[];
   quotesConnected: boolean;
+  children?: ReactNode;
 }) {
   return (
     <div data-repairs-home className="hg-concierge-fade">
@@ -41,8 +44,9 @@ export function RepairsHome({
         Repairs
       </h1>
       <p className="mt-3 max-w-[38ch] text-[15px] leading-relaxed text-[#c4b7aa]">
-        Repair / Service projects already in Continuum.
+        Describe a repair, then open the repair projects below.
       </p>
+      {children}
 
       <section className="mt-10">
         <h2 className="text-[11px] uppercase tracking-[0.28em] text-[#8d8073]">

@@ -3,6 +3,7 @@ import { composeCurrentProjectCards } from "@/lib/continuum/client-memory/open-p
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
 import type { ProjectDeskRead } from "@/lib/continuum/client-memory/project-desk/types";
 import { getAuthenticatedRepairQuoteReader } from "@/lib/continuum/repair-quoting/load";
+import { AskConciergeShell } from "../components/ask-concierge-shell";
 import { ConciergeShell } from "../components/concierge-shell";
 import { ConciergeUnavailable } from "../components/client-profile-view";
 import { RepairsHome, type RepairsHomeQuote } from "../components/repairs-home";
@@ -94,7 +95,11 @@ export default async function ConciergeRepairsPage() {
         issued={issued}
         other={other}
         quotesConnected={quotesConnected}
-      />
+      >
+        <div className="mt-8">
+          <AskConciergeShell placeholder="Describe the repair, client, and relevant details…" />
+        </div>
+      </RepairsHome>
     </ConciergeShell>
   );
 }
