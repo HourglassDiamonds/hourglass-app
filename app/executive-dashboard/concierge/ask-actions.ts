@@ -31,6 +31,7 @@ import {
   readTodayBriefingPacket,
   type TodayBriefingPacket,
 } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
+import { runAuthenticatedSterlingQuery } from "@/lib/continuum/sterling/server";
 
 export async function askConcierge(
   input:
@@ -87,6 +88,29 @@ export async function askConcierge(
         toolNames: [],
       },
     };
+  }
+  if (mode === "conversation") {
+    const sterling = await runAuthenticatedSterlingQuery(query);
+    if (sterling) {
+      return {
+        kind: "conversation",
+        mode: "conversation",
+        text: sterling.summary,
+        actions: [],
+        brainDump: null,
+        sterling,
+        writesCanonical: false,
+        telemetry: {
+          requestModel: sterling.telemetry.model,
+          brain: "fallback",
+          promptTokens: sterling.telemetry.promptTokens,
+          completionTokens: sterling.telemetry.completionTokens,
+          latencyMs: sterling.telemetry.latencyMs,
+          toolCount: sterling.telemetry.toolsInvoked.length,
+          toolNames: sterling.telemetry.toolsInvoked,
+        },
+      };
+    }
   }
   const birthdayIntent = parseAskConciergeIntent(query);
   if (history.length === 0 && birthdayIntent.kind !== "unsupported") {

@@ -48,6 +48,7 @@ export type MutateOpenJobInvalidCode =
   | "invalid-attention-metadata"
   | "unsupported-attention-metadata-version"
   | "person-not-on-project"
+  | "stale-write"
   | "wrong-project";
 
 export type MutateOpenJobResult =
@@ -85,6 +86,8 @@ export type MutateOpenJobInput = {
   activationAt?: string | null;
   checkpointAt?: string | null;
   attentionMetadata?: unknown;
+  /** Optional caller snapshot guard. The atomic writer still protects the read/write race. */
+  expectedUpdatedAt?: string;
 };
 
 export type OpenJobMutationRecord = {
@@ -255,6 +258,9 @@ export async function mutateOpenJob(
       return { ok: true, status: "already-present", job: applied.job };
     }
     if (!prior) return { ok: false, reason: "job-not-found" };
+    if (input.expectedUpdatedAt && prior.updatedAt !== input.expectedUpdatedAt) {
+      return invalid("stale-write");
+    }
     if (requestedProjectId !== undefined && prior.projectId !== requestedProjectId) return invalid("wrong-project");
     const projectId = prior.projectId;
     if (projectId !== null) {
@@ -370,6 +376,7 @@ export async function mutateOpenJob(
   } catch (error) {
     const message = error instanceof Error ? error.message : "";
     if (message.includes("idempotency-conflict")) return invalid("idempotency-conflict");
+    if (message.includes("stale-write")) return invalid("stale-write");
     if (message.includes("project-not-found")) {
       return { ok: false, reason: "project-not-found" };
     }

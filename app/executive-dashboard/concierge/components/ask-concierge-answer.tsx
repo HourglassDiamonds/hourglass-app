@@ -10,6 +10,8 @@ import {
 } from "@/lib/continuum/client-memory/ask/types";
 import { conciergeClientPath } from "@/lib/continuum/client-memory/read/presentation";
 import type { ConciergeSolAnswer } from "@/lib/continuum/concierge-sol/types";
+import type { SterlingResponse } from "@/lib/continuum/sterling/types";
+import { SterlingProposalControls } from "./sterling-proposal-controls";
 
 export type AskAnswer = AskConciergeAnswer | ConciergeSolAnswer;
 
@@ -75,6 +77,7 @@ function ConversationAnswer({ answer }: { answer: ConciergeSolAnswer }) {
       >
         {answer.text}
       </p>
+      {answer.sterling ? <SterlingAnswer response={answer.sterling} /> : null}
       {answer.brainDump ? (
         <dl className="mt-4 grid gap-2 text-[13px] leading-relaxed text-[#b7aa9c]" data-brain-dump="">
           {answer.brainDump.personContext ? (
@@ -146,5 +149,99 @@ function ConversationAnswer({ answer }: { answer: ConciergeSolAnswer }) {
         </div>
       ) : null}
     </div>
+  );
+}
+
+function SterlingAnswer({ response }: { response: SterlingResponse }) {
+  return (
+    <div className="mt-5 space-y-4" data-sterling-response={response.kind}>
+      {response.priorities.length > 0 ? (
+        <ol className="space-y-3" aria-label="Sterling priorities">
+          {response.priorities.map((priority, index) => (
+            <li
+              key={priority.id}
+              className="rounded-[18px] border border-white/[0.08] bg-[#1d1916] px-4 py-4"
+            >
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">
+                {index + 1} · {priority.owner} · {priority.confidence} confidence
+              </p>
+              <h3 className="mt-2 font-serif text-[1.2rem] leading-tight text-[#efe8de]">
+                {priority.title}
+              </h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
+                {priority.whyNow}
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-[#d8cfc4]">
+                Next: {priority.proposedNextAction}
+              </p>
+              <EvidenceDetails
+                evidence={[priority.evidenceSummary, ...priority.sourceRefs]}
+                canonicalIds={priority.canonicalIds}
+              />
+            </li>
+          ))}
+        </ol>
+      ) : null}
+
+      {response.findings.length > 0 ? (
+        <ul className="space-y-3" aria-label="Sterling findings">
+          {response.findings.map((finding) => (
+            <li key={finding.id} className="border-t border-white/[0.06] pt-4">
+              <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">
+                {finding.kind}
+              </p>
+              <h3 className="mt-2 text-[15px] leading-snug text-[#efe8de]">{finding.title}</h3>
+              <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
+                {finding.whyItMatters}
+              </p>
+              <p className="mt-2 text-[13px] leading-relaxed text-[#d8cfc4]">
+                Proposed fix: {finding.proposedFix}
+              </p>
+              {finding.proposal ? (
+                <details className="mt-3 text-[12px] text-[#9a8e82]">
+                  <summary className="cursor-pointer text-[#ad9164]">Review proposed mutation</summary>
+                  <dl className="mt-2 grid gap-2">
+                    <div><dt className="uppercase tracking-[0.16em]">Current</dt><dd>{finding.proposal.currentState}</dd></div>
+                    <div><dt className="uppercase tracking-[0.16em]">Proposed</dt><dd>{finding.proposal.proposedState}</dd></div>
+                    <div><dt className="uppercase tracking-[0.16em]">Effect</dt><dd>{finding.proposal.expectedDownstreamEffect}</dd></div>
+                    <div><dt className="uppercase tracking-[0.16em]">Confidence</dt><dd>{finding.proposal.confidence}</dd></div>
+                    <div><dt className="uppercase tracking-[0.16em]">Freshness</dt><dd>{finding.proposal.persistence === "persisted" ? "Fingerprint will be checked again before execution" : "Not durably reviewable"}</dd></div>
+                    <div><dt className="uppercase tracking-[0.16em]">Proposal ID</dt><dd>{finding.proposal.proposalId}</dd></div>
+                  </dl>
+                  <p className="mt-2">Review required. Nothing has been changed.</p>
+                  <SterlingProposalControls proposal={finding.proposal} />
+                </details>
+              ) : null}
+              <EvidenceDetails evidence={finding.evidence} canonicalIds={[]} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {response.uncertainty.map((line) => (
+        <p key={line} className="text-[12px] leading-relaxed text-[#8d8073]">
+          Uncertainty: {line}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function EvidenceDetails({
+  evidence,
+  canonicalIds,
+}: {
+  evidence: readonly string[];
+  canonicalIds: readonly string[];
+}) {
+  const rows = [...evidence, ...canonicalIds.map((id) => `Canonical ID: ${id}`)].filter(Boolean);
+  if (rows.length === 0) return null;
+  return (
+    <details className="mt-3 text-[12px] leading-relaxed text-[#8d8073]">
+      <summary className="cursor-pointer text-[#ad9164]">Evidence</summary>
+      <ul className="mt-2 space-y-1">
+        {rows.map((row, index) => <li key={`${row}-${index}`}>{row}</li>)}
+      </ul>
+    </details>
   );
 }

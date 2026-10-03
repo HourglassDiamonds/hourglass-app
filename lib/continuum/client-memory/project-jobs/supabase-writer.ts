@@ -31,6 +31,7 @@ function requireClient(client: SupabaseClient | null): SupabaseClient {
 }
 
 function writeReason(message: string): Error {
+  if (message.includes("job-write-conflict")) return new Error("stale-write");
   if (message.includes("project-not-found")) return new Error("project-not-found");
   if (message.includes("job-not-found")) return new Error("job-not-found");
   if (message.includes("entity-kind-mismatch")) {

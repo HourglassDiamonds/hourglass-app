@@ -451,4 +451,34 @@ describe("Open Job founder controls", () => {
     if (!second.ok) return;
     assert.equal(second.job.state, "resolved");
   });
+
+  it("rejects a stale expected version before deriving a mutation", async () => {
+    const memory = new InMemoryClientMemoryStore();
+    const jobs = new InMemoryProjectJobStore();
+    const writer = createInMemoryProjectJobWriter(memory, jobs, () => NOW);
+    const seeded = await seedProject(memory);
+    const created = await writer.createJob({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      kind: "required_action",
+      subject: "Review current state",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    assert.equal(created.ok, true);
+    if (!created.ok) return;
+    const before = jobs.listMutations(created.job.jobId).length;
+    const result = await writer.mutateJob({
+      mutationId: randomUUID(),
+      projectId: seeded.projectId,
+      jobId: created.job.jobId,
+      action: "update",
+      actor: ACTOR,
+      waitingOnActor: "vendor",
+      expectedUpdatedAt: "2026-09-01T00:00:00.000Z",
+    });
+    assert.deepEqual(result, { ok: false, reason: "invalid-input", code: "stale-write" });
+    assert.equal(jobs.listMutations(created.job.jobId).length, before);
+    assert.equal(jobs.getJob(created.job.jobId)?.waitingOnActor, "founder");
+  });
 });

@@ -5,6 +5,7 @@
  */
 
 import type { ConciergeAskMode } from "@/lib/continuum/client-memory/read/presentation";
+import type { SterlingResponse } from "@/lib/continuum/sterling/types";
 
 export const CONCIERGE_SOL_QUERY_MAX_LENGTH = 4000;
 export const CONCIERGE_SOL_HISTORY_MAX_TURNS = 8;
@@ -71,6 +72,7 @@ export type ConciergeSolAnswer = {
   brainDump: BrainDumpProposal | null;
   writesCanonical: boolean;
   refreshToday?: boolean;
+  sterling?: SterlingResponse | null;
   telemetry: ConciergeSolTelemetry;
 };
 
