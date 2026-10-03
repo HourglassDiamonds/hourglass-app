@@ -40,6 +40,19 @@ export const CAPTURE_KIND_LABELS = {
   note: "Note",
 } as const;
 
+/** Keep advisory questions out of the mutation-review workflow. */
+export function captureInputLooksLikeAdvisory(value: string): boolean {
+  const text = value.trim().toLowerCase().replace(/[’']/g, "'");
+  if (!text) return false;
+  return (
+    /^(?:what|who|which|when|where|why|how)\b/.test(text) ||
+    /^(?:should|can|could|would|do|did|is|are|am)\s+(?:i|we|my|our|there)\b/.test(text) ||
+    /\b(?:top|next)\s+(?:three|3)\b/.test(text) ||
+    /\bwhat\s+am\s+i\s+missing\b/.test(text) ||
+    text.endsWith("?")
+  );
+}
+
 export function isSaved(row: CaptureReviewItem): boolean {
   return row.result?.status === "saved" || row.result?.status === "already-present";
 }

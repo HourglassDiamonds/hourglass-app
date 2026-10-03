@@ -45,16 +45,41 @@ describe("Sterling proposal ledger", () => {
     assert.equal(harness.writer.mutationCount, 1);
   });
 
+  it("reports bounded dependency timing without changing approval semantics", async () => {
+    const harness = await waitingHarness();
+    const stages: string[] = [];
+    let tick = 0;
+    const service = new SterlingApprovalService({
+      repository: harness.repository,
+      jobs: harness.writer,
+      candidates: harness.candidates,
+      actor: "founder",
+      nowIso: () => NOW,
+      clockMs: () => tick++,
+      onTiming: ({ stage, durationMs }) => {
+        stages.push(stage);
+        assert.equal(durationMs, 1);
+      },
+    });
+    const result = await service.review({ action: "approve", proposalId: harness.proposal.proposalId });
+    assert.equal(result.ok && result.status, "executed");
+    assert.deepEqual(stages, [
+      "ledger-read",
+      "ledger-decision",
+      "currentness-check",
+      "ledger-claim",
+      "canonical-writer",
+      "ledger-finalize",
+    ]);
+    assert.equal(harness.writer.mutationCount, 1);
+  });
+
   it("executes an edited approval and preserves the original proposal", async () => {
     const harness = await waitingHarness();
-    const edited = { ...harness.proposal.originalProposal.proposedAction };
-    assert.equal(edited.kind, "update_job");
-    if (edited.kind !== "update_job") return;
-    edited.waitingOnActor = "client";
     const result = await harness.service.review({
       action: "edit_and_approve",
       proposalId: harness.proposal.proposalId,
-      editedAction: edited,
+      editedValue: "client",
     });
     assert.equal(result.ok && result.status, "executed");
     const stored = await harness.repository.get(harness.proposal.proposalId);

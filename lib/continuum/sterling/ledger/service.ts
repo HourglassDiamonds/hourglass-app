@@ -7,13 +7,26 @@ import type { SterlingProposalRecord, SterlingProposalRepository } from "./types
 
 export type SterlingReviewInput =
   | { action: "approve"; proposalId: string; note?: string | null }
-  | { action: "edit_and_approve"; proposalId: string; editedAction: SterlingProposedAction; note?: string | null }
+  | { action: "edit_and_approve"; proposalId: string; editedValue: string; note?: string | null }
   | { action: "reject"; proposalId: string; note?: string | null }
   | { action: "defer"; proposalId: string; deferUntil: string; note?: string | null };
 
 export type SterlingReviewResult =
   | { ok: true; status: "executed" | "approved-unexecuted" | "rejected" | "deferred"; proposal: SterlingProposalRecord; idempotent: boolean }
   | { ok: false; status: "not-found" | "invalid" | "stale" | "failed" | "conflict"; message: string; proposal?: SterlingProposalRecord };
+
+export type SterlingReviewTimingStage =
+  | "ledger-read"
+  | "ledger-decision"
+  | "currentness-check"
+  | "ledger-claim"
+  | "canonical-writer"
+  | "ledger-finalize";
+
+export type SterlingReviewTiming = {
+  stage: SterlingReviewTimingStage;
+  durationMs: number;
+};
 
 export class SterlingApprovalService {
   constructor(private readonly deps: {
@@ -22,32 +35,41 @@ export class SterlingApprovalService {
     candidates: CandidateStore;
     actor: string;
     nowIso?: () => string;
+    clockMs?: () => number;
+    onTiming?: (timing: SterlingReviewTiming) => void;
   }) {}
 
   async review(input: SterlingReviewInput): Promise<SterlingReviewResult> {
     const now = (this.deps.nowIso ?? (() => new Date().toISOString()))();
-    if (!isUuid(input.proposalId) || (input.note?.length ?? 0) > 1000) return invalid("Invalid proposal review input.");
-    const existing = await this.deps.repository.get(input.proposalId);
+    if (
+      !isUuid(input.proposalId) ||
+      (input.note?.length ?? 0) > 1000 ||
+      (input.action === "edit_and_approve" && input.editedValue.length > 160)
+    ) return invalid("Invalid proposal review input.");
+    const existing = await this.timed("ledger-read", () =>
+      this.deps.repository.get(input.proposalId));
     if (!existing) return { ok: false, status: "not-found", message: "Proposal not found." };
 
     if (input.action === "reject") {
-      const decision = await this.deps.repository.recordRejection(input.proposalId, { decidedAt: now, note: input.note });
+      const decision = await this.timed("ledger-decision", () =>
+        this.deps.repository.recordRejection(input.proposalId, { decidedAt: now, note: input.note }));
       return decision.ok
         ? { ok: true, status: "rejected", proposal: decision.record, idempotent: decision.idempotent }
         : conflict(decision.reason);
     }
     if (input.action === "defer") {
       if (!validFutureIso(input.deferUntil, now)) return invalid("Choose a future defer time.");
-      const decision = await this.deps.repository.recordDefer(input.proposalId, input.deferUntil, { decidedAt: now, note: input.note });
+      const decision = await this.timed("ledger-decision", () =>
+        this.deps.repository.recordDefer(input.proposalId, input.deferUntil, { decidedAt: now, note: input.note }));
       return decision.ok
         ? { ok: true, status: "deferred", proposal: decision.record, idempotent: decision.idempotent }
         : conflict(decision.reason);
     }
 
-    const editedAction = input.action === "edit_and_approve" ? input.editedAction : null;
-    if (editedAction && !editMatchesOriginal(existing.originalProposal.proposedAction, editedAction)) {
-      return invalid("Edited action does not match the original proposal target.");
-    }
+    const editedAction = input.action === "edit_and_approve"
+      ? editSterlingAction(existing.originalProposal.proposedAction, input.editedValue)
+      : null;
+    if (input.action === "edit_and_approve" && !editedAction) return invalid("That edit is not valid for this proposal.");
     if (existing.status === "executed") {
       return { ok: true, status: "executed", proposal: existing, idempotent: true };
     }
@@ -59,30 +81,34 @@ export class SterlingApprovalService {
     const decision = resume
       ? { ok: true as const, record: existing, idempotent: true }
       : editedAction
-        ? await this.deps.repository.recordEditAndApproval(input.proposalId, editedAction, { decidedAt: now, note: input.note })
-        : await this.deps.repository.recordApproval(input.proposalId, { decidedAt: now, note: input.note });
+        ? await this.timed("ledger-decision", () =>
+          this.deps.repository.recordEditAndApproval(input.proposalId, editedAction, { decidedAt: now, note: input.note }))
+        : await this.timed("ledger-decision", () =>
+          this.deps.repository.recordApproval(input.proposalId, { decidedAt: now, note: input.note }));
     if (!decision.ok) return conflict(decision.reason);
     const decided = decision.record;
     const action = decided.founderEditedPayload ?? decided.originalProposal.proposedAction;
 
     if (action.kind === "unsupported") {
-      const blocked = await this.deps.repository.markUnsupported(
-        decided.proposalId,
-        "unsupported-proposal-execution",
-        now,
-      );
+      const blocked = await this.timed("ledger-finalize", () =>
+        this.deps.repository.markUnsupported(
+          decided.proposalId,
+          "unsupported-proposal-execution",
+          now,
+        ));
       if (!blocked.ok) return conflict(blocked.reason);
       return { ok: true, status: "approved-unexecuted", proposal: blocked.record, idempotent: decision.idempotent };
     }
 
-    const current = await this.currentEntity(action);
+    const current = await this.timed("currentness-check", () => this.currentEntity(action));
     if (!current || fingerprintCanonicalState(current) !== decided.currentStateFingerprint) {
-      const stale = await this.deps.repository.supersede(
-        decided.proposalId,
-        null,
-        current ? "current-state-fingerprint-mismatch" : "canonical-entity-missing",
-        now,
-      );
+      const stale = await this.timed("ledger-finalize", () =>
+        this.deps.repository.supersede(
+          decided.proposalId,
+          null,
+          current ? "current-state-fingerprint-mismatch" : "canonical-entity-missing",
+          now,
+        ));
       return {
         ok: false,
         status: "stale",
@@ -93,18 +119,23 @@ export class SterlingApprovalService {
       };
     }
 
-    const claimed = await this.deps.repository.markExecuting(decided.proposalId);
+    const claimed = await this.timed("ledger-claim", () =>
+      this.deps.repository.markExecuting(decided.proposalId));
     if (!claimed.ok) return conflict(claimed.reason);
-    const execution = await this.execute(action, decided.proposalId);
+    const execution = await this.timed("canonical-writer", () =>
+      this.execute(action, decided.proposalId));
     if (!execution.ok) {
       if (execution.category === "stale-write" || execution.category === "job-not-found") {
-        const stale = await this.deps.repository.supersede(decided.proposalId, null, execution.category, now);
+        const stale = await this.timed("ledger-finalize", () =>
+          this.deps.repository.supersede(decided.proposalId, null, execution.category, now));
         return { ok: false, status: "stale", message: "The canonical item changed before execution. Nothing was applied.", proposal: stale.ok ? stale.record : claimed.record };
       }
-      const failed = await this.deps.repository.markFailed(decided.proposalId, execution.category, now);
+      const failed = await this.timed("ledger-finalize", () =>
+        this.deps.repository.markFailed(decided.proposalId, execution.category, now));
       return { ok: false, status: "failed", message: "The canonical writer failed. The failure is recorded and can be retried safely.", proposal: failed.ok ? failed.record : claimed.record };
     }
-    const completed = await this.deps.repository.markExecuted(decided.proposalId, decided.proposalId, action, now);
+    const completed = await this.timed("ledger-finalize", () =>
+      this.deps.repository.markExecuted(decided.proposalId, decided.proposalId, action, now));
     if (!completed.ok) return conflict(completed.reason);
     return { ok: true, status: "executed", proposal: completed.record, idempotent: decision.idempotent || claimed.idempotent || execution.idempotent };
   }
@@ -145,6 +176,19 @@ export class SterlingApprovalService {
     if (!result.ok) return { ok: false as const, category: result.code ?? result.reason };
     return { ok: true as const, idempotent: result.status === "already-present" };
   }
+
+  private async timed<T>(stage: SterlingReviewTimingStage, task: () => Promise<T>): Promise<T> {
+    const clock = this.deps.clockMs ?? (() => performance.now());
+    const started = clock();
+    try {
+      return await task();
+    } finally {
+      this.deps.onTiming?.({
+        stage,
+        durationMs: Math.max(0, Math.round((clock() - started) * 10) / 10),
+      });
+    }
+  }
 }
 
 export function editSterlingAction(
@@ -162,17 +206,6 @@ export function editSterlingAction(
     return { ...original, subject: edited };
   }
   return null;
-}
-
-function editMatchesOriginal(original: SterlingProposedAction, edited: SterlingProposedAction): boolean {
-  if (original.kind !== edited.kind) return false;
-  if (original.kind === "update_job" && edited.kind === "update_job") {
-    return original.jobId === edited.jobId && original.projectId === edited.projectId && original.expectedUpdatedAt === edited.expectedUpdatedAt;
-  }
-  if (original.kind === "create_projectless_job" && edited.kind === "create_projectless_job") {
-    return original.candidateId === edited.candidateId;
-  }
-  return false;
 }
 
 function isActor(value: string): value is OpenJobActor {

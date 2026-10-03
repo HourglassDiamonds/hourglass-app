@@ -5,6 +5,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { QuickCapture } from "../../../app/executive-dashboard/concierge/components/quick-capture";
 import {
   applyConfirmation,
+  captureInputLooksLikeAdvisory,
   captureTimingLabel,
   editReviewItem,
   prepareConfirmation,
@@ -35,6 +36,14 @@ function proposal(items: CaptureProposedItem[]): CaptureProposal {
 }
 
 describe("Quick Capture UI", () => {
+  it("routes advisory questions away from the mutation-review workflow", () => {
+    assert.equal(captureInputLooksLikeAdvisory("What are the top 3 things I need to do on Monday?"), true);
+    assert.equal(captureInputLooksLikeAdvisory("What am I missing?"), true);
+    assert.equal(captureInputLooksLikeAdvisory("Should I follow up with the shop?"), true);
+    assert.equal(captureInputLooksLikeAdvisory("Follow up with the shop Friday about the CAD"), false);
+    assert.equal(captureInputLooksLikeAdvisory("Sam prefers platinum"), false);
+  });
+
   it("renders a single capture surface, honest engine state, voice seam, and all manual paths", () => {
     const html = renderToStaticMarkup(createElement(QuickCapture));
     assert.match(html, /Tell Continuum what happened/);

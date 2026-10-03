@@ -198,19 +198,17 @@ function SterlingAnswer({ response }: { response: SterlingResponse }) {
                 Proposed fix: {finding.proposedFix}
               </p>
               {finding.proposal ? (
-                <details className="mt-3 text-[12px] text-[#9a8e82]">
-                  <summary className="cursor-pointer text-[#ad9164]">Review proposed mutation</summary>
-                  <dl className="mt-2 grid gap-2">
-                    <div><dt className="uppercase tracking-[0.16em]">Current</dt><dd>{finding.proposal.currentState}</dd></div>
-                    <div><dt className="uppercase tracking-[0.16em]">Proposed</dt><dd>{finding.proposal.proposedState}</dd></div>
-                    <div><dt className="uppercase tracking-[0.16em]">Effect</dt><dd>{finding.proposal.expectedDownstreamEffect}</dd></div>
-                    <div><dt className="uppercase tracking-[0.16em]">Confidence</dt><dd>{finding.proposal.confidence}</dd></div>
-                    <div><dt className="uppercase tracking-[0.16em]">Freshness</dt><dd>{finding.proposal.persistence === "persisted" ? "Fingerprint will be checked again before execution" : "Not durably reviewable"}</dd></div>
-                    <div><dt className="uppercase tracking-[0.16em]">Proposal ID</dt><dd>{finding.proposal.proposalId}</dd></div>
-                  </dl>
-                  <p className="mt-2">Review required. Nothing has been changed.</p>
+                <article className="mt-4 rounded-[18px] bg-white/[0.035] px-4 py-4" data-sterling-inline-proposal="">
+                  <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">Suggested cleanup</p>
+                  <p className="mt-2 text-[14px] leading-relaxed text-[#efe8de]">{finding.proposal.proposedState}</p>
+                  <p className="mt-1 text-[12px] leading-relaxed text-[#8d8073]">{finding.proposal.reason}</p>
+                  <details className="mt-2 text-[11px] leading-relaxed text-[#80746a]">
+                    <summary className="cursor-pointer">What changes</summary>
+                    <p className="mt-1">{finding.proposal.expectedDownstreamEffect}</p>
+                    <p className="mt-1">Current: {finding.proposal.currentState}</p>
+                  </details>
                   <SterlingProposalControls proposal={finding.proposal} />
-                </details>
+                </article>
               ) : null}
               <EvidenceDetails evidence={finding.evidence} canonicalIds={[]} />
             </li>

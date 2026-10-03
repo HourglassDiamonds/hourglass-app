@@ -12,6 +12,8 @@ import type { ConciergeSolHistoryTurn } from "@/lib/continuum/concierge-sol/type
 import { CONCIERGE_SOL_PENDING_MESSAGE } from "@/lib/continuum/concierge-sol/types";
 
 const EXAMPLES = [
+  "What are the top 3 things I need to do on Monday?",
+  "What am I missing?",
   "Who has a birthday in November?",
   "Birthdays next month",
 ] as const;
@@ -139,6 +141,10 @@ export function AskConciergeShell({
           {EXAMPLES[0]}
           <br />
           {EXAMPLES[1]}
+          <br />
+          {EXAMPLES[2]}
+          <br />
+          {EXAMPLES[3]}
         </p>
       ) : null}
     </section>
