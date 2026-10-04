@@ -8,10 +8,11 @@ import type {
   CosOperatingLoopView,
   CosWatchingItem,
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
+import { createSupabaseGmailIndexStore } from "@/lib/continuum/client-memory/gmail/server";
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import { readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import { createSupabaseGmailConnectionStore } from "@/lib/continuum/gmail/server";
 import { parseSterlingIntent, runSterling } from "./engine";
 import { sourceFreshness } from "./cos-beta";
 import { getAuthenticatedSterlingProposalRepository } from "./ledger/load";
@@ -90,7 +91,7 @@ async function loadLastSuccessfulGmailSync(): Promise<string | null> {
   const client = getSupabaseAdmin();
   if (!client) return null;
   try {
-    return (await createSupabaseGmailConnectionStore(client).getFounderConnection())?.lastSyncAt ?? null;
+    return (await readGmailCurrentState(createSupabaseGmailIndexStore(client))).lastSuccessfulSyncAt;
   } catch {
     return null;
   }

@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { detectFindings, nextThree, runSterling } from "./engine";
@@ -84,6 +85,12 @@ describe("Sterling Chief of Staff beta", () => {
     assert.equal(freshness.status, "delayed");
     const response = runSterling({ truth: { ...truth([]), sourceFreshness: freshness }, intent: "missing", now: NOW });
     assert.equal(response.uncertainty.some((line) => /delayed beyond the 1–2 minute target/i.test(line)), true);
+  });
+
+  it("uses the completed Gmail checkpoint as the successful-sync clock", () => {
+    const server = readFileSync(new URL("./server.ts", import.meta.url), "utf8");
+    assert.match(server, /readGmailCurrentState\(createSupabaseGmailIndexStore\(client\)\)/);
+    assert.doesNotMatch(server, /getFounderConnection\(\)\)\?\.lastSyncAt/);
   });
 
   it("summarizes cleanup as an approval-first batch", () => {
