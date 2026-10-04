@@ -18,6 +18,8 @@ const NAV_ITEMS = [
 
 type HeaderProps = {
   currentPage?: string;
+  /** Slightly lighter bar for The House opening. Other pages stay unchanged. */
+  quiet?: boolean;
 };
 
 function isFeaturedNav(href: string): boolean {
@@ -46,9 +48,15 @@ function navLinkClass(
   return "text-[#6a635c] hover:text-hg-ink";
 }
 
-function BrandMark() {
+function BrandMark({ quiet = false }: { quiet?: boolean }) {
   return (
-    <span className="relative block h-[48px] w-[48px] shrink-0 sm:h-[52px] sm:w-[52px] lg:h-[78px] lg:w-[78px]">
+    <span
+      className={
+        quiet
+          ? "relative block h-10 w-10 shrink-0 sm:h-11 sm:w-11 lg:h-16 lg:w-16"
+          : "relative block h-[48px] w-[48px] shrink-0 sm:h-[52px] sm:w-[52px] lg:h-[78px] lg:w-[78px]"
+      }
+    >
       <Image
         src="/hourglass-logo-gold.png"
         alt=""
@@ -60,7 +68,7 @@ function BrandMark() {
   );
 }
 
-export default function Header({ currentPage = "" }: HeaderProps) {
+export default function Header({ currentPage = "", quiet = false }: HeaderProps) {
   const pathname = usePathname() ?? "";
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const menuButtonRef = React.useRef<HTMLButtonElement>(null);
@@ -89,17 +97,17 @@ export default function Header({ currentPage = "" }: HeaderProps) {
       <a href="#hg-page-content" className="hg-skip-link">
         Skip to main content
       </a>
-      <header className="sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b border-hg-line/55 bg-hg-ivory/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-hg-ivory/78">
+      <header className={`sticky top-0 z-50 w-full max-w-[100vw] overflow-x-clip overflow-y-visible border-b ${quiet ? "border-hg-line/35" : "border-hg-line/55"} bg-hg-ivory/88 backdrop-blur-[10px] supports-[backdrop-filter]:bg-hg-ivory/78`}>
       {/* Desktop nav from `lg` (1024px) — six nowrap links crowd the bar at
           768–1023px (audit Pass 2 / mobile deep-dive). */}
-      <div className="relative mx-auto box-border flex w-full min-w-0 max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-0 px-0 py-3.5 lg:flex-nowrap lg:items-end lg:gap-8 lg:py-0 lg:pb-6 lg:pt-7">
+      <div className={`relative mx-auto box-border flex w-full min-w-0 max-w-[1200px] flex-wrap items-center justify-between gap-x-4 gap-y-0 px-0 lg:flex-nowrap lg:items-end lg:gap-8 lg:py-0 ${quiet ? "py-2 lg:pb-3.5 lg:pt-4" : "py-3.5 lg:pb-6 lg:pt-7"}`}>
         <Link
           href="/"
           className="flex shrink-0 items-center transition-opacity duration-300 hover:opacity-90 lg:items-end"
           aria-label="Hourglass Diamonds home"
           aria-current={isNavCurrent(pathname, "/") ? "page" : undefined}
         >
-          <BrandMark />
+          <BrandMark quiet={quiet} />
         </Link>
 
         <div className="relative z-[55] shrink-0 lg:hidden">

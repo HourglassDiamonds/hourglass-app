@@ -11,6 +11,7 @@ import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
 import {
   HOUSE_CLOSER_LOOK_CAPTION_SRC,
+  HOUSE_CLOSER_LOOK_NAME,
   HOUSE_CLOSER_LOOK_VIDEO_SRC,
 } from "@/lib/the-house/media";
 import {
@@ -160,10 +161,10 @@ export default function TheHousePageClient() {
         }
       `}</style>
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="the-house" />
+        <Header currentPage="the-house" quiet />
 
         {/* THE HOUSE INTRO */}
-        <section className="relative -mx-6 overflow-hidden border-b border-[#e4dbcf] px-6 pb-20 pt-16 md:-mx-10 md:px-10 md:pb-[128px] md:pt-[96px]">
+        <section className="relative -mx-6 overflow-hidden px-6 pb-4 pt-4 md:-mx-10 md:px-10 md:pb-5 md:pt-6">
           <div aria-hidden className="pointer-events-none absolute inset-0">
             <div
               className="absolute inset-x-[-2%] inset-y-[4%] opacity-[0.58] md:hidden"
@@ -220,49 +221,31 @@ export default function TheHousePageClient() {
               The House
             </div>
 
-            <h1
-              className="mx-auto mt-4 max-w-[22rem] text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:max-w-[28rem] md:text-[2.45rem]"
-              style={{ textWrap: "balance" }}
-            >
-              {HOUSE_INTRO_HEADING}
+            <h1 className="relative left-1/2 mt-3 w-max -translate-x-1/2 text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.45rem]">
+              {HOUSE_INTRO_HEADING.split(", ").map((line, index) => (
+                <span key={line} className="block whitespace-nowrap">
+                  {index === 0 ? (
+                    line
+                  ) : (
+                    <>
+                      {line.replace(/differently\.$/, "")}
+                      <em className="italic">differently.</em>
+                    </>
+                  )}
+                </span>
+              ))}
             </h1>
 
-            <div className="mx-auto mt-6 max-w-[44rem] text-[1rem] leading-[1.9] text-[#615a53]">
-              {HOUSE_INTRO_PARAGRAPHS.map((paragraph, index) => (
-                <p key={paragraph} className={index === 0 ? undefined : "mt-5"}>
-                  {paragraph}
-                </p>
-              ))}
-
-              <p className="mt-5">
-                For a deeper look at what gemological training means in
-                practice, read{" "}
-                <Link
-                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  Why Work With a Graduate Gemologist?
-                </Link>
-                .
-              </p>
-            </div>
+            <p className="mx-auto mt-4 max-w-[36rem] text-[1rem] leading-[1.9] text-[#615a53]">
+              Our story becomes clearer when you see it.
+            </p>
           </div>
         </section>
 
         {/* VIDEO */}
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-0 md:pb-[120px]">
           <div className="mx-auto max-w-[1040px]">
-            <div className="mx-auto max-w-[720px] text-center">
-              <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
-                A Closer Look
-              </div>
-
-              <p className="mt-4 text-[1rem] leading-[1.8] text-[#615a53]">
-                Our story becomes clearer when you see it.
-              </p>
-            </div>
-
-            <div className="relative mx-auto mt-10 aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
+            <div className="relative mx-auto aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
               <video
                 ref={videoRef}
                 autoPlay
@@ -270,6 +253,7 @@ export default function TheHousePageClient() {
                 loop
                 playsInline
                 preload="metadata"
+                aria-label={HOUSE_CLOSER_LOOK_NAME}
                 className="house-closer-look-video absolute inset-0 h-full w-full object-cover"
               >
                 <source
@@ -316,6 +300,28 @@ export default function TheHousePageClient() {
             </div>
           </div>
         </RevealOnScroll>
+
+        <section className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+          <div className="mx-auto max-w-[44rem] text-center text-[1rem] leading-[1.9] text-[#615a53]">
+            {HOUSE_INTRO_PARAGRAPHS.map((paragraph, index) => (
+              <p key={paragraph} className={index === 0 ? undefined : "mt-5"}>
+                {paragraph}
+              </p>
+            ))}
+
+            <p className="mt-5">
+              For a deeper look at what gemological training means in
+              practice, read{" "}
+              <Link
+                href="/diamond-guide/why-work-with-a-graduate-gemologist"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Why Work With a Graduate Gemologist?
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
 
         {/* APPROACH */}
         <RevealOnScroll
