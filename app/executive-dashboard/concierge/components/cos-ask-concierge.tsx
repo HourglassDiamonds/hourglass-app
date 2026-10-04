@@ -4,6 +4,8 @@ import { useId, useState, useTransition, type FormEvent } from "react";
 import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
 import type { CosBriefingV1 } from "@/lib/continuum/chief-of-staff/operating-loop/cos-briefing-v1";
 import { TODAY_ASK_PLACEHOLDER } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-ask";
+import { proposeFounderOperation, proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
+import { useTodayMutationActions } from "./today-optimistic-item";
 
 export type TodayAskAction = (input: {
   query: string;
@@ -13,7 +15,7 @@ export type TodayAskAction = (input: {
     packet: TodayBriefingPacket;
     briefing?: CosBriefingV1 | null;
   };
-}) => Promise<{ text?: string } | { kind: string }>;
+}) => Promise<{ text?: string; founderDirectiveStatus?: "applied" | "clarify" | "failed"; refreshToday?: boolean } | { kind: string }>;
 
 export function CosAskConcierge({
   packet,
@@ -28,6 +30,7 @@ export function CosAskConcierge({
   const [query, setQuery] = useState("");
   const [reply, setReply] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const mutation = useTodayMutationActions();
 
   if (!askAction) {
     return (
@@ -41,8 +44,11 @@ export function CosAskConcierge({
     event.preventDefault();
     const trimmed = query.trim();
     if (!trimmed || !askAction) return;
-    startTransition(async () => {
-      const next = await askAction({
+    const directive = proposeFounderOperation(trimmed) != null || proposeTodayFounderOperation(trimmed, packet) != null;
+    const submit = async () => {
+      if (directive) mutation?.beginDirective();
+      try {
+        const next = await askAction({
         query: trimmed,
         mode: "brain-dump",
         todayContext: {
@@ -50,14 +56,28 @@ export function CosAskConcierge({
           packet,
           briefing: cosBriefing,
         },
-      });
+        });
       const text =
         next && "text" in next && typeof next.text === "string"
           ? next.text
           : "I couldn't file that just now.";
-      setReply(text);
-      setQuery("");
-    });
+        const status = "founderDirectiveStatus" in next ? next.founderDirectiveStatus : undefined;
+        if (directive && status === "applied") {
+          mutation?.succeedDirective();
+        } else if (directive && status === "failed") {
+          mutation?.failDirective(text, submit);
+        } else if (directive) {
+          mutation?.restoreDirective();
+        }
+        setReply(text);
+        setQuery("");
+      } catch {
+        const message = "Unable to save that change. Try again.";
+        if (directive) mutation?.failDirective(message, submit);
+        setReply(message);
+      }
+    };
+    startTransition(() => { void submit(); });
   }
 
   return (

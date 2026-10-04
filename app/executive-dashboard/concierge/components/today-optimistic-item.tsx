@@ -23,17 +23,20 @@ export type TodayMutationAction = (
   formData: FormData,
 ) => TodayMutationResult | Promise<TodayMutationResult>;
 
-type RetryState = {
-  action: TodayMutationAction;
-  formData: FormData;
-  message: string;
-} | null;
+type RetryState =
+  | { kind: "form"; action: TodayMutationAction; formData: FormData; message: string }
+  | { kind: "directive"; run: () => Promise<void>; message: string }
+  | null;
 
 type TodayMutationContextValue = {
   completeAction?: (formData: FormData) => Promise<void>;
   disposeAction?: (formData: FormData) => Promise<void>;
   failure: RetryState;
   retry: () => void;
+  beginDirective: () => void;
+  succeedDirective: () => void;
+  restoreDirective: () => void;
+  failDirective: (message: string, retry: () => Promise<void>) => void;
 };
 
 const TodayMutationContext = createContext<TodayMutationContextValue | null>(null);
@@ -63,13 +66,14 @@ export function TodayOptimisticItem({
     try {
       const result = await action(formData);
       if (!result.ok) {
-        setFailure({ action, formData: retryFormData, message: result.message });
+        setFailure({ kind: "form", action, formData: retryFormData, message: result.message });
         dispatch({ type: "fail" });
         return;
       }
       dispatch({ type: "succeed" });
     } catch {
       setFailure({
+        kind: "form",
         action,
         formData: retryFormData,
         message: "Unable to save that change. Try again.",
@@ -86,10 +90,19 @@ export function TodayOptimisticItem({
       ? async (formData) => run(disposeAction, formData)
       : undefined,
     failure,
+    beginDirective: () => { setFailure(null); dispatch({ type: "begin" }); },
+    succeedDirective: () => dispatch({ type: "succeed" }),
+    restoreDirective: () => dispatch({ type: "fail" }),
+    failDirective: (message, retry) => {
+      setFailure({ kind: "directive", message, run: retry });
+      dispatch({ type: "fail" });
+    },
     retry: () => {
       if (!failure) return;
       startTransition(() => {
-        void run(failure.action, copyFormData(failure.formData));
+        void (failure.kind === "form"
+          ? run(failure.action, copyFormData(failure.formData))
+          : failure.run());
       });
     },
   }), [completeAction, disposeAction, failure, run]);

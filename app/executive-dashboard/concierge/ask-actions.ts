@@ -2,7 +2,7 @@
 
 import { executeAuthenticatedFounderOperation } from "@/lib/continuum/concierge-sol/founder-command-server";
 import { revalidatePath } from "next/cache";
-import { proposeFounderOperation, proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
+import { looksLikeTodayFounderDirective, proposeFounderOperation, proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
 import { refreshTodayAfterFounderMutation } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { answerAskConciergeQuery } from "@/lib/continuum/client-memory/ask/query";
@@ -70,12 +70,24 @@ export async function askConcierge(
   if (operation) {
     const result = await executeAuthenticatedFounderOperation(operation, refreshTodayAfterFounderMutation);
     if (result.refresh) revalidatePath(CONCIERGE_HOME_PATH);
-    return { kind: "conversation", mode: "conversation", text: result.text, actions: [], brainDump: null, writesCanonical: result.status === "applied", refreshToday: result.refresh, telemetry: { requestModel: conciergeForegroundModel(), brain: "fallback", promptTokens: null, completionTokens: null, latencyMs: 0, toolCount: 1, toolNames: ["apply_founder_operation"] } };
+    return { kind: "conversation", mode: "conversation", text: result.text, actions: [], brainDump: null, writesCanonical: result.status === "applied", refreshToday: result.refresh, founderDirectiveStatus: result.status, telemetry: { requestModel: conciergeForegroundModel(), brain: "fallback", promptTokens: null, completionTokens: null, latencyMs: 0, toolCount: 1, toolNames: ["apply_founder_operation"] } };
   }
   if (packet && todayContext) {
     const supplied = todayContext.briefing ? readCosBriefingV1(todayContext.briefing) : null;
     if (todayContext.briefing != null && !supplied) {
       return { kind: "error" };
+    }
+    if (looksLikeTodayFounderDirective(query)) {
+      return {
+        kind: "conversation",
+        mode: "conversation",
+        text: "I couldn't map that directive to one safe canonical state change. State the final disposition and dependency explicitly.",
+        actions: [],
+        brainDump: null,
+        writesCanonical: false,
+        founderDirectiveStatus: "clarify",
+        telemetry: { requestModel: conciergeForegroundModel(), brain: "fallback", promptTokens: null, completionTokens: null, latencyMs: 0, toolCount: 0, toolNames: [] },
+      };
     }
     const briefing = deriveCosBriefingV1({
       packet,

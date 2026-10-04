@@ -72,6 +72,7 @@ export type ConciergeSolAnswer = {
   brainDump: BrainDumpProposal | null;
   writesCanonical: boolean;
   refreshToday?: boolean;
+  founderDirectiveStatus?: "applied" | "clarify" | "failed";
   sterling?: SterlingResponse | null;
   telemetry: ConciergeSolTelemetry;
 };

@@ -123,12 +123,12 @@ describe("Sterling-curated Today presentation", () => {
 describe("row-scoped Sterling commands", () => {
   it("uses row context for waiting, hold, resolution, dismissal, and timed snooze", () => {
     const p = packet();
-    assert.deepEqual(proposeTodayFounderOperation("Waiting on the shop now.", p), {
-      kind: "correct",
-      target: "Ben C.",
-      truth: { ballHolder: "vendor_shop", dependency: "the shop now" },
-      wording: "Ben C. is Waiting on the shop now.",
-    });
+    const waiting = proposeTodayFounderOperation("Waiting on the shop now.", p);
+    assert.equal(waiting?.kind, "correct");
+    if (waiting?.kind === "correct") {
+      assert.deepEqual(waiting.truth, { ballHolder: "vendor_shop", dependency: "the shop now" });
+      assert.equal(waiting.scope?.workLoopId, "ben");
+    }
     assert.equal(proposeTodayFounderOperation("Hold until I contact Ben again.", p)?.kind, "correct");
     assert.deepEqual(proposeTodayFounderOperation("I already handled this.", p), { kind: "resolve", target: "Ben C.", days: null });
     assert.deepEqual(proposeTodayFounderOperation("Don't show me this again.", p), { kind: "cancel", target: "Ben C.", days: null });
@@ -140,5 +140,28 @@ describe("row-scoped Sterling commands", () => {
 
   it("answers questions without proposing a mutation", () => {
     assert.equal(proposeTodayFounderOperation("Should we hold this?", packet()), null);
+  });
+
+  it("maps the live Ben and Dylan directives to durable scoped dispositions", () => {
+    const ben = proposeTodayFounderOperation(
+      "Ben can be put on the backburner. I need to get his wife’s ring size.",
+      packet({ itemId: "brief:cad:C026156", projectId: null, personId: null, identifiers: [{ value: "C026156", role: "cadId", current: true }] }),
+    );
+    assert.equal(ben?.kind, "correct");
+    if (ben?.kind === "correct") {
+      assert.deepEqual(ben.truth, { ballHolder: "unknown", dependency: "waiting for ring size" });
+      assert.equal(ben.scope?.workLoopId, "cad:C026156");
+      assert.deepEqual(ben.scope?.cadIds, ["C026156"]);
+    }
+
+    const dylan = proposeTodayFounderOperation(
+      "This job is in production. Move it accordingly.",
+      packet({ itemId: "brief:cad:C025610", displayName: "Dylon D.", projectId: null, personId: null, identifiers: [{ value: "C025610", role: "cadId", current: true }] }),
+    );
+    assert.equal(dylan?.kind, "correct");
+    if (dylan?.kind === "correct") {
+      assert.deepEqual(dylan.truth, { stage: "in_production", ballHolder: "vendor_shop", dependency: "vendor production" });
+      assert.equal(dylan.scope?.workLoopId, "cad:C025610");
+    }
   });
 });

@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 import {
   applyFounderOperation,
   proposeFounderOperation,
+  proposeTodayFounderOperation,
   correctionEventsFromNotes,
 } from "./founder-command";
 import { InMemoryClientMemoryStore } from "@/lib/continuum/client-memory/store";
@@ -229,6 +230,55 @@ describe("explicit founder command canonical boundary", () => {
     if (production?.kind === "correct")
       assert.equal(production.truth.stage, "in_production");
   });
+  it("persists a scoped Today-only correction on the uniquely resolved Person", async () => {
+    const w = await world();
+    const person = await w.memory.insertEntity({ kind: "person", createdAt: NOW, createdBy: "founder" });
+    await w.memory.insertPersonProfile({
+      personId: person.record.id,
+      displayName: "Ben Castelsky",
+      givenName: "Ben",
+      familyName: "Castelsky",
+      organizationName: null,
+      email: null,
+      phone: null,
+      streetAddress: null,
+      city: null,
+      state: null,
+      country: null,
+      postalCode: null,
+      roles: ["client"],
+      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+      createdAt: NOW,
+      updatedAt: NOW,
+    });
+    const operation = proposeTodayFounderOperation(
+      "Ben can be put on the backburner. I need to get his wife’s ring size.",
+      {
+        itemId: "brief:cad:C026156", displayName: "Ben. C", entityType: "client", briefingKind: "generic",
+        projectName: null, projectId: null, personId: null, organizationLabel: null, vendorContactName: null,
+        identifiers: [{ value: "C026156", role: "cadId", current: true }], lifecycle: null,
+        latestMeaningfulExternalEvent: null, latestMeaningfulFounderAction: null, ballHolder: "founder",
+        unresolvedFounderObligation: "Review CAD", externalCommitment: null, nextExpectedEvent: null,
+        candidateNextAction: "Review CAD", uncertainty: [], mustNotState: [], sourceRefs: ["gc1|ben"],
+      },
+    );
+    assert.equal(operation?.kind, "correct");
+    let noteId = "";
+    const result = await applyFounderOperation({
+      operation: operation!, projects: [], jobs: [], jobWriter: w.jobWriter,
+      people: [{ personId: person.record.id, displayName: "Ben Castelsky", organizationName: null, email: null, phone: null, roles: ["client"], linkedProjectCount: 0, relationshipContext: null }],
+      noteWriter: { addManualNote: async (input) => { const saved = await w.noteWriter.addManualNote(input); if (saved.ok) noteId = saved.noteId; return saved; } },
+      actor: "founder", mutationId: randomUUID(), now: new Date(NOW), refresh: async () => {},
+    });
+    assert.equal(result.status, "applied");
+    const note = await w.noteWriter.getSourceNote(noteId);
+    assert.equal(note?.projectId, null);
+    assert.equal(note?.personId, person.record.id);
+    const events = correctionEventsFromNotes(null, [{ ...note!, personName: "Ben Castelsky" }]);
+    assert.equal(events[0]?.workLoopId, "cad:C026156");
+    assert.deepEqual(events[0]?.cadIds, ["C026156"]);
+    assert.deepEqual(events[0]?.correction, { ballHolder: "unknown", dependency: "waiting for ring size" });
+  });
   it("resolve and cancel call existing canonical mutation; no arbitrary conversation writes", async () => {
     for (const command of ["Resolve Ben.", "Cancel Ben."]) {
       const w = await world();
@@ -256,6 +306,9 @@ describe("explicit founder command canonical boundary", () => {
     assert.match(action, /executeAuthenticatedFounderOperation/);
     assert.match(action, /operation, refreshTodayAfterFounderMutation/);
     assert.match(action, /result\.refresh\) revalidatePath/);
+    assert.match(action, /looksLikeTodayFounderDirective/);
+    assert.match(action, /founderDirectiveStatus: result\.status/);
+    assert.doesNotMatch(action, /Got it\. Noted|Noted for/);
     const shell = readFileSync(
       "app/executive-dashboard/concierge/components/ask-concierge-shell.tsx",
       "utf8",

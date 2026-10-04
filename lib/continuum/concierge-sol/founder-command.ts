@@ -8,6 +8,16 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import type { ProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/writer";
 import type { ClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/writer";
 import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
+import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
+
+export type FounderCorrectionScope = {
+  itemId: string;
+  workLoopId: string;
+  projectId: string | null;
+  personId: string | null;
+  cadIds: string[];
+  sourceRefs: string[];
+};
 
 export type FounderOperation =
   | {
@@ -25,8 +35,10 @@ export type FounderOperation =
       target: string;
       truth: NonNullable<SourceCommunicationEvent["correction"]>;
       wording: string;
+      scope?: FounderCorrectionScope;
     };
 const PREFIX = "Founder current truth v1: ";
+const SCOPED_PREFIX = "Founder current truth v2: ";
 const fold = (s: string) =>
   s
     .toLowerCase()
@@ -109,6 +121,7 @@ export function proposeTodayFounderOperation(
   const text = query.replace(/\s+/g, " ").trim();
   if (!text || /\?|\b(?:maybe|perhaps|I think|should we|could be|might)\b/i.test(text)) return null;
   const target = packet.displayName || packet.projectName || packet.itemId;
+  const scope = correctionScope(packet);
 
   if (/\b(?:already handled|already took care of|this is done|mark (?:this|it) done)\b/i.test(text)) {
     return { kind: "resolve", target, days: null };
@@ -129,12 +142,58 @@ export function proposeTodayFounderOperation(
       target,
       truth: { ballHolder: "unknown", dependency: `held until ${condition}` },
       wording: `${target} is waiting on held until ${condition}.`,
+      scope,
+    };
+  }
+  const backburner = text.match(/\b([A-Z][a-z]+)\s+can be put on the backburner\b/i);
+  if (backburner && /\bring size\b/i.test(text)) {
+    return {
+      kind: "correct",
+      target,
+      truth: { ballHolder: "unknown", dependency: "waiting for ring size" },
+      wording: `${backburner[1]} is waiting for ring size.`,
+      scope,
+    };
+  }
+  if (/\b(?:this job|this|it)\s+is\s+(?:now\s+)?in (?:production|manufacturing)\b/i.test(text)) {
+    return {
+      kind: "correct",
+      target,
+      truth: { stage: "in_production", ballHolder: "vendor_shop", dependency: "vendor production" },
+      wording: `${target} is in production.`,
+      scope,
     };
   }
   if (/^waiting (?:on|for)\b/i.test(text)) {
-    return proposeFounderOperation(`${target} is ${text.replace(/[.!]$/, "")}.`);
+    const operation = proposeFounderOperation(`${target} is ${text.replace(/[.!]$/, "")}.`);
+    return operation?.kind === "correct" ? { ...operation, scope } : operation;
   }
   return null;
+}
+
+export function looksLikeTodayFounderDirective(query: string): boolean {
+  const text = query.replace(/\s+/g, " ").trim();
+  if (!text || /\?/.test(text)) return false;
+  return /\b(?:move|put|mark|hold|backburner|waiting|snooze|dismiss|resolve|cancel|production|manufacturing|already handled|took care of)\b/i.test(text);
+}
+
+function correctionScope(packet: TodayBriefingPacket): FounderCorrectionScope {
+  const cadIds = packet.identifiers
+    .filter((row) => row.current && row.role === "cadId")
+    .map((row) => row.value);
+  const itemScope = packet.itemId.startsWith("brief:")
+    ? packet.itemId.slice("brief:".length)
+    : packet.itemId;
+  const itemCad = itemScope.match(/^cad:(C\d{5,}(?:-[A-Z0-9]+)?)$/i)?.[1];
+  if (itemCad && !cadIds.some((value) => fold(value) === fold(itemCad))) cadIds.unshift(itemCad);
+  return {
+    itemId: packet.itemId,
+    workLoopId: itemScope || (packet.projectId ? `project:${packet.projectId}` : packet.itemId),
+    projectId: packet.projectId,
+    personId: packet.personId,
+    cadIds: [...new Set(cadIds)].slice(0, 8),
+    sourceRefs: [...new Set(packet.sourceRefs)].slice(0, 12),
+  };
 }
 
 function daysUntilWeekday(now: Date, weekday: string): number {
@@ -146,28 +205,26 @@ function daysUntilWeekday(now: Date, weekday: string): number {
 export function correctionNote(
   operation: Extract<FounderOperation, { kind: "correct" }>,
 ): string {
-  return PREFIX + JSON.stringify(operation);
+  return (operation.scope ? SCOPED_PREFIX : PREFIX) + JSON.stringify(operation);
 }
 export function correctionEventsFromNotes(
-  projectId: string,
+  projectId: string | null,
   notes: readonly ProjectDeskNote[],
 ): SourceCommunicationEvent[] {
   return notes.flatMap((note) => {
     if (
       note.sourceSystem !== "concierge-manual" ||
-      !note.noteText.startsWith(PREFIX)
+      !note.noteText.startsWith(PREFIX) && !note.noteText.startsWith(SCOPED_PREFIX)
     )
       return [];
     try {
-      const raw = JSON.parse(note.noteText.slice(PREFIX.length));
-      const operation =
-        typeof raw.wording === "string"
-          ? proposeFounderOperation(raw.wording)
-          : null;
+      const scoped = note.noteText.startsWith(SCOPED_PREFIX);
+      const raw = JSON.parse(note.noteText.slice(scoped ? SCOPED_PREFIX.length : PREFIX.length));
+      const operation = scoped ? readScopedCorrection(raw) : typeof raw.wording === "string" ? proposeFounderOperation(raw.wording) : null;
       if (
         !operation ||
         operation.kind !== "correct" ||
-        JSON.stringify(operation) !== JSON.stringify(raw)
+        (!scoped && JSON.stringify(operation) !== JSON.stringify(raw))
       )
         return [];
       return [
@@ -184,15 +241,15 @@ export function correctionEventsFromNotes(
           quotedText: "",
           attachmentFilenames: [],
           hasAttachments: false,
-          cadIds: [],
+          cadIds: operation.scope?.cadIds ?? [],
           orderIds: [],
           productionJobIds: [],
           personLabel: operation.target,
-          projectId,
-          workLoopId: `project:${projectId}`,
+          projectId: operation.scope?.projectId ?? projectId,
+          workLoopId: operation.scope?.workLoopId ?? (projectId ? `project:${projectId}` : null),
           semanticClass: "founder_correction",
           evidenceExcerpt: operation.wording,
-          workIdentityBasis: "project",
+          workIdentityBasis: operation.scope?.cadIds.length ? "cad" : projectId ? "project" : null,
           provenance: "founder_correction",
           correction: operation.truth,
         } satisfies SourceCommunicationEvent,
@@ -202,6 +259,34 @@ export function correctionEventsFromNotes(
     }
   });
 }
+
+function readScopedCorrection(raw: unknown): Extract<FounderOperation, { kind: "correct" }> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const row = raw as Partial<Extract<FounderOperation, { kind: "correct" }>>;
+  const scope = row.scope as Partial<FounderCorrectionScope> | undefined;
+  const truth = row.truth;
+  if (row.kind !== "correct" || typeof row.target !== "string" || typeof row.wording !== "string" || !truth || !scope) return null;
+  if (!(["founder", "client", "vendor_shop", "unknown"] as const).includes(truth.ballHolder as never)) return null;
+  if (typeof truth.dependency !== "string" && truth.dependency !== null) return null;
+  if (typeof scope.itemId !== "string" || typeof scope.workLoopId !== "string") return null;
+  if (!Array.isArray(scope.cadIds) || !Array.isArray(scope.sourceRefs)) return null;
+  const stages = ["queued", "design_requested", "cad_review", "revision_requested", "approved", "order_confirmed", "in_production", "waiting_external", "ready", "complete"] as const;
+  if (truth.stage != null && !stages.includes(truth.stage)) return null;
+  return {
+    kind: "correct",
+    target: row.target.slice(0, 100),
+    truth: { ...(truth.stage ? { stage: truth.stage } : {}), ballHolder: truth.ballHolder, dependency: truth.dependency },
+    wording: row.wording.slice(0, 400),
+    scope: {
+      itemId: scope.itemId.slice(0, 200),
+      workLoopId: scope.workLoopId.slice(0, 200),
+      projectId: typeof scope.projectId === "string" ? scope.projectId : null,
+      personId: typeof scope.personId === "string" ? scope.personId : null,
+      cadIds: scope.cadIds.filter((value): value is string => typeof value === "string").slice(0, 8),
+      sourceRefs: scope.sourceRefs.filter((value): value is string => typeof value === "string").slice(0, 12),
+    },
+  };
+}
 export type FounderCommandResult = {
   status: "applied" | "clarify" | "failed";
   text: string;
@@ -210,6 +295,7 @@ export type FounderCommandResult = {
 export async function applyFounderOperation(input: {
   operation: FounderOperation;
   projects: readonly ProjectDeskSummary[];
+  people?: readonly ClientSearchResult[];
   jobs: readonly ProjectJob[];
   jobWriter: ProjectJobWriter;
   noteWriter: Pick<ClientMemoryNoteWriter, "addManualNote">;
@@ -226,7 +312,7 @@ export async function applyFounderOperation(input: {
       text: op.question,
       refresh: false,
     };
-  const matches = input.projects.filter((p) =>
+  let matches = input.projects.filter((p) =>
     [
       p.projectId,
       p.title,
@@ -236,7 +322,19 @@ export async function applyFounderOperation(input: {
       return value === target || value.startsWith(`${target} `);
     }),
   );
+  if (matches.length === 0 && op.kind === "correct" && op.scope?.projectId) {
+    matches = input.projects.filter((p) => p.projectId === op.scope?.projectId);
+  }
+  if (matches.length === 0 && op.kind === "correct") {
+    matches = input.projects.filter((p) => p.people.some((person) => abbreviatedNameMatch(person.displayName, op.target)));
+  }
+  const people = (input.people ?? []).filter((person) => {
+    const value = fold(person.displayName);
+    return value === target || value.startsWith(`${target} `) || abbreviatedNameMatch(person.displayName, op.target);
+  });
+  const personOnly = op.kind === "correct" && matches.length === 0 && people.length === 1 ? people[0] : null;
   if (matches.length !== 1)
+    if (!personOnly)
     return {
       status: "clarify",
       text:
@@ -245,20 +343,27 @@ export async function applyFounderOperation(input: {
           : "Which existing project should I update? Please give its full name or project ID.",
       refresh: false,
     };
-  const project = matches[0];
+  const project = matches[0] ?? null;
   try {
     let success = false;
     if (op.kind === "correct") {
+      const scopedOperation = op.scope ? {
+        ...op,
+        scope: { ...op.scope, projectId: project?.projectId ?? null, personId: personOnly?.personId ?? op.scope.personId },
+      } : op;
       const result = await input.noteWriter.addManualNote({
         submissionId: input.mutationId,
-        projectId: project.projectId,
-        personId: null,
+        projectId: project?.projectId ?? null,
+        personId: personOnly?.personId ?? null,
         contextLayer: "client",
-        noteText: correctionNote(op),
+        noteText: correctionNote(scopedOperation),
         actor: input.actor,
       });
       success = result.ok;
     } else {
+      if (!project) {
+        return { status: "clarify", text: "Which existing project should I update? Please give its full name or project ID.", refresh: false };
+      }
       const jobs = input.jobs.filter(
         (j) =>
           j.projectId === project.projectId &&
@@ -316,7 +421,7 @@ export async function applyFounderOperation(input: {
       status: "applied",
       text:
         op.kind === "correct"
-          ? `Updated current truth for ${project.title}: ${op.truth.dependency ?? op.truth.stage}.`
+          ? `Updated current truth for ${project?.title ?? personOnly?.displayName ?? op.target}: ${op.truth.dependency ?? op.truth.stage}.`
           : `${project.title}: ${op.kind === "snooze" ? `snoozed for ${op.days} days` : op.kind === "resolve" ? "work item resolved" : "work item cancelled"}.`,
       refresh: true,
     };
@@ -327,4 +432,26 @@ export async function applyFounderOperation(input: {
       refresh: false,
     };
   }
+}
+
+function abbreviatedNameMatch(displayName: string, targetName: string): boolean {
+  const display = fold(displayName).split(" ").filter(Boolean);
+  const target = fold(targetName).split(" ").filter(Boolean);
+  if (display.length < 2 || target.length < 2) return false;
+  const firstDistance = editDistanceAtMostOne(display[0], target[0]);
+  return firstDistance && display.at(-1)?.[0] === target.at(-1)?.[0];
+}
+
+function editDistanceAtMostOne(left: string, right: string): boolean {
+  if (left === right) return true;
+  if (Math.abs(left.length - right.length) > 1) return false;
+  let i = 0, j = 0, edits = 0;
+  while (i < left.length && j < right.length) {
+    if (left[i] === right[j]) { i++; j++; continue; }
+    if (++edits > 1) return false;
+    if (left.length > right.length) i++;
+    else if (right.length > left.length) j++;
+    else { i++; j++; }
+  }
+  return edits + Number(i < left.length || j < right.length) <= 1;
 }

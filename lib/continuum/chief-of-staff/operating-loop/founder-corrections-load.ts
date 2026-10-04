@@ -17,13 +17,13 @@ export async function loadFounderCorrectionEvents(
       .select(SOURCE_NOTE_COLUMNS)
       .eq("source_system", "concierge-manual")
       .eq("lifecycle_status", "kept")
-      .like("note_text", "Founder current truth v1: %")
+      .like("note_text", "Founder current truth v%: %")
       .order("id")
       .range(offset, offset + 999);
     if (error) throw error;
     for (const row of data ?? []) {
       const note = rowToSourceNote(row as Record<string, unknown>);
-      if (note.projectId && !note.deletedAt)
+      if ((note.projectId || note.personId) && !note.deletedAt)
         events.push(
           ...correctionEventsFromNotes(note.projectId, [
             { ...note, personName: null },

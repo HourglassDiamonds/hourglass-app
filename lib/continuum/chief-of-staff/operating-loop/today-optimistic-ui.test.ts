@@ -71,4 +71,21 @@ describe("Today optimistic mutation UX", () => {
     assert.match(optimistic, /min-h-11/);
     assert.match(actions, /min-h-11/);
   });
+
+  it("uses the same optimistic hide, restore, and retry path for row directives", () => {
+    const ask = readFileSync(join(
+      ROOT,
+      "app/executive-dashboard/concierge/components/cos-ask-concierge.tsx",
+    ), "utf8");
+    const optimistic = readFileSync(join(
+      ROOT,
+      "app/executive-dashboard/concierge/components/today-optimistic-item.tsx",
+    ), "utf8");
+    assert.match(ask, /beginDirective\(\)/);
+    assert.match(ask, /founderDirectiveStatus/);
+    assert.match(ask, /succeedDirective\(\)/);
+    assert.match(ask, /restoreDirective\(\)/);
+    assert.match(ask, /failDirective\(text, submit\)/);
+    assert.match(optimistic, /kind: "directive"/);
+  });
 });

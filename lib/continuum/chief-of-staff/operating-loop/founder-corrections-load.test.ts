@@ -5,6 +5,7 @@ import { loadFounderCorrectionEvents } from "./founder-corrections-load";
 import {
   correctionNote,
   proposeFounderOperation,
+  proposeTodayFounderOperation,
 } from "@/lib/continuum/concierge-sol/founder-command";
 
 describe("founder correction source loader", () => {
@@ -70,6 +71,31 @@ describe("founder correction source loader", () => {
         ([column, value]) => column === "lifecycle_status" && value === "kept",
       ),
     );
+  });
+  it("reconstructs a person-backed scoped CAD correction without requiring a Project", async () => {
+    const operation = proposeTodayFounderOperation("This job is in production. Move it accordingly.", {
+      itemId: "brief:cad:C025610", displayName: "Dylon D.", entityType: "client", briefingKind: "generic",
+      projectName: null, projectId: null, personId: null, organizationLabel: null, vendorContactName: null,
+      identifiers: [{ value: "C025610", role: "cadId", current: true }], lifecycle: null,
+      latestMeaningfulExternalEvent: null, latestMeaningfulFounderAction: null, ballHolder: "founder",
+      unresolvedFounderObligation: "Review CAD", externalCommitment: null, nextExpectedEvent: null,
+      candidateNextAction: "Review CAD", uncertainty: [], mustNotState: [], sourceRefs: ["gc1|dylan"],
+    });
+    assert.equal(operation?.kind, "correct");
+    const row = {
+      id: "dylan-correction", person_id: "dylan-person", project_id: null, context_layer: "client",
+      source_system: "concierge-manual", lifecycle_status: "kept", note_text: correctionNote(operation!),
+      created_at: "2026-10-04T14:00:00Z",
+    };
+    const query = {
+      select: () => query, eq: () => query, like: () => query, order: () => query,
+      range: async () => ({ data: [row], error: null }),
+    };
+    const events = await loadFounderCorrectionEvents({ from: () => query } as unknown as SupabaseClient);
+    assert.equal(events.length, 1);
+    assert.equal(events[0].workLoopId, "cad:C025610");
+    assert.deepEqual(events[0].cadIds, ["C025610"]);
+    assert.equal(events[0].correction?.stage, "in_production");
   });
   it("surfaces read failure instead of silently rebuilding without corrections", async () => {
     const query = {
