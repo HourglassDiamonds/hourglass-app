@@ -1,0 +1,13 @@
+export type TrainingMode = "tonal" | "peloton" | "bodyweight" | "ruck" | "recovery" | "combination";
+export type ExerciseKind = "loaded" | "bodyweight" | "cardio" | "skill";
+export type ExercisePrescription = { id: string; name: string; kind: ExerciseKind; equipment: string; sets: number; targetReps: [number, number]; targetLoad?: number; loadUnit?: "lb" | "level"; restSeconds?: number; notes: string; regression?: string; progressionCriterion?: string; progressionMode?: "amrap-rounds"; progressionStage?: 1 | 2 | 3 | 4; previous?: { load?: number; reps: number[]; quality?: string } };
+export type WorkoutSwap = { name: string; mode: TrainingMode; intent: "easy" | "aerobic" | "moderate" | "hard"; durationMinutes: number; notes: string; exercises: ExercisePrescription[] };
+export type WorkoutPlan = { id: string; weekday: number; name: string; mode: TrainingMode; intent: "easy" | "aerobic" | "moderate" | "hard"; durationMinutes: number; notes: string; swap?: WorkoutSwap; exercises: ExercisePrescription[] };
+export type PerformedSet = { id: string; exerciseId: string; setNumber: number; load?: number; reps: number; rir?: number; completed: boolean; skipped: boolean; pain: boolean };
+export type WorkoutSession = { id: string; planId: string; startedAt: string; completedAt?: string; perceivedEffort?: number; readiness?: number; soreness?: number; notes?: string; sets: PerformedSet[] };
+export type ProgressionProposal = { id: string; exerciseId: string; exerciseName: string; action: "increase" | "hold" | "reduce" | "regress"; proposedLoad?: number; proposedReps?: [number, number]; proposedSets?: number; proposedStage?: 1 | 2 | 3 | 4; reason: string; status: "pending" | "accepted" | "rejected" | "edited" };
+export type FoodEntry = { id: string; timestamp: string; meal: "breakfast" | "lunch" | "dinner" | "snack"; description: string; calories: number; protein: number; carbs: number; fat: number; source: "manual" | "text" | "photo-manual" | "photo-estimate"; confidence: "confirmed" | "low" | "medium" | "high"; notes?: string; imageName?: string };
+export type NutritionTargets = { calories: number; protein: number; carbs: number; fat: number };
+export type BodyMeasurement = { id: string; timestamp: string; weight: number; unit: "lb" };
+export type PersonalState = { version: 1; activePlanId: string | null; plans: WorkoutPlan[]; sessions: WorkoutSession[]; proposals: ProgressionProposal[]; foodEntries: FoodEntry[]; nutritionTargets: NutritionTargets; bodyMeasurements: BodyMeasurement[] };
+export type PersonalSection = "today" | "workouts" | "food" | "progress";

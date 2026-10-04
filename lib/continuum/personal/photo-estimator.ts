@@ -1,0 +1,3 @@
+export type NutritionEstimateProposal = { status: "proposal" | "unavailable"; description?: string; calories?: number; protein?: number; carbs?: number; fat?: number; confidence?: "low" | "medium" | "high"; ambiguities: string[]; provider?: string };
+export interface PhotoNutritionEstimator { estimate(input: { image: File; caption?: string }): Promise<NutritionEstimateProposal>; }
+export class UnavailablePhotoNutritionEstimator implements PhotoNutritionEstimator { async estimate(input: { image: File; caption?: string }): Promise<NutritionEstimateProposal> { void input; return { status: "unavailable", ambiguities: ["No supported image-inference provider is configured. Enter or confirm nutrition manually before saving."] }; } }
