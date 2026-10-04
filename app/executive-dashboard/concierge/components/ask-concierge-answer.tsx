@@ -171,6 +171,11 @@ function SterlingAnswer({ response }: { response: SterlingResponse }) {
               <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
                 {priority.whyNow}
               </p>
+              {priority.commercialReason ? (
+                <p className="mt-1 text-[12px] leading-relaxed text-[#9a8e82]">
+                  Commercial reason: {priority.commercialReason}
+                </p>
+              ) : null}
               <p className="mt-2 text-[13px] leading-relaxed text-[#d8cfc4]">
                 Next: {priority.proposedNextAction}
               </p>
@@ -183,12 +188,24 @@ function SterlingAnswer({ response }: { response: SterlingResponse }) {
         </ol>
       ) : null}
 
+      {response.cleanupSummary && response.cleanupSummary.total > 0 ? (
+        <div className="border-t border-white/[0.06] pt-4" data-sterling-cleanup-summary="">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">Review batch</p>
+          <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
+            {response.cleanupSummary.total} items: {response.cleanupSummary.likelyComplete} likely complete, {response.cleanupSummary.possiblyMissed} possibly missed, {response.cleanupSummary.stillActive} still active, {response.cleanupSummary.needsReview} need review.
+          </p>
+          <p className="mt-1 text-[12px] leading-relaxed text-[#80746a]">
+            Review individually before closing, keeping active, deferring, or dismissing. Nothing changes automatically.
+          </p>
+        </div>
+      ) : null}
+
       {response.findings.length > 0 ? (
         <ul className="space-y-3" aria-label="Sterling findings">
           {response.findings.map((finding) => (
             <li key={finding.id} className="border-t border-white/[0.06] pt-4">
               <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">
-                {finding.kind}
+                {finding.reviewGroup?.replaceAll("_", " ") ?? finding.kind}
               </p>
               <h3 className="mt-2 text-[15px] leading-snug text-[#efe8de]">{finding.title}</h3>
               <p className="mt-2 text-[13px] leading-relaxed text-[#c4b7aa]">
@@ -197,6 +214,8 @@ function SterlingAnswer({ response }: { response: SterlingResponse }) {
               <p className="mt-2 text-[13px] leading-relaxed text-[#d8cfc4]">
                 Proposed fix: {finding.proposedFix}
               </p>
+              {finding.risk ? <p className="mt-1 text-[12px] leading-relaxed text-[#9a8e82]">Risk: {finding.risk}</p> : null}
+              {finding.inferredFromAbsence ? <p className="mt-1 text-[11px] leading-relaxed text-[#80746a]">Inference from missing follow-through, not a confirmed state change.</p> : null}
               {finding.proposal ? (
                 <article className="mt-4 border-l border-[#ad9164]/35 pl-4" data-sterling-inline-proposal="">
                   <p className="text-[10px] uppercase tracking-[0.22em] text-[#ad9164]">Suggested cleanup</p>

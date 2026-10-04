@@ -332,7 +332,10 @@ describe("Gmail operating freshness cycle", () => {
     assert.doesNotMatch(actions, /export type \{ GmailFreshnessCycleResult \}/);
     assert.doesNotMatch(actions, /export \{[^}]*GmailFreshnessCycleResult/);
     assert.doesNotMatch(actions, /\bcatch\b/);
-    assert.match(ui, /return null/);
+    assert.match(ui, /data-today-freshness/);
+    assert.match(ui, /Checking for updates/);
+    assert.match(ui, /todaySourceFreshnessLabel/);
+    assert.doesNotMatch(ui, /return null/);
     assert.match(home, /GmailOperatingFreshness/);
     assert.doesNotMatch(incrementalUi, /continuum-gmail-freshness/);
     assert.match(vercel, /continuum-gmail-freshness/);

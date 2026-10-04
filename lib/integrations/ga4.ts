@@ -57,7 +57,10 @@ let client: BetaAnalyticsDataClient | null = null;
 async function getClient(): Promise<BetaAnalyticsDataClient> {
   if (client) return client;
   const auth = await getGa4AuthClient();
-  client = new BetaAnalyticsDataClient({ authClient: auth });
+  // google-gax currently carries a structurally narrower google-auth-library
+  // client union than the app's OAuth2Client package, although OAuth2Client is
+  // the supported runtime client on this constructor path.
+  client = new BetaAnalyticsDataClient({ authClient: auth as never });
   return client;
 }
 

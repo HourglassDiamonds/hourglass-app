@@ -27,6 +27,110 @@ const cases: readonly { name: string; run: () => void | Promise<void> }[] = [
     ]), NOW)[0]?.id, "client"),
   },
   {
+    name: "cos-recent-hot-inbound",
+    run: () => assert.equal(nextThree(truth([
+      today("admin", { title: "File the weekly admin report", clientFacing: false }),
+      today("hot", { title: "New inquiry about a custom engagement ring", activityAt: "2026-10-03T13:45:00.000Z" }),
+    ]), NOW)[0]?.commercialPriority, "hot_inbound"),
+  },
+  {
+    name: "cos-stale-old-production",
+    run: () => assert.ok(detectFindings(truth([
+      today("old-production", { title: "Niurka production status", owner: "shop", activityAt: "2026-07-20T12:00:00.000Z" }),
+    ]), NOW).some((finding) => finding.reviewGroup === "likely_complete")),
+  },
+  {
+    name: "cos-missed-client-reply",
+    run: () => assert.ok(detectFindings(truth([
+      today("missed", { title: "Client asks: can you send the revised quote?", activityAt: "2026-09-18T12:00:00.000Z" }),
+    ]), NOW).some((finding) => finding.reviewGroup === "high_value_likely_miss" || finding.reviewGroup === "client_risk_miss")),
+  },
+  {
+    name: "cos-completed-by-age-is-inference",
+    run: () => {
+      const finding = detectFindings(truth([
+        today("quiet-old", { clientFacing: false, owner: "shop", activityAt: "2026-07-01T12:00:00.000Z" }),
+      ]), NOW).find((row) => row.reviewGroup === "likely_complete");
+      assert.equal(finding?.inferredFromAbsence, true);
+      assert.equal(finding?.proposal, null);
+    },
+  },
+  {
+    name: "cos-fresh-source-supersedes-stale",
+    run: () => assert.deepEqual(nextThree(truth([
+      today("old", { activityAt: "2026-07-01T12:00:00.000Z" }),
+      today("fresh", { title: "New inquiry asks for pricing", activityAt: "2026-10-03T13:55:00.000Z" }),
+    ]), NOW).map((row) => row.id), ["fresh"]),
+  },
+  {
+    name: "cos-founder-correction-precedence",
+    run: () => assert.equal(nextThree(truth([
+      today("ben-old-cad", { title: "Ben CAD review", owner: "shop", lifecycle: "in_production", activityAt: "2026-10-03T12:00:00.000Z" }),
+    ]), NOW).length, 0),
+  },
+  {
+    name: "cos-revenue-over-admin",
+    run: () => assert.equal(nextThree(truth([
+      today("admin", { title: "Operational admin", clientFacing: false }),
+      today("revenue", { title: "Client rendering approval", activityAt: "2026-10-03T13:00:00.000Z" }),
+    ]), NOW)[0]?.id, "revenue"),
+  },
+  {
+    name: "cos-quiet-day",
+    run: () => assert.equal(nextThree(truth([]), NOW).length, 0),
+  },
+  {
+    name: "cos-ambiguous-evidence",
+    run: () => assert.equal(detectFindings(truth([
+      today("ambiguous", { activityAt: null, sourceRefs: [] }),
+    ]), NOW).some((row) => row.reviewGroup === "likely_complete" || row.reviewGroup?.includes("miss")), false),
+  },
+  {
+    name: "cos-stale-source-warning",
+    run: () => assert.ok(evaluate({
+      ...truth([]),
+      sourceFreshness: { status: "delayed", lastSuccessfulSyncAt: "2026-10-03T13:55:00.000Z", targetMs: 120_000, ageMs: 300_000 },
+    }, "missing").uncertainty.some((line) => /1–2 minute target/.test(line))),
+  },
+  {
+    name: "cos-ingestion-delay-is-not-current",
+    run: () => assert.equal(evaluate({
+      ...truth([]),
+      sourceFreshness: { status: "delayed", lastSuccessfulSyncAt: null, targetMs: 120_000, ageMs: null },
+    }, "missing").sourceFreshness?.status, "delayed"),
+  },
+  {
+    name: "cos-new-email-changes-ranking",
+    run: () => {
+      const before = nextThree(truth([today("admin", { clientFacing: false })]), NOW);
+      const after = nextThree(truth([
+        today("admin", { clientFacing: false }),
+        today("new-email", { title: "New inquiry asks to buy a custom ring", activityAt: "2026-10-03T13:59:00.000Z" }),
+      ]), NOW);
+      assert.equal(before[0]?.id, "admin");
+      assert.equal(after[0]?.id, "new-email");
+    },
+  },
+  {
+    name: "cos-batch-cleanup",
+    run: () => {
+      const result = evaluate(truth([
+        today("old-a", { owner: "shop", clientFacing: false, activityAt: "2026-07-01T12:00:00.000Z" }),
+        today("old-b", { owner: "shop", clientFacing: false, activityAt: "2026-07-02T12:00:00.000Z" }),
+        today("missed", { title: "Client asks: can you send options?", activityAt: "2026-09-18T12:00:00.000Z" }),
+      ]), "missing");
+      assert.equal(result.cleanupSummary?.likelyComplete, 2);
+      assert.equal(result.cleanupSummary?.possiblyMissed, 1);
+    },
+  },
+  {
+    name: "cos-false-positive-missed-work-prevention",
+    run: () => assert.equal(detectFindings(truth([
+      today("client-owned", { owner: "client", title: "Waiting for client response", activityAt: "2026-09-18T12:00:00.000Z" }),
+      today("no-request", { title: "Routine project note", activityAt: "2026-09-18T12:00:00.000Z" }),
+    ]), NOW).some((row) => row.reviewGroup?.includes("miss")), false),
+  },
+  {
     name: "vendor-acknowledgment",
     run: () => assert.equal(detectFindings(truth([
       today("order", { owner: "shop", projectId: PROJECT_A, sourceRefs: ["gmail:vendor-ack"] }),

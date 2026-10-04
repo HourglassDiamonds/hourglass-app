@@ -7,6 +7,8 @@ import {
   shouldPollTodayFreshness,
   shouldRefreshTodaySurface,
   shouldSwapTodayAfterRecompute,
+  todaySourceFreshnessLabel,
+  type TodaySourceHealth,
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-refresh";
 import { refreshGmailOperatingFreshness } from "../gmail-freshness-actions";
 import { probeTodayRecompute, probeTodayCanonicalWatermark } from "../today-read-model-actions";
@@ -31,6 +33,9 @@ export function GmailOperatingFreshness({
   const router = useRouter();
   const inFlight = useRef(false);
   const [checking, setChecking] = useState(refreshing);
+  const [sourceHealth, setSourceHealth] = useState<TodaySourceHealth>("checking");
+  const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
+  const [clock, setClock] = useState(() => Date.now());
 
   useEffect(() => {
     let cancelled = false;
@@ -49,10 +54,18 @@ export function GmailOperatingFreshness({
         if (cancelled) return;
         const currentWatermark = canonical.status === "fulfilled" ? canonical.value : null;
         const result = mail.status === "fulfilled" ? mail.value : null;
+        if (mail.status === "fulfilled" && result?.safeErrorCode == null) {
+          setSourceHealth("current");
+          setLastCheckedAt(Date.now());
+        } else if (result?.safeErrorCode === "gmail-sync-already-running") {
+          setSourceHealth("checking");
+        } else {
+          setSourceHealth("delayed");
+        }
         const mailChanged = result && result.safeErrorCode !== "unauthorized" && shouldRefreshTodaySurface(result.docketMayHaveChanged);
         if (mailChanged || (currentWatermark && baselineWatermark && currentWatermark !== baselineWatermark)) router.refresh();
       } catch {
-        // Next tick retries. Do not surface mailbox errors on Today.
+        setSourceHealth("delayed");
       } finally {
         inFlight.current = false;
       }
@@ -74,6 +87,11 @@ export function GmailOperatingFreshness({
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [router, baselineWatermark]);
+
+  useEffect(() => {
+    const id = window.setInterval(() => setClock(Date.now()), 5_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   useEffect(() => {
     setChecking(refreshing);
@@ -128,13 +146,18 @@ export function GmailOperatingFreshness({
     };
   }, [baselineWatermark, refreshing, router]);
 
-  if (!checking) return null;
+  const health = checking ? "checking" : sourceHealth;
+  const label = health === "checking"
+    ? "Checking for updates…"
+    : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock });
   return (
     <p
-      data-today-refreshing
-      className="mb-3 text-[0.72rem] uppercase tracking-[0.16em] text-[#b7aa9c]"
+      data-today-freshness={health}
+      data-today-refreshing={checking ? "" : undefined}
+      className={`mb-3 text-[0.72rem] uppercase tracking-[0.16em] ${health === "delayed" ? "text-[#d6a66f]" : "text-[#81776d]"}`}
+      role="status"
     >
-      Checking for updates…
+      {label}
     </p>
   );
 }

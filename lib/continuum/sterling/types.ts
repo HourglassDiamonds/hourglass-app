@@ -27,12 +27,44 @@ export type SterlingTodayItem = {
   authoritative: boolean;
   clientFacing: boolean;
   productionBlocker: boolean;
+  /** Newest meaningful source or canonical activity. Read-model evidence only. */
+  activityAt?: string | null;
+  /** Bounded evidence used to explain recency and commercial classification. */
+  evidenceText?: string | null;
+  semanticClass?: string | null;
+  lifecycle?: string | null;
+};
+
+export type SterlingCommercialPriority =
+  | "hot_inbound"
+  | "revenue_blocking_decision"
+  | "client_delivery_risk"
+  | "conversion_follow_up"
+  | "production_blocker"
+  | "existing_commitment"
+  | "operational_admin"
+  | "noise";
+
+export type SterlingReviewGroup =
+  | "high_value_likely_miss"
+  | "client_risk_miss"
+  | "likely_complete"
+  | "still_active"
+  | "needs_review"
+  | "noise_cleanup";
+
+export type SterlingSourceFreshness = {
+  status: "current" | "checking" | "delayed" | "disconnected";
+  lastSuccessfulSyncAt: string | null;
+  targetMs: number;
+  ageMs: number | null;
 };
 
 export type SterlingTruth = {
   generatedAt: string;
   sourceWatermark: string | null;
   sourceStatus: "current" | "refreshing" | "disconnected";
+  sourceFreshness?: SterlingSourceFreshness;
   today: readonly SterlingTodayItem[];
   openJobs: readonly ProjectJob[];
   candidates: readonly ContinuumCandidate[];
@@ -59,6 +91,8 @@ export type SterlingPriority = {
   confidence: SterlingConfidence;
   sourceRefs: readonly string[];
   canonicalIds: readonly string[];
+  commercialPriority?: SterlingCommercialPriority;
+  commercialReason?: string;
 };
 
 export type SterlingProposalKind =
@@ -130,6 +164,18 @@ export type SterlingFinding = {
   sourceRefs: readonly string[];
   proposedFix: string;
   proposal: SterlingProposal | null;
+  reviewGroup?: SterlingReviewGroup;
+  confidence?: SterlingConfidence;
+  risk?: string;
+  inferredFromAbsence?: boolean;
+};
+
+export type SterlingCleanupSummary = {
+  total: number;
+  likelyComplete: number;
+  possiblyMissed: number;
+  stillActive: number;
+  needsReview: number;
 };
 
 export type SterlingPreferenceSignal = {
@@ -166,6 +212,8 @@ export type SterlingResponse = {
   proposals: readonly SterlingProposal[];
   preferences: readonly SterlingPreferenceSignal[];
   uncertainty: readonly string[];
+  cleanupSummary?: SterlingCleanupSummary;
+  sourceFreshness?: SterlingSourceFreshness;
   telemetry: SterlingRunTelemetry;
   ledgerStatus: "not-applicable" | "persisted" | "not-activated" | "unavailable";
 };

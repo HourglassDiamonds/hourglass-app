@@ -11,7 +11,9 @@ import type {
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
+import { createSupabaseGmailConnectionStore } from "@/lib/continuum/gmail/server";
 import { parseSterlingIntent, runSterling } from "./engine";
+import { sourceFreshness } from "./cos-beta";
 import { getAuthenticatedSterlingProposalRepository } from "./ledger/load";
 import { markSterlingLedgerUnavailable, persistSterlingResponse } from "./ledger/persist";
 import type { SterlingOwner, SterlingResponse, SterlingTodayItem, SterlingTruth } from "./types";
@@ -50,7 +52,11 @@ export async function loadSterlingTruth(now = new Date()): Promise<SterlingTruth
   const loop = await loadCosOperatingLoop(now);
   if (loop.status === "disconnected") return disconnectedTruth(now);
 
-  const [jobs, candidates] = await Promise.all([loadJobs(), loadCandidates()]);
+  const [jobs, candidates, lastSuccessfulSyncAt] = await Promise.all([
+    loadJobs(),
+    loadCandidates(),
+    loadLastSuccessfulGmailSync(),
+  ]);
   const docket = composeTodayDocket(loop);
   const today = [
     ...docket.items.map((item) => fromDocketItem(item, jobs)),
@@ -60,6 +66,11 @@ export async function loadSterlingTruth(now = new Date()): Promise<SterlingTruth
     generatedAt: now.toISOString(),
     sourceWatermark: loop.todayReadModelWatermark ?? null,
     sourceStatus: loop.todayFreshness === "refreshing" ? "refreshing" : "current",
+    sourceFreshness: sourceFreshness({
+      status: loop.todayFreshness === "refreshing" ? "refreshing" : "current",
+      lastSuccessfulSyncAt,
+      now,
+    }),
     today: dedupeToday(today),
     openJobs: jobs,
     candidates,
@@ -73,6 +84,16 @@ export async function loadSterlingTruth(now = new Date()): Promise<SterlingTruth
       sourceRefs: row.sourceHref ? [row.sourceHref] : [],
     })),
   };
+}
+
+async function loadLastSuccessfulGmailSync(): Promise<string | null> {
+  const client = getSupabaseAdmin();
+  if (!client) return null;
+  try {
+    return (await createSupabaseGmailConnectionStore(client).getFounderConnection())?.lastSyncAt ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function loadJobs(): Promise<ProjectJob[]> {
@@ -102,6 +123,12 @@ function fromDocketItem(item: CosDocketItemView, jobs: readonly ProjectJob[]): S
     ...(packet?.sourceRefs ?? []),
     ...(item.job?.sourceRef ? [item.job.sourceRef] : []),
   ]);
+  const activityAt = latestIso([
+    job?.updatedAt,
+    packet?.latestMeaningfulExternalEvent?.at,
+    packet?.latestMeaningfulFounderAction?.at,
+    ...(packet?.sourceEvents ?? []).map((event) => event.timestamp),
+  ]);
   return {
     id: item.job?.id ?? item.id,
     title: item.headline || item.subject,
@@ -120,6 +147,15 @@ function fromDocketItem(item: CosDocketItemView, jobs: readonly ProjectJob[]): S
     productionBlocker:
       packet?.semanticNextActionClass === "founder_print_check" ||
       /production|print|cad|shop/i.test(`${item.headline} ${item.context ?? ""}`),
+    activityAt,
+    evidenceText: [
+      item.context,
+      packet?.latestMeaningfulExternalEvent?.summary,
+      packet?.latestMeaningfulFounderAction?.summary,
+      packet?.unresolvedFounderObligation,
+    ].filter(Boolean).join(" "),
+    semanticClass: packet?.semanticNextActionClass ?? null,
+    lifecycle: packet?.lifecycle ?? null,
   };
 }
 
@@ -143,7 +179,30 @@ function fromWatchingItem(item: CosWatchingItem, jobs: readonly ProjectJob[]): S
       (packet != null || item.attention?.canonical === true),
     clientFacing: Boolean(packet?.projectId || packet?.personId),
     productionBlocker: false,
+    activityAt: latestIso([
+      job?.updatedAt,
+      packet?.latestMeaningfulExternalEvent?.at,
+      packet?.latestMeaningfulFounderAction?.at,
+      ...(packet?.sourceEvents ?? []).map((event) => event.timestamp),
+    ]),
+    evidenceText: [
+      item.detail,
+      packet?.latestMeaningfulExternalEvent?.summary,
+      packet?.latestMeaningfulFounderAction?.summary,
+      packet?.externalCommitment,
+    ].filter(Boolean).join(" "),
+    semanticClass: packet?.semanticNextActionClass ?? null,
+    lifecycle: packet?.lifecycle ?? null,
   };
+}
+
+function latestIso(values: readonly (string | null | undefined)[]): string | null {
+  let winner: string | null = null;
+  for (const value of values) {
+    if (!value || !Number.isFinite(Date.parse(value))) continue;
+    if (!winner || Date.parse(value) > Date.parse(winner)) winner = value;
+  }
+  return winner;
 }
 
 function ownerOf(value: string): SterlingOwner {
@@ -167,6 +226,7 @@ function disconnectedTruth(now: Date): SterlingTruth {
     generatedAt: now.toISOString(),
     sourceWatermark: null,
     sourceStatus: "disconnected",
+    sourceFreshness: sourceFreshness({ status: "disconnected", lastSuccessfulSyncAt: null, now }),
     today: [],
     openJobs: [],
     candidates: [],

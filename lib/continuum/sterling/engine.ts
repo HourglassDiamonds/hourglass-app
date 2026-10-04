@@ -11,6 +11,15 @@ import { decisionContextForProposal, deriveLedgerPreferenceSignals } from "./led
 import type { SterlingProposalRecord } from "./ledger/types";
 import { sterlingModelRoute } from "./model";
 import {
+  cleanupSummary,
+  commercialPriorityOf,
+  commercialRank,
+  commercialReasonFor,
+  confidenceForActivity,
+  operationalReviewFindings,
+  shouldEnterFounderPriorities,
+} from "./cos-beta";
+import {
   STERLING_CONTRACT_VERSION,
   STERLING_PROMPT_VERSION,
   type SterlingFinding,
@@ -71,6 +80,7 @@ export function runSterling(input: {
   const findings = input.intent === "conditional-hold" ? allFindings : findingsForIntent(allFindings, input.truth, input.intent);
   const proposals = findings.flatMap((row) => (row.proposal ? [row.proposal] : []));
   const uncertainty = uncertaintyFor(input.truth, input.intent);
+  const summary = cleanupSummary(allFindings);
   return {
     kind: responseKind(input.intent),
     headline: headlineFor(input.intent),
@@ -80,6 +90,8 @@ export function runSterling(input: {
     proposals,
     preferences: [...ledgerPreferences, ...inferPreferences(input.truth.candidates)],
     uncertainty,
+    cleanupSummary: summary.total > 0 ? summary : undefined,
+    sourceFreshness: input.truth.sourceFreshness,
     telemetry: {
       contractVersion: STERLING_CONTRACT_VERSION,
       model: route.model,
@@ -132,23 +144,28 @@ function applyDecisionContext(
 
 export function nextThree(truth: SterlingTruth, now: Date): SterlingPriority[] {
   if (truth.sourceStatus === "disconnected") return [];
-  const meaningful = truth.today.filter((item) => item.owner === "founder" && item.authoritative);
+  const meaningful = truth.today.filter((item) => shouldEnterFounderPriorities(item, now));
   return [...meaningful]
     .sort((a, b) => comparePriority(a, b, now))
     .slice(0, 3)
-    .map((item) => ({
-      id: item.id,
-      title: item.title,
-      whyNow: whyNow(item, now),
-      evidenceSummary: item.why,
-      urgencyReason: urgencyReason(item, now),
-      owner: item.owner,
-      state: item.state,
-      proposedNextAction: item.proposedNextAction || item.title,
-      confidence: item.sourceRefs.length > 0 ? "high" : "medium",
-      sourceRefs: [...item.sourceRefs],
-      canonicalIds: [item.id, item.projectId].filter((value): value is string => Boolean(value)),
-    }));
+    .map((item) => {
+      const commercialPriority = commercialPriorityOf(item);
+      return {
+        id: item.id,
+        title: item.title,
+        whyNow: whyNow(item, now),
+        evidenceSummary: item.why,
+        urgencyReason: urgencyReason(item, now),
+        owner: item.owner,
+        state: item.state,
+        proposedNextAction: item.proposedNextAction || item.title,
+        confidence: confidenceForActivity(item),
+        sourceRefs: [...item.sourceRefs],
+        canonicalIds: [item.id, item.projectId].filter((value): value is string => Boolean(value)),
+        commercialPriority,
+        commercialReason: commercialReasonFor(commercialPriority),
+      };
+    });
 }
 
 function comparePriority(
@@ -157,10 +174,10 @@ function comparePriority(
   now: Date,
 ): number {
   const tuple = (item: SterlingTruth["today"][number]) => [
+    commercialRank(commercialPriorityOf(item)),
     dueRank(item.dueAt, now),
-    item.clientFacing ? 0 : 1,
-    item.productionBlocker ? 0 : 1,
     item.projectId ? 0 : 1,
+    -(Date.parse(item.activityAt ?? "") || 0),
   ];
   const left = tuple(a);
   const right = tuple(b);
@@ -204,6 +221,7 @@ function urgencyReason(item: SterlingTruth["today"][number], now: Date): string 
 
 export function detectFindings(truth: SterlingTruth, now: Date): SterlingFinding[] {
   return uniqueFindings([
+    ...operationalReviewFindings(truth.today, truth.openJobs, now),
     ...anomalyFindings(truth),
     ...jobTruthConflicts(truth),
     ...duplicateJobs(truth.openJobs),
@@ -492,6 +510,9 @@ function uncertaintyFor(truth: SterlingTruth, intent: SterlingIntent): string[] 
   if (truth.sourceStatus === "refreshing") {
     rows.push("Today is refreshing; these results use the last published canonical snapshot.");
   }
+  if (truth.sourceFreshness?.status === "delayed") {
+    rows.push("Email source is delayed beyond the 1–2 minute target; rankings use the last successful sync and may not be current.");
+  }
   if (intent === "changed") {
     rows.push(
       "A comparable yesterday snapshot is not exposed by the current read contract, so no change claims were made.",
@@ -626,8 +647,8 @@ function summaryFor(
   if (intent === "changed") return "No comparison was produced without a canonical prior snapshot.";
   if (intent === "conditional-hold") return findings === 0 ? "I need more detail before proposing a hold." : "Review the scoped hold below. Nothing changes until you approve it.";
   return findings === 0
-    ? "No grounded findings in the current bounded scan."
-    : `${findings} grounded ${findings === 1 ? "finding" : "findings"}.`;
+    ? "No grounded findings in the current 6–8 week scan."
+    : `I found ${findings} ${findings === 1 ? "thing" : "things"} worth reviewing from the last 6–8 weeks.`;
 }
 
 function toolsFor(intent: SterlingIntent): string[] {

@@ -19,6 +19,22 @@ export function shouldRefreshTodaySurface(docketMayHaveChanged: boolean): boolea
   return docketMayHaveChanged === true;
 }
 
+export type TodaySourceHealth = "checking" | "current" | "delayed";
+
+export function todaySourceFreshnessLabel(input: {
+  health: TodaySourceHealth;
+  lastCheckedAt: number | null;
+  nowMs: number;
+}): string {
+  if (input.health === "checking") return "Checking for updates…";
+  if (input.health === "delayed") return "Email source delayed";
+  if (input.lastCheckedAt == null) return "Updated recently";
+  const seconds = Math.max(0, Math.floor((input.nowMs - input.lastCheckedAt) / 1000));
+  if (seconds < 5) return "Updated just now";
+  if (seconds < 60) return `Updated ${seconds}s ago`;
+  return `Updated ${Math.floor(seconds / 60)}m ago`;
+}
+
 export type TodayRecomputePollDecision = "wait" | "swap" | "keep";
 
 /**
