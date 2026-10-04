@@ -67,6 +67,7 @@ import {
   type CosBriefingV1,
 } from "./cos-briefing-v1";
 import { compareTodayRank, type CosPriorityInput } from "./cos-priority";
+import { presentTodayItem } from "./today-presentation";
 import {
   filterCurrentTodayDocketItems,
   isCurrentTodayDocketItem,
@@ -1483,7 +1484,7 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
         ? briefing!.headline
         : presented.headline;
   const allowedConfirm = allowConfirmPerson(seed, loop);
-  return {
+  const item: CosDocketItemView = {
     id: seed.id,
     lane: "live_work",
     origin: seed.origin,
@@ -1506,6 +1507,7 @@ function toDocketItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosDoc
     cosBriefing: deriveSeedBriefing(seed, loop),
     todayDocketVersion: TODAY_DOCKET_VERSION,
   };
+  return { ...item, semanticPresentation: presentTodayItem(item) };
 }
 
 function toWatchingItem(seed: TodayDocketSeed, loop: CosOperatingLoopView): CosWatchingItem {

@@ -11,6 +11,7 @@ import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/typ
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { TodayRenderedBriefing } from "./briefing-copy";
 import type { CosBriefingV1 } from "./cos-briefing-v1";
+import type { TodaySemanticPresentation } from "./today-presentation";
 
 export const COS_OPERATING_LOOP_CONTRACT_VERSION = "cos-operating-loop-v1" as const;
 
@@ -290,6 +291,7 @@ export type CosDocketItemView = {
   briefing?: TodayRenderedBriefing | null;
   briefingPacket?: TodayBriefingPacket | null;
   cosBriefing?: CosBriefingV1 | null;
+  semanticPresentation?: TodaySemanticPresentation | null;
   todayDocketVersion?: TodayDocketVersion;
 };
 
