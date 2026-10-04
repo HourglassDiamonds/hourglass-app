@@ -73,7 +73,7 @@ export default async function ConciergeClientPage({
 
   return (
     <ConciergeShell>
-      <ConciergeBackLink />
+      <ConciergeBackLink label="Clients" />
       <div className="hg-concierge-fade mt-8">
         <ClientProfileView
           cockpit={result.cockpit}

@@ -181,7 +181,7 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 
 @media (min-width: 1024px) {
   .hg-today {
-    max-width: 38rem;
+    max-width: 56rem;
   }
 
   .hg-command-grid {

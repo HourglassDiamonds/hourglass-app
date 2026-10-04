@@ -147,9 +147,9 @@ function DismissSubmit() {
       aria-label="Dismiss from Today"
       data-cos-founder-verb="dismiss"
       data-cos-action-pending={pending ? "true" : undefined}
-      className="inline-flex min-h-11 min-w-11 items-center justify-center text-[18px] leading-none text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] disabled:opacity-50"
+      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] disabled:opacity-50"
     >
-      {pending ? "…" : "×"}
+      {pending ? "Saving…" : "Dismiss"}
     </button>
   );
 }
