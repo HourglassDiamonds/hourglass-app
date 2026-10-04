@@ -208,7 +208,7 @@
 
     html.embed-mode .studio-shell {
       gap: 20px;
-      align-items: stretch;
+      align-items: start;
     }
 
     html.embed-mode .stage-wrap {
@@ -1450,15 +1450,9 @@ body {
 
     function postEmbedHeight() {
       if (!isEmbedMode() || window.parent === window) return;
-      const root = document.documentElement;
-      const body = document.body;
+      const page = document.querySelector(".page");
       const height = Math.ceil(
-        Math.max(
-          root.scrollHeight,
-          root.offsetHeight,
-          body ? body.scrollHeight : 0,
-          body ? body.offsetHeight : 0,
-        ),
+        page ? page.getBoundingClientRect().height : document.body.scrollHeight,
       );
       if (!Number.isFinite(height) || height < 1) return;
       window.parent.postMessage(
