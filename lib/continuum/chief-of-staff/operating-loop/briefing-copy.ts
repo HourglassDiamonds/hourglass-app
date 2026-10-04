@@ -17,6 +17,7 @@ export type TodayBriefingStateChip =
   | "YOUR MOVE"
   | "WAITING ON SHOP"
   | "WAITING ON CLIENT"
+  | "HELD"
   | "WAITING";
 
 export type TodayRenderedBriefing = {
@@ -42,7 +43,9 @@ export function renderDeterministicBriefing(
   packet: TodayBriefingPacket,
 ): TodayRenderedBriefing {
   const p = packet.projection;
-  const chip = packet.ballHolder === "founder" ? "YOUR MOVE" : p?.stage === "in_production" ? "IN PRODUCTION" : p?.stage === "ready" ? "READY" : stateChipFor(packet.ballHolder);
+  const chip = /\bheld\b/i.test(p?.dependency ?? packet.nextExpectedEvent ?? "")
+    ? "HELD"
+    : packet.ballHolder === "founder" ? "YOUR MOVE" : p?.stage === "in_production" ? "IN PRODUCTION" : p?.stage === "ready" ? "READY" : stateChipFor(packet.ballHolder);
   if (p) {
     const stage = p.stage.replaceAll("_", " ");
     const dependency = p.dependency;

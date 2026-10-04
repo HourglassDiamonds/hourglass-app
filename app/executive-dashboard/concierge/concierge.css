@@ -345,8 +345,17 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 }
 
 .hg-cos-ask {
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  padding-top: 0.65rem;
+  min-width: 0;
+}
+
+.hg-cos-ask summary,
+.hg-cos-more summary {
+  list-style: none;
+}
+
+.hg-cos-ask summary::-webkit-details-marker,
+.hg-cos-more summary::-webkit-details-marker {
+  display: none;
 }
 
 .hg-cos-ask-input {
@@ -380,7 +389,7 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 .hg-cos-top5 {
   display: flex;
   flex-direction: column;
-  gap: 1.35rem;
+  gap: 1rem;
   min-width: 0;
   margin: 0;
   padding: 0;
@@ -497,7 +506,11 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 @media (max-width: 767px) {
   .hg-cos-docket,
   .hg-cos-top5 {
-    gap: 1.1rem;
+    gap: 0.8rem;
+  }
+
+  .hg-cos-docket-item {
+    padding-bottom: 0.7rem;
   }
 
   .hg-cos-attention {
@@ -526,6 +539,18 @@ body:has([data-concierge-shell]) [data-facet-rail] {
 
   .hg-cos-brief-details {
     margin-top: 0.15rem;
+  }
+
+  .hg-cos-semantic-reason {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+  }
+
+  [data-operating-nav="mobile"] a {
+    padding-inline: 0.15rem;
+    letter-spacing: 0.08em;
   }
 }
 

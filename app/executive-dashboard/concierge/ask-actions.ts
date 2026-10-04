@@ -2,7 +2,7 @@
 
 import { executeAuthenticatedFounderOperation } from "@/lib/continuum/concierge-sol/founder-command-server";
 import { revalidatePath } from "next/cache";
-import { proposeFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
+import { proposeFounderOperation, proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
 import { refreshTodayAfterFounderMutation } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { answerAskConciergeQuery } from "@/lib/continuum/client-memory/ask/query";
@@ -53,6 +53,10 @@ export async function askConcierge(
   const mode = typeof input === "string" ? "conversation" : input.mode ?? "conversation";
   const history = typeof input === "string" ? [] : input.history ?? [];
   const todayContext = typeof input === "string" ? undefined : input.todayContext;
+  const packet = todayContext?.packet ? readTodayBriefingPacket(todayContext.packet) : null;
+  if (todayContext && (!packet || packet.itemId !== todayContext.itemId)) {
+    return { kind: "error" };
+  }
   const conditionalHoldIntent = mode === "conversation"
     && !todayContext
     && parseSterlingIntent(query) === "conditional-hold";
@@ -60,17 +64,15 @@ export async function askConcierge(
     const sterling = await runAuthenticatedSterlingQuery(query, new Date(), conditionalHoldContext(query, history));
     if (sterling) return presentSterling(sterling);
   }
-  const operation = mode === "conversation" || todayContext ? proposeFounderOperation(query) : null;
+  const operation = mode === "conversation" || packet
+    ? proposeFounderOperation(query) ?? (packet ? proposeTodayFounderOperation(query, packet) : null)
+    : null;
   if (operation) {
     const result = await executeAuthenticatedFounderOperation(operation, refreshTodayAfterFounderMutation);
     if (result.refresh) revalidatePath(CONCIERGE_HOME_PATH);
     return { kind: "conversation", mode: "conversation", text: result.text, actions: [], brainDump: null, writesCanonical: result.status === "applied", refreshToday: result.refresh, telemetry: { requestModel: conciergeForegroundModel(), brain: "fallback", promptTokens: null, completionTokens: null, latencyMs: 0, toolCount: 1, toolNames: ["apply_founder_operation"] } };
   }
-  if (todayContext?.packet) {
-    const packet = readTodayBriefingPacket(todayContext.packet);
-    if (!packet || packet.itemId !== todayContext.itemId) {
-      return { kind: "error" };
-    }
+  if (packet && todayContext) {
     const supplied = todayContext.briefing ? readCosBriefingV1(todayContext.briefing) : null;
     if (todayContext.briefing != null && !supplied) {
       return { kind: "error" };

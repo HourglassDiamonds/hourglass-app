@@ -7,6 +7,7 @@ import type {
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import type { ProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/writer";
 import type { ClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/writer";
+import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
 
 export type FounderOperation =
   | {
@@ -78,7 +79,9 @@ export function proposeFounderOperation(
   else if (/^(?:my|the founder's) (?:move|turn)[.!]?$/i.test(body))
     truth = { ballHolder: "founder", dependency: "founder action" };
   else if (/^waiting (?:on|for)\b/i.test(body)) {
-    const actor = /\b(?:me|founder|my approval)\b/i.test(body)
+    const actor = /\bheld until\b/i.test(body)
+      ? "unknown"
+      : /\b(?:me|founder|my approval)\b/i.test(body)
       ? "founder"
       : /\b(?:shop|vendor|CAD|STL)\b/i.test(body)
         ? "vendor_shop"
@@ -95,6 +98,50 @@ export function proposeFounderOperation(
     truth = { ballHolder: actor, dependency };
   } else return null;
   return { kind: "correct", target: target.trim(), truth, wording: text };
+}
+
+/** Resolve explicit row-scoped commands without asking the founder to repeat the row name. */
+export function proposeTodayFounderOperation(
+  query: string,
+  packet: TodayBriefingPacket,
+  now = new Date(),
+): FounderOperation | null {
+  const text = query.replace(/\s+/g, " ").trim();
+  if (!text || /\?|\b(?:maybe|perhaps|I think|should we|could be|might)\b/i.test(text)) return null;
+  const target = packet.displayName || packet.projectName || packet.itemId;
+
+  if (/\b(?:already handled|already took care of|this is done|mark (?:this|it) done)\b/i.test(text)) {
+    return { kind: "resolve", target, days: null };
+  }
+  if (/\b(?:don['’]?t show me this again|do not show me this again|dismiss (?:this|it) permanently)\b/i.test(text)) {
+    return { kind: "cancel", target, days: null };
+  }
+  if (/\b(?:bring (?:this|it) back|snooze (?:this|it))\b/i.test(text)) {
+    const weekday = text.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i)?.[1];
+    const explicitDays = text.match(/\b(?:in|for)\s+(\d{1,3})\s+days?\b/i)?.[1];
+    const days = explicitDays ? Number(explicitDays) : weekday ? daysUntilWeekday(now, weekday) : null;
+    if (days) return { kind: "snooze", target, days };
+  }
+  if (/\bhold\b/i.test(text)) {
+    const condition = text.match(/\b(?:until|while)\s+(.+?)[.!]?$/i)?.[1]?.trim() || "the founder releases the hold";
+    return {
+      kind: "correct",
+      target,
+      truth: { ballHolder: "unknown", dependency: `held until ${condition}` },
+      wording: `${target} is waiting on held until ${condition}.`,
+    };
+  }
+  if (/^waiting (?:on|for)\b/i.test(text)) {
+    return proposeFounderOperation(`${target} is ${text.replace(/[.!]$/, "")}.`);
+  }
+  return null;
+}
+
+function daysUntilWeekday(now: Date, weekday: string): number {
+  const index = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"].indexOf(weekday.toLowerCase());
+  if (index < 0) return 0;
+  const delta = (index - now.getDay() + 7) % 7;
+  return delta || 7;
 }
 export function correctionNote(
   operation: Extract<FounderOperation, { kind: "correct" }>,

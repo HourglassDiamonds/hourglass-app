@@ -10,6 +10,7 @@ import {
   type CosFounderActionView,
 } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
 import { composeSourceViewerRequest, RELATED_EMAIL_LABEL } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
+import { presentTodayItem } from "@/lib/continuum/chief-of-staff/operating-loop/today-presentation";
 import { CosViewEmailControl } from "./cos-source-viewer";
 import { useTodayMutationActions, type TodayMutationAction } from "./today-optimistic-item";
 
@@ -149,16 +150,16 @@ function DismissSubmit() {
       aria-label="Dismiss from Today"
       data-cos-founder-verb="dismiss"
       data-cos-action-pending={pending ? "true" : undefined}
-      className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] disabled:opacity-50"
+      className="inline-flex min-h-10 items-center justify-center text-[10px] uppercase tracking-[0.16em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de] disabled:opacity-50"
     >
-      {pending ? "Saving…" : "Dismiss"}
+      {pending ? "Dismissing…" : "Dismiss"}
     </button>
   );
 }
 
 function buttonClass(emphasis: "primary" | "secondary"): string {
   const color = emphasis === "primary" ? "text-[#efe8de]" : "text-[#ad9164]";
-  return `inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] ${color} outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]`;
+  return `inline-flex min-h-10 items-center text-[10px] uppercase tracking-[0.16em] ${color} outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]`;
 }
 
 export function CosDocketActions({
@@ -190,20 +191,25 @@ export function CosDocketActions({
     evidence,
     controls.relatedEmailSources,
   );
-  const primaryAction = visibleActions[0] ?? visibleFallback[0] ?? null;
-  const secondaryActions = [
-    ...visibleActions.filter((action) => action !== primaryAction),
-    ...visibleFallback.filter((action) => action !== primaryAction),
-  ];
+  const semantic = item.semanticPresentation ?? presentTodayItem(item);
+  const allActions = [...visibleActions, ...visibleFallback];
+  const primaryAction = allActions.find((action) => action.emphasis === "primary") ??
+    allActions.find((action) => action.verb !== "dismiss" && action.verb !== "snooze");
+  const snooze = allActions.find((action) => action.verb === "snooze" || action.needsSnooze);
+  const dismiss = allActions.find((action) => action.verb === "dismiss" || action.verb === "disregard");
+  const topActions = [primaryAction, snooze, semantic.likelyNoise ? dismiss : null]
+    .filter((action): action is CosFounderActionView => Boolean(action))
+    .filter((action, index, rows) => rows.findIndex((row) => row.verb === action.verb) === index);
+  const secondaryActions = allActions.filter(
+    (action) => !topActions.some((top) => top.verb === action.verb),
+  );
   const hasMore = Boolean(
-    secondaryActions.length > 0 ||
-    viewerRequest ||
-    controls.relatedEmailSources.length > 0 ||
-    item.job?.editHref,
+    controls.openProjectHref || viewerRequest || controls.relatedEmailSources.length ||
+    item.job?.editHref || evidence || secondaryActions.length,
   );
   return (
-    <div className="hg-cos-founder-actions mt-2 min-w-0">
-      <div className="flex min-w-0 flex-wrap items-center gap-x-5" data-cos-founder-family={controls.family}>
+    <div className="hg-cos-founder-actions min-w-0">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-4" data-cos-founder-family={controls.family}>
           {controls.confirmPerson ? (
             <Link
               href={controls.confirmPerson.href}
@@ -213,28 +219,22 @@ export function CosDocketActions({
               Confirm person
             </Link>
           ) : null}
-          {primaryAction ? (
+          {topActions.map((action) => (
             <ActionButton
-              action={primaryAction}
+              key={action.verb}
+              action={action}
               item={item}
               disposeAction={submitAction}
-              className={buttonClass(primaryAction.emphasis)}
+              className={buttonClass(action.emphasis)}
             />
-          ) : null}
-        {controls.openProjectHref ? (
-          <Link
-            href={controls.openProjectHref}
-            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
-          >
-            Open project
-          </Link>
-        ) : null}
+          ))}
         {hasMore ? (
-          <details className="min-w-0" data-cos-more-actions="">
-            <summary className="inline-flex min-h-11 cursor-pointer list-none items-center text-[10px] uppercase tracking-[0.18em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
+          <details className="hg-cos-more min-w-0" data-cos-more-actions="">
+            <summary className="inline-flex min-h-10 cursor-pointer items-center text-[10px] uppercase tracking-[0.16em] text-[#6f675f] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]">
               More
             </summary>
-            <div className="flex min-w-0 flex-wrap items-center gap-x-5">
+            <div className="min-w-[min(19rem,calc(100vw-3rem))] pb-2">
+              <div className="flex min-w-0 flex-wrap items-center gap-x-4">
               {secondaryActions.map((action) => (
                 <ActionButton
                   key={action.verb}
@@ -244,6 +244,11 @@ export function CosDocketActions({
                   className={buttonClass(action.emphasis)}
                 />
               ))}
+              {controls.openProjectHref ? (
+                <Link href={controls.openProjectHref} className={buttonClass("secondary")}>
+                  Open project
+                </Link>
+              ) : null}
               {viewerRequest ? (
                 <CosViewEmailControl
                   sources={viewerRequest.sources}
@@ -257,7 +262,7 @@ export function CosDocketActions({
                   target="_blank"
                   rel="noreferrer"
                   data-cos-related-email=""
-                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#8d8073] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]"
+                  className={buttonClass("secondary")}
                 >
                   {RELATED_EMAIL_LABEL}
                 </a>
@@ -265,17 +270,14 @@ export function CosDocketActions({
               {item.job?.editHref ? (
                 <Link
                   href={item.job.editHref}
-                  className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
+                  className={buttonClass("secondary")}
                 >
                   Edit
                 </Link>
               ) : null}
-            </div>
-          </details>
-        ) : null}
-        {evidence ? (
-          <details className="hg-cos-evidence inline min-w-0 align-middle">
-            <summary className="inline-flex min-h-11 cursor-pointer items-center text-[10px] uppercase tracking-[0.16em] text-[#5c564f] outline-none hover:text-[#6f675f] focus-visible:text-[#6f675f]">
+              {evidence ? (
+          <details className="hg-cos-evidence block min-w-0 basis-full align-middle">
+            <summary className="inline-flex min-h-10 cursor-pointer items-center text-[10px] uppercase tracking-[0.16em] text-[#8d8073] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]">
               Evidence
             </summary>
             <div className="mt-2 min-w-0" data-cos-founder-evidence="">
@@ -306,6 +308,10 @@ export function CosDocketActions({
                   ))}
                 </ol>
               ) : null}
+            </div>
+          </details>
+              ) : null}
+              </div>
             </div>
           </details>
         ) : null}

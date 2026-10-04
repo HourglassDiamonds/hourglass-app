@@ -11,6 +11,7 @@ import {
 import { selectFounderControls } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
 import { composeEmailCard } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
 import type { TodayRenderedBriefing } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-copy";
+import { presentTodayItem } from "@/lib/continuum/chief-of-staff/operating-loop/today-presentation";
 import { CosCompleteControl } from "./cos-complete-control";
 import { CosDocketActions } from "./cos-docket-actions";
 import { CosWatchingList } from "./cos-concierge-brief";
@@ -124,6 +125,7 @@ function DocketItem({
     : item.job?.attentionStatus === "actionable-now" && item.job.attentionMode === "reminder"
       ? "REMINDER"
       : null;
+  const semantic = item.semanticPresentation ?? presentTodayItem(item);
   const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
   return (
     <TodayOptimisticItem completeAction={completeAction} disposeAction={disposeAction}>
@@ -142,9 +144,32 @@ function DocketItem({
       <div className="min-w-0 overflow-x-hidden">
         <BriefingHeader
           name={briefing ? [briefing.displayName, briefing.projectName].filter((row, i, all) => row && all.indexOf(row) === i).join(" / ") : item.subject}
-          chip={briefing?.stateChip ?? attentionChip ?? (item.origin === "open_job" ? "YOUR MOVE" : null)}
+          chip={semantic.stateLabel}
         />
-        {item.cosBriefing && briefing ? (
+        {semantic ? (
+          <div data-today-semantic={semantic.stateLabel} data-today-noise={semantic.likelyNoise ? "true" : undefined} data-today-conflict={semantic.conflict ? "true" : undefined}>
+          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#6f675f]">
+            {attentionChip ? `${attentionChip} · ` : ""}
+            {semantic.ownerLabel === "Justin" ? "Your next move" : `Owned by ${semantic.ownerLabel.toLowerCase()}`}
+          </p>
+          <p className="mt-1 break-words font-serif text-[1.18rem] leading-[1.18] tracking-[-0.03em] text-[#efe8de]">
+            {semantic.title}
+          </p>
+          {emailCard ? <CosUnassignedIdentity card={emailCard} /> : null}
+          <p className="hg-cos-docket-context mt-1 break-words text-[13px] leading-[1.45] text-[#b8ada2]">
+            {semantic.summary}
+          </p>
+          <div className="hg-cos-briefing-next mt-2 min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.16em] text-[#8d8073]">Next move</p>
+            <p className="mt-0.5 break-words text-[13px] leading-[1.45] text-[#d8cfc4]">
+              {semantic.founderCheckpoint}
+            </p>
+          </div>
+          <p className="hg-cos-semantic-reason mt-1.5 break-words text-[11px] leading-[1.4] text-[#81776d]">
+            <span className="uppercase tracking-[0.12em]">Why here</span> · {semantic.reason}
+          </p>
+          </div>
+        ) : item.cosBriefing && briefing ? (
           <CosBriefingBlock briefing={item.cosBriefing} />
         ) : briefing ? (
           <BriefingBody briefing={briefing} />
@@ -161,12 +186,14 @@ function DocketItem({
             ) : null}
           </>
         )}
-        {packet ? (
-          <CosAskConcierge packet={packet} cosBriefing={item.cosBriefing ?? null} askAction={askAction} />
-        ) : null}
-        {item.job?.attentionMode === "watching"
-          ? <WatchingDispositionActions item={item} />
-          : <CosDocketActions item={item} disposeAction={disposeAction} />}
+        <div className="mt-1 flex min-w-0 flex-wrap items-start gap-x-4">
+          {item.job?.attentionMode === "watching"
+            ? <WatchingDispositionActions item={item} />
+            : <CosDocketActions item={item} disposeAction={disposeAction} />}
+          {packet ? (
+            <CosAskConcierge packet={packet} cosBriefing={item.cosBriefing ?? null} askAction={askAction} />
+          ) : null}
+        </div>
         {item.decision ? (
           <CosFounderAttentionControls
             item={item.decision}

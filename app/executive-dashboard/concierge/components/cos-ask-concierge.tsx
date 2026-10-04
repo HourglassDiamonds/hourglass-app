@@ -31,9 +31,9 @@ export function CosAskConcierge({
 
   if (!askAction) {
     return (
-      <p className="hg-cos-ask mt-4 min-w-0 text-[14px] text-[#6f675f]" data-cos-ask-item="">
-        {TODAY_ASK_PLACEHOLDER}
-      </p>
+      <span className="inline-flex min-h-10 items-center text-[10px] uppercase tracking-[0.16em] text-[#6f675f]" data-cos-ask-item="">
+        Ask Sterling
+      </span>
     );
   }
 
@@ -61,12 +61,11 @@ export function CosAskConcierge({
   }
 
   return (
-    <form
-      className="hg-cos-ask mt-4 min-w-0"
-      onSubmit={onSubmit}
-      data-cos-ask-item=""
-      data-cos-ask-ball={packet.ballHolder}
-    >
+    <details className="hg-cos-ask min-w-0" data-cos-ask-item="" data-cos-ask-ball={packet.ballHolder}>
+      <summary className="inline-flex min-h-10 cursor-pointer items-center text-[10px] uppercase tracking-[0.16em] text-[#8d8073] outline-none hover:text-[#ad9164] focus-visible:text-[#efe8de]">
+        Ask Sterling
+      </summary>
+      <form className="min-w-[min(19rem,calc(100vw-3rem))] pb-2" onSubmit={onSubmit}>
       <label htmlFor={inputId} className="sr-only">
         {TODAY_ASK_PLACEHOLDER}
       </label>
@@ -80,8 +79,8 @@ export function CosAskConcierge({
         autoCorrect="off"
         spellCheck={false}
         enterKeyHint="send"
-        placeholder={TODAY_ASK_PLACEHOLDER}
-        className="hg-cos-ask-input min-h-11 w-full border-0 bg-transparent px-0 text-[14px] text-[#efe8de] outline-none placeholder:text-[#6f675f] focus-visible:text-[#efe8de]"
+        placeholder="Tell Sterling what changed…"
+        className="hg-cos-ask-input min-h-10 w-full border-0 bg-transparent px-0 text-[14px] text-[#efe8de] outline-none placeholder:text-[#6f675f] focus-visible:text-[#efe8de]"
       />
       {pending ? (
         <p className="mt-2 text-[13px] leading-relaxed text-[#9a8e82]" role="status">
@@ -92,6 +91,7 @@ export function CosAskConcierge({
           {reply}
         </p>
       ) : null}
-    </form>
+      </form>
+    </details>
   );
 }
