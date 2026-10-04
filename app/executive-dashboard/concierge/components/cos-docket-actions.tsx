@@ -11,8 +11,10 @@ import {
 } from "@/lib/continuum/chief-of-staff/operating-loop/founder-actions";
 import { composeSourceViewerRequest, RELATED_EMAIL_LABEL } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
 import { CosViewEmailControl } from "./cos-source-viewer";
+import { useTodayMutationActions, type TodayMutationAction } from "./today-optimistic-item";
 
-type DisposeAction = (formData: FormData) => void | Promise<void>;
+type DisposeAction = TodayMutationAction;
+type FormAction = (formData: FormData) => void | Promise<void>;
 
 function PendingSubmit({
   label,
@@ -78,7 +80,7 @@ function ActionButton({
 }: {
   action: CosFounderActionView;
   item: CosDocketItemView;
-  disposeAction?: DisposeAction;
+  disposeAction?: FormAction;
   className: string;
 }) {
   if (action.needsSnooze) {
@@ -166,6 +168,10 @@ export function CosDocketActions({
   item: CosDocketItemView;
   disposeAction?: DisposeAction;
 }) {
+  const optimistic = useTodayMutationActions();
+  const submitAction = optimistic?.disposeAction ?? (disposeAction
+    ? async (formData: FormData) => { await disposeAction(formData); }
+    : undefined);
   const controls = selectFounderControls(item);
   const hideResponded = Boolean(item.briefing);
   const visibleActions = controls.actions.filter((action) => {
@@ -211,7 +217,7 @@ export function CosDocketActions({
             <ActionButton
               action={primaryAction}
               item={item}
-              disposeAction={disposeAction}
+              disposeAction={submitAction}
               className={buttonClass(primaryAction.emphasis)}
             />
           ) : null}
@@ -234,7 +240,7 @@ export function CosDocketActions({
                   key={action.verb}
                   action={action}
                   item={item}
-                  disposeAction={disposeAction}
+                  disposeAction={submitAction}
                   className={buttonClass(action.emphasis)}
                 />
               ))}

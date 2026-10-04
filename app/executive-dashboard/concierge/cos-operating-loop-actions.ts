@@ -2,7 +2,6 @@
 
 import { refreshTodayAfterFounderMutation } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { randomUUID } from "node:crypto";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { operatingBacklogRecommendationId } from "@/lib/agent-os/operating-backlog";
 import { markRecommendationTerminal } from "@/lib/agent-os/persistence/mark-terminal";
@@ -54,31 +53,59 @@ function isDocketOrigin(value: string): value is CosDocketOrigin {
 
 export async function completeTop5OpenJobAction(formData: FormData) {
   const started = Date.now();
-  const auth = await getAuthenticatedProjectJobWriter();
-  if (!auth.ok) {
-    throw new Error(humanMessage(undefined, auth.reason === "unauthorized"));
+  try {
+    const auth = await getAuthenticatedProjectJobWriter();
+    if (!auth.ok) {
+      const message = humanMessage(undefined, auth.reason === "unauthorized");
+      logFounderMutation({ verb: "complete", origin: "open_job", ok: false, reason: auth.reason, ms: Date.now() - started });
+      return { ok: false, message } satisfies TodayMutationResult;
+    }
+    const result = await completeFounderActionable(auth.writer, {
+      sourceType: String(formData.get("sourceType") ?? "").trim(),
+      projectId: String(formData.get("projectId") ?? "").trim() || null,
+      jobId: String(formData.get("jobId") ?? "").trim(),
+      mutationId: String(formData.get("mutationId") ?? "").trim(),
+      actor: auth.username,
+    });
+    logFounderMutation({
+      verb: "complete",
+      origin: "open_job",
+      ok: result.ok,
+      reason: result.ok ? undefined : result.reason,
+      ms: Date.now() - started,
+    });
+    if (!result.ok) {
+      return { ok: false, message: humanMessage(result.reason, false) } satisfies TodayMutationResult;
+    }
+    await settleTodayAfterMutation();
+    return { ok: true } satisfies TodayMutationResult;
+  } catch {
+    logFounderMutation({ verb: "complete", origin: "open_job", ok: false, reason: "unexpected", ms: Date.now() - started });
+    return { ok: false, message: "Unable to complete this item. Try again." } satisfies TodayMutationResult;
   }
-  const result = await completeFounderActionable(auth.writer, {
-    sourceType: String(formData.get("sourceType") ?? "").trim(),
-    projectId: String(formData.get("projectId") ?? "").trim() || null,
-    jobId: String(formData.get("jobId") ?? "").trim(),
-    mutationId: String(formData.get("mutationId") ?? "").trim(),
-    actor: auth.username,
-  });
-  logFounderMutation({
-    verb: "complete",
-    origin: "open_job",
-    ok: result.ok,
-    reason: result.ok ? undefined : result.reason,
-    ms: Date.now() - started,
-  });
-  if (result.ok) await refreshTodayAfterFounderMutation();
-  revalidatePath(CONCIERGE_HOME_PATH);
-  redirect(CONCIERGE_HOME_PATH);
 }
 
-export async function disposeTodayDocketItemAction(formData: FormData) {
+export type TodayMutationResult =
+  | { ok: true }
+  | { ok: false; message: string };
+
+async function settleTodayAfterMutation(): Promise<void> {
+  try {
+    await refreshTodayAfterFounderMutation();
+  } catch {
+    // The canonical write already succeeded. Do not report a false mutation
+    // failure when only read-model reconstruction needs another pass.
+  }
+  try {
+    revalidatePath(CONCIERGE_HOME_PATH);
+  } catch {
+    // The optimistic tombstone remains until the next targeted route render.
+  }
+}
+
+export async function disposeTodayDocketItemAction(formData: FormData): Promise<TodayMutationResult> {
   const started = Date.now();
+  try {
   const verbRaw = String(formData.get("verb") ?? "").trim();
   const originRaw = String(formData.get("origin") ?? "").trim();
   if (!isFounderVerb(verbRaw) || !isDocketOrigin(originRaw)) {
@@ -89,8 +116,7 @@ export async function disposeTodayDocketItemAction(formData: FormData) {
       reason: "invalid-input",
       ms: Date.now() - started,
     });
-    revalidatePath(CONCIERGE_HOME_PATH);
-    redirect(CONCIERGE_HOME_PATH);
+    return { ok: false, message: "That action is not available for this item." };
   }
   const presetRaw = String(formData.get("snoozePreset") ?? "").trim();
   const chosenDate = String(formData.get("snoozeDate") ?? "").trim();
@@ -101,7 +127,9 @@ export async function disposeTodayDocketItemAction(formData: FormData) {
 
   const jobs = await getAuthenticatedProjectJobWriter();
   if (!jobs.ok) {
-    throw new Error(humanMessage(undefined, jobs.reason === "unauthorized"));
+    const message = humanMessage(undefined, jobs.reason === "unauthorized");
+    logFounderMutation({ verb: verbRaw, origin: originRaw, ok: false, reason: jobs.reason, ms: Date.now() - started });
+    return { ok: false, message };
   }
   const candidates = await getAuthenticatedCandidateStore();
   const specs = await getAuthenticatedClientMemoryProjectSpecWriter();
@@ -155,7 +183,13 @@ export async function disposeTodayDocketItemAction(formData: FormData) {
     reason: result.ok ? undefined : result.reason,
     ms: Date.now() - started,
   });
-  if (result.ok) await refreshTodayAfterFounderMutation();
-  revalidatePath(CONCIERGE_HOME_PATH);
-  redirect(CONCIERGE_HOME_PATH);
+  if (!result.ok) {
+    return { ok: false, message: humanMessage(result.reason, false) };
+  }
+  await settleTodayAfterMutation();
+  return { ok: true };
+  } catch {
+    logFounderMutation({ verb: "unknown", origin: "unknown", ok: false, reason: "unexpected", ms: Date.now() - started });
+    return { ok: false, message: "Unable to save that change. Try again." };
+  }
 }

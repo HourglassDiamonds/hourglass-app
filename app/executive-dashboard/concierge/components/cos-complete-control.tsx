@@ -1,6 +1,9 @@
-import type { CosRecapItem, CosTop5Item } from "@/lib/continuum/chief-of-staff/operating-loop/types";
+"use client";
 
-type CompleteAction = (formData: FormData) => void | Promise<void>;
+import type { CosRecapItem, CosTop5Item } from "@/lib/continuum/chief-of-staff/operating-loop/types";
+import { useTodayMutationActions, type TodayMutationAction } from "./today-optimistic-item";
+
+type CompleteAction = TodayMutationAction;
 
 export function CosCompleteControl({
   item,
@@ -20,6 +23,10 @@ export function CosCompleteControl({
   label?: string;
   action?: CompleteAction;
 }) {
+  const optimistic = useTodayMutationActions();
+  const submitAction = optimistic?.completeAction ?? (action
+    ? async (formData: FormData) => { await action(formData); }
+    : undefined);
   if (!item.completable || item.writer !== "open_job.resolve") {
     return (
       <p className="mt-2 max-w-[28ch] text-[13px] leading-relaxed text-[#8d8073]">
@@ -29,7 +36,7 @@ export function CosCompleteControl({
   }
 
   return (
-    <form action={action} className="flex shrink-0">
+    <form action={submitAction} className="flex shrink-0">
       <input type="hidden" name="sourceType" value={item.sourceType} />
       <input type="hidden" name="projectId" value={item.projectId ?? ""} />
       <input type="hidden" name="jobId" value={item.id} />

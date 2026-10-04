@@ -1,9 +1,39 @@
+"use client";
+
 import Link from "next/link";
 import type { CosBriefItem, CosWatchingItem } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { founderFacingBriefActionLabel } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { COS_BRIEFING_SECTION_TITLE } from "@/lib/continuum/chief-of-staff/operating-loop/cos-briefing-v1";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 import { CosBriefingBlock } from "./cos-briefing-block";
+import {
+  TodayDispositionForm,
+  TodayMutationFailure,
+  TodayOptimisticItem,
+  type TodayMutationAction,
+} from "./today-optimistic-item";
+
+function WatchingDispositionControls({ item }: { item: CosWatchingItem }) {
+  if (!item.attention) return null;
+  const actions = item.attention.mode === "reminder"
+    ? [["complete", "Done"]]
+    : [["still_waiting", "Still waiting"], ["resolved", "Resolved"], ["stop_watching", "Stop watching"]];
+  return (
+    <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-5">
+      {actions.map(([verb, label]) => (
+        <TodayDispositionForm
+          key={verb}
+          verb={verb}
+          label={label}
+          itemId={item.id}
+          projectId={item.attention?.projectId}
+          jobId={item.attention?.jobId}
+          mutationId={item.attention?.mutationId}
+        />
+      ))}
+    </div>
+  );
+}
 
 function EvidenceControl({ item }: { item: CosBriefItem }) {
   if (item.evidence.length === 0) return null;
@@ -73,7 +103,7 @@ export function CosWatchingList({
 }: {
   watching: readonly CosWatchingItem[];
   askAction?: TodayAskAction;
-  disposeAction?: (formData: FormData) => void | Promise<void>;
+  disposeAction?: TodayMutationAction;
 }) {
   if (watching.length === 0) return null;
   return (
@@ -95,8 +125,8 @@ export function CosWatchingList({
               ? "STILL WAITING"
               : null;
           return (
-            <li
-              key={item.id}
+            <TodayOptimisticItem key={item.id} disposeAction={disposeAction}>
+              <li
               className="hg-cos-item hg-cos-docket-item min-w-0 overflow-x-hidden"
               data-cos-watching-item={item.id}
               data-cos-ball={item.briefingPacket?.ballHolder}
@@ -141,29 +171,11 @@ export function CosWatchingList({
                     askAction={askAction}
                   />
                 ) : null}
-                {item.attention ? (
-                  <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-5">
-                    {(item.attention.mode === "reminder"
-                      ? [["complete", "Done"]]
-                      : [["still_waiting", "Still waiting"], ["resolved", "Resolved"], ["stop_watching", "Stop watching"]]
-                    ).map(([verb, label]) => (
-                      <form action={disposeAction} key={verb} className="inline">
-                        <input type="hidden" name="verb" value={verb} />
-                        <input type="hidden" name="origin" value="open_job" />
-                        <input type="hidden" name="itemId" value={item.id} />
-                        <input type="hidden" name="projectId" value={item.attention?.projectId ?? ""} />
-                        <input type="hidden" name="jobId" value={item.attention?.jobId ?? ""} />
-                        <input type="hidden" name="candidateIds" value="" />
-                        <input type="hidden" name="mutationId" value={item.attention?.mutationId ?? ""} />
-                        <button type="submit" className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
-                          {label}
-                        </button>
-                      </form>
-                    ))}
-                  </div>
-                ) : null}
+                <WatchingDispositionControls item={item} />
+                <TodayMutationFailure />
               </div>
-            </li>
+              </li>
+            </TodayOptimisticItem>
           );
         })}
       </ul>

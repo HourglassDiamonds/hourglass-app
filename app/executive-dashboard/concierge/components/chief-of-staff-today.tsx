@@ -24,8 +24,15 @@ import {
   calendarTimingRecommendation,
   type TodayUpcomingItem,
 } from "@/lib/continuum/calendar/today-upcoming";
+import {
+  TodayDispositionForm,
+  TodayMutationFailure,
+  TodayOptimisticItem,
+  type TodayMutationAction,
+} from "./today-optimistic-item";
 
-type CompleteAction = (formData: FormData) => void | Promise<void>;
+type MutationAction = TodayMutationAction;
+type FormAction = (formData: FormData) => void | Promise<void>;
 
 function BriefingHeader({
   name,
@@ -69,26 +76,22 @@ function BriefingBody({ briefing }: { briefing: TodayRenderedBriefing }) {
   );
 }
 
-function WatchingDispositionActions({ item, action }: {
+function WatchingDispositionActions({ item }: {
   item: CosDocketItemView;
-  action?: CompleteAction;
 }) {
   if (item.job?.attentionMode !== "watching") return null;
   return (
     <div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-5">
       {[["still_waiting", "Still waiting"], ["resolved", "Resolved"], ["stop_watching", "Stop watching"]].map(([verb, label]) => (
-        <form action={action} key={verb} className="inline">
-          <input type="hidden" name="verb" value={verb} />
-          <input type="hidden" name="origin" value="open_job" />
-          <input type="hidden" name="itemId" value={item.id} />
-          <input type="hidden" name="projectId" value={item.job?.projectId ?? ""} />
-          <input type="hidden" name="jobId" value={item.job?.id ?? ""} />
-          <input type="hidden" name="candidateIds" value="" />
-          <input type="hidden" name="mutationId" value={item.job?.mutationId ?? ""} />
-          <button type="submit" className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#ad9164] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]">
-            {label}
-          </button>
-        </form>
+        <TodayDispositionForm
+          key={verb}
+          verb={verb}
+          label={label}
+          itemId={item.id}
+          projectId={item.job?.projectId}
+          jobId={item.job?.id}
+          mutationId={item.job?.mutationId}
+        />
       ))}
     </div>
   );
@@ -104,9 +107,9 @@ function DocketItem({
 }: {
   item: CosDocketItemView;
   index: number;
-  completeAction?: CompleteAction;
-  reviewAction?: CompleteAction;
-  disposeAction?: CompleteAction;
+  completeAction?: MutationAction;
+  reviewAction?: FormAction;
+  disposeAction?: MutationAction;
   askAction?: TodayAskAction;
 }) {
   const controls = selectFounderControls(item);
@@ -123,7 +126,8 @@ function DocketItem({
       : null;
   const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
   return (
-    <li
+    <TodayOptimisticItem completeAction={completeAction} disposeAction={disposeAction}>
+      <li
       data-cos-docket-item={index}
       data-cos-docket-origin={item.origin}
       data-cos-docket-lane={item.lane}
@@ -161,7 +165,7 @@ function DocketItem({
           <CosAskConcierge packet={packet} cosBriefing={item.cosBriefing ?? null} askAction={askAction} />
         ) : null}
         {item.job?.attentionMode === "watching"
-          ? <WatchingDispositionActions item={item} action={disposeAction} />
+          ? <WatchingDispositionActions item={item} />
           : <CosDocketActions item={item} disposeAction={disposeAction} />}
         {item.decision ? (
           <CosFounderAttentionControls
@@ -170,8 +174,10 @@ function DocketItem({
             reviewAction={reviewAction}
           />
         ) : null}
+        <TodayMutationFailure />
       </div>
-    </li>
+      </li>
+    </TodayOptimisticItem>
   );
 }
 
@@ -187,9 +193,9 @@ export function ChiefOfStaffToday({
   loop?: CosOperatingLoopView;
   docket?: CosTodayDocketView;
   upcoming?: readonly TodayUpcomingItem[];
-  completeAction?: CompleteAction;
-  reviewAction?: CompleteAction;
-  disposeAction?: CompleteAction;
+  completeAction?: MutationAction;
+  reviewAction?: FormAction;
+  disposeAction?: MutationAction;
   askAction?: TodayAskAction;
 }) {
   const docket = authoritativeTodayDocket(

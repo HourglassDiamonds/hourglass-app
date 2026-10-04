@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { CosFounderAttentionItem } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { CosRecapConfirm } from "./cos-complete-control";
 import { CosProposedActionRow } from "./cos-proposed-actions";
+import type { TodayMutationAction } from "./today-optimistic-item";
 
 type FormAction = (formData: FormData) => void | Promise<void>;
 
@@ -11,7 +12,7 @@ export function CosFounderAttentionControls({
   reviewAction,
 }: {
   item: CosFounderAttentionItem;
-  completeAction?: FormAction;
+  completeAction?: TodayMutationAction;
   reviewAction?: FormAction;
 }) {
   return (
@@ -44,7 +45,7 @@ export function CosFounderAttentionRow({
   reviewAction,
 }: {
   item: CosFounderAttentionItem;
-  completeAction?: FormAction;
+  completeAction?: TodayMutationAction;
   reviewAction?: FormAction;
 }) {
   return (
