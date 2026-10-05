@@ -209,7 +209,7 @@ export default function HomeStudioPortal() {
   return (
     <div className="w-full min-w-0" data-hourglass-home="diamond-studio">
       <div
-        className="group relative min-h-[460px] overflow-hidden rounded-[28px] md:min-h-[440px] md:rounded-[32px]"
+        className="group relative min-h-[410px] overflow-hidden rounded-[22px] md:min-h-[440px] md:rounded-[32px]"
         onMouseMove={trackPanelLight}
       >
         <Image
@@ -256,11 +256,11 @@ export default function HomeStudioPortal() {
           }}
         />
 
-        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-28 md:flex-row md:items-center md:pb-24">
-          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-8 max-md:justify-center max-md:text-center sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
+        <div className="relative z-[4] flex min-h-[inherit] flex-col pb-24 md:flex-row md:items-center md:pb-24">
+          <div className="flex flex-[1_1_0%] items-center justify-start px-5 py-7 max-md:justify-center max-md:text-center sm:px-6 md:px-8 md:py-0 lg:pl-10 lg:pr-4">
             <div className="max-w-[300px] translate-y-2 text-left max-md:mx-auto max-md:translate-y-0 md:translate-y-4">
               <h2
-                className="font-serif text-[1.75rem] font-normal leading-[1.18] tracking-[-0.028em] max-md:mx-auto md:text-[1.9rem] md:leading-[1.12]"
+                className="font-serif text-[1.58rem] font-normal leading-[1.18] tracking-[-0.028em] max-md:mx-auto min-[390px]:text-[1.68rem] md:text-[1.9rem] md:leading-[1.12]"
                 style={{ color: STUDIO_GRAPHITE.strong }}
               >
                 Understand the diamond before you choose it.
@@ -294,7 +294,7 @@ export default function HomeStudioPortal() {
           </div>
         </div>
 
-        <div className="absolute bottom-[4.75rem] left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
+        <div className="absolute bottom-10 left-1/2 z-[5] w-full max-w-full -translate-x-1/2 px-5 sm:px-8 md:bottom-12 md:w-auto md:px-0">
           <div className="flex justify-center">
             <StudioCtaButton />
           </div>

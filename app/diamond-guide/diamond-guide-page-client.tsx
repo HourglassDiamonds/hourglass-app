@@ -30,35 +30,35 @@ export default function DiamondGuidePageClient({
 }: DiamondGuidePageClientProps) {
   return (
     <div className="min-h-screen overflow-x-clip bg-[#efe8de] text-[#1c1b1a]">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
       </div>
 
-      <section className="pb-0 pt-20 md:pt-28">
-        <div className="mx-auto max-w-[700px] px-6 text-center md:px-10">
+      <section className="pb-0 pt-14 md:pt-28">
+        <div className="mx-auto max-w-[700px] px-5 text-center min-[390px]:px-6 md:px-10">
           <div className="text-[11px] uppercase tracking-[0.36em] text-[#6d655e]">
             Diamond Guide
           </div>
 
           <h1
-            className="mt-5 font-serif text-[2.45rem] font-normal leading-[1.05] tracking-[-0.045em] text-[#1d1b18] md:text-[3.45rem]"
+            className="mt-4 font-serif text-[2rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#1d1b18] min-[390px]:text-[2.15rem] md:mt-5 md:text-[3.45rem]"
             style={{ textWrap: "balance" }}
           >
             Clarity, before anything else.
           </h1>
 
-          <p className="mx-auto mt-6 max-w-[36rem] text-[1rem] leading-[1.75] text-[#625b54] md:text-[1.04rem]">
+          <p className="mx-auto mt-5 max-w-[36rem] text-[0.96rem] leading-[1.82] text-[#625b54] md:mt-6 md:text-[1.04rem]">
             Choosing a diamond can feel overwhelming at first. This guide
             brings together the details that matter most, from how a diamond
             looks on the hand to how it handles light, so you can move forward
             with clarity and confidence.
           </p>
 
-          <div className="relative z-20 mx-auto mt-9 max-w-[560px] text-left md:mt-10">
+          <div className="relative z-20 mx-auto mt-7 max-w-[560px] text-left md:mt-10">
             <GuideSearch records={searchRecords} showPopular />
           </div>
         </div>
 
-        <div className="mx-auto mt-12 w-full max-w-[1380px] px-4 sm:px-6 md:mt-16 md:px-10">
+        <div className="mx-auto mt-9 w-full max-w-[1380px] px-5 min-[390px]:px-6 md:mt-16 md:px-10">
           <div className="relative aspect-[4/3] overflow-hidden sm:aspect-[16/8] md:aspect-[1916/821]">
             <Image
               src="/diamond-guide/guide-hero-top.png"
@@ -72,8 +72,8 @@ export default function DiamondGuidePageClient({
         </div>
       </section>
 
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <RevealOnScroll as="section" className="pb-24 pt-16 md:pb-32 md:pt-20">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
+        <RevealOnScroll as="section" className="pb-16 pt-14 md:pb-32 md:pt-20">
           <div className="grid gap-8 md:grid-cols-[minmax(0,1fr)_13rem] md:items-end md:gap-16">
             <div className="max-w-[38rem]">
               <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
@@ -97,12 +97,12 @@ export default function DiamondGuidePageClient({
             </p>
           </div>
 
-          <ol className="mt-10 grid border-b border-[#d8cec2] md:mt-12 md:grid-flow-col md:grid-cols-2 md:grid-rows-5 md:gap-x-16 md:border-b-0">
+          <ol className="mt-8 grid border-b border-[#d8cec2] md:mt-12 md:grid-flow-col md:grid-cols-2 md:grid-rows-5 md:gap-x-16 md:border-b-0">
             {BUYING_PATH.map((step, index) => (
               <li key={step.href} className="border-t border-[#d8cec2]">
                 <Link
                   href={step.href}
-                  className="group grid min-h-[7rem] grid-cols-[2.5rem_minmax(0,1fr)_2rem] items-center gap-x-3 py-5 transition-colors duration-300 md:min-h-[7.5rem] md:grid-cols-[3rem_minmax(0,1fr)_2rem]"
+                  className="group grid min-h-[6.25rem] grid-cols-[2.5rem_minmax(0,1fr)_2rem] items-center gap-x-3 py-4 transition-colors duration-300 md:min-h-[7.5rem] md:grid-cols-[3rem_minmax(0,1fr)_2rem] md:py-5"
                 >
                   <span className="self-start pt-1 font-serif text-[1.35rem] leading-none tracking-[-0.02em] text-[#ac8153] md:text-[1.5rem]">
                     {String(index + 1).padStart(2, "0")}
@@ -132,7 +132,7 @@ export default function DiamondGuidePageClient({
         as="section"
         className="border-y border-[#ddd3c6] bg-[#e4d9cb]"
       >
-        <div className="mx-auto max-w-[1200px] px-6 py-24 md:px-10 md:py-28">
+        <div className="mx-auto max-w-[1200px] px-5 py-[72px] min-[390px]:px-6 md:px-10 md:py-28">
           <div className="max-w-[38rem]">
             <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
               Browse the Guide
@@ -150,7 +150,7 @@ export default function DiamondGuidePageClient({
             </p>
           </div>
 
-          <div className="mt-14 grid gap-x-12 gap-y-12 sm:grid-cols-2 md:mt-16 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-14">
+          <div className="mt-11 grid gap-x-12 gap-y-10 sm:grid-cols-2 md:mt-16 lg:grid-cols-3 lg:gap-x-14 lg:gap-y-14">
             {categoryPreviews.map((section) => {
               const title = categoryEditorialTitle(section.group);
               const description = getCategoryConfig(section.group.id).description;
@@ -159,7 +159,7 @@ export default function DiamondGuidePageClient({
               return (
                 <section
                   key={section.group.id}
-                  className="border-t border-[#cdbfae] pt-6"
+                  className="border-t border-[#cdbfae] pt-5 md:pt-6"
                 >
                   <h3 className="font-serif text-[1.45rem] font-normal leading-[1.15] tracking-[-0.025em] text-[#1d1b18]">
                     <Link
@@ -240,7 +240,7 @@ export default function DiamondGuidePageClient({
         </div>
       </RevealOnScroll>
 
-      <div className="mx-auto max-w-[1380px] px-4 sm:px-6 md:px-10">
+      <div className="mx-auto max-w-[1380px] px-5 min-[390px]:px-6 md:px-10">
         <RevealOnScroll
           as="section"
           className="grid grid-cols-[minmax(0,1fr)] border-x border-b border-[#ddd3c6] bg-[#f3ede5] md:grid-cols-[0.9fr_1.45fr]"
@@ -255,7 +255,7 @@ export default function DiamondGuidePageClient({
             />
           </div>
 
-          <div className="flex min-w-0 items-center px-7 py-16 sm:px-10 md:px-16 md:py-20 lg:px-20">
+          <div className="flex min-w-0 items-center px-5 py-[72px] min-[390px]:px-6 sm:px-10 md:px-16 md:py-20 lg:px-20">
             <div className="min-w-0 max-w-[640px]">
               <div className="max-w-[28rem] text-[10px] uppercase leading-[1.7] tracking-[0.25em] text-[#6d655e] sm:text-[11px] sm:tracking-[0.34em]">
                 A More Confident Way to Purchase
@@ -279,7 +279,7 @@ export default function DiamondGuidePageClient({
                   <ConsultationCtaLink
                     location="guide_hub:index"
                     tool="diamond-guide"
-                    className="rounded-full border border-[#2b2621] bg-[#2b2621] px-6 py-3 text-[11px] uppercase tracking-[0.32em] text-white transition duration-300 hover:opacity-90"
+                    className="inline-flex min-h-11 items-center rounded-[12px] border border-[#2b2621] bg-[#2b2621] px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] text-white transition duration-300 hover:opacity-90 sm:rounded-full sm:px-6 sm:py-3 sm:text-[11px] sm:tracking-[0.32em]"
                   >
                     Begin the Conversation
                   </ConsultationCtaLink>

@@ -455,22 +455,22 @@ export default function WhisperedPraisePage() {
         }
       `}</style>
 
-      <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="relative z-10 mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
         <div className="whispered-enter">
         </div>
 
-        <section className="border-b border-[#e4dbcf] pb-20 pt-16 md:pb-48 md:pt-32">
+        <section className="border-b border-[#e4dbcf] pb-14 pt-12 md:pb-48 md:pt-32">
           <div className="whispered-enter-delay mx-auto max-w-[860px] text-center">
             <p className="text-[10px] uppercase tracking-[0.36em] text-[#6d655e]">
               Whispered Praise
             </p>
             <h1
-              className="mx-auto mt-6 max-w-[17ch] font-serif text-[1.85rem] font-normal leading-[1.16] tracking-[-0.02em] text-[#1f1d1a] min-[390px]:text-[2.15rem] min-[390px]:leading-[1.14] md:mt-10 md:max-w-[18ch] md:text-[3rem] md:leading-[1.1]"
+              className="mx-auto mt-5 max-w-[17ch] font-serif text-[1.8rem] font-normal leading-[1.16] tracking-[-0.02em] text-[#1f1d1a] min-[390px]:text-[2rem] min-[390px]:leading-[1.14] md:mt-10 md:max-w-[18ch] md:text-[3rem] md:leading-[1.1]"
               style={{ textWrap: "balance" }}
             >
               Quiet words from people who trusted us with something meaningful.
             </h1>
-            <p className="mx-auto mt-7 max-w-[34rem] text-[1rem] leading-[1.9] text-[#5a534c] md:mt-12 md:text-[1.12rem] md:leading-[2]">
+            <p className="mx-auto mt-5 max-w-[34rem] text-[0.96rem] leading-[1.82] text-[#5a534c] md:mt-12 md:text-[1.12rem] md:leading-[2]">
               A collection of client reflections from proposals, redesigns, heirloom
               projects, and custom pieces — shared with the same quiet care that
               shaped the work itself.
@@ -478,7 +478,7 @@ export default function WhisperedPraisePage() {
           </div>
         </section>
 
-        <section className="pb-20 pt-10 md:pb-44 md:pt-16">
+        <section className="pb-16 pt-8 md:pb-44 md:pt-16">
           <HeroSplitCard
             item={TESTIMONIALS["If I could leave 100 stars, I would."]}
             imageSide="left"
@@ -537,7 +537,7 @@ export default function WhisperedPraisePage() {
           </div>
         </section>
 
-        <section className="relative mt-10 border-t border-[#e4dbcf]/65 pt-24 pb-20 md:mt-16 md:pt-60 md:pb-36">
+        <section className="relative mt-8 border-t border-[#e4dbcf]/65 pb-16 pt-16 md:mt-16 md:pt-60 md:pb-36">
           <div
             className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#ddd2c4]/80 to-transparent"
             aria-hidden
@@ -555,11 +555,11 @@ export default function WhisperedPraisePage() {
               built for clients who want thoughtful guidance, refined sourcing, and
               a process that feels personal from the first conversation.
             </p>
-            <div className="mt-12 flex flex-col items-center justify-center gap-5 sm:flex-row sm:gap-10 md:mt-16 md:gap-10">
+            <div className="mt-9 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-10 md:mt-16 md:gap-10">
               <ConsultationCtaLink
                 location="whispered_praise:footer"
                 tool="whispered-praise"
-                className="inline-flex min-h-11 items-center rounded-full border border-[#cfc3b4] bg-[#f7f2eb]/30 px-9 py-3.5 text-[10.5px] uppercase tracking-[0.3em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory"
+                className="inline-flex min-h-11 items-center rounded-[12px] border border-[#cfc3b4] bg-[#f7f2eb]/30 px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] text-[#5f574f] transition-[color,background-color,border-color,box-shadow,transform] duration-700 ease-out hover:-translate-y-px hover:border-[#b8a896] hover:bg-white/70 hover:text-[#3d3832] hover:shadow-[0_10px_32px_rgba(48,36,28,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory sm:rounded-full sm:px-9 sm:py-3.5 sm:text-[10.5px] sm:tracking-[0.3em]"
               >
                 Begin the Conversation
               </ConsultationCtaLink>

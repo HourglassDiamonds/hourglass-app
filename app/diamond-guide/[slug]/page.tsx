@@ -179,10 +179,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
       <JsonLd data={buildPageJsonLd(article, slug)} />
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
 
         <article
-          className={`mx-auto max-w-[760px] pb-[112px] pt-[68px] md:pb-[132px] md:pt-[86px] ${
+          className={`mx-auto max-w-[760px] pb-[72px] pt-12 md:pb-[132px] md:pt-[86px] ${
             isCohesionArticle ? "md:pb-[140px]" : ""
           }`}
         >
@@ -193,7 +193,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
             </div>
 
             <h1
-              className="mx-auto mt-4 max-w-[18ch] text-[2.25rem] font-light leading-[1.08] tracking-[-0.035em] text-[#1f1d1a] md:text-[3rem]"
+              className="mx-auto mt-4 max-w-[18ch] text-[2rem] font-light leading-[1.08] tracking-[-0.035em] text-[#1f1d1a] min-[390px]:text-[2.15rem] md:text-[3rem]"
               style={{ textWrap: "balance" }}
             >
               {article.title}
@@ -204,7 +204,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
           <ArticleHeroImage article={article} />
 
-          <div className="mt-14 text-[1rem] leading-[1.9] text-[#4f4942] md:text-[1.04rem]">
+          <div className="mt-10 text-[0.98rem] leading-[1.84] text-[#4f4942] md:mt-14 md:text-[1.04rem] md:leading-[1.9]">
             {article.body.map((block, index) => {
               const node = renderBlock(block, index);
 
@@ -242,7 +242,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
           />
 
           <section
-            className={`rounded-[24px] border border-[#e0d8cc]/75 bg-[#f9f6f1]/80 px-6 py-8 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] sm:px-8 sm:py-9 md:px-10 ${
+            className={`rounded-[18px] border border-[#e0d8cc]/75 bg-[#f9f6f1]/80 px-5 py-7 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.75)] min-[390px]:px-6 sm:px-8 sm:py-9 md:rounded-[24px] md:px-10 ${
               isReferenceArticle ? "mt-16 md:mt-20" : "mt-14"
             } ${isCohesionArticle || isReferenceArticle ? `mx-auto ${isCohesionArticle ? "max-w-[40rem]" : "max-w-[42rem]"}` : ""}`}
           >
@@ -258,7 +258,7 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
                 location="guide_article:footer"
                 tool="diamond-guide"
                 content={slug}
-                className="inline-flex items-center justify-center rounded-full border border-[#4a4540]/55 bg-transparent px-6 py-2.5 text-[10px] uppercase tracking-[0.3em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3]"
+                className="inline-flex min-h-11 items-center justify-center rounded-[12px] border border-[#4a4540]/55 bg-transparent px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] text-[#3d3834] transition-all duration-500 ease-out hover:border-[#2b2723] hover:bg-[#2b2723] hover:text-[#faf7f3] sm:rounded-full sm:px-6 sm:tracking-[0.3em]"
               >
                 Begin the Conversation
               </ConsultationCtaLink>

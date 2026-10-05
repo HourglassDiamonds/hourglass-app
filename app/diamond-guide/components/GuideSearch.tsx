@@ -67,12 +67,12 @@ export default function GuideSearch({
           placeholder="Search the Diamond Guide…"
           autoComplete="off"
           enterKeyHint="search"
-          className="h-[58px] w-full rounded-[10px] border border-[#c9c0b4] bg-[#f6f1ea] py-3 pl-12 pr-5 text-[1.02rem] leading-[1.5] text-[#1d1b18] outline-none transition-[border-color,box-shadow] duration-300 placeholder:text-[#70665d] [-webkit-appearance:none] focus:border-[#9a9188] focus:shadow-[0_0_0_3px_rgba(154,145,136,0.16)] md:h-[60px] [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+          className="h-12 w-full rounded-[10px] border border-[#c9c0b4] bg-[#f6f1ea] py-2.5 pl-11 pr-4 text-[0.96rem] leading-[1.5] text-[#1d1b18] outline-none transition-[border-color,box-shadow] duration-300 placeholder:text-[#70665d] [-webkit-appearance:none] focus:border-[#9a9188] focus:shadow-[0_0_0_3px_rgba(154,145,136,0.16)] md:h-[60px] md:py-3 md:pl-12 md:pr-5 md:text-[1.02rem] [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         />
       </div>
 
       {showPopular && !searching ? (
-        <p className="mt-3 text-left text-[0.82rem] leading-[1.7] text-[#7a726a]">
+        <p className="mt-3 text-left text-[0.78rem] leading-[1.7] text-[#7a726a] min-[390px]:text-[0.82rem]">
           <span className="text-[#6d655e]">Popular:</span>{" "}
           {POPULAR_SEARCHES.map((item, index) => (
             <span key={item.query}>
@@ -95,7 +95,7 @@ export default function GuideSearch({
       ) : null}
 
       {searching ? (
-        <div className="absolute inset-x-0 top-[58px] z-30 mt-2 max-h-[min(24rem,52vh)] overflow-y-auto overscroll-contain rounded-[10px] border border-[#e4dbcf] bg-[#efe8de] px-4 pb-3 pt-3 shadow-[0_18px_40px_rgba(48,36,28,0.08)] md:top-[60px]">
+        <div className="absolute inset-x-0 top-12 z-30 mt-2 max-h-[min(24rem,52vh)] overflow-y-auto overscroll-contain rounded-[10px] border border-[#e4dbcf] bg-[#efe8de] px-4 pb-3 pt-3 shadow-[0_18px_40px_rgba(48,36,28,0.08)] md:top-[60px]">
           <div aria-live="polite">
             <p className="text-left text-[11px] uppercase tracking-[0.28em] text-[#6d655e]">
               {results.length === 0

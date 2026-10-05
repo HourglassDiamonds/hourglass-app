@@ -58,7 +58,7 @@ function ProgressionMediaPanel({
 
 export default function CustomDesignProgression() {
   return (
-    <section className="border-b border-[#e4dbcf] py-[56px] md:py-[72px] lg:py-[96px]">
+    <section className="border-b border-[#e4dbcf] py-12 md:py-[72px] lg:py-[96px]">
       <div className={`${GRID} items-start`}>
         <div className="col-span-12 md:col-span-3">
           <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
@@ -77,7 +77,7 @@ export default function CustomDesignProgression() {
           </p>
         </div>
 
-        <div className="col-span-12 mt-10 grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 md:col-span-9 md:mt-0 lg:gap-x-8">
+        <div className="col-span-12 mt-8 grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-2 md:col-span-9 md:mt-0 lg:gap-x-8">
           <div className="min-w-0">
             <div className={stageLabel}>01 · Dimensional Form</div>
             <div className="mt-3">

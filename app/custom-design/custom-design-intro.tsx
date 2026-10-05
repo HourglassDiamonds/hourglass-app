@@ -70,20 +70,20 @@ export default function CustomDesignIntro() {
             </div>
 
             <h1
-              className="mt-4 max-w-[18ch] text-[2rem] font-light leading-[1.1] tracking-[0.015em] text-[#1f1d1a] md:text-[2.45rem]"
+              className="mt-4 max-w-[18ch] text-[1.9rem] font-light leading-[1.1] tracking-[0.01em] text-[#1f1d1a] min-[390px]:text-[2rem] md:text-[2.45rem]"
               style={{ textWrap: "balance" }}
             >
               Custom engagement rings, designed through a more personal process.
             </h1>
 
-            <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#625b54] md:text-[1.04rem] lg:max-w-[28rem]">
+            <p className="mt-5 max-w-[32rem] text-[0.96rem] leading-[1.82] text-[#625b54] md:text-[1.04rem] md:leading-[1.88] lg:max-w-[28rem]">
               Custom design begins when the right ring does not already exist.
               We translate references, sketches, heirloom details, and practical
               constraints into a design that can be built with precision, not
               just imagined beautifully.
             </p>
 
-            <p className="mt-4 max-w-[32rem] text-[0.98rem] leading-[1.88] text-[#6a635c] lg:max-w-[28rem]">
+            <p className="mt-4 max-w-[32rem] text-[0.94rem] leading-[1.82] text-[#6a635c] min-[390px]:text-[0.98rem] min-[390px]:leading-[1.88] lg:max-w-[28rem]">
               Led by a Graduate Gemologist, the process moves from conversation
               to proportions, diamond selection, CAD, and refinement. The result
               is a piece made for one person, not a customized version of
@@ -94,7 +94,7 @@ export default function CustomDesignIntro() {
           </div>
         </div>
 
-        <div className="relative z-10 mt-6 aspect-[4/5] w-full min-h-[240px] max-h-[min(68vw,340px)] md:hidden">
+        <div className="relative z-10 mt-5 aspect-[4/5] w-full min-h-[220px] max-h-[min(64vw,300px)] md:hidden">
           <div
             className="absolute inset-0 overflow-hidden"
             style={mobileMaskStyle}
@@ -124,7 +124,7 @@ export default function CustomDesignIntro() {
         </div>
       </div>
 
-      <p className="mt-6 border-t border-[#e4dbcf]/80 pt-5 text-center text-[0.72rem] uppercase tracking-[0.28em] text-[#6d655e] md:mt-7 md:pt-5 md:text-[0.74rem]">
+      <p className="mt-6 border-t border-[#e4dbcf]/80 pt-5 text-center text-[0.68rem] uppercase tracking-[0.2em] text-[#6d655e] min-[390px]:text-[0.72rem] min-[390px]:tracking-[0.24em] md:mt-7 md:pt-5 md:text-[0.74rem] md:tracking-[0.28em]">
         Graduate Gemologist · Global Sourcing · Custom Design
       </p>
     </>

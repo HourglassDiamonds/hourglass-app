@@ -20,10 +20,10 @@ export default function ConciergePage() {
     <>
       <MarketingPageJsonLd name="Concierge" path="/concierge" />
       <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
 
           <div>
-            <section className="border-b border-[#e4dbcf] pb-[72px] pt-[52px] md:pb-[88px] md:pt-[64px]">
+            <section className="border-b border-[#e4dbcf] pb-14 pt-10 md:pb-[88px] md:pt-[64px]">
               <ConciergeIntro />
               <ConciergeTrustStrip />
               <Suspense fallback={null}>

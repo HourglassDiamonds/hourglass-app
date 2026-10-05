@@ -16,9 +16,9 @@ import {
 
 export default function ProposalPlanningPage() {
   return (
-    <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+    <div className="guide-category-page min-h-screen bg-[#efe8de] text-[#1c1b1a]">
       <CategoryGuideJsonLd segment="proposal-planning" variant="hub" />
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
 
         <section className="border-b border-[#e4dbcf] pb-[84px] pt-[82px] md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">

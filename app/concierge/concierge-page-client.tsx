@@ -443,7 +443,7 @@ export default function ConciergeFormClient() {
       ref={formRef}
       onSubmit={handleSubmit}
       noValidate
-      className="mx-auto mt-8 max-w-[980px] rounded-[28px] border border-[#e4dbcf] bg-white/52 p-6 shadow-[0_18px_46px_rgba(45,35,26,0.03)] md:mt-10 md:p-8"
+      className="mx-auto mt-7 max-w-[980px] rounded-[18px] border border-[#e4dbcf] bg-white/52 p-5 shadow-[0_18px_46px_rgba(45,35,26,0.03)] min-[390px]:p-6 md:mt-10 md:rounded-[28px] md:p-8"
     >
       {/* Honeypot — excluded from a11y tree and keyboard order; bots may still fill it. */}
       <input
@@ -456,14 +456,14 @@ export default function ConciergeFormClient() {
         aria-hidden="true"
       />
 
-      <div className="border-b border-[#e8dfd4] pb-7 md:pb-8">
+      <div className="border-b border-[#e8dfd4] pb-6 md:pb-8">
         <div className={sectionLabel}>{copy.whatHappensNext.heading}</div>
         <p className="mt-2.5 max-w-[34rem] text-[13px] leading-6 text-[#6d655e] md:text-[14px] md:leading-7">
           {copy.whatHappensNext.body}
         </p>
       </div>
 
-      <div className="mt-7">
+      <div className="mt-6 md:mt-7">
         <div className={sectionLabel}>{copy.opening.sectionLabel}</div>
         <h2 className="mt-1.5 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
           {copy.opening.sectionTitle}
@@ -508,7 +508,7 @@ export default function ConciergeFormClient() {
         </div>
       </div>
 
-      <div className="mt-7 border-t border-[#e8dfd4] pt-7">
+      <div className="mt-6 border-t border-[#e8dfd4] pt-6 md:mt-7 md:pt-7">
         <div className={sectionLabel}>{copy.design.sectionLabel}</div>
         <h2 className="mt-1.5 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
           {copy.design.sectionTitle}
@@ -556,7 +556,7 @@ export default function ConciergeFormClient() {
         </div>
       </div>
 
-      <div className="mt-7 border-t border-[#e8dfd4] pt-7">
+      <div className="mt-6 border-t border-[#e8dfd4] pt-6 md:mt-7 md:pt-7">
         <div className={sectionLabel}>{copy.practical.sectionLabel}</div>
         <h2 className="mt-1.5 text-[1.05rem] tracking-[-0.02em] text-[#1f1d1a]">
           {copy.practical.sectionTitle}

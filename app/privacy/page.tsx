@@ -15,15 +15,15 @@ const LEGAL_LINK =
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-hg-ivory text-hg-ink">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
       </div>
 
-      <section className="mx-auto max-w-[760px] px-6 py-20 md:px-10 md:py-28">
+      <section className="mx-auto max-w-[760px] px-5 py-14 min-[390px]:px-6 md:px-10 md:py-28">
         <div className="mb-10 text-[11px] uppercase tracking-[0.28em] text-[#6d655e]">
           Privacy
         </div>
 
-        <h1 className="mb-6 text-[32px] leading-[1.2] text-[#1f1d1a] md:text-[38px]">
+        <h1 className="mb-5 text-[30px] leading-[1.18] text-[#1f1d1a] min-[390px]:text-[32px] md:mb-6 md:text-[38px]">
           Your information is handled with care.
         </h1>
 

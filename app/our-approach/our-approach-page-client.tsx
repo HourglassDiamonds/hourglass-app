@@ -87,9 +87,9 @@ export default function OurApproachPageClient() {
 
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a] [background:radial-gradient(circle_at_top,rgba(255,255,255,0.42),transparent_36rem),linear-gradient(180deg,#efe8de,#ebe3d8)]">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
 
-        <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[100px] md:pt-[80px]">
+        <section className="border-b border-[#e4dbcf] pb-12 pt-11 md:pb-[100px] md:pt-[80px]">
           <div className="mx-auto max-w-[820px] text-center">
             <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
               Our Approach
@@ -110,7 +110,7 @@ export default function OurApproachPageClient() {
 
         <RevealOnScroll
           as="section"
-          className="border-b border-[#e4dbcf] py-16 md:pb-[96px] md:pt-[112px]"
+          className="border-b border-[#e4dbcf] py-14 md:pb-[96px] md:pt-[112px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
             <p className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
@@ -140,7 +140,7 @@ export default function OurApproachPageClient() {
           </div>
         </RevealOnScroll>
 
-        <section className="py-16 md:py-[88px]">
+        <section className="py-14 md:py-[88px]">
           <div className={`${DI_V3_SECTIONS} !mt-0 !gap-5 md:!gap-6`}>
             <ApproachChapter chapter={chapter01} />
             <ApproachChapter chapter={chapter02} />
@@ -156,7 +156,7 @@ export default function OurApproachPageClient() {
           </div>
         </section>
 
-        <section className="border-t border-[#e4dbcf] py-20 md:py-[112px]">
+        <section className="border-t border-[#e4dbcf] py-16 md:py-[112px]">
           <FinalCta />
         </section>
       </div>

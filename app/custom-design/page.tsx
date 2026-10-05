@@ -20,10 +20,10 @@ export default function CustomDesignPage() {
     <>
       <MarketingPageJsonLd name="Custom Design" path="/custom-design" />
       <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
-        <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+        <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
 
           <div>
-            <section className="border-b border-[#e4dbcf] pb-[48px] pt-[52px] md:pb-[56px] md:pt-[64px]">
+            <section className="border-b border-[#e4dbcf] pb-10 pt-10 md:pb-[56px] md:pt-[64px]">
               <CustomDesignIntro />
             </section>
 

@@ -70,13 +70,13 @@ export default function EngagementRingsIntro() {
             </div>
 
             <h1
-              className="mt-4 max-w-[16ch] text-[2rem] font-light leading-[1.1] tracking-[0.015em] text-[#1f1d1a] md:text-[2.45rem]"
+              className="mt-4 max-w-[16ch] text-[1.9rem] font-light leading-[1.1] tracking-[0.01em] text-[#1f1d1a] min-[390px]:text-[2rem] md:text-[2.45rem]"
               style={{ textWrap: "balance" }}
             >
               Engagement rings, designed around you.
             </h1>
 
-            <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#625b54] md:text-[1.04rem] lg:max-w-[28rem]">
+            <p className="mt-5 max-w-[32rem] text-[0.96rem] leading-[1.82] text-[#625b54] md:text-[1.04rem] md:leading-[1.88] lg:max-w-[28rem]">
               Choosing an engagement ring is less about picking a setting from a
               case and more about finding the right balance: diamond,
               proportions, metal, hand, and everyday wear. Hourglass helps you
@@ -84,7 +84,7 @@ export default function EngagementRingsIntro() {
               intentional rather than rushed.
             </p>
 
-            <p className="mt-4 max-w-[32rem] text-[0.98rem] leading-[1.88] text-[#6a635c] lg:max-w-[28rem]">
+            <p className="mt-4 max-w-[32rem] text-[0.94rem] leading-[1.82] text-[#6a635c] min-[390px]:text-[0.98rem] min-[390px]:leading-[1.88] lg:max-w-[28rem]">
               From refined house designs to modified settings, we work with
               clients in Charlotte, South Charlotte, and nationwide to shape the
               ring around the person who will wear it. You&apos;ll have room to
@@ -96,7 +96,7 @@ export default function EngagementRingsIntro() {
           </div>
         </div>
 
-        <div className="relative z-10 mt-6 aspect-[3/2] w-full min-h-[220px] max-h-[min(56vw,280px)] md:hidden">
+        <div className="relative z-10 mt-5 aspect-[3/2] w-full min-h-[200px] max-h-[min(54vw,260px)] md:hidden">
           <div
             className="absolute inset-0 overflow-hidden"
             style={mobileMaskStyle}
@@ -126,7 +126,7 @@ export default function EngagementRingsIntro() {
         </div>
       </div>
 
-      <p className="mt-8 border-t border-[#e4dbcf]/80 pt-6 text-center text-[0.72rem] uppercase tracking-[0.28em] text-[#6d655e] md:mt-9 md:text-[0.74rem]">
+      <p className="mt-6 border-t border-[#e4dbcf]/80 pt-5 text-center text-[0.68rem] uppercase tracking-[0.2em] text-[#6d655e] min-[390px]:text-[0.72rem] min-[390px]:tracking-[0.24em] md:mt-9 md:text-[0.74rem] md:tracking-[0.28em]">
         Graduate Gemologist · Global Sourcing · Personal Guidance
       </p>
     </>

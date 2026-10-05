@@ -73,10 +73,10 @@ function TrustTransitionStrip() {
   return (
     <RevealOnScroll
       as="section"
-      className="py-[36px] md:py-[56px]"
+      className="py-8 md:py-[56px]"
       data-hourglass-home="trust-strip"
     >
-      <div className="grid gap-8 md:grid-cols-3 md:items-start md:gap-0">
+      <div className="grid gap-5 md:grid-cols-3 md:items-start md:gap-0">
         {pillars.map((pillar, index) => (
           <div
             key={pillar.title}
@@ -200,10 +200,10 @@ function FeaturedRingSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="border-b border-[#e4dbcf]/60 py-[64px] md:py-[88px] lg:py-[112px]"
+      className="border-b border-[#e4dbcf]/60 py-14 md:py-[88px] lg:py-[112px]"
       data-hourglass-home="house-designs"
     >
-      <div className="mb-10 flex flex-col gap-6 md:mb-12 md:flex-row md:items-end md:justify-between lg:mb-16 lg:gap-8">
+      <div className="mb-8 flex flex-col gap-5 md:mb-12 md:flex-row md:items-end md:justify-between lg:mb-16 lg:gap-8">
         <div className="max-w-xl">
           <Eyebrow>House Designs</Eyebrow>
           <h2 className="mt-4 text-[1.85rem] font-normal leading-[1.12] tracking-[-0.04em] text-[#1f1d1a] md:mt-5 md:text-[2.15rem] lg:text-[2.5rem]">
@@ -220,7 +220,7 @@ function FeaturedRingSection() {
 
       {/* Mobile: snap carousel · tablet through large laptop (md–lg): 3-up —
           six columns still crush at 1024 (~157px) · desktop (xl+): 6-up row. */}
-      <div className="-mx-6 snap-x snap-mandatory overflow-x-auto scroll-pl-6 scroll-smooth px-6 pb-1 md:mx-0 md:snap-none md:overflow-visible md:scroll-pl-0 md:px-0">
+      <div className="-mx-5 snap-x snap-mandatory overflow-x-auto scroll-pl-5 scroll-smooth px-5 pb-1 min-[390px]:-mx-6 min-[390px]:scroll-pl-6 min-[390px]:px-6 md:mx-0 md:snap-none md:overflow-visible md:scroll-pl-0 md:px-0">
         <div className="flex w-max gap-4 md:grid md:w-full md:grid-cols-3 md:gap-x-5 md:gap-y-12 xl:grid-cols-6 xl:gap-6 xl:gap-y-6">
           {galleryDesigns.map((design) => (
             <GalleryDesignCard key={design.title} {...design} />
@@ -236,7 +236,7 @@ function ClosingValueSection() {
     <RevealOnScroll
       as="section"
       stagger
-      className="border-b border-[#e4dbcf]/60 py-[56px] md:py-[80px] lg:py-[100px]"
+      className="border-b border-[#e4dbcf]/60 py-14 md:py-[80px] lg:py-[100px]"
       data-hourglass-home="thoughtful-way"
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col items-center text-center">
@@ -251,7 +251,7 @@ function ClosingValueSection() {
           A more thoughtful way to choose something that matters.
         </h2>
 
-        <p className="mt-7 max-w-[38rem] text-[1rem] leading-[1.92] text-[#5f5851]">
+        <p className="mt-5 max-w-[38rem] text-[0.96rem] leading-[1.86] text-[#5f5851] md:mt-7 md:text-[1rem] md:leading-[1.92]">
           Traditional retail often prioritizes inventory and margin. Online
           platforms prioritize scale and speed. Hourglass is built around a
           calmer path: clear guidance, selective sourcing, and a more personal
@@ -259,7 +259,7 @@ function ClosingValueSection() {
         </p>
       </div>
 
-      <div className="mx-auto mt-16 grid w-full max-w-3xl gap-12 text-center md:mt-20 md:grid-cols-3 md:gap-10">
+      <div className="mx-auto mt-12 grid w-full max-w-3xl gap-8 text-center md:mt-20 md:grid-cols-3 md:gap-10">
         <div className="mx-auto flex max-w-[15.5rem] flex-col items-center">
           <h3 className="w-full text-[1.08rem] tracking-[-0.02em] text-[#1f1d1a]">
             Personal Guidance
@@ -330,7 +330,7 @@ function TestimonialSection() {
   return (
     <RevealOnScroll
       as="section"
-      className="pb-[56px] pt-[56px] md:pb-[80px] md:pt-[88px] lg:pb-[96px] lg:pt-[104px]"
+      className="pb-14 pt-14 md:pb-[80px] md:pt-[88px] lg:pb-[96px] lg:pt-[104px]"
       data-hourglass-home="whispered-praise"
     >
       <div className={`relative mx-auto max-w-[1040px] bg-[#ece4da] ${HOME_CARD_RADIUS}`}>
@@ -349,12 +349,12 @@ function TestimonialSection() {
           />
         </div>
 
-        <div className="relative z-10 flex flex-col justify-center px-8 py-10 md:w-[56%] md:px-11 md:py-12 lg:px-14">
+        <div className="relative z-10 flex flex-col justify-center px-6 py-8 min-[390px]:px-7 md:w-[56%] md:px-11 md:py-12 lg:px-14">
           <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
             Whispered Praise
           </div>
 
-          <p className="mt-6 text-[1.35rem] leading-[1.42] tracking-[-0.03em] text-[#1f1d1a] md:mt-8 md:text-[1.6rem] lg:text-[1.72rem]">
+          <p className="mt-5 text-[1.22rem] leading-[1.42] tracking-[-0.03em] text-[#1f1d1a] min-[390px]:text-[1.3rem] md:mt-8 md:text-[1.6rem] lg:text-[1.72rem]">
             “If I could leave 100 stars, I would. The entire process felt
             thoughtful, transparent, and genuinely personal from start to finish.
             Every detail was considered, and nothing ever felt rushed. It’s rare
@@ -365,7 +365,7 @@ function TestimonialSection() {
             Google Review · KH, California
           </div>
 
-          <div className="mt-12">
+          <div className="mt-8 md:mt-12">
             <ConsultationCtaLink
               location="home:testimonial"
               className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#2b2723] px-7 py-3 text-[11px] uppercase tracking-[0.28em] text-white transition-all duration-500 ease-out hover:-translate-y-[1px] hover:opacity-90"
@@ -452,7 +452,7 @@ export default function HomePageClient() {
       data-hourglass-home="atmospheric-house-pass"
     >
       <div className="mx-auto max-w-[1200px]">
-        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[56px] pt-[36px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
+        <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-11 pt-7 md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
           <div
             aria-hidden
             className="absolute inset-0 hidden md:block"
@@ -466,33 +466,33 @@ export default function HomePageClient() {
                 alt=""
                 fill
                 priority
-                sizes="100vw"
+                sizes="(min-width: 1200px) 1200px, 100vw"
                 className="object-cover object-[72%_38%] origin-[72%_38%] scale-[0.88] lg:object-[74%_36%] lg:origin-[74%_36%] lg:scale-[0.87]"
               />
             </EditorialImageMotion>
           </div>
 
-          <div className="relative z-10 flex min-h-0 flex-col justify-center px-6 md:min-h-[440px] md:px-10 lg:min-h-[500px]">
+          <div className="relative z-10 flex min-h-0 flex-col justify-center px-5 min-[390px]:px-6 md:min-h-[440px] md:px-10 lg:min-h-[500px]">
             <div className="min-w-0 max-w-[440px]">
               <div className="text-[11px] uppercase tracking-[0.34em] text-[#6d655e]">
                 Hourglass Diamonds
               </div>
 
               <h1
-                className="mt-3 max-w-[12ch] text-[2rem] font-normal leading-[1.08] tracking-[-0.045em] text-[#1f1d1a] min-[390px]:text-[2.25rem] min-[390px]:leading-[1.05] min-[390px]:tracking-[-0.048em] md:mt-4 md:text-[3.15rem]"
+                className="mt-3 max-w-[12ch] text-[1.9rem] font-normal leading-[1.08] tracking-[-0.04em] text-[#1f1d1a] min-[390px]:text-[2.1rem] min-[390px]:leading-[1.06] min-[390px]:tracking-[-0.045em] md:mt-4 md:text-[3.15rem]"
                 style={{ textWrap: "balance" }}
               >
                 Designing a ring should feel different than buying one.
               </h1>
 
-              <p className="mt-4 max-w-[30rem] text-[0.95rem] leading-[1.85] text-[#5e5852] min-[390px]:text-[1rem] min-[390px]:leading-[1.88] md:mt-5 md:leading-[1.9]">
+              <p className="mt-4 max-w-[30rem] text-[0.92rem] leading-[1.78] text-[#5e5852] min-[390px]:text-[0.96rem] min-[390px]:leading-[1.82] md:mt-5 md:text-[1rem] md:leading-[1.9]">
                 Most people never get that experience. Hourglass was built
                 around something more deliberate: guidance over pressure,
                 proportion over inventory, and a process that feels as
                 considered as the piece itself.
               </p>
 
-              <div className="mt-6 md:mt-8">
+              <div className="mt-5 md:mt-8">
                 <CTAGlimmer priority>
                   <Button
                     variant="secondary"
@@ -511,7 +511,7 @@ export default function HomePageClient() {
               </div>
             </div>
 
-            <div className="relative mt-8 aspect-[3/2] w-full min-h-[260px] max-md:overflow-visible max-md:rounded-none md:hidden">
+            <div className="relative mt-6 aspect-[4/3] w-full min-h-[220px] max-h-[280px] max-md:overflow-visible max-md:rounded-none md:hidden">
               <div
                 className="absolute inset-0 max-md:overflow-visible max-md:rounded-none overflow-hidden rounded-[28px]"
                 style={heroMobileMaskStyle}
@@ -521,7 +521,7 @@ export default function HomePageClient() {
                   alt="Oval bezel pavé engagement ring on travertine"
                   fill
                   priority
-                  sizes="100vw"
+                  sizes="(max-width: 389px) calc(100vw - 40px), calc(100vw - 48px)"
                   className="object-cover object-[64%_42%] origin-[66%_40%] scale-[0.90]"
                 />
               </div>
@@ -534,11 +534,11 @@ export default function HomePageClient() {
           </div>
         </section>
 
-        <div className="px-6 md:px-10">
+        <div className="px-5 min-[390px]:px-6 md:px-10">
           <LookingForNav />
           <TrustTransitionStrip />
 
-          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[48px] md:py-[72px] lg:py-[96px]">
+          <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-11 md:py-[72px] lg:py-[96px]">
             <HomeStudioPortal />
           </RevealOnScroll>
 

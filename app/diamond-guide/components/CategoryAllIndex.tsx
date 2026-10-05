@@ -22,14 +22,14 @@ export default function CategoryAllIndex({ segment }: CategoryAllIndexProps) {
   const consultationLocation = `guide_hub:${segment.replace(/-/g, "_")}_all`;
 
   return (
-    <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
-      <div className="mx-auto max-w-[1100px] px-6 md:px-10">
+    <div className="guide-category-page min-h-screen bg-[#efe8de] text-[#1c1b1a]">
+      <div className="mx-auto max-w-[1100px] px-5 min-[390px]:px-6 md:px-10">
 
-        <section className="border-b border-[#e4dbcf] pb-[70px] pt-[80px] md:pb-[90px] md:pt-[95px]">
+        <section className="border-b border-[#e4dbcf] pb-12 pt-14 md:pb-[90px] md:pt-[95px]">
           <div className="mx-auto max-w-[720px] text-center">
             <CategoryPageBreadcrumbs segment={segment} variant="index" />
 
-            <h1 className="mt-5 text-[2.2rem] tracking-[-0.045em] md:text-[3rem]">
+            <h1 className="mt-4 text-[2rem] leading-[1.1] tracking-[-0.04em] min-[390px]:text-[2.1rem] md:mt-5 md:text-[3rem]">
               {config.indexHeading}
             </h1>
 
@@ -48,7 +48,7 @@ export default function CategoryAllIndex({ segment }: CategoryAllIndexProps) {
           </div>
         </section>
 
-        <RevealOnScroll as="section" className="py-[80px] md:py-[100px]">
+        <RevealOnScroll as="section" className="py-16 md:py-[100px]">
           <ul className="divide-y divide-[#e7ddd2]">
             {articles.map((article) => (
               <li key={article.slug}>
@@ -64,9 +64,9 @@ export default function CategoryAllIndex({ segment }: CategoryAllIndexProps) {
           </ul>
         </RevealOnScroll>
 
-        <RevealOnScroll as="section" className="pb-[110px] pt-[40px]">
+        <RevealOnScroll as="section" className="pb-16 pt-8 md:pb-[110px] md:pt-[40px]">
           <div className="mx-auto max-w-[700px] text-center">
-            <h2 className="text-[2rem] leading-[1.1] tracking-[-0.045em] md:text-[2.6rem]">
+            <h2 className="text-[1.8rem] leading-[1.12] tracking-[-0.04em] min-[390px]:text-[2rem] md:text-[2.6rem]">
               If you want clarity, we can help.
             </h2>
 

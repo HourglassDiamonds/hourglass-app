@@ -77,11 +77,11 @@ export default function ConciergeIntro() {
             titleClassName="max-w-[14ch]"
           />
 
-          <p className="mt-5 max-w-[32rem] text-[1rem] leading-[1.88] text-[#6a635c] md:text-[1.04rem] lg:max-w-[28rem]">
+          <p className="mt-5 max-w-[32rem] text-[0.96rem] leading-[1.82] text-[#6a635c] md:text-[1.04rem] md:leading-[1.88] lg:max-w-[28rem]">
             {copy.body}
           </p>
 
-          <p className="mt-5 max-w-[32rem] text-[0.95rem] leading-[1.88] text-[#6d655e] lg:max-w-[28rem]">
+          <p className="mt-4 max-w-[32rem] text-[0.92rem] leading-[1.82] text-[#6d655e] min-[390px]:text-[0.95rem] min-[390px]:leading-[1.88] lg:max-w-[28rem]">
             {copy.followUpPrefix}{" "}
             <a
               href="mailto:justin@hourglassdiamonds.com"
@@ -101,7 +101,7 @@ export default function ConciergeIntro() {
       </div>
 
       {/* Mobile — landscape crop, copy above, subtle edge fades */}
-      <div className="relative z-10 mt-6 aspect-[3/2] w-full min-h-[220px] max-h-[min(56vw,280px)] md:hidden">
+      <div className="relative z-10 mt-5 aspect-[3/2] w-full min-h-[200px] max-h-[min(54vw,260px)] md:hidden">
         <div
           className="absolute inset-0 overflow-hidden"
           style={mobileMaskStyle}

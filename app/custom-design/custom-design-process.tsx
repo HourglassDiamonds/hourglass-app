@@ -39,7 +39,7 @@ const processSteps = [
 
 export default function CustomDesignProcess() {
   return (
-    <section className="border-b border-[#e4dbcf] pt-[56px] pb-[48px] md:pt-[72px] md:pb-[56px] lg:pt-[88px] lg:pb-[64px]">
+    <section className="border-b border-[#e4dbcf] pb-11 pt-12 md:pt-[72px] md:pb-[56px] lg:pt-[88px] lg:pb-[64px]">
       <div className="mx-auto max-w-[40rem] text-center">
         <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
           The Custom Process
@@ -56,7 +56,7 @@ export default function CustomDesignProcess() {
         </p>
       </div>
 
-      <ol className="mx-auto mt-10 grid max-w-[920px] grid-cols-1 border-t border-[#e4dbcf] md:mt-12 md:grid-cols-2 lg:gap-x-10">
+      <ol className="mx-auto mt-8 grid max-w-[920px] grid-cols-1 border-t border-[#e4dbcf] md:mt-12 md:grid-cols-2 lg:gap-x-10">
         {processSteps.map((step) => (
           <li
             key={step.label}

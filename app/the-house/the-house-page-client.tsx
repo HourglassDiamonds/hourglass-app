@@ -198,10 +198,10 @@ export default function TheHousePageClient() {
           line-height: 1.35;
         }
       `}</style>
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
 
         {/* THE HOUSE INTRO */}
-        <section className="relative -mx-6 overflow-hidden px-6 pb-4 pt-4 md:-mx-10 md:px-10 md:pb-5 md:pt-6">
+        <section className="relative -mx-5 overflow-hidden px-5 pb-4 pt-4 min-[390px]:-mx-6 min-[390px]:px-6 md:-mx-10 md:px-10 md:pb-5 md:pt-6">
           <div aria-hidden className="pointer-events-none absolute inset-0">
             <div
               className="absolute inset-x-[-2%] inset-y-[4%] opacity-[0.58] md:hidden"
@@ -280,9 +280,9 @@ export default function TheHousePageClient() {
         </section>
 
         {/* VIDEO */}
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-0 md:pb-[120px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-16 pt-0 md:pb-[120px]">
           <div className="mx-auto max-w-[1040px]">
-            <div className="relative mx-auto aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
+            <div className="relative mx-auto aspect-[16/9] overflow-hidden rounded-[18px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)] md:rounded-[30px]">
               <video
                 ref={videoRef}
                 muted={!isSoundOn}
@@ -347,7 +347,7 @@ export default function TheHousePageClient() {
           </div>
         </RevealOnScroll>
 
-        <section className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+        <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[120px] md:pt-[104px]">
           <div className="mx-auto max-w-[44rem] text-center text-[1rem] leading-[1.9] text-[#615a53]">
             {HOUSE_INTRO_PARAGRAPHS.map((paragraph, index) => (
               <p key={paragraph} className={index === 0 ? undefined : "mt-5"}>
@@ -373,7 +373,7 @@ export default function TheHousePageClient() {
         <RevealOnScroll
           as="section"
           stagger
-          className="border-b border-[#e4dbcf] py-[92px] md:py-[108px]"
+          className="border-b border-[#e4dbcf] py-16 md:py-[108px]"
         >
           <div className="mx-auto max-w-[760px] text-center">
             <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
@@ -411,10 +411,10 @@ export default function TheHousePageClient() {
               </p>
             </div>
 
-            <div className="mt-10 flex justify-center">
+            <div className="mt-8 flex justify-center md:mt-10">
               <Link
                 href="/our-approach"
-                className="inline-block border border-[#d6c3a5]/75 bg-[#f8f3eb] px-12 py-5 text-[11px] uppercase tracking-[0.26em] text-[#625b54] transition-[color,border-color,transform] duration-500 ease-out hover:-translate-y-px hover:border-[#c4b5a3] hover:text-[#1f1d1a] md:px-20 md:py-6"
+                className="inline-flex min-h-11 items-center rounded-[10px] border border-[#d6c3a5]/75 bg-[#f8f3eb] px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] text-[#625b54] transition-[color,border-color,transform] duration-500 ease-out hover:-translate-y-px hover:border-[#c4b5a3] hover:text-[#1f1d1a] md:rounded-none md:px-20 md:py-6 md:text-[11px] md:tracking-[0.26em]"
               >
                 Read Our Approach
                 <span
@@ -427,7 +427,7 @@ export default function TheHousePageClient() {
             </div>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-5xl gap-5 md:grid-cols-3">
+          <div className="mx-auto mt-10 grid max-w-5xl gap-4 md:mt-12 md:grid-cols-3 md:gap-5">
             {values.map((value) => (
               <div
                 key={value.title}
@@ -446,7 +446,7 @@ export default function TheHousePageClient() {
         </RevealOnScroll>
 
         {/* CTA */}
-        <RevealOnScroll as="section" className="py-[108px] md:py-[122px]">
+        <RevealOnScroll as="section" className="py-[72px] md:py-[122px]">
           <div className="mx-auto max-w-[720px] text-center">
             <h2
               className="mx-auto max-w-[24ch] text-[1.72rem] font-light leading-[1.14] tracking-[-0.02em] text-[#1f1d1a] md:text-[2.24rem]"

@@ -9,7 +9,7 @@ import {
 
 export default function EngagementRingsClosingCta() {
   return (
-    <section className="border-t border-[#e4dbcf]/75 bg-[#ebe4da]/25 py-[52px] md:py-[64px] lg:py-[76px]">
+    <section className="border-t border-[#e4dbcf]/75 bg-[#ebe4da]/25 py-12 md:py-[64px] lg:py-[76px]">
       <div className="grid grid-cols-12 gap-x-6 gap-y-7 lg:gap-x-8 md:items-end">
         <div className="col-span-12 md:col-span-6">
           <div className="text-[10px] uppercase tracking-[0.28em] text-[#6d655e]">
