@@ -14,7 +14,6 @@ import {
 } from "@/lib/seo/schema/entities";
 import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
 import ConsultationCtaLink from "../../shared-components/ConsultationCtaLink";
-import Header from "../../shared-components/Header";
 import ArticleAuthorByline from "../components/ArticleAuthorByline";
 import ArticleFaqSection from "../components/ArticleFaqSection";
 import ArticleHeroImage from "../components/ArticleHeroImage";
@@ -181,7 +180,6 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
       <JsonLd data={buildPageJsonLd(article, slug)} />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="diamond-guide" />
 
         <article
           className={`mx-auto max-w-[760px] pb-[112px] pt-[68px] md:pb-[132px] md:pt-[86px] ${

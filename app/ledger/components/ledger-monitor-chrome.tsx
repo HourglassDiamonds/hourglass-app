@@ -67,6 +67,7 @@ export function LedgerSourcesReviewed({
                   rel="noopener noreferrer"
                 >
                   {source.title}
+                  <span className="sr-only"> (opens in a new tab)</span>
                 </a>
               ) : (
                 source.title

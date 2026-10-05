@@ -79,7 +79,7 @@ export function ReportUploadDock({
   return (
     <div>
       <div
-        className={`relative rounded-xl border border-dashed px-4 py-4 text-left transition ${
+        className={`relative rounded-xl border border-dashed px-4 py-4 text-left outline-none transition-[border-color,background-color,opacity] focus-within:border-[#987648] focus-within:shadow-[0_0_0_2px_#987648] ${
           dragOver
             ? "border-[rgba(181,150,98,0.42)] bg-[rgba(251,247,239,0.72)] ring-1 ring-[rgba(181,150,98,0.18)]"
             : "border-[rgba(181,150,98,0.28)] bg-[rgba(251,247,239,0.55)]"

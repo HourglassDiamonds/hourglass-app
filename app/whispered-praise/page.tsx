@@ -3,7 +3,6 @@ import { DEFAULT_OPEN_GRAPH } from "@/lib/seo/site-metadata";
 import Image from "next/image";
 import Link from "next/link";
 import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
-import Header from "../shared-components/Header";
 
 const WHISPERED_PRAISE_DESCRIPTION =
   "Quiet reflections from clients who trusted Hourglass Diamonds with proposals, redesigns, heirlooms, and custom pieces.";
@@ -458,7 +457,6 @@ export default function WhisperedPraisePage() {
 
       <div className="relative z-10 mx-auto max-w-[1200px] px-6 md:px-10">
         <div className="whispered-enter">
-          <Header />
         </div>
 
         <section className="border-b border-[#e4dbcf] pb-20 pt-16 md:pb-48 md:pt-32">

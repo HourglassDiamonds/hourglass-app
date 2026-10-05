@@ -32,6 +32,7 @@ describe("public search discovery", () => {
       "/our-approach",
       "/privacy",
       "/terms",
+      "/accessibility",
       "/ledger/buffer-health",
     ]) {
       assert.ok(urls.includes(`${ORIGIN}${path}`));

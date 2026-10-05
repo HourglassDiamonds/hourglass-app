@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Header from "../../shared-components/Header";
 import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
@@ -25,7 +24,6 @@ export default function CategoryAllIndex({ segment }: CategoryAllIndexProps) {
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
       <div className="mx-auto max-w-[1100px] px-6 md:px-10">
-        <Header currentPage="diamond-guide" />
 
         <section className="border-b border-[#e4dbcf] pb-[70px] pt-[80px] md:pb-[90px] md:pt-[95px]">
           <div className="mx-auto max-w-[720px] text-center">

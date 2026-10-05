@@ -4,13 +4,13 @@ import React, { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import Header from "../shared-components/Header";
 import CTAGlimmer from "../shared-components/motion/CTAGlimmer";
 import EditorialImageMotion from "../shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "../shared-components/ConsultationCtaLink";
 import {
   HOUSE_CLOSER_LOOK_CAPTION_SRC,
+  HOUSE_CLOSER_LOOK_NAME,
   HOUSE_CLOSER_LOOK_VIDEO_SRC,
 } from "@/lib/the-house/media";
 import {
@@ -88,6 +88,35 @@ export default function TheHousePageClient() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [isSoundOn, setIsSoundOn] = useState(false);
   const [captionsOn, setCaptionsOn] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const syncPlaying = () => setIsPlaying(!video.paused && !video.ended);
+    const applyMotionPreference = () => {
+      if (reducedMotion.matches) {
+        video.pause();
+        return;
+      }
+      void video.play().catch(() => setIsPlaying(false));
+    };
+
+    video.addEventListener("play", syncPlaying);
+    video.addEventListener("pause", syncPlaying);
+    video.addEventListener("ended", syncPlaying);
+    reducedMotion.addEventListener("change", applyMotionPreference);
+    applyMotionPreference();
+
+    return () => {
+      video.removeEventListener("play", syncPlaying);
+      video.removeEventListener("pause", syncPlaying);
+      video.removeEventListener("ended", syncPlaying);
+      reducedMotion.removeEventListener("change", applyMotionPreference);
+    };
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -125,6 +154,16 @@ export default function TheHousePageClient() {
     setCaptionsOn((on) => !on);
   };
 
+  const handleTogglePlayback = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (video.paused) {
+      void video.play();
+    } else {
+      video.pause();
+    }
+  };
+
   const handleReplay = () => {
     if (!videoRef.current) return;
 
@@ -160,10 +199,9 @@ export default function TheHousePageClient() {
         }
       `}</style>
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="the-house" />
 
         {/* THE HOUSE INTRO */}
-        <section className="relative -mx-6 overflow-hidden border-b border-[#e4dbcf] px-6 pb-20 pt-16 md:-mx-10 md:px-10 md:pb-[128px] md:pt-[96px]">
+        <section className="relative -mx-6 overflow-hidden px-6 pb-4 pt-4 md:-mx-10 md:px-10 md:pb-5 md:pt-6">
           <div aria-hidden className="pointer-events-none absolute inset-0">
             <div
               className="absolute inset-x-[-2%] inset-y-[4%] opacity-[0.58] md:hidden"
@@ -220,56 +258,38 @@ export default function TheHousePageClient() {
               The House
             </div>
 
-            <h1
-              className="mx-auto mt-4 max-w-[22rem] text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:max-w-[28rem] md:text-[2.45rem]"
-              style={{ textWrap: "balance" }}
-            >
-              {HOUSE_INTRO_HEADING}
+            <h1 className="relative left-1/2 mt-3 w-max -translate-x-1/2 text-[2rem] font-light leading-[1.08] tracking-[-0.015em] text-[#1f1d1a] md:text-[2.45rem]">
+              {HOUSE_INTRO_HEADING.split(", ").map((line, index) => (
+                <span key={line} className="block whitespace-nowrap">
+                  {index === 0 ? (
+                    line
+                  ) : (
+                    <>
+                      {line.replace(/differently\.$/, "")}
+                      <em className="italic">differently.</em>
+                    </>
+                  )}
+                </span>
+              ))}
             </h1>
 
-            <div className="mx-auto mt-6 max-w-[44rem] text-[1rem] leading-[1.9] text-[#615a53]">
-              {HOUSE_INTRO_PARAGRAPHS.map((paragraph, index) => (
-                <p key={paragraph} className={index === 0 ? undefined : "mt-5"}>
-                  {paragraph}
-                </p>
-              ))}
-
-              <p className="mt-5">
-                For a deeper look at what gemological training means in
-                practice, read{" "}
-                <Link
-                  href="/diamond-guide/why-work-with-a-graduate-gemologist"
-                  className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
-                >
-                  Why Work With a Graduate Gemologist?
-                </Link>
-                .
-              </p>
-            </div>
+            <p className="mx-auto mt-4 max-w-[36rem] text-[1rem] leading-[1.9] text-[#615a53]">
+              Our story becomes clearer when you see it.
+            </p>
           </div>
         </section>
 
         {/* VIDEO */}
-        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+        <RevealOnScroll as="section" className="border-b border-[#e4dbcf] pb-[104px] pt-0 md:pb-[120px]">
           <div className="mx-auto max-w-[1040px]">
-            <div className="mx-auto max-w-[720px] text-center">
-              <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
-                A Closer Look
-              </div>
-
-              <p className="mt-4 text-[1rem] leading-[1.8] text-[#615a53]">
-                Our story becomes clearer when you see it.
-              </p>
-            </div>
-
-            <div className="relative mx-auto mt-10 aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
+            <div className="relative mx-auto aspect-[16/9] overflow-hidden rounded-[30px] border border-[#ebe3d8] shadow-[0_14px_34px_rgba(49,38,29,0.05)]">
               <video
                 ref={videoRef}
-                autoPlay
                 muted={!isSoundOn}
                 loop
                 playsInline
                 preload="metadata"
+                aria-label={HOUSE_CLOSER_LOOK_NAME}
                 className="house-closer-look-video absolute inset-0 h-full w-full object-cover"
               >
                 <source
@@ -284,14 +304,24 @@ export default function TheHousePageClient() {
                 />
               </video>
 
-              <button
-                type="button"
-                onClick={handleToggleSound}
-                aria-label={isSoundOn ? "Mute video" : "Unmute video"}
-                className={`absolute bottom-5 left-5 z-10 ${HOUSE_VIDEO_CONTROL}`}
-              >
-                <HouseVideoSoundIcon soundOn={isSoundOn} />
-              </button>
+              <div className="absolute bottom-5 left-5 z-10 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleTogglePlayback}
+                  aria-label={isPlaying ? "Pause video" : "Play video"}
+                  className={HOUSE_VIDEO_CONTROL}
+                >
+                  <HouseVideoMotionIcon playing={isPlaying} />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  aria-label={isSoundOn ? "Mute video" : "Unmute video"}
+                  className={HOUSE_VIDEO_CONTROL}
+                >
+                  <HouseVideoSoundIcon soundOn={isSoundOn} />
+                </button>
+              </div>
 
               <div className="absolute bottom-5 right-5 z-10 flex gap-2">
                 <button
@@ -316,6 +346,28 @@ export default function TheHousePageClient() {
             </div>
           </div>
         </RevealOnScroll>
+
+        <section className="border-b border-[#e4dbcf] pb-[104px] pt-[88px] md:pb-[120px] md:pt-[104px]">
+          <div className="mx-auto max-w-[44rem] text-center text-[1rem] leading-[1.9] text-[#615a53]">
+            {HOUSE_INTRO_PARAGRAPHS.map((paragraph, index) => (
+              <p key={paragraph} className={index === 0 ? undefined : "mt-5"}>
+                {paragraph}
+              </p>
+            ))}
+
+            <p className="mt-5">
+              For a deeper look at what gemological training means in
+              practice, read{" "}
+              <Link
+                href="/diamond-guide/why-work-with-a-graduate-gemologist"
+                className="text-[#6a635c] underline underline-offset-4 transition hover:text-[#1f1d1a]"
+              >
+                Why Work With a Graduate Gemologist?
+              </Link>
+              .
+            </p>
+          </div>
+        </section>
 
         {/* APPROACH */}
         <RevealOnScroll
@@ -423,5 +475,18 @@ export default function TheHousePageClient() {
         </RevealOnScroll>
       </div>
     </div>
+  );
+}
+
+function HouseVideoMotionIcon({ playing }: { playing: boolean }) {
+  return playing ? (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+      <rect x="7" y="5" width="3.5" height="14" rx="0.75" />
+      <rect x="13.5" y="5" width="3.5" height="14" rx="0.75" />
+    </svg>
+  ) : (
+    <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor">
+      <path d="M8 5.8v12.4c0 .8.9 1.3 1.6.8l8.7-6.2a1 1 0 0 0 0-1.6L9.6 5c-.7-.5-1.6 0-1.6.8Z" />
+    </svg>
   );
 }

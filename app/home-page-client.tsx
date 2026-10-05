@@ -5,7 +5,6 @@ import Link from "next/link";
 import HomeStudioPortal from "./home-studio-portal";
 import Button from "./shared-components/Button";
 import Eyebrow from "./shared-components/Eyebrow";
-import Header from "./shared-components/Header";
 import CTAGlimmer from "./shared-components/motion/CTAGlimmer";
 import EditorialImageMotion from "./shared-components/motion/EditorialImageMotion";
 import RevealOnScroll from "./shared-components/motion/RevealOnScroll";
@@ -405,6 +404,47 @@ function TestimonialSection() {
   );
 }
 
+const LOOKING_FOR = [
+  { label: "An engagement ring", href: "/engagement-rings" },
+  { label: "A diamond", href: "/diamond-guide" },
+  { label: "Something bespoke", href: "/custom-design" },
+  { label: "An existing piece", href: "/concierge", location: "home:existing-piece" },
+  { label: "A little guidance", href: "/our-approach" },
+] as const;
+
+const lookingForLink =
+  "inline-flex h-8 w-full items-center justify-center whitespace-nowrap rounded-full border border-[#ddd1c2] bg-white/82 px-2.5 text-[10px] uppercase tracking-[0.18em] text-[#6f665d] transition duration-200 hover:border-[#ccbda9] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory";
+
+function LookingForNav() {
+  return (
+    <nav
+      aria-label="What are you looking for"
+      className="border-b border-[#e4dbcf]/60 pt-4 pb-6 text-center md:pt-5 md:pb-7"
+      data-hourglass-home="looking-for"
+    >
+      <Eyebrow className="text-center">What are you looking for?</Eyebrow>
+      <ul className="mx-auto mt-3 flex max-w-full flex-wrap justify-center gap-2 lg:flex-nowrap">
+        {LOOKING_FOR.map((item) => (
+          <li key={item.label} className="w-[10.75rem]">
+            {"location" in item ? (
+              <ConsultationCtaLink
+                location={item.location}
+                className={lookingForLink}
+              >
+                {item.label}
+              </ConsultationCtaLink>
+            ) : (
+              <Link href={item.href} className={lookingForLink}>
+                {item.label}
+              </Link>
+            )}
+          </li>
+        ))}
+      </ul>
+    </nav>
+  );
+}
+
 export default function HomePageClient() {
   return (
     <div
@@ -412,10 +452,6 @@ export default function HomePageClient() {
       data-hourglass-home="atmospheric-house-pass"
     >
       <div className="mx-auto max-w-[1200px]">
-        <div className="px-6 md:px-10">
-          <Header currentPage="home" />
-        </div>
-
         <section className="relative overflow-hidden border-b border-[#e4dbcf]/60 bg-[#efe8de] pb-[56px] pt-[36px] md:min-h-[500px] md:pb-[96px] md:pt-[48px] lg:min-h-[520px]">
           <div
             aria-hidden
@@ -499,6 +535,7 @@ export default function HomePageClient() {
         </section>
 
         <div className="px-6 md:px-10">
+          <LookingForNav />
           <TrustTransitionStrip />
 
           <RevealOnScroll as="section" className="border-b border-[#e4dbcf] py-[48px] md:py-[72px] lg:py-[96px]">

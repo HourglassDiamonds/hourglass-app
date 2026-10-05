@@ -26,6 +26,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/ledger`, priority: 0.75 },
     { url: `${SITE_URL}/privacy`, priority: 0.4 },
     { url: `${SITE_URL}/terms`, priority: 0.4 },
+    { url: `${SITE_URL}/accessibility`, priority: 0.4 },
     { url: `${SITE_URL}/continuum`, priority: 0.4 },
   ];
 

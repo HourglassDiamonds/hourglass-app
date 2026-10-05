@@ -4,10 +4,12 @@ import { forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 import {
   ACCEPTED_IMAGE_TYPES,
   ACCEPTED_IMAGE_EXTENSIONS,
+  type PhotoScaleSource,
 } from "@/lib/shape-studio/types";
 
 type HandPhotoPanelProps = {
-  onImageSelected: (url: string, source: "card-reference") => void;
+  onImageSelected: (url: string, source: PhotoScaleSource) => void;
+  photoScaleSource?: PhotoScaleSource | null;
   /** Authoritative reset — returns to capture entry (QR on desktop, local on phone). */
   onStartOver: () => void;
 };
@@ -35,7 +37,10 @@ function isAcceptedFile(file: File): boolean {
 export const HandPhotoPanel = forwardRef<
   HandPhotoPanelHandle,
   HandPhotoPanelProps
->(function HandPhotoPanel({ onImageSelected, onStartOver }, ref) {
+>(function HandPhotoPanel(
+  { onImageSelected, onStartOver, photoScaleSource = "card-reference" },
+  ref,
+) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   useImperativeHandle(ref, () => ({
@@ -48,9 +53,9 @@ export const HandPhotoPanel = forwardRef<
     (file: File | null | undefined) => {
       if (!file || !isAcceptedFile(file)) return;
       const url = URL.createObjectURL(file);
-      onImageSelected(url, "card-reference");
+      onImageSelected(url, photoScaleSource ?? "card-reference");
     },
-    [onImageSelected],
+    [onImageSelected, photoScaleSource],
   );
 
   return (
@@ -60,7 +65,11 @@ export const HandPhotoPanel = forwardRef<
       data-dss-photo-card
     >
       <div className="dss-card-head">Photo</div>
-      <p className="dss-scaled-photo-status">Hand-and-card photo ready</p>
+      <p className="dss-scaled-photo-status">
+        {photoScaleSource === "known-size"
+          ? "Hand photo ready · known ring size"
+          : "Hand-and-card photo ready"}
+      </p>
       <button
         type="button"
         className="dss-guide-btn dss-guide-btn--quiet"

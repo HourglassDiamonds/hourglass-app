@@ -6,10 +6,8 @@ const EMBED_SRC = "/ring-studio/ring-studio-embed.html?embed=1";
 const STANDALONE_SRC = "/ring-studio/ring-studio-embed.html";
 const HEIGHT_MESSAGE_TYPE = "hourglass-ring-studio-height";
 const FALLBACK_HEIGHT = 760;
-const FALLBACK_HEIGHT_XL = 820;
-const MIN_HEIGHT = 520;
+const MIN_HEIGHT = 320;
 const MAX_HEIGHT = 1400;
-const XL_MQ = "(min-width: 1280px)";
 
 type RingStudioHeightMessage = {
   type: typeof HEIGHT_MESSAGE_TYPE;
@@ -29,10 +27,7 @@ function normalizeHeight(value: unknown): number | null {
 }
 
 function fallbackHeight(): number {
-  if (typeof window === "undefined") return FALLBACK_HEIGHT;
-  return window.matchMedia(XL_MQ).matches
-    ? FALLBACK_HEIGHT_XL
-    : FALLBACK_HEIGHT;
+  return FALLBACK_HEIGHT;
 }
 
 export default function EngagementRingsRingStudioEmbed() {
@@ -40,6 +35,18 @@ export default function EngagementRingsRingStudioEmbed() {
   const [iframeHeight, setIframeHeight] = useState(fallbackHeight);
 
   useEffect(() => {
+    const syncFromContent = () => {
+      const page = iframeRef.current?.contentDocument?.querySelector(".page");
+      if (!page) return;
+      const next = normalizeHeight(page.getBoundingClientRect().height);
+      if (next == null) return;
+      setIframeHeight((prev) => (prev === next ? prev : next));
+    };
+
+    const iframe = iframeRef.current;
+    iframe?.addEventListener("load", syncFromContent);
+    syncFromContent();
+
     const onMessage = (event: MessageEvent) => {
       if (!isTrustedRingStudioOrigin(event.origin)) return;
       const data = event.data as RingStudioHeightMessage | null;
@@ -57,7 +64,10 @@ export default function EngagementRingsRingStudioEmbed() {
     };
 
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
+    return () => {
+      iframe?.removeEventListener("load", syncFromContent);
+      window.removeEventListener("message", onMessage);
+    };
   }, []);
 
   return (
@@ -71,10 +81,7 @@ export default function EngagementRingsRingStudioEmbed() {
         </a>
       </div>
 
-      <div
-        className="mt-9 hidden md:mt-10 md:block"
-        style={{ minHeight: Math.max(iframeHeight, FALLBACK_HEIGHT) }}
-      >
+      <div className="mt-9 hidden md:mt-10 md:block">
         <div className="rounded-[32px] border border-[#e4dbcf]/70 bg-[radial-gradient(circle_at_62%_36%,rgba(255,255,255,0.62),rgba(248,243,235,0.42)_42%,rgba(239,232,222,0.28)_100%)] p-5 md:p-6 lg:p-7">
           <div className="overflow-hidden rounded-[24px] bg-[var(--hg-ivory,#efe8de)]/40">
             <iframe
@@ -84,7 +91,6 @@ export default function EngagementRingsRingStudioEmbed() {
               className="block w-full border-0 bg-transparent"
               style={{
                 height: iframeHeight,
-                minHeight: FALLBACK_HEIGHT,
                 maxHeight: MAX_HEIGHT,
               }}
               loading="lazy"

@@ -22,7 +22,7 @@ export default function CustomDesignFinishedPieceCard() {
       href={CUSTOM_DESIGN_MEDIA.finishedMotionUrl}
       target="_blank"
       rel="noopener noreferrer"
-      aria-label="View the finished custom ring video"
+      aria-label="View the finished custom ring video (opens in a new tab)"
       className={MEDIA_PANEL_CLASS}
       onClick={() => {
         try {

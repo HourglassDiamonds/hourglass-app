@@ -28,7 +28,7 @@ function formatExpiry(iso: string): string {
 
 export function QrCapturePanel({
   captureUrl,
-  captureMode: _captureMode,
+  captureMode,
   expiresAt,
   waiting,
   expired,
@@ -36,8 +36,8 @@ export function QrCapturePanel({
   onCancel,
   variant = "stage",
 }: QrCapturePanelProps) {
-  void _captureMode;
   const stage = variant === "stage";
+  const useKnownSize = captureMode === "known-size";
 
   if (expired) {
     return (
@@ -62,14 +62,16 @@ export function QrCapturePanel({
           <p className="dss-stage-empty-kicker">See It On Your Hand</p>
           <p className="dss-stage-empty-title">Scan with your phone</p>
           <p className="dss-qr-lead">
-            Photograph your hand with a standard-size card beside it. Keep the
-            card and hand on approximately the same plane.
+            {useKnownSize
+              ? "Photograph your hand from directly overhead. No reference card is needed."
+              : "Photograph your hand with a standard-size card beside it. Keep the card and hand on approximately the same plane."}
           </p>
         </>
       ) : (
         <p className="dss-qr-lead">
-          Photograph your hand with a standard-size card beside it. Keep the
-          card and hand on approximately the same plane.
+          {useKnownSize
+            ? "Photograph your hand from directly overhead. No reference card is needed."
+            : "Photograph your hand with a standard-size card beside it. Keep the card and hand on approximately the same plane."}
         </p>
       )}
       <div className="dss-qr-frame" aria-hidden={!captureUrl}>

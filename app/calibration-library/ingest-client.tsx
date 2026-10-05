@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Header from "../shared-components/Header";
 import {
   FIELD_LABELS,
   METADATA_LABELS,
@@ -452,7 +451,6 @@ export default function IngestClient() {
 
   return (
     <div className="min-h-screen bg-[#f7f3ee] text-[#1f1d1a]">
-      <Header />
       <div className="mx-auto max-w-3xl px-6 py-14 md:py-16">
         <p className="text-[10px] uppercase tracking-[0.34em] text-[#948a80]">
           Internal · Light Performance Calibration Library

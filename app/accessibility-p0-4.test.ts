@@ -18,6 +18,10 @@ const root = dirname(fileURLToPath(import.meta.url));
 
 const layout = readFileSync(join(root, "layout.tsx"), "utf8");
 const header = readFileSync(join(root, "shared-components/Header.tsx"), "utf8");
+const siteFrame = readFileSync(
+  join(root, "shared-components/SiteFrame.tsx"),
+  "utf8",
+);
 const globals = readFileSync(join(root, "globals.css"), "utf8");
 const studioPage = readFileSync(join(root, "diamond-studio/page.tsx"), "utf8");
 const uploadDock = readFileSync(
@@ -86,6 +90,74 @@ const ledgerTemp = readFileSync(
   join(root, "ledger/components/system-temperature.tsx"),
   "utf8",
 );
+const shapeStudioView = readFileSync(
+  join(root, "diamond-shape-studio/shape-studio-view.tsx"),
+  "utf8",
+);
+const knownMeasurementsEntry = readFileSync(
+  join(
+    root,
+    "diamond-shape-studio/components/known-measurements-entry.tsx",
+  ),
+  "utf8",
+);
+const shapeComparisonEditorial = readFileSync(
+  join(
+    root,
+    "diamond-shape-studio/components/ShapeComparisonEditorial.tsx",
+  ),
+  "utf8",
+);
+const calibrationControls = readFileSync(
+  join(root, "diamond-shape-studio/components/calibration-controls.tsx"),
+  "utf8",
+);
+const captureView = readFileSync(
+  join(root, "diamond-shape-studio/capture/[sessionId]/capture-view.tsx"),
+  "utf8",
+);
+const accessibilityStatement = readFileSync(
+  join(root, "accessibility/accessibility-statement.tsx"),
+  "utf8",
+);
+const accessibilityPage = readFileSync(
+  join(root, "accessibility/page.tsx"),
+  "utf8",
+);
+const sitemapSource = readFileSync(join(root, "sitemap.ts"), "utf8");
+const calibrationMarkers = readFileSync(
+  join(root, "diamond-shape-studio/components/calibration-markers.tsx"),
+  "utf8",
+);
+const overlayStage = readFileSync(
+  join(root, "diamond-shape-studio/components/overlay-stage.tsx"),
+  "utf8",
+);
+const guideBreadcrumbs = readFileSync(
+  join(root, "diamond-guide/components/GuideBreadcrumbs.tsx"),
+  "utf8",
+);
+const guideSearch = readFileSync(
+  join(root, "diamond-guide/components/GuideSearch.tsx"),
+  "utf8",
+);
+const conciergeForm = readFileSync(
+  join(root, "concierge/concierge-page-client.tsx"),
+  "utf8",
+);
+const calibrationPage = readFileSync(
+  join(root, "calibration-library/page.tsx"),
+  "utf8",
+);
+const termsPage = readFileSync(join(root, "terms/page.tsx"), "utf8");
+const customFinishedPiece = readFileSync(
+  join(root, "custom-design/custom-design-finished-piece-card.tsx"),
+  "utf8",
+);
+const ledgerChrome = readFileSync(
+  join(root, "ledger/components/ledger-monitor-chrome.tsx"),
+  "utf8",
+);
 
 /* ── WCAG contrast math ─────────────────────────────────────────────── */
 
@@ -118,8 +190,13 @@ function token(name: string): string {
 /* ── AA-1: skip navigation / landmark structure ─────────────────────── */
 
 describe("AA-1 skip navigation & landmark structure (WCAG 2.4.1, 1.3.1)", () => {
-  it("layout renders exactly one <main>", () => {
-    assert.equal((layout.match(/<main\b/g) ?? []).length, 1);
+  it("the public site frame renders the banner before its main landmark", () => {
+    const headerIndex = siteFrame.indexOf("<Header");
+    const mainIndex = siteFrame.lastIndexOf('<main id="hg-page-content"');
+    assert.ok(headerIndex > -1);
+    assert.ok(mainIndex > headerIndex);
+    assert.doesNotMatch(layout, /<main\b/);
+    assert.match(layout, /<SiteFrame>\{children\}<\/SiteFrame>/);
   });
 
   it("layout no longer carries the skip link (it lives in the Header)", () => {
@@ -135,12 +212,9 @@ describe("AA-1 skip navigation & landmark structure (WCAG 2.4.1, 1.3.1)", () => 
     assert.ok(header.includes("Skip to main content"));
   });
 
-  it("skip-link target is a focusable anchor rendered after the header", () => {
-    const target = header.indexOf('id="hg-page-content"');
-    const headerClose = header.indexOf("</header>");
-    assert.ok(target > -1, "skip target missing");
-    assert.ok(target > headerClose, "target must come after the header");
-    assert.match(header, /id="hg-page-content" tabIndex=\{-1\}/);
+  it("the owning frame supplies a focusable main target after the header", () => {
+    assert.match(siteFrame, /<Header renderSkipTarget=\{false\}/);
+    assert.match(siteFrame, /<main id="hg-page-content" tabIndex=\{-1\}/);
   });
 
   it("globals suppress the focus ring on skip-link targets only", () => {
@@ -610,6 +684,134 @@ describe("AA-17 analytics consent (WCAG 2.1.1 / 4.1.2 / 1.4.4)", () => {
     assert.match(googleAnalytics, /consentGranted/);
     assert.match(layout, /AnalyticsConsent enabled=\{analyticsEnabled\}/);
     assert.match(layout, /GoogleAnalytics enabled=\{analyticsEnabled\}/);
+  });
+});
+
+describe("Remediation pass 1 — confirmed findings", () => {
+  it("Shape Studio exposes small and large keyboard nudges", () => {
+    for (const key of ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"]) {
+      assert.ok(calibrationMarkers.includes(`\"${key}\"`));
+      assert.ok(overlayStage.includes(`\"${key}\"`));
+    }
+    assert.match(calibrationMarkers, /e\.shiftKey/);
+    assert.match(calibrationMarkers, /aria-live="polite"/);
+    assert.match(overlayStage, /event\.shiftKey \? 10 : 1/);
+    assert.match(overlayStage, /tabIndex=\{isFramingStep \? 0 : undefined\}/);
+    assert.match(overlayStage, /onKeyDown=\{handleFrameKeyDown\}/);
+    assert.match(overlayStage, /onKeyDown=\{handleKeyboardMove\}/);
+  });
+
+  it("House motion is controllable and reduced-motion prevents autoplay", () => {
+    assert.doesNotMatch(housePage, /\sautoPlay/);
+    assert.match(housePage, /prefers-reduced-motion: reduce/);
+    assert.match(housePage, /reducedMotion\.matches/);
+    assert.match(housePage, /video\.pause\(\)/);
+    assert.match(housePage, /isPlaying \? "Pause video" : "Play video"/);
+    assert.match(housePage, /handleTogglePlayback/);
+  });
+
+  it("DI exposes focus on the visible upload surface", () => {
+    assert.match(uploadDock, /focus-within:border-\[#987648\]/);
+    assert.match(uploadDock, /focus-within:shadow-\[0_0_0_2px_#987648\]/);
+    assert.ok(contrast("#987648", "#f8f3eb") >= 3);
+  });
+
+  it("Guide muted text and placeholder use an AA color", () => {
+    assert.doesNotMatch(guideBreadcrumbs, /#8a8279/i);
+    assert.doesNotMatch(guideSearch, /#8a8279/i);
+    assert.match(guideBreadcrumbs, /#70665d/i);
+    assert.match(guideSearch, /placeholder:text-\[#70665d\]/i);
+    assert.ok(contrast("#70665d", "#efe8de") >= 4.5);
+    assert.ok(contrast("#70665d", "#f6f1ea") >= 4.5);
+  });
+
+  it("Diamond Studio swatches use an opaque two-pixel focus ring", () => {
+    assert.match(studioPage, /outline:2px solid #987648/);
+    assert.doesNotMatch(
+      studioPage,
+      /dts-tone-swatch:focus-visible\{[\s\S]{0,160}\/ 0\.65/,
+    );
+  });
+
+  it("production hides the internal calibration ingest route", () => {
+    assert.match(calibrationPage, /process\.env\.NODE_ENV !== "development"/);
+    assert.match(calibrationPage, /notFound\(\)/);
+    assert.match(calibrationPage, /index: false/);
+  });
+
+  it("Concierge names required fields visibly", () => {
+    assert.match(conciergeForm, /Name <span[^>]*>\(required\)<\/span>/);
+    assert.match(conciergeForm, /Email <span[^>]*>\(required\)<\/span>/);
+  });
+
+  it("Terms keeps a unique route title through the Metadata API", () => {
+    assert.match(termsPage, /pageMetadata\(\{/);
+    assert.match(termsPage, /title: "Terms"/);
+  });
+
+  it("known forced-new-tab links announce the context change", () => {
+    assert.match(customFinishedPiece, /opens in a new tab/);
+    assert.match(ledgerChrome, /opens in a new tab/);
+  });
+});
+
+describe("Shape Studio known-measurements path", () => {
+  it("makes the alternate input method clearly discoverable", () => {
+    assert.match(knownMeasurementsEntry, /Use known measurements instead/);
+    assert.match(
+      knownMeasurementsEntry,
+      /data-dss-entry-action="use-known-measurements"/,
+    );
+    assert.match(knownMeasurementsEntry, /Use your known ring size/);
+  });
+
+  it("supports understandable, pointer-free US ring-size entry", () => {
+    assert.match(knownMeasurementsEntry, /htmlFor=\{selectId\}/);
+    assert.match(knownMeasurementsEntry, /id=\{selectId\}/);
+    assert.match(knownMeasurementsEntry, /Known US ring size/);
+    assert.match(knownMeasurementsEntry, /<select/);
+    assert.match(knownMeasurementsEntry, /selectRef\.current\?\.focus\(\)/);
+    assert.match(knownMeasurementsEntry, /RING_SIZE_OPTIONS\.map/);
+    assert.match(knownMeasurementsEntry, /does not measure your/);
+    assert.match(calibrationControls, /aria-label="Known US ring size"/);
+    assert.match(calibrationControls, /role="slider"/);
+    for (const key of ["ArrowLeft", "ArrowRight", "Home", "End"]) {
+      assert.ok(calibrationControls.includes(`"${key}"`));
+    }
+  });
+
+  it("bypasses card calibration and enters the existing usable preview", () => {
+    assert.match(
+      shapeStudioView,
+      /photoScaleSourceFromCaptureMode\(captureMode\)/,
+    );
+    assert.match(shapeStudioView, /setPhotoScaleSource\(source\)/);
+    assert.match(shapeStudioView, /setCardCalibration\(null\)/);
+    assert.match(
+      shapeStudioView,
+      /photoScaleSource === "known-size" \|\| calibrated/,
+    );
+    assert.match(shapeStudioView, /ringSize=\{ringSize\}/);
+    assert.match(captureView, /mode === "known-size"/);
+    assert.match(captureView, /No reference card is needed/);
+    assert.match(
+      shapeComparisonEditorial,
+      /How your known size sets scale/,
+    );
+    assert.match(shapeComparisonEditorial, /comparison preview/);
+  });
+});
+
+describe("Accessibility statement publication", () => {
+  it("publishes the approved statement with route metadata and a footer link", () => {
+    assert.match(accessibilityStatement, /Accessibility at Hourglass Diamonds/);
+    assert.match(accessibilityStatement, /WCAG 2\.1 and WCAG 2\.2 Level AA/);
+    assert.match(accessibilityStatement, /justin@hourglassdiamonds\.com/);
+    assert.match(accessibilityPage, /title: "Accessibility"/);
+    assert.match(accessibilityPage, /path: "\/accessibility"/);
+    assert.match(footer, /href="\/accessibility"/);
+    assert.match(footer, />\s*Accessibility\s*</);
+    assert.match(sitemapSource, /\$\{SITE_URL\}\/accessibility/);
   });
 });
 

@@ -188,6 +188,12 @@ export function ShapeStudioStyles() {
         /* Legacy empty-viewer chrome — entry no longer uses .dss-viewer. */
         display:none;
       }
+      .dss-viewer:focus-visible,
+      .dss-overlay:focus-visible,
+      .dss-cal-handle:focus-visible{
+        outline:3px solid var(--hg-focus-ring, #987648);
+        outline-offset:3px;
+      }
       .dss-entry-surface{
         width:100%;
         display:flex;
@@ -372,6 +378,63 @@ export function ShapeStudioStyles() {
         outline-offset:2px;
         border-radius:4px;
       }
+      .dss-known-measurements{
+        width:min(100%, 340px);
+        margin:4px auto 0;
+        padding:14px 16px;
+        display:flex;
+        flex-direction:column;
+        align-items:stretch;
+        gap:8px;
+        text-align:left;
+        border:1px solid color-mix(in srgb, var(--card-edge) 80%, var(--hairline));
+        border-radius:12px;
+        background:color-mix(in srgb, var(--card) 82%, #fff);
+        box-sizing:border-box;
+      }
+      .dss-known-measurements h2{
+        margin:0;
+        font-family:var(--serif);
+        font-size:16px;
+        font-weight:400;
+        color:var(--ink);
+      }
+      .dss-known-measurements p{
+        margin:0;
+        font-size:12.5px;
+        line-height:1.5;
+        color:var(--ink-soft);
+      }
+      .dss-known-measurements label{
+        margin-top:2px;
+        font-size:10px;
+        letter-spacing:0.12em;
+        text-transform:uppercase;
+        color:var(--ink);
+      }
+      .dss-known-measurements select{
+        width:100%;
+        min-height:44px;
+        padding:9px 34px 9px 11px;
+        border:1px solid var(--pill-edge);
+        border-radius:8px;
+        background:var(--card);
+        color:var(--ink);
+        font:inherit;
+      }
+      .dss-known-measurements select:focus-visible{
+        outline:2px solid var(--hg-focus-ring, #987648);
+        outline-offset:2px;
+      }
+      .dss-known-measurements .dss-known-measurements-note{
+        font-size:11px;
+        color:var(--ink-mute);
+      }
+      .dss-known-measurements .dss-entry-secondary-link{
+        align-self:flex-start;
+        margin:0;
+        text-align:left;
+      }
       .dss-stage-empty{
         position:relative;
         z-index:1;
@@ -514,6 +577,9 @@ export function ShapeStudioStyles() {
         position:absolute; z-index:2; cursor:grab; touch-action:none;
         transform:translate(-50%, -50%);
         overflow:hidden;
+        border:0;
+        padding:0;
+        background:transparent;
       }
       .dss-overlay.is-dragging{ cursor:grabbing; }
       .dss-overlay-face{
@@ -1118,17 +1184,17 @@ export function ShapeStudioStyles() {
           display:flex;
           flex-direction:column;
           align-items:center;
-          padding:16px 0 24px;
+          padding:12px 0 20px;
         }
         .dss-entry-surface{
           order:3;
           width:100%;
-          padding:0 20px;
+          padding:0 16px;
         }
         .dss-entry-card{
           max-width:min(520px, 100%);
           width:100%;
-          padding:22px 20px 24px;
+          padding:18px 16px 20px;
         }
         .dss-entry-card--qr{
           max-width:min(480px, 100%);
@@ -1142,11 +1208,12 @@ export function ShapeStudioStyles() {
         .dss-qr-panel--stage .dss-qr-lead{
           max-width:none;
         }
+        .dss-entry-mobile-guide{ max-width:280px; }
         .dss-entry-desktop{ display:none; }
         .dss-entry-mobile{ display:flex; }
         .dss-control-rail{ display:contents; }
         .dss-control-rail > .dss-card{
-          width:calc(100% - 40px); margin-left:20px; margin-right:20px;
+          width:calc(100% - 32px); margin-left:16px; margin-right:16px;
         }
         .dss-control-rail > .dss-card[data-dss-photo-card]{ display:none; }
         .dss-control-rail > .dss-card[data-dss-carat-card]{ order:6; }
@@ -1154,18 +1221,18 @@ export function ShapeStudioStyles() {
         .dss-stage-preview{ display:contents; }
         .dss-tool-header{
           order:1;
-          width:calc(100% - 40px);
-          margin:8px 20px 0;
+          width:calc(100% - 32px);
+          margin:6px 16px 0;
         }
         .dss-sentence{
-          order:2; width:calc(100% - 40px); margin:2px 20px 4px;
+          order:2; width:calc(100% - 32px); margin:2px 16px 4px;
           font-size:clamp(16.5px, 4.4vw, 18.5px); max-width:none;
         }
         .dss-trust-note{
-          order:2; width:calc(100% - 40px); margin:0 20px 8px;
+          order:2; width:calc(100% - 32px); margin:0 16px 8px;
           max-width:none;
         }
-        .dss-stage-canvas{ order:3; width:100%; padding:0 20px; box-sizing:border-box; }
+        .dss-stage-canvas{ order:3; width:100%; padding:0 16px; box-sizing:border-box; }
         .dss-stage-hint{ order:4; width:calc(100% - 40px); margin:8px 20px 0; }
         .dss-frame-copy{
           order:4;

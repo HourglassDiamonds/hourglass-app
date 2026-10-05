@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { pageMetadata } from "@/lib/seo/site-metadata";
 import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
-import Header from "../shared-components/Header";
 import ConciergeIntro from "./concierge-intro";
 import ConciergeFormClient from "./concierge-page-client";
 import ConciergeSupportingLinks from "./concierge-supporting-links";
@@ -22,7 +21,6 @@ export default function ConciergePage() {
       <MarketingPageJsonLd name="Concierge" path="/concierge" />
       <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-          <Header currentPage="concierge" />
 
           <div>
             <section className="border-b border-[#e4dbcf] pb-[72px] pt-[52px] md:pb-[88px] md:pt-[64px]">

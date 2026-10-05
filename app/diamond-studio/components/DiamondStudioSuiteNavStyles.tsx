@@ -230,15 +230,15 @@ export default function DiamondStudioSuiteNavStyles() {
           flex-direction:column;
           align-items:center;
           justify-content:center;
-          padding:8px 10px 7px;
+          padding:6px 8px 6px;
           min-height:44px;
           height:auto;
-          gap:5px;
+          gap:4px;
         }
         .dts-topnav{
           display:grid;
           grid-template-columns:repeat(3, minmax(0, 1fr));
-          gap:6px;
+          gap:4px;
           margin-left:0;
           padding:0;
           justify-content:stretch;
@@ -256,8 +256,8 @@ export default function DiamondStudioSuiteNavStyles() {
         .dts-topnav-hit{
           width:100%;
           height:100%;
-          min-height:48px;
-          padding:7px 3px 10px;
+          min-height:44px;
+          padding:6px 2px 8px;
           box-sizing:border-box;
           gap:3px;
         }
@@ -267,8 +267,8 @@ export default function DiamondStudioSuiteNavStyles() {
           align-items:center;
           justify-content:center;
           gap:1px;
-          font-size:8.5px;
-          letter-spacing:0.04em;
+          font-size:8px;
+          letter-spacing:0.025em;
           white-space:normal;
           max-width:100%;
           line-height:1.15;
@@ -280,12 +280,12 @@ export default function DiamondStudioSuiteNavStyles() {
           display:none;
         }
         .dts-topnav-desc{
-          font-size:7.5px;
-          letter-spacing:0.02em;
+          font-size:7px;
+          letter-spacing:0.01em;
           white-space:normal;
           max-width:100%;
           line-height:1.15;
-          padding:0 1px;
+          padding:0;
         }
         .dts-topnav-item.is-active .dts-topnav-hit::after{
           width:min(64%, 88px);
@@ -293,7 +293,7 @@ export default function DiamondStudioSuiteNavStyles() {
         }
       }
       /* Prefer hiding descriptors over shortening primary outcome labels. */
-      @media (max-width: 374px) {
+      @media (max-width: 389px) {
         .dts-topnav-desc{
           display:none;
         }
@@ -303,8 +303,8 @@ export default function DiamondStudioSuiteNavStyles() {
           gap:2px;
         }
         .dts-topnav-label{
-          font-size:8px;
-          letter-spacing:0.035em;
+          font-size:7.75px;
+          letter-spacing:0.02em;
         }
       }
     `,

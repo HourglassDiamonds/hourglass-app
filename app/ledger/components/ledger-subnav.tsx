@@ -13,9 +13,9 @@ export default function LedgerSubnav({
   return (
     <nav
       aria-label="Ledger indexes"
-      className={`border-b border-[#e4dbcf]/80 pb-2 ${className}`}
+      className={`-mx-5 overflow-x-auto border-b border-[#e4dbcf]/80 px-5 pb-1 [scrollbar-width:none] min-[390px]:-mx-6 min-[390px]:px-6 md:mx-0 md:overflow-visible md:px-0 md:pb-2 [&::-webkit-scrollbar]:hidden ${className}`}
     >
-      <ul className="flex flex-wrap items-center gap-x-1 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e] md:gap-x-2 md:tracking-[0.16em]">
+      <ul className="flex w-max flex-nowrap items-center gap-x-1 whitespace-nowrap font-sans text-[9px] uppercase tracking-[0.12em] text-[#6d655e] md:w-auto md:flex-wrap md:gap-x-2 md:text-[10px] md:tracking-[0.16em]">
         {LEDGER_INDEXES.map((index, i) => (
           <li key={index.id} className="flex items-center">
             {i > 0 ? (

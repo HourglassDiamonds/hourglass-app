@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import Header from "../../shared-components/Header";
 import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
@@ -143,7 +142,6 @@ export default function DiamondCutPage() {
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
       <CategoryGuideJsonLd segment="diamond-cut" variant="hub" />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="diamond-guide" />
 
         <section className="border-b border-[#e4dbcf] pb-16 pt-14 md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">

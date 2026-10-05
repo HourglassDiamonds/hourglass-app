@@ -43,11 +43,11 @@ export default function Footer() {
   const conciergeCurrent = isNavCurrent(pathname, "/concierge");
 
   return (
-    <footer className="mt-24 border-t border-hg-line">
-      <div className="mx-auto max-w-[1200px] px-6 py-10 md:px-10 md:py-12">
+    <footer className="mt-16 border-t border-hg-line md:mt-24">
+      <div className="mx-auto max-w-[1200px] px-5 py-8 min-[390px]:px-6 md:px-10 md:py-12">
         
         {/* Top row */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between md:gap-6">
           
           <div className="text-[10px] uppercase tracking-[0.30em] text-[#746c62]">
             Hourglass Diamonds
@@ -55,7 +55,7 @@ export default function Footer() {
 
           <nav
             aria-label="Footer"
-            className="flex flex-wrap items-center gap-x-5 text-[12px] text-[#625b54] md:gap-x-4"
+            className="flex flex-wrap items-center gap-x-4 text-[12px] text-[#625b54] md:gap-x-4"
           >
             <FooterLink href="/the-house" pathname={pathname} className={NAV_LINK}>The House</FooterLink>
             <FooterLink href="/our-approach" pathname={pathname} className={NAV_LINK}>Our Approach</FooterLink>
@@ -75,7 +75,7 @@ export default function Footer() {
         </div>
 
         {/* The Ledger — quiet editorial module */}
-        <div className="mt-10 grid gap-8 border-t border-hg-line/70 pt-10 md:grid-cols-2 md:gap-12">
+        <div className="mt-8 grid gap-6 border-t border-hg-line/70 pt-8 md:mt-10 md:grid-cols-2 md:gap-12 md:pt-10">
           <div className="max-w-[28rem]">
             <p className="text-[10px] uppercase tracking-[0.32em] text-hg-eyebrow">
               The Ledger
@@ -110,7 +110,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom row */}
-        <div className="mt-8 flex flex-col gap-2 border-t border-hg-line pt-4 md:flex-row md:items-center md:justify-between md:gap-4 md:pt-6">
+        <div className="mt-6 flex flex-col gap-1 border-t border-hg-line pt-4 md:mt-8 md:flex-row md:items-center md:justify-between md:gap-4 md:pt-6">
 
           <div className="text-[11px] text-[#6d655e]">
             © {new Date().getFullYear()} Hourglass Diamonds · Charlotte, NC
@@ -120,6 +120,12 @@ export default function Footer() {
             <FooterLink href="/privacy" pathname={pathname} className={LEGAL_LINK}>
               Privacy
             </FooterLink>
+            <FooterLink href="/terms" pathname={pathname} className={LEGAL_LINK}>
+              Terms
+            </FooterLink>
+            <FooterLink href="/accessibility" pathname={pathname} className={LEGAL_LINK}>
+              Accessibility
+            </FooterLink>
             <button
               type="button"
               className={LEGAL_LINK}
@@ -127,9 +133,6 @@ export default function Footer() {
             >
               Analytics
             </button>
-            <FooterLink href="/terms" pathname={pathname} className={LEGAL_LINK}>
-              Terms
-            </FooterLink>
           </div>
 
         </div>

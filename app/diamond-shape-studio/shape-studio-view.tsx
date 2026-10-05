@@ -14,18 +14,25 @@ import { formatCaratLabel } from "@/lib/shape-studio/overlay-scale";
 import type { StoneOrientation } from "@/lib/shape-studio/orientation";
 import type {
   CardCalibrationState,
+  CaptureMode,
   ContentPoint,
   DiamondSlotState,
   OverlayPosition,
   PhotoScaleSource,
 } from "@/lib/shape-studio/types";
-import { normalizeGuidedStep } from "@/lib/shape-studio/types";
+import {
+  normalizeGuidedStep,
+  photoScaleSourceFromCaptureMode,
+} from "@/lib/shape-studio/types";
 import {
   DIRECT_MOBILE_ENTRY_MAX_WIDTH_PX,
   replacePendingObjectUrl,
 } from "@/lib/shape-studio/local-photo-selection";
 import { usePhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
-import { CaratControl } from "./components/calibration-controls";
+import {
+  CaratControl,
+  RingSizeControl,
+} from "./components/calibration-controls";
 import DiamondStudioToolHeader from "../diamond-studio/components/DiamondStudioToolHeader";
 import {
   HandPhotoPanel,
@@ -71,6 +78,10 @@ function clearContentPositions(
 const TRUST_CALIBRATED =
   "Card-calibrated from your photograph. Final ring sizing should be confirmed by a jeweler.";
 
+function knownSizeTrustCopy(ringSize: number): string {
+  return `Scaled using your known US ring size ${ringSize.toFixed(1)}. This preview does not measure your finger; final sizing should be confirmed by a jeweler.`;
+}
+
 function calibratedPreviewSentence(
   shape: DiamondSlotState["shape"],
   carat: number,
@@ -95,6 +106,8 @@ export function ShapeStudioView() {
   const pendingLocalPhotoUrlRef = useRef<string | null>(null);
   const [photoScaleSource, setPhotoScaleSource] =
     useState<PhotoScaleSource | null>(null);
+  const [captureMode, setCaptureMode] = useState<CaptureMode>("card-scale");
+  const [ringSize, setRingSize] = useState(6.0);
   /**
    * Public Scaled Preview is always single-mode.
    * Compare slot state remains dormant in the codebase but is never exposed.
@@ -115,6 +128,7 @@ export function ShapeStudioView() {
     cardCalibration?.step === "calibrated-preview";
   const awaitingCardCalibration =
     photoScaleSource === "card-reference" && !calibrated;
+  const previewReady = photoScaleSource === "known-size" || calibrated;
 
   const guidedStep = cardCalibration
     ? normalizeGuidedStep(cardCalibration.step)
@@ -151,18 +165,20 @@ export function ShapeStudioView() {
   }, []);
 
   const handleImageSelected = useCallback(
-    (url: string, _source: PhotoScaleSource) => {
-      /** Public journey always enters card-reference Scaled Preview. */
-      void _source;
-      setPhotoScaleSource("card-reference");
+    (url: string, source: PhotoScaleSource) => {
+      setPhotoScaleSource(source);
       resetSlotsForNewPhoto();
-      const { cardA, cardB } = defaultCardEndpoints();
-      setCardCalibration({
-        ...createInitialCardCalibration(),
-        step: "mark-card",
-        cardA,
-        cardB,
-      });
+      if (source === "card-reference") {
+        const { cardA, cardB } = defaultCardEndpoints();
+        setCardCalibration({
+          ...createInitialCardCalibration(),
+          step: "mark-card",
+          cardA,
+          cardB,
+        });
+      } else {
+        setCardCalibration(null);
+      }
       setHandImageUrl((prev) => {
         if (prev?.startsWith("blob:")) URL.revokeObjectURL(prev);
         return url;
@@ -185,8 +201,8 @@ export function ShapeStudioView() {
     /** Clear pending without revoking — handImageUrl takes ownership. */
     pendingLocalPhotoUrlRef.current = null;
     setPendingLocalPhotoUrl(null);
-    handleImageSelected(url, "card-reference");
-  }, [pendingLocalPhotoUrl, handleImageSelected]);
+    handleImageSelected(url, photoScaleSourceFromCaptureMode(captureMode));
+  }, [captureMode, pendingLocalPhotoUrl, handleImageSelected]);
 
   const handleRetakeLocalPhoto = useCallback(() => {
     setPendingLocalPhotoUrl((prev) => {
@@ -199,10 +215,11 @@ export function ShapeStudioView() {
   const phoneCapture = usePhoneCaptureSession(
     useCallback(
       (url: string) => {
-        handleImageSelected(url, "card-reference");
+        handleImageSelected(url, photoScaleSourceFromCaptureMode(captureMode));
       },
-      [handleImageSelected],
+      [captureMode, handleImageSelected],
     ),
+    captureMode,
   );
 
   const handleStartOver = useCallback(() => {
@@ -217,6 +234,7 @@ export function ShapeStudioView() {
       return null;
     });
     setPhotoScaleSource(null);
+    setCaptureMode("card-scale");
     setCardCalibration(null);
     setSingleSlot((prev) => clearContentPositions(prev, DEFAULT_POSITION));
   }, [phoneCapture]);
@@ -364,7 +382,11 @@ export function ShapeStudioView() {
           ? "Place the guide where the ring will sit."
           : "Align the precision lines with the two ends of the card’s long edge."
       : calibratedPreviewSentence(singleSlot.shape, singleSlot.carat);
-  const trustCopy = calibrated ? TRUST_CALIBRATED : null;
+  const trustCopy = calibrated
+    ? TRUST_CALIBRATED
+    : photoScaleSource === "known-size"
+      ? knownSizeTrustCopy(ringSize)
+      : null;
 
   /**
    * Diamond controls:
@@ -374,9 +396,9 @@ export function ShapeStudioView() {
    */
   const showDiamondControls =
     Boolean(handImageUrl) &&
-    (calibrated || (!narrowLayout && awaitingCardCalibration));
+    (previewReady || (!narrowLayout && awaitingCardCalibration));
   const showShapeSelector =
-    Boolean(handImageUrl) && (calibrated || !narrowLayout);
+    Boolean(handImageUrl) && (previewReady || !narrowLayout);
   const showRail = Boolean(handImageUrl);
   /** Desktop-only Photo status card; mobile folds Start Over into step actions. */
   const showPhotoCard = showRail && !narrowLayout;
@@ -407,17 +429,27 @@ export function ShapeStudioView() {
                   ref={handPhotoRef}
                   onStartOver={handleStartOver}
                   onImageSelected={handleImageSelected}
+                  photoScaleSource={photoScaleSource}
                 />
               ) : null}
 
               {showDiamondControls ? (
-                <CaratControl
-                  carat={singleSlot.carat}
-                  shape={singleSlot.shape}
-                  onChange={setActiveCarat}
-                  orientation={stoneOrientation}
-                  onOrientationChange={setStoneOrientation}
-                />
+                <>
+                  {photoScaleSource === "known-size" ? (
+                    <RingSizeControl
+                      ringSize={ringSize}
+                      onChange={setRingSize}
+                      photoScaleSource={photoScaleSource}
+                    />
+                  ) : null}
+                  <CaratControl
+                    carat={singleSlot.carat}
+                    shape={singleSlot.shape}
+                    onChange={setActiveCarat}
+                    orientation={stoneOrientation}
+                    onOrientationChange={setStoneOrientation}
+                  />
+                </>
               ) : null}
             </aside>
           ) : null}
@@ -434,6 +466,10 @@ export function ShapeStudioView() {
               {trustCopy ? <p className="dss-trust-note">{trustCopy}</p> : null}
               <OverlayStage
                 handImageUrl={handImageUrl}
+                ringSize={ringSize}
+                captureMode={captureMode}
+                onCaptureModeChange={setCaptureMode}
+                onRingSizeChange={setRingSize}
                 photoScaleSource={photoScaleSource}
                 studioMode={mode}
                 cardCalibration={
@@ -473,7 +509,7 @@ export function ShapeStudioView() {
           </div>
         </div>
       </div>
-      <ShapeComparisonEditorial />
+      <ShapeComparisonEditorial captureMode={captureMode} />
     </div>
   );
 }

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
-import Header from "@/app/shared-components/Header";
 import RevealOnScroll from "@/app/shared-components/motion/RevealOnScroll";
 import {
   trackConversationConciergeClicked,
@@ -80,7 +79,6 @@ export default function EpisodePageClient({ episode }: EpisodePageClientProps) {
   return (
     <div className="relative z-0 -mb-20 min-h-screen bg-[#efe8de] pb-6 text-[#1c1b1a] [background:radial-gradient(circle_at_top,rgba(255,255,255,0.42),transparent_36rem),linear-gradient(180deg,#efe8de,#ebe3d8)] md:-mb-24 md:pb-8">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header />
 
         <article>
           <header className="border-b border-[#e4dbcf] pb-[56px] pt-[56px] md:pb-[72px] md:pt-[72px]">

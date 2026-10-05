@@ -8,6 +8,7 @@ import {
 } from "../buffer-health-data";
 import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
+import { LedgerMonitorStatusLines } from "./ledger-monitor-chrome";
 
 function ReserveChamber({ domain }: { domain: BufferDomain }) {
   const fill = reserveFillPercent(domain.reserveState);
@@ -91,6 +92,7 @@ export default function BufferHealthView() {
       <span className="ledger-index-kicker">The Ledger Intelligence System</span>
       <h1 className="ledger-index-title">Buffer Health / Remaining Slack</h1>
       <p className="ledger-index-intro">{BUFFER_HEALTH_SNAPSHOT.definition}</p>
+      <LedgerMonitorStatusLines />
 
       <BufferHealthVisual />
 
@@ -125,7 +127,14 @@ export default function BufferHealthView() {
                   {domain.sources.map((source) => (
                     <li key={`${source.institution}-${source.title}`}>
                       {source.url ? (
-                        <a href={source.url}>{source.institution} — {source.title}</a>
+                        <a
+                          href={source.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {source.institution} — {source.title}
+                          <span className="sr-only"> (opens in a new tab)</span>
+                        </a>
                       ) : (
                         <span>{source.institution} — {source.title}</span>
                       )}

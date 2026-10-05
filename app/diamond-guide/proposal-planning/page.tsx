@@ -2,7 +2,6 @@
 
 import React from "react";
 import Link from "next/link";
-import Header from "../../shared-components/Header";
 import CTAGlimmer from "../../shared-components/motion/CTAGlimmer";
 import RevealOnScroll from "../../shared-components/motion/RevealOnScroll";
 import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
@@ -20,7 +19,6 @@ export default function ProposalPlanningPage() {
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
       <CategoryGuideJsonLd segment="proposal-planning" variant="hub" />
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header currentPage="diamond-guide" />
 
         <section className="border-b border-[#e4dbcf] pb-[84px] pt-[82px] md:pb-[100px] md:pt-[98px]">
           <div className="mx-auto max-w-[760px] text-center">

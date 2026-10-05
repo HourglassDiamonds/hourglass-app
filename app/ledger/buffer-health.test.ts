@@ -126,7 +126,11 @@ describe("Buffer Health", () => {
     }
     assert.equal(BUFFER_HEALTH_SNAPSHOT.evidenceCutoff, "October 1, 2026");
     const html = renderToStaticMarkup(createElement(BufferHealthView));
+    assert.match(html, /Evidence reviewed through October 1, 2026/);
     assert.match(html, /October 1 sourced baselines/i);
+    assert.match(html, /target="_blank"/);
+    assert.match(html, /rel="noopener noreferrer"/);
+    assert.match(html, /\(opens in a new tab\)/);
     for (const label of labels) {
       assert.match(html, new RegExp(label));
     }

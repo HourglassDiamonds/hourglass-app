@@ -51,13 +51,24 @@ function uploadErrorMessage(status: number, message?: string): string {
   return message ?? "Upload failed. Try again.";
 }
 
-function modeCopy(_mode: CaptureMode) {
-  void _mode;
+function modeCopy(mode: CaptureMode) {
+  if (mode === "known-size") {
+    return {
+      title: "Capture for See It On Your Hand",
+      instruction:
+        "Photograph your hand from directly overhead in even light. No reference card is needed; the known US ring size selected on your computer will establish the preview scale.",
+      note: "Return to your computer after the photograph is received to compare diamond shapes and carat weights. This preview does not replace a jeweler’s fitting.",
+      delivered:
+        "Return to See It On Your Hand on your computer to compare diamond shapes and carat weights.",
+    };
+  }
   return {
     title: "Capture for See It On Your Hand",
     instruction:
       "Place a blank gift card, hotel key, or standard-size loyalty card beside your hand on the same surface. Photograph from directly overhead. Keep the card’s full long edge visible. Avoid cards showing personal or financial information.",
     note: "On desktop, mark the card’s long edge to set visual scale, then frame the card out of your final preview. Final ring sizing should be confirmed by a jeweler.",
+    delivered:
+      "Return to See It On Your Hand on your desktop to mark the card, frame your hand, and preview the diamond.",
   };
 }
 
@@ -67,7 +78,10 @@ function ctaLabel(state: CaptureState): string {
   return "Take or choose photo";
 }
 
-function gateToBlockedState(gate: CaptureGateResult): {
+function gateToBlockedState(
+  gate: CaptureGateResult,
+  deliveredBody = "Return to See It On Your Hand on your computer to continue.",
+): {
   state: CaptureState;
   title: string;
   body: string;
@@ -76,7 +90,7 @@ function gateToBlockedState(gate: CaptureGateResult): {
     return {
       state: "delivered",
       title: "Photo received on your computer.",
-      body: "Return to See It On Your Hand on your desktop to mark the card, frame your hand, and preview the diamond.",
+      body: deliveredBody,
     };
   }
   if (gate.reason === "already_uploaded") {
@@ -102,7 +116,8 @@ export function CaptureView({
   const inFlightRef = useRef(false);
   const handledTokenRef = useRef<string | null>(null);
   const uploadFileRef = useRef<(file: File) => Promise<void>>(async () => undefined);
-  const initial = gateToBlockedState(initialGate);
+  const copy = modeCopy(captureMode);
+  const initial = gateToBlockedState(initialGate, copy.delivered);
   const [state, setState] = useState<CaptureState>(
     initialGate.allowed ? "idle" : initial.state,
   );
@@ -114,7 +129,6 @@ export function CaptureView({
   );
   const [error, setError] = useState<string | null>(null);
   const [waitingHint, setWaitingHint] = useState(false);
-  const copy = modeCopy(captureMode);
   const busy = state === "preparing" || state === "uploading";
   const captureEnabled = state === "idle" || state === "error";
 
@@ -129,7 +143,7 @@ export function CaptureView({
       setState("delivered");
       setTitle("Photo received on your computer.");
       setBody(
-        "Return to See It On Your Hand on your desktop to mark the card, frame your hand, and preview the diamond.",
+        copy.delivered,
       );
       setWaitingHint(false);
       setError(null);
@@ -151,7 +165,7 @@ export function CaptureView({
           : "Keep this page open while your computer receives the photograph.",
       );
     }
-  }, [waitingHint]);
+  }, [copy.delivered, waitingHint]);
 
   const refreshSessionStatus = useCallback(async () => {
     try {
@@ -167,7 +181,7 @@ export function CaptureView({
       const gate = evaluateCaptureGate(session);
       if (state === "idle" || state === "error" || state === "blocked") {
         if (!gate.allowed && gate.reason !== "already_uploaded") {
-          const blocked = gateToBlockedState(gate);
+          const blocked = gateToBlockedState(gate, copy.delivered);
           setState(blocked.state);
           setTitle(blocked.title);
           setBody(blocked.body);
@@ -178,7 +192,7 @@ export function CaptureView({
     } catch {
       /* keep current state */
     }
-  }, [applyPollStatus, sessionId, state]);
+  }, [applyPollStatus, copy.delivered, sessionId, state]);
 
   useEffect(() => {
     if (state !== "uploaded_waiting") return;

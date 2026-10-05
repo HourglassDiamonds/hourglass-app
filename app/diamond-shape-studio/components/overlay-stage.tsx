@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
   contentPointToStagePct,
   fingerMidpoint,
@@ -36,6 +36,7 @@ import {
 import { renderStoneHeightMm, renderStoneWidthMm } from "@/lib/shape-studio/dimensions";
 import {
   normalizeGuidedStep,
+  type CaptureMode,
   type CardCalibrationState,
   type ContentPoint,
   type DiamondSlotState,
@@ -46,13 +47,13 @@ import {
   type StudioMode,
 } from "@/lib/shape-studio/types";
 import type { PhoneCaptureSession } from "@/lib/shape-studio/use-phone-capture-session";
-import { SCALED_CAPTURE_MODE } from "@/lib/shape-studio/use-phone-capture-session";
 import { CalibrationMarkers } from "./calibration-markers";
 import {
   DirectMobileEntry,
   DirectMobileReview,
 } from "./direct-mobile-entry";
 import { QrCapturePanel } from "./qr-capture-panel";
+import { KnownMeasurementsEntry } from "./known-measurements-entry";
 
 type OverlayLayerProps = {
   slot: DiamondSlotState;
@@ -96,6 +97,7 @@ function OverlayLayer({
   const draggingRef = useRef(false);
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const overlayRef = useRef<HTMLDivElement>(null);
+  const keyboardInstructionsId = useId();
 
   const renderOrientation = effectiveOrientation(slot.shape, orientation);
   const { widthPx, heightPx } =
@@ -256,6 +258,35 @@ function OverlayLayer({
     overlayRef.current?.classList.remove("is-dragging");
   }, []);
 
+  const handleKeyboardMove = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      const delta = event.shiftKey ? 10 : 1;
+      const offset =
+        event.key === "ArrowLeft"
+          ? { x: -delta, y: 0 }
+          : event.key === "ArrowRight"
+            ? { x: delta, y: 0 }
+            : event.key === "ArrowUp"
+              ? { x: 0, y: -delta }
+              : event.key === "ArrowDown"
+                ? { x: 0, y: delta }
+                : null;
+      if (!offset) return;
+
+      const stage = overlayRef.current?.parentElement;
+      if (!stage) return;
+      const rect = stage.getBoundingClientRect();
+      const centerX = rect.left + (paintPosition.xPct / 100) * rect.width;
+      const centerY = rect.top + (paintPosition.yPct / 100) * rect.height;
+      event.preventDefault();
+      event.stopPropagation();
+      beginDrag(centerX, centerY);
+      moveDrag(centerX + offset.x, centerY + offset.y);
+      endDrag();
+    },
+    [beginDrag, endDrag, moveDrag, paintPosition.xPct, paintPosition.yPct],
+  );
+
   useEffect(() => {
     const onMove = (ev: MouseEvent | TouchEvent) => {
       if (!draggingRef.current) return;
@@ -279,6 +310,13 @@ function OverlayLayer({
     <div
       ref={overlayRef}
       className="dss-overlay"
+      role="button"
+      tabIndex={0}
+      aria-label={`${label ?? slot.shape} diamond position, ${Math.round(
+        paintPosition.xPct,
+      )} percent from left, ${Math.round(paintPosition.yPct)} percent from top`}
+      aria-describedby={keyboardInstructionsId}
+      aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
       style={{
         left: `${paintPosition.xPct}%`,
         top: `${paintPosition.yPct}%`,
@@ -299,7 +337,12 @@ function OverlayLayer({
         if (!t) return;
         beginDrag(t.clientX, t.clientY);
       }}
+      onKeyDown={handleKeyboardMove}
     >
+      <span id={keyboardInstructionsId} className="sr-only">
+        Use arrow keys to move one pixel. Hold Shift with an arrow key to move
+        ten pixels.
+      </span>
       {label ? <span className="dss-overlay-label">{label}</span> : null}
       <div
         className={`dss-overlay-face${
@@ -389,8 +432,11 @@ function stageHint(
 
 export type OverlayStageProps = {
   handImageUrl: string | null;
-  /** Optional — unused on the public card-calibrated Scaled Preview path. */
+  /** Known US size used by the alternate, non-card scale path. */
   ringSize?: number;
+  captureMode?: CaptureMode;
+  onCaptureModeChange?: (mode: CaptureMode) => void;
+  onRingSizeChange?: (ringSize: number) => void;
   photoScaleSource?: PhotoScaleSource | null;
   studioMode?: StudioMode;
   cardCalibration?: CardCalibrationState | null;
@@ -435,6 +481,9 @@ export type OverlayStageProps = {
 export function OverlayStage({
   handImageUrl,
   ringSize,
+  captureMode = "card-scale",
+  onCaptureModeChange,
+  onRingSizeChange,
   photoScaleSource = null,
   studioMode = "single",
   cardCalibration = null,
@@ -917,8 +966,39 @@ export function OverlayStage({
     onFramingChange?.(suggested.framing, suggested.cardStillInFrame);
   }, [sourceSize, cardCalibration, viewerAspect, onFramingChange]);
 
+  const handleFrameKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLDivElement>) => {
+      if (!isFramingStep || !framing || !sourceSize || !layout) return;
+      const delta = event.shiftKey ? 10 : 1;
+      const movement =
+        event.key === "ArrowLeft"
+          ? { x: -delta, y: 0 }
+          : event.key === "ArrowRight"
+            ? { x: delta, y: 0 }
+            : event.key === "ArrowUp"
+              ? { x: 0, y: -delta }
+              : event.key === "ArrowDown"
+                ? { x: 0, y: delta }
+                : null;
+      if (!movement) return;
+      event.preventDefault();
+      onFramingChange?.(
+        panFramingByViewerDelta(
+          framing,
+          movement.x,
+          movement.y,
+          sourceSize,
+          layout.stageWidth,
+          layout.stageHeight,
+        ),
+      );
+    },
+    [framing, isFramingStep, layout, onFramingChange, sourceSize],
+  );
+
   /** Pre-photo entry / QR — separate from the calibrated viewer chrome. */
   if (!handImageUrl) {
+    const useKnownSize = captureMode === "known-size";
     const showQr =
       Boolean(phoneCapture) &&
       (phoneCapture!.phase === "creating" ||
@@ -948,7 +1028,7 @@ export function OverlayStage({
             ) : phoneCapture!.captureUrl && phoneCapture!.expiresAt ? (
               <QrCapturePanel
                 captureUrl={phoneCapture!.captureUrl}
-                captureMode={SCALED_CAPTURE_MODE}
+                captureMode={captureMode}
                 expiresAt={phoneCapture!.expiresAt}
                 waiting={phoneCapture!.waiting}
                 expired={phoneCapture!.expired}
@@ -973,6 +1053,7 @@ export function OverlayStage({
           ) : showLocalReview && pendingLocalPhotoUrl ? (
             <DirectMobileReview
               imageUrl={pendingLocalPhotoUrl}
+              captureMode={captureMode}
               onUseThisPhoto={() => onConfirmLocalPhoto?.()}
               onRetake={() => onRetakeLocalPhoto?.()}
             />
@@ -982,13 +1063,24 @@ export function OverlayStage({
               <div className="dss-entry-desktop" data-dss-entry-desktop>
                 <p className="dss-stage-empty-kicker">See It On Your Hand</p>
                 <p className="dss-stage-empty-title">
-                  Add your hand-and-card photo
+                  {useKnownSize
+                    ? "Add a clear hand photo"
+                    : "Add your hand-and-card photo"}
                 </p>
                 <p className="dss-stage-empty-copy">
-                  Use your phone to photograph your hand with a standard-size card
-                  beside it. We’ll use the card to establish visual scale, then
-                  frame it out of the final preview.
+                  {useKnownSize
+                    ? "Photograph your hand from directly overhead. Your known US ring size will establish the preview scale; no card is needed."
+                    : "Use your phone to photograph your hand with a standard-size card beside it. We’ll use the card to establish visual scale, then frame it out of the final preview."}
                 </p>
+                {onCaptureModeChange && onRingSizeChange && ringSize ? (
+                  <KnownMeasurementsEntry
+                    active={useKnownSize}
+                    ringSize={ringSize}
+                    onChoose={() => onCaptureModeChange("known-size")}
+                    onRingSizeChange={onRingSizeChange}
+                    onUseCardPhoto={() => onCaptureModeChange("card-scale")}
+                  />
+                ) : null}
                 {phoneCapture ? (
                   <div className="dss-stage-empty-actions">
                     <button
@@ -1000,15 +1092,21 @@ export function OverlayStage({
                     </button>
                   </div>
                 ) : null}
-                <p className="dss-stage-empty-privacy">
-                  Use a blank gift card, hotel key, or standard-size loyalty card.
-                  Avoid cards showing personal or financial information.
-                </p>
+                {!useKnownSize ? (
+                  <p className="dss-stage-empty-privacy">
+                    Use a blank gift card, hotel key, or standard-size loyalty card.
+                    Avoid cards showing personal or financial information.
+                  </p>
+                ) : null}
               </div>
               {/* Narrow phone: same-device camera capture — no QR primary. */}
               {onPendingLocalPhoto ? (
                 <DirectMobileEntry
                   onPhotoSelected={onPendingLocalPhoto}
+                  captureMode={captureMode}
+                  ringSize={ringSize}
+                  onCaptureModeChange={onCaptureModeChange}
+                  onRingSizeChange={onRingSizeChange}
                   onUseAnotherDevice={
                     phoneCapture ? () => phoneCapture.start() : undefined
                   }
@@ -1063,11 +1161,16 @@ export function OverlayStage({
           }
           aria-label={
             isFramingStep
-              ? "Frame your finger photo"
+              ? "Frame your finger photo. Use arrow keys to reposition the photo; hold Shift for larger movement."
               : awaitingGuided
                 ? "Hand photo awaiting guided measurement"
                 : "Hand photo with diamond overlay"
           }
+          tabIndex={isFramingStep ? 0 : undefined}
+          aria-keyshortcuts={
+            isFramingStep ? "ArrowLeft ArrowRight ArrowUp ArrowDown" : undefined
+          }
+          onKeyDown={handleFrameKeyDown}
           onClick={(e) => {
             if (!canPlace) return;
             placeSingleOverlay(e.clientX, e.clientY);

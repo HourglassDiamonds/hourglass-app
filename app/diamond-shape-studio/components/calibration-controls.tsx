@@ -79,7 +79,7 @@ export function RingSizeControl({
         >
           ‹
         </button>
-        <span className="dss-step-val">{ringSize.toFixed(1)}</span>
+        <span className="dss-step-val">US {ringSize.toFixed(1)}</span>
         <button
           type="button"
           aria-label="Larger ring size"
@@ -93,7 +93,32 @@ export function RingSizeControl({
         <div
           ref={trackRef}
           className="dss-track"
+          role="slider"
+          tabIndex={0}
+          aria-label="Known US ring size"
+          aria-valuemin={RING_SIZE_MIN}
+          aria-valuemax={RING_SIZE_MAX}
+          aria-valuenow={ringSize}
+          aria-valuetext={`US ring size ${ringSize.toFixed(1)}`}
           style={{ "--dss-fill": `${fill}%` } as React.CSSProperties}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowLeft" || event.key === "ArrowDown") {
+              event.preventDefault();
+              handleStep(-RING_SIZE_STEP);
+            } else if (
+              event.key === "ArrowRight" ||
+              event.key === "ArrowUp"
+            ) {
+              event.preventDefault();
+              handleStep(RING_SIZE_STEP);
+            } else if (event.key === "Home") {
+              event.preventDefault();
+              onChange(RING_SIZE_MIN);
+            } else if (event.key === "End") {
+              event.preventDefault();
+              onChange(RING_SIZE_MAX);
+            }
+          }}
         >
           <div className="dss-handle" style={{ left: `${fill}%` }} />
         </div>

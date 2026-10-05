@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useRef,
   useState,
   type CSSProperties,
@@ -130,8 +131,10 @@ export function CalibrationMarkers({
   const pointerStartRef = useRef<Vec2>({ x: 0, y: 0 });
   const endpointStartRef = useRef<ContentPoint>({ u: 0, v: 0 });
   const pointsRef = useRef(points);
+  const instructionsId = useId();
   const [activeKey, setActiveKey] = useState<"a" | "b" | null>(null);
   const [gripPx, setGripPx] = useState(GRIP_OFFSET_PX);
+  const [announcement, setAnnouncement] = useState("");
 
   useEffect(() => {
     pointsRef.current = points;
@@ -202,6 +205,41 @@ export function CalibrationMarkers({
     [],
   );
 
+  const nudgePoint = useCallback(
+    (
+      key: "a" | "b",
+      direction: "left" | "right" | "up" | "down",
+      large: boolean,
+    ) => {
+      if (content.width <= 0 || content.height <= 0) return;
+      const stepPx = large ? 10 : 1;
+      const current = pointsRef.current;
+      const point = key === "a" ? current.a : current.b;
+      const next = clampContentPoint({
+        u:
+          point.u +
+          (direction === "left" ? -stepPx : direction === "right" ? stepPx : 0) /
+            content.width,
+        v:
+          point.v +
+          (direction === "up" ? -stepPx : direction === "down" ? stepPx : 0) /
+            content.height,
+      });
+      const nextPoints =
+        key === "a" ? { a: next, b: current.b } : { a: current.a, b: next };
+      pointsRef.current = nextPoints;
+      onChange(nextPoints);
+      setAnnouncement(
+        `${mode === "card" ? "Card" : "Finger"} point ${
+          key === "a" ? (mode === "card" ? "A" : "left") : mode === "card" ? "B" : "right"
+        }: ${Math.round(next.u * 100)} percent from left, ${Math.round(
+          next.v * 100,
+        )} percent from top.`,
+      );
+    },
+    [content.height, content.width, mode, onChange],
+  );
+
   if (stageWidth <= 0 || stageHeight <= 0 || content.width <= 0) return null;
 
   const unit = segmentUnit(points.a, points.b, content);
@@ -223,6 +261,13 @@ export function CalibrationMarkers({
 
   return (
     <div className="dss-cal-layer" data-dss-cal-grip-offset={gripPx}>
+      <p id={instructionsId} className="sr-only">
+        Use the arrow keys to move this point one pixel. Hold Shift while using
+        an arrow key to move ten pixels.
+      </p>
+      <p className="sr-only" aria-live="polite" aria-atomic="true">
+        {announcement}
+      </p>
       <div
         className="dss-cal-segment"
         style={segmentStyle(points.a, points.b, content)}
@@ -269,9 +314,31 @@ export function CalibrationMarkers({
               data-dss-cal-grip
               aria-label={
                 mode === "card"
-                  ? `Card edge point ${label}`
-                  : `Finger edge point ${label}`
+                  ? `Card edge point ${label}, ${Math.round(
+                      points[key].u * 100,
+                    )} percent from left, ${Math.round(points[key].v * 100)} percent from top`
+                  : `Finger edge point ${label}, ${Math.round(
+                      points[key].u * 100,
+                    )} percent from left, ${Math.round(points[key].v * 100)} percent from top`
               }
+              aria-describedby={instructionsId}
+              aria-keyshortcuts="ArrowLeft ArrowRight ArrowUp ArrowDown"
+              onKeyDown={(e) => {
+                const direction =
+                  e.key === "ArrowLeft"
+                    ? "left"
+                    : e.key === "ArrowRight"
+                      ? "right"
+                      : e.key === "ArrowUp"
+                        ? "up"
+                        : e.key === "ArrowDown"
+                          ? "down"
+                          : null;
+                if (!direction) return;
+                e.preventDefault();
+                e.stopPropagation();
+                nudgePoint(key, direction, e.shiftKey);
+              }}
               onMouseDown={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
 import MarketingPageJsonLd from "@/app/shared-components/MarketingPageJsonLd";
-import Header from "../shared-components/Header";
 import CustomDesignIntro from "./custom-design-intro";
 import CustomDesignProgression from "./custom-design-progression";
 import CustomDesignProcess from "./custom-design-process";
@@ -22,7 +21,6 @@ export default function CustomDesignPage() {
       <MarketingPageJsonLd name="Custom Design" path="/custom-design" />
       <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
         <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-          <Header currentPage="custom-design" />
 
           <div>
             <section className="border-b border-[#e4dbcf] pb-[48px] pt-[52px] md:pb-[56px] md:pt-[64px]">

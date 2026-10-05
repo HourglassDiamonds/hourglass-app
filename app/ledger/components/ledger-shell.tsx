@@ -1,4 +1,3 @@
-import Header from "@/app/shared-components/Header";
 import type { LedgerIndexId } from "../ledger-data";
 import "../ledger-index-system.css";
 import LedgerSubnav from "./ledger-subnav";
@@ -17,12 +16,11 @@ export default function LedgerShell({
 }: LedgerShellProps) {
   return (
     <div className="min-h-screen bg-[#efe8de] text-[#1c1b1a]">
-      <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header />
+      <div className="mx-auto max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
         {showSubnav ? (
           <LedgerSubnav
             activeId={activeIndexId}
-            className="mt-5 md:mt-6"
+            className="mt-3 md:mt-6"
           />
         ) : null}
         {children}

@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import Header from "@/app/shared-components/Header";
 import { useReducedMotion } from "@/app/shared-components/motion/useReducedMotion";
 import type { ConversationEpisode } from "@/lib/conversations/episodes";
 import {
@@ -223,7 +222,6 @@ export default function ConversationsHubClient({
       }}
     >
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header />
 
         <section className="border-b border-[#e4dbcf] pb-12 pt-14 md:pb-14 md:pt-16">
           <div className="mx-auto max-w-[820px] text-center">

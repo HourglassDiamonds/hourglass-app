@@ -6,9 +6,15 @@ import {
   selectLocalPhotoFile,
 } from "@/lib/shape-studio/local-photo-selection";
 import { HandCardCaptureGuide } from "@/app/diamond-shape-studio/components/hand-card-capture-guide";
+import type { CaptureMode } from "@/lib/shape-studio/types";
+import { KnownMeasurementsEntry } from "./known-measurements-entry";
 
 type DirectMobileEntryProps = {
   onPhotoSelected: (objectUrl: string) => void;
+  captureMode?: CaptureMode;
+  ringSize?: number;
+  onCaptureModeChange?: (mode: CaptureMode) => void;
+  onRingSizeChange?: (ringSize: number) => void;
   /** Quiet secondary path — starts the existing desktop QR relay when present. */
   onUseAnotherDevice?: () => void;
 };
@@ -19,6 +25,10 @@ type DirectMobileEntryProps = {
  */
 export function DirectMobileEntry({
   onPhotoSelected,
+  captureMode = "card-scale",
+  ringSize,
+  onCaptureModeChange,
+  onRingSizeChange,
   onUseAnotherDevice,
 }: DirectMobileEntryProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -37,20 +47,33 @@ export function DirectMobileEntry({
     },
     [onPhotoSelected],
   );
+  const useKnownSize = captureMode === "known-size";
 
   return (
     <div className="dss-entry-mobile" data-dss-direct-mobile-entry>
       <p className="dss-stage-empty-kicker">See It On Your Hand</p>
-      <HandCardCaptureGuide
-        className="dss-capture-guide dss-entry-mobile-guide"
-        sizes="(max-width: 400px) 88vw, 340px"
-        showCaption={false}
-      />
+      {!useKnownSize ? (
+        <HandCardCaptureGuide
+          className="dss-capture-guide dss-entry-mobile-guide"
+          sizes="(max-width: 400px) 88vw, 340px"
+          showCaption={false}
+        />
+      ) : null}
       <p className="dss-stage-empty-title">Photograph your hand</p>
       <p className="dss-stage-empty-copy">
-        Place a standard-size card beside your hand so we can calibrate the
-        preview accurately.
+        {useKnownSize
+          ? "Photograph your hand from directly overhead. Your known US ring size will establish the preview scale; no card is needed."
+          : "Place a standard-size card beside your hand so we can calibrate the preview accurately."}
       </p>
+      {onCaptureModeChange && onRingSizeChange && ringSize ? (
+        <KnownMeasurementsEntry
+          active={useKnownSize}
+          ringSize={ringSize}
+          onChoose={() => onCaptureModeChange("known-size")}
+          onRingSizeChange={onRingSizeChange}
+          onUseCardPhoto={() => onCaptureModeChange("card-scale")}
+        />
+      ) : null}
       <div className="dss-stage-empty-actions dss-entry-mobile-actions">
         <button
           type="button"
@@ -78,10 +101,12 @@ export function DirectMobileEntry({
           Using another device?
         </button>
       ) : null}
-      <p className="dss-stage-empty-privacy">
-        Use a blank gift card, hotel key, or standard-size loyalty card. Avoid
-        cards showing personal or financial information.
-      </p>
+      {!useKnownSize ? (
+        <p className="dss-stage-empty-privacy">
+          Use a blank gift card, hotel key, or standard-size loyalty card. Avoid
+          cards showing personal or financial information.
+        </p>
+      ) : null}
       <input
         ref={cameraInputRef}
         type="file"
@@ -103,6 +128,7 @@ export function DirectMobileEntry({
 
 type DirectMobileReviewProps = {
   imageUrl: string;
+  captureMode?: CaptureMode;
   onUseThisPhoto: () => void;
   onRetake: () => void;
 };
@@ -112,6 +138,7 @@ type DirectMobileReviewProps = {
  */
 export function DirectMobileReview({
   imageUrl,
+  captureMode = "card-scale",
   onUseThisPhoto,
   onRetake,
 }: DirectMobileReviewProps) {
@@ -127,7 +154,11 @@ export function DirectMobileReview({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={imageUrl}
-        alt="Selected hand-and-card photograph"
+        alt={
+          captureMode === "known-size"
+            ? "Selected hand photograph"
+            : "Selected hand-and-card photograph"
+        }
         className="dss-entry-review-img"
         draggable={false}
       />

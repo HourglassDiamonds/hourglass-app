@@ -840,8 +840,8 @@ function SuiteStyles() {
         border-color:oklch(from var(--ink-soft) l c h / 0.55);
       }
       .dts-tone-swatch:focus-visible{
-        outline:1px solid oklch(from var(--gold-warm) l c h / 0.65);
-        outline-offset:2px;
+        outline:2px solid #987648;
+        outline-offset:3px;
       }
       .dts-tone-swatch-circle{
         width:26px;

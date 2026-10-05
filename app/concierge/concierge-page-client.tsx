@@ -629,7 +629,7 @@ export default function ConciergeFormClient() {
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div>
                 <label className={fieldLabelUpper} htmlFor={`${formId}-name`}>
-                  Name
+                  Name <span className="normal-case tracking-normal">(required)</span>
                 </label>
                 <input
                   id={`${formId}-name`}
@@ -663,7 +663,7 @@ export default function ConciergeFormClient() {
 
               <div>
                 <label className={fieldLabelUpper} htmlFor={`${formId}-email`}>
-                  Email
+                  Email <span className="normal-case tracking-normal">(required)</span>
                 </label>
                 <input
                   id={`${formId}-email`}

@@ -13,16 +13,6 @@ const SUITE_SHELL_CSS = `
   background: var(--hg-ivory, #efe8de);
   color: var(--hg-ink, #1c1b1a);
 }
-@media (max-width: 768px) {
-  [data-diamond-studio-suite-route] {
-    --dts-subnav-h: 92px;
-  }
-}
-@media (max-width: 374px) {
-  [data-diamond-studio-suite-route] {
-    --dts-subnav-h: 78px;
-  }
-}
 @media (min-width: 1024px) {
   /* Shape Studio keeps a locked instrument workspace; Size Studio scrolls with the page. */
   [data-diamond-studio-suite-route][data-suite-instrument] .dss-app {
@@ -55,12 +45,14 @@ export default function DiamondStudioSuiteShell({
       >
         {instrument ? <DiamondStudioBrandChrome /> : null}
         <div className="diamond-studio-site-header" data-dts-site-header>
-          <div className="mx-auto w-full max-w-[1200px] px-6 md:px-10">
-            <Header currentPage="diamond-studio" />
+          <div className="mx-auto w-full max-w-[1200px] px-5 min-[390px]:px-6 md:px-10">
+            <Header currentPage="diamond-studio" renderSkipTarget={false} />
           </div>
         </div>
         <DiamondStudioSuiteNav />
-        {children}
+        <main id="hg-page-content" tabIndex={-1}>
+          {children}
+        </main>
       </div>
     </>
   );

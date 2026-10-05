@@ -8,6 +8,7 @@ import {
 } from "@/lib/seo/site-metadata";
 import "./globals.css";
 import Footer from "./shared-components/Footer";
+import SiteFrame from "./shared-components/SiteFrame";
 import FacetScintillationRail from "./shared-components/motion/FacetScintillationRail";
 import { isClientAnalyticsEnabled } from "@/lib/analytics/client-enabled";
 import AnalyticsConsent from "./shared-components/AnalyticsConsent";
@@ -74,17 +75,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full bg-hg-body text-hg-ink">
-        {/* Skip navigation renders inside the shared Header (see Header.tsx) so
-            its target lands past the repeated navigation. Pages without the
-            site header (phone capture, login) have no repeated nav to bypass. */}
         <FacetScintillationRail />
         <GlobalJsonLd />
         <GoogleAnalytics enabled={analyticsEnabled} />
         <AnalyticsConsent enabled={analyticsEnabled} />
         <div className="flex min-h-screen flex-col">
-          <main id="main-content" tabIndex={-1} className="flex-1">
-            {children}
-          </main>
+          <SiteFrame>{children}</SiteFrame>
           <Footer />
         </div>
       </body>

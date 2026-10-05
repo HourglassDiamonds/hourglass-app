@@ -45,7 +45,7 @@ export default function GuideSearch({
       </label>
       <div className="relative">
         <span
-          className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-[#8a8279]"
+          className="pointer-events-none absolute inset-y-0 left-0 flex w-12 items-center justify-center text-[#70665d]"
           aria-hidden
         >
           <svg
@@ -67,7 +67,7 @@ export default function GuideSearch({
           placeholder="Search the Diamond Guide…"
           autoComplete="off"
           enterKeyHint="search"
-          className="h-[58px] w-full rounded-[10px] border border-[#c9c0b4] bg-[#f6f1ea] py-3 pl-12 pr-5 text-[1.02rem] leading-[1.5] text-[#1d1b18] outline-none transition-[border-color,box-shadow] duration-300 placeholder:text-[#8a8279] [-webkit-appearance:none] focus:border-[#9a9188] focus:shadow-[0_0_0_3px_rgba(154,145,136,0.16)] md:h-[60px] [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
+          className="h-[58px] w-full rounded-[10px] border border-[#c9c0b4] bg-[#f6f1ea] py-3 pl-12 pr-5 text-[1.02rem] leading-[1.5] text-[#1d1b18] outline-none transition-[border-color,box-shadow] duration-300 placeholder:text-[#70665d] [-webkit-appearance:none] focus:border-[#9a9188] focus:shadow-[0_0_0_3px_rgba(154,145,136,0.16)] md:h-[60px] [&::-webkit-search-cancel-button]:appearance-none [&::-webkit-search-decoration]:appearance-none"
         />
       </div>
 

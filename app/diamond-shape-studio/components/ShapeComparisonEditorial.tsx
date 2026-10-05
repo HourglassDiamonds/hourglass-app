@@ -3,6 +3,7 @@
 import DiV3Chapter from "@/app/diamond-intelligence/components/DiV3Chapter";
 import { DI_V3_STUDIO_ACCORDION_GROUP } from "@/app/diamond-intelligence/components/di-v3-styles";
 import ConsultationCtaLink from "@/app/shared-components/ConsultationCtaLink";
+import type { CaptureMode } from "@/lib/shape-studio/types";
 
 const bodyCopy =
   "space-y-4 text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
@@ -10,7 +11,12 @@ const bodyCopy =
 const introCopy =
   "text-[0.94rem] leading-[1.82] text-[var(--ink-soft)] md:text-[1rem] md:leading-[1.85]";
 
-export default function ShapeComparisonEditorial() {
+export default function ShapeComparisonEditorial({
+  captureMode = "card-scale",
+}: {
+  captureMode?: CaptureMode;
+}) {
+  const useKnownSize = captureMode === "known-size";
   return (
     <section
       className="dss-editorial border-t border-[#e4dbcf]/40 bg-[var(--bg)] px-6 pb-14 pt-8 md:px-10 md:pb-20 md:pt-10"
@@ -26,29 +32,29 @@ export default function ShapeComparisonEditorial() {
 
         <div className={`${introCopy} mt-5 max-w-[40rem] md:mt-6`}>
           <p>
-            The card in your photograph gives the image a known physical
-            reference. Once marked, it allows the studio to translate pixels
-            into millimeters and place the diamond at representative face-up
-            dimensions on your actual hand.
+            {useKnownSize
+              ? "Your known US ring size gives the studio a finger-diameter reference. It uses that reference with your hand photograph to show representative diamond dimensions for practical shape and presence comparisons."
+              : "The card in your photograph gives the image a known physical reference. Once marked, it allows the studio to translate pixels into millimeters and place the diamond at representative face-up dimensions on your actual hand."}
           </p>
         </div>
 
         <div className={DI_V3_STUDIO_ACCORDION_GROUP}>
           <DiV3Chapter
             number="01"
-            title="How the card sets scale"
+            title={
+              useKnownSize
+                ? "How your known size sets scale"
+                : "How the card sets scale"
+            }
             chapterId="shape-card-sets-scale"
             studio
             defaultOpen
           >
             <div className={bodyCopy}>
               <p>
-                A standard-size card has known dimensions. After you mark its
-                long edge, the studio measures how many image pixels span that
-                distance. That relationship creates a physical scale for the
-                photograph. For the most reliable result, keep the card and hand
-                on roughly the same plane and photograph them as directly
-                overhead as practical.
+                {useKnownSize
+                  ? "Each supported US ring size maps to an established finger diameter. The studio uses that diameter and its existing hand-photo framing model to scale the diamond on your photograph. This is a comparison preview—not a new ring-size measurement—and final fit should be confirmed by a jeweler."
+                  : "A standard-size card has known dimensions. After you mark its long edge, the studio measures how many image pixels span that distance. That relationship creates a physical scale for the photograph. For the most reliable result, keep the card and hand on roughly the same plane and photograph them as directly overhead as practical."}
               </p>
             </div>
           </DiV3Chapter>
@@ -105,7 +111,7 @@ export default function ShapeComparisonEditorial() {
             Seeing it on the hand is a beginning
           </h3>
           <p className={`${introCopy} mx-auto mt-4 max-w-[36rem]`}>
-            A calibrated preview shows how a shape may sit. Settling on the
+            A scaled preview shows how a shape may sit. Settling on the
             diamond, ratio, and setting that belong there still benefits from
             a closer look together.
           </p>

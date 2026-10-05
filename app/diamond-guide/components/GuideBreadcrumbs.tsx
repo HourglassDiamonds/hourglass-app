@@ -38,7 +38,7 @@ export default function GuideBreadcrumbs({
               ) : (
                 <span
                   aria-current={last ? "page" : undefined}
-                  className={last ? "text-[#8a8279] normal-case tracking-[0.08em]" : undefined}
+                  className={last ? "text-[#70665d] normal-case tracking-[0.08em]" : undefined}
                 >
                   {item.name}
                 </span>

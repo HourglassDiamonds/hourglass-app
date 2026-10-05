@@ -19,13 +19,13 @@ import type { ComponentPropsWithoutRef, ReactNode } from "react";
  */
 
 const BASE_CLASS =
-  "inline-flex min-h-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory";
+  "inline-flex min-h-11 items-center justify-center rounded-[12px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hg-focus focus-visible:ring-offset-2 focus-visible:ring-offset-hg-ivory sm:rounded-full";
 
 const VARIANT_CLASS = {
   primary:
-    "bg-hg-charcoal px-7 py-3 text-sm tracking-[0.08em] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-300 hover:opacity-95 hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)]",
+    "bg-hg-charcoal px-5 py-2.5 text-[13px] tracking-[0.06em] text-white shadow-[0_1px_2px_rgba(0,0,0,0.08)] transition-all duration-300 hover:opacity-95 hover:shadow-[0_2px_6px_rgba(0,0,0,0.12)] sm:px-7 sm:py-3 sm:text-sm sm:tracking-[0.08em]",
   secondary:
-    "border border-hg-line-strong bg-white/80 px-6 py-3 text-[11px] uppercase tracking-[0.28em] text-hg-charcoal transition-all duration-500 ease-out hover:-translate-y-[1px] hover:bg-white",
+    "border border-hg-line-strong bg-white/80 px-5 py-2.5 text-[10px] uppercase tracking-[0.2em] text-hg-charcoal transition-all duration-500 ease-out hover:-translate-y-[1px] hover:bg-white sm:px-6 sm:py-3 sm:text-[11px] sm:tracking-[0.28em]",
 } as const;
 
 type Variant = keyof typeof VARIANT_CLASS;

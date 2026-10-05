@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo/site-metadata";
-import Header from "../shared-components/Header";
 
 export const metadata: Metadata = pageMetadata({
   title: "Terms",
@@ -13,7 +12,6 @@ export default function TermsPage() {
   return (
     <div className="min-h-screen bg-hg-ivory text-hg-ink">
       <div className="mx-auto max-w-[1200px] px-6 md:px-10">
-        <Header />
       </div>
 
       <section className="mx-auto max-w-[760px] px-6 py-20 md:px-10 md:py-28">

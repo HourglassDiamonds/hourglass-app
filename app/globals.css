@@ -126,6 +126,26 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Mobile rhythm for the shared Diamond Guide category template. These pages
+   intentionally keep their desktop composition, but use a denser editorial
+   cadence and quieter card geometry on a phone. */
+@media (max-width: 767px) {
+  .guide-category-page .luxury-reveal {
+    padding-block: 4rem !important;
+  }
+
+  .guide-category-page :is(a, div)[class*="rounded-[30px]"],
+  .guide-category-page :is(a, div)[class*="rounded-[28px]"] {
+    border-radius: 18px;
+    padding: 1.25rem;
+  }
+
+  .guide-category-page [class*="mt-14"],
+  .guide-category-page [class*="mt-16"] {
+    margin-top: 2.5rem;
+  }
+}
+
 /* ── Accessible focus (WCAG 1.4.11 & 2.4.7) ──
    Defaults live in the `base` layer so Tailwind utilities (`@layer
    utilities`) — e.g. `rounded-full`, `focus-visible:outline-none`, component

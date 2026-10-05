@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import JsonLd from "@/app/shared-components/JsonLd";
-import Header from "@/app/shared-components/Header";
 import { pageMetadata } from "@/lib/seo/site-metadata";
 import { allGuidesIndexBreadcrumb } from "@/lib/seo/schema/breadcrumbs";
 import { jsonLdGraph, type JsonLdValue } from "@/lib/seo/schema/json-ld";
@@ -59,7 +58,6 @@ export default function AllDiamondGuidesPage() {
         data={jsonLdGraph([allGuidesCollectionPage(), allGuidesIndexBreadcrumb()])}
       />
       <div className="mx-auto max-w-[1100px] px-6 md:px-10">
-        <Header currentPage="diamond-guide" />
 
         <article className="pb-[112px] pt-[68px] md:pb-[132px] md:pt-[86px]">
           <header className="border-b border-[#e4dbcf] pb-[56px] md:pb-[72px]">

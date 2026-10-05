@@ -12,7 +12,7 @@ import {
 } from "@/lib/shape-studio/post-adoption-ack";
 import { useCaptureSessionPoll } from "@/lib/shape-studio/use-capture-session-poll";
 
-/** Public Scaled Preview always uses the card-scale capture path. */
+/** Default capture path before a user chooses the known-measurements method. */
 export const SCALED_CAPTURE_MODE: CaptureMode = "card-scale";
 
 export type PhoneCapturePhase = "idle" | "creating" | "active";
@@ -38,6 +38,7 @@ export type PhoneCaptureSession = {
  */
 export function usePhoneCaptureSession(
   onImageReceived: (url: string) => void,
+  captureMode: CaptureMode = SCALED_CAPTURE_MODE,
 ): PhoneCaptureSession {
   const creatingRef = useRef(false);
   const sessionIdRef = useRef<string | null>(null);
@@ -216,7 +217,7 @@ export function usePhoneCaptureSession(
         sessionIdRef.current = id;
         controllerRef.current.bindSession(id);
         setSessionId(id);
-        setCaptureUrl(withCaptureMode(body.captureUrl, SCALED_CAPTURE_MODE));
+        setCaptureUrl(withCaptureMode(body.captureUrl, captureMode));
         setExpiresAt(body.expiresAt ?? null);
         setWaiting(true);
         setPhase("active");
@@ -235,7 +236,7 @@ export function usePhoneCaptureSession(
         creatingRef.current = false;
       }
     })();
-  }, []);
+  }, [captureMode]);
 
   return {
     phase,

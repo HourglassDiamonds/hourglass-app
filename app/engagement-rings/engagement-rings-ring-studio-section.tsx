@@ -4,7 +4,7 @@ export default function EngagementRingsRingStudioSection() {
   return (
     <section
       id="ring-studio"
-      className="scroll-mt-24 border-b border-[#e4dbcf]/75 py-[52px] md:py-[64px] md:pb-[70px]"
+      className="scroll-mt-24 border-b border-[#e4dbcf]/75 pt-[52px] pb-3 md:pt-[64px] md:pb-4"
     >
       <div className="text-left">
         <div className="text-[10px] uppercase tracking-[0.34em] text-[#6d655e]">
