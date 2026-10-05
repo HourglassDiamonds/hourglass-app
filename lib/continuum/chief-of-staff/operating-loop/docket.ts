@@ -1,14 +1,14 @@
 /**
  * Founder-facing Today docket. Presentation only.
  * Up Next and Watching both render from the same packet-gated boundary.
- * Master Sprint fills unused Up next slots with the same grammar.
+ * Up next contains only current founder-owned actions. It may contain 0–3 items.
  */
 
+import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 import {
   isMeaningfulTodayActionText,
   isNoiseOnlyCandidateText,
 } from "@/lib/continuum/candidates/founder-attention";
-import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 import {
   COS_CAUGHT_UP_DETAIL,
   COS_CAUGHT_UP_HEADING,
@@ -18,9 +18,10 @@ import {
   isExecutiveBriefing,
   presentDocketBriefing,
 } from "./docket-present";
+import { finalizeTodayDocket, hasRealFounderOwnedObligation } from "./today-docket-boundary";
+import { presentTodayItem, presentTodayWatchingItem } from "./today-presentation";
 import { isIdentityCleanupText } from "./briefing-packet";
 import { isAmbiguousFollowUpFragment } from "./obligation-currentness";
-import { finalizeTodayDocket, hasRealFounderOwnedObligation } from "./today-docket-boundary";
 import type {
   CosDocketItemView,
   CosDocketLane,
@@ -50,6 +51,7 @@ export type CosTodayDocketView = {
   queuedCount: number;
   watchingCount: number;
   watching: readonly CosWatchingItem[];
+  cleanup?: readonly CosDocketItemView[];
   showCaughtUp: boolean;
   showDisconnected: boolean;
   caughtUpHeading: string;
@@ -73,6 +75,10 @@ export function founderFacingBriefActionLabel(kind: string, label: string): stri
 }
 
 export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
+  const semantic = presentTodayItem(item);
+  if (semantic.likelyNoise || semantic.stateLabel === "WAITING ON CLIENT" || semantic.stateLabel === "WAITING ON SHOP") {
+    return false;
+  }
   if (
     item.origin === "brief" &&
     item.briefing &&
@@ -95,10 +101,7 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
     }
     if (hasRealFounderOwnedObligation(item.briefingPacket)) return true;
     if (!item.briefingPacket || item.briefingPacket.ballHolder === "unknown") {
-      return (
-        !isIdentityCleanupText(item.headline) &&
-        !isAmbiguousFollowUpFragment(item.headline)
-      );
+      return !isIdentityCleanupText(item.headline) && !isAmbiguousFollowUpFragment(item.headline);
     }
     return false;
   }
@@ -112,9 +115,7 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
   ) {
     return false;
   }
-  if (item.brief?.staleInboundSatisfied && /recap|next step/i.test(item.headline)) {
-    return false;
-  }
+  if (item.brief?.staleInboundSatisfied && /recap|next step/i.test(item.headline)) return false;
   if (item.brief?.noFounderAction && /recap|next step|Identify who this is from/i.test(item.headline)) {
     return false;
   }
@@ -134,8 +135,7 @@ export function isActionableTodayDocketItem(item: CosDocketItemView): boolean {
       !isIdentityCleanupText(item.headline) &&
       !isAmbiguousFollowUpFragment(item.headline) &&
       (item.brief.rankClass === "founder_commitment" ||
-        (item.brief.rankClass === "follow_up" &&
-          !/recap|next step/i.test(item.headline)))
+        (item.brief.rankClass === "follow_up" && !/recap|next step/i.test(item.headline)))
     ) {
       return true;
     }
@@ -221,6 +221,7 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
       queuedCount: 0,
       watchingCount: 0,
       watching: [],
+      cleanup: [],
       showCaughtUp: !docket.showDisconnected,
       showDisconnected: docket.showDisconnected,
       caughtUpHeading: COS_CAUGHT_UP_HEADING,
@@ -229,12 +230,40 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
       disconnectedDetail: docket.disconnectedDetail,
     };
   }
-  const items = docket.items.filter(isAuthoritativeTodayCard);
-  const watching = docket.watching.filter(isAuthoritativeWatchingCard);
+  const authoritativeItems = docket.items.filter(isAuthoritativeTodayCard);
+  const cleanup = [
+    ...(docket.cleanup ?? []).filter(isAuthoritativeTodayCard),
+    ...authoritativeItems.filter((item) => presentTodayItem(item).likelyNoise),
+  ].filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
+  const waitingFromItems: CosWatchingItem[] = authoritativeItems
+    .filter((item) => {
+      const semantic = presentTodayItem(item);
+      return !semantic.likelyNoise && semantic.stateLabel !== "FOUNDER ACTION";
+    })
+    .map((item) => ({
+      id: item.id,
+      title: item.subject,
+      detail: presentTodayItem(item).summary || item.context || item.headline,
+      projectId: item.briefingPacket?.projectId ?? item.job?.projectId ?? null,
+      candidateIds: item.brief?.evidence.map((beat) => beat.candidateId) ?? [],
+      briefingPacket: item.briefingPacket,
+      briefing: item.briefing,
+      cosBriefing: item.cosBriefing,
+      todayDocketVersion: TODAY_DOCKET_VERSION,
+      wasTodayAction: true,
+    }));
+  const items = authoritativeItems.filter(isActionableTodayDocketItem);
+  const watching = [...docket.watching.filter(isAuthoritativeWatchingCard), ...waitingFromItems]
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index)
+    .map((item) => {
+      const semantic = presentTodayWatchingItem(item);
+      return { ...item, title: semantic.title, detail: semantic.summary };
+    });
   return {
     ...docket,
     items,
     watching,
+    cleanup,
     watchingCount: watching.length,
     showCaughtUp: !docket.showDisconnected && items.length === 0,
   };
@@ -248,13 +277,10 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   const actionableLive = finalized.upNext
     .filter((item) => !item.job || !terminalAttentionIds.has(item.job.id))
     .filter(isActionableTodayDocketItem);
-  const unused = Math.max(0, COS_DOCKET_VISIBLE_LIMIT - actionableLive.length);
-  const sprint = masterSprintDocketItems(loop, unused);
-  const queue = [...actionableLive, ...sprint];
-  const items = queue.slice(0, COS_DOCKET_VISIBLE_LIMIT);
+  const items = actionableLive.slice(0, COS_DOCKET_VISIBLE_LIMIT);
   const queuedCount = Math.max(0, actionableLive.length - COS_DOCKET_VISIBLE_LIMIT);
   const showDisconnected = loop.status === "disconnected";
-  const showCaughtUp = !showDisconnected && actionableLive.length === 0 && sprint.length === 0;
+  const showCaughtUp = !showDisconnected && actionableLive.length === 0;
 
   const occupied = new Set([
     ...finalized.upNext.map((item) => item.job?.id ?? item.id),
@@ -268,6 +294,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     queuedCount,
     watchingCount: watching.length,
     watching,
+    cleanup: finalized.upNext.filter((item) => presentTodayItem(item).likelyNoise),
     showCaughtUp,
     showDisconnected,
     caughtUpHeading: COS_CAUGHT_UP_HEADING,

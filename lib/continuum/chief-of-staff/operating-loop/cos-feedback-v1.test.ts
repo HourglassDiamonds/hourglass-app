@@ -369,7 +369,7 @@ describe("cos feedback v1", () => {
       join(process.cwd(), "app/executive-dashboard/concierge/components/chief-of-staff-today.tsx"),
       "utf8",
     );
-    assert.match(today, /data-cos-feedback/);
+    assert.doesNotMatch(today, /data-cos-feedback/);
     assert.match(today, /docket\.title/);
   });
 });

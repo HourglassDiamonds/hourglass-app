@@ -67,7 +67,7 @@ import {
   type CosBriefingV1,
 } from "./cos-briefing-v1";
 import { compareTodayRank, type CosPriorityInput } from "./cos-priority";
-import { presentTodayItem } from "./today-presentation";
+import { effectiveTodayBallHolder, presentTodayItem } from "./today-presentation";
 import {
   filterCurrentTodayDocketItems,
   isCurrentTodayDocketItem,
@@ -1393,13 +1393,14 @@ export function dedupeTodaySeeds(seeds: readonly TodayDocketSeed[]): TodayDocket
 function laneOf(seed: TodayDocketSeed, loop: CosOperatingLoopView): "up_next" | "watching" {
   const packet = seed.packet;
   if (!packet) return "watching";
+  const effectiveHolder = effectiveTodayBallHolder(packet);
   if (isIdentityCleanupText(seed.headline) && !hasRealFounderOwnedObligation(packet)) {
     return "watching";
   }
-  if (packet.ballHolder === "vendor_shop" || packet.ballHolder === "client" || packet.ballHolder === "scheduled_future") {
+  if (effectiveHolder === "vendor_shop" || effectiveHolder === "client" || effectiveHolder === "scheduled_future") {
     return "watching";
   }
-  if (packet.ballHolder === "founder" && packet.authoritative) return "up_next";
+  if (effectiveHolder === "founder" && packet.authoritative) return "up_next";
   if (packet.briefingKind === "founder_print_check") return "up_next";
   if (packet.semanticNextActionClass === "founder_review") return "up_next";
   if (hasRealFounderOwnedObligation(packet)) return "up_next";

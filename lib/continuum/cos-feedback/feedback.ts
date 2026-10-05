@@ -16,6 +16,10 @@ import type {
   CosWatchingItem,
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
+  effectiveTodayBallHolder,
+  presentTodayItem,
+} from "@/lib/continuum/chief-of-staff/operating-loop/today-presentation";
+import {
   calendarFeedbackMaterialKey,
   type CalendarFeedbackCommitment,
 } from "@/lib/continuum/calendar/today-upcoming";
@@ -76,10 +80,11 @@ export type CosFeedbackPacketItem = {
   currentFounderAction: boolean;
   founderDue: boolean;
   clientFacing: boolean;
-  lane: "focus" | "watching";
+  lane: "focus" | "watching" | "cleanup";
   timingFacts: readonly { statement: string; dueDate: string | null; sourceRefs: readonly string[] }[];
   checkpointBasis: CosFeedbackBasis | null;
   checkpointStatement: string | null;
+  recentlyReclassified?: boolean;
 };
 
 export type CosFeedbackPacket = {
@@ -92,7 +97,6 @@ export type CosFeedbackPacket = {
 
 export type CosFeedbackModel = (packet: CosFeedbackPacket) => Promise<unknown> | unknown;
 
-const PLACE = ["first", "second", "third"] as const;
 const COUNT_WORD = ["none", "one", "two", "three"] as const;
 
 let cached: { key: string; feedback: CosFeedbackV1 } | null = null;
@@ -113,6 +117,7 @@ export function buildCosFeedbackPacket(input: {
   const items = [
     ...input.docket.items.map((item) => packetItem(item, "focus", today)),
     ...input.docket.watching.map((item) => watchingItem(item, today)),
+    ...(input.docket.cleanup ?? []).map((item) => packetItem(item, "cleanup", today)),
   ];
   const calendarCommitments = input.calendarCommitments ?? [];
   return {
@@ -148,7 +153,7 @@ export function cosFeedbackDigest(packet: CosFeedbackPacket): string {
 export function deriveDeterministicCosFeedback(packet: CosFeedbackPacket): CosFeedbackV1 {
   const focus = packet.items.filter((item) => item.lane === "focus").slice(0, 3);
   const ignore = packet.items.filter(
-    (item) => item.lane === "watching" && !item.founderDue && !item.currentFounderAction,
+    (item) => item.lane !== "focus" && !item.founderDue && !item.currentFounderAction,
   );
   const focusOrder: CosFeedbackFocus[] = focus.map((item, index) => ({
     itemId: item.itemId,
@@ -519,7 +524,7 @@ function cacheKey(packet: CosFeedbackPacket): string {
 
 function packetItem(
   item: CosDocketItemView,
-  lane: "focus",
+  lane: "focus" | "cleanup",
   today: ReturnType<typeof civilDateInZone>,
 ): CosFeedbackPacketItem {
   const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
@@ -536,15 +541,16 @@ function packetItem(
     ballHolder: packet?.ballHolder ?? null,
     timingLabel: null,
   };
+  const semantic = presentTodayItem(item);
   return baseItem({
     itemId: item.id,
     displayName: packet?.displayName || item.subject,
     projectId: packet?.projectId ?? null,
     projectTitle: packet?.projectName ?? null,
     sourceRefs: packet?.sourceRefs ?? [],
-    currentState: clip(stripQuotes(briefing?.currentState || item.headline)),
-    ballHolder: packet?.ballHolder ?? null,
-    currentFounderAction: Boolean(briefing?.currentFounderAction),
+    currentState: clip(stripQuotes(lane === "cleanup" ? semantic.title : semantic.title || briefing?.currentState || item.headline)),
+    ballHolder: effectiveTodayBallHolder(packet),
+    currentFounderAction: lane === "focus" && semantic.stateLabel === "FOUNDER ACTION",
     founderDue: founderDue(briefing, today),
     clientFacing: clientFacingCategory(classifyCosPriority(priority)),
     lane,
@@ -580,9 +586,9 @@ function watchingItem(
     projectId: packet?.projectId ?? item.projectId,
     projectTitle: packet?.projectName ?? null,
     sourceRefs: packet?.sourceRefs ?? [],
-    currentState: clip(stripQuotes(briefing?.currentState || item.detail)),
-    ballHolder: packet?.ballHolder ?? null,
-    currentFounderAction: Boolean(briefing?.currentFounderAction),
+    currentState: clip(stripQuotes(item.detail || briefing?.currentState || "")),
+    ballHolder: effectiveTodayBallHolder(packet),
+    currentFounderAction: false,
     founderDue: founderDue(briefing, today),
     clientFacing: clientFacingCategory(classifyCosPriority(priority)),
     lane: "watching",
@@ -591,6 +597,7 @@ function watchingItem(
     checkpointStatement: briefing?.checkpoint
       ? clip(`${briefing.checkpoint.condition} ${briefing.checkpoint.action}`.trim())
       : null,
+    recentlyReclassified: item.wasTodayAction === true,
   });
 }
 
@@ -624,25 +631,38 @@ function portfolioSummary(count: number): string {
   if (count <= 0) return "Nothing needed from you right now.";
   const word = COUNT_WORD[count] ?? String(count);
   const noun = count === 1 ? "action" : "actions";
-  return `You have ${word} real founder ${noun}.`;
+  return `You have ${word} meaningful founder ${noun} right now.`;
 }
 
 function guidance(focus: readonly CosFeedbackPacketItem[], ignore: readonly CosFeedbackPacketItem[]): string {
   if (focus.length === 0 && ignore.length === 0) return "Nothing needed from you right now.";
-  const sequence = focus
-    .map((item, index) => {
-      const place = PLACE[index] ?? `${index + 1}`;
-      return `${item.displayName} ${place}: ${item.currentState || item.displayName}`;
-    })
-    .join(" ");
-  const waiting = ignore.length
-    ? ` ${ignore.map((item) => item.displayName).join(" and ")} can wait; ${waitWhy(ignore[0]!)}`
-    : "";
-  if (!sequence) return `Nothing needed from you right now.${waiting}`;
-  return `${portfolioSummary(focus.length)} ${sequence}${waiting}`;
+  const lowerFirst = (value: string): string => value ? `${value[0]!.toLowerCase()}${value.slice(1)}` : value;
+  const sequence = focus.map((item) => {
+    const state = (item.currentState || item.displayName).replace(/[.!?]+$/, "");
+    return state.toLowerCase().includes(item.displayName.toLowerCase())
+      ? lowerFirst(state)
+      : `${item.displayName}: ${lowerFirst(state)}`;
+  });
+  const sentences: string[] = [];
+  if (sequence.length > 0) sentences.push(`${portfolioSummary(focus.length).replace(/\.$/, "")}: ${sequence.join("; ")}.`);
+  else sentences.push("Nothing needed from you right now.");
+  for (const item of ignore.filter((row) => row.lane === "cleanup" || row.recentlyReclassified)) {
+    const firstName = item.displayName.trim().split(/\s+/)[0] || item.displayName;
+    if (item.lane === "cleanup") {
+      sentences.push(`${firstName}’s receipt request looks like low-value admin and can be dismissed.`);
+    } else if (item.ballHolder === "client") {
+      sentences.push(/finger size/i.test(item.currentState)
+        ? `${firstName} is waiting on the client for a finger size.`
+        : `${firstName} is waiting on the client.`);
+    } else if (item.ballHolder === "vendor_shop") {
+      sentences.push(`${firstName} is waiting on the shop.`);
+    }
+  }
+  return sentences.join(" ");
 }
 
 function waitWhy(item: CosFeedbackPacketItem): string {
+  if (item.lane === "cleanup") return "Low-value admin; dismiss when convenient.";
   if (item.ballHolder === "vendor_shop") return "the shop has it.";
   if (item.ballHolder === "client") return "it is with the client.";
   return "it does not need you right now.";

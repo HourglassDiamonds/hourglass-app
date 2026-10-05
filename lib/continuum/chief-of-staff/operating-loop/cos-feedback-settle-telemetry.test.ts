@@ -253,7 +253,7 @@ describe("cos feedback settle telemetry", () => {
       });
       feedback = result.founderGuidance;
     });
-    assert.match(feedback, /real founder/);
+    assert.match(feedback, /meaningful founder action/);
     assert.equal(events[0]?.outcome, "deterministic_fallback");
     assert.equal(events[0]?.validationResult, "parse_failure");
     assert.equal(events[0]?.outputBytes, null);

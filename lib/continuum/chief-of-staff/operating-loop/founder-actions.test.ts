@@ -8,7 +8,7 @@ import {
   snoozeUntilForPreset,
   presentFounderEvidence,
 } from "./founder-actions";
-import { composeTodayDocket } from "./docket";
+import { composeTodayDocket, masterSprintDocketItems } from "./docket";
 import { COS_LOOP_PROJECT_A } from "./fixtures";
 import {
   COS_OPERATING_LOOP_CONTRACT_VERSION,
@@ -431,16 +431,16 @@ describe("Today founder contextual actions", () => {
     assert.doesNotMatch(html, /approved_value=|latest_candidate=|candidate state|approved vs candidate/i);
   });
 
-  it("offers Complete and Disregard for Master Sprint items without snooze or CAD verbs", () => {
-    const docket = composeTodayDocket(loop({
+  it("keeps Master Sprint controls available without padding the founder Today brief", () => {
+    const sprintLoop = loop({
       masterSprint: [{
         id: "sprint-a",
         title: "Approved CAD follow-up",
         action: "Advance the approved CAD follow-up",
         why: "Canonical approved sprint item.",
       }],
-    }));
-    const item = docket.items[0]!;
+    });
+    const item = masterSprintDocketItems(sprintLoop, 1)[0]!;
     assert.equal(item.origin, "master_sprint");
     const controls = selectFounderControls(item);
     assert.equal(controls.family, "generic");
@@ -457,22 +457,10 @@ describe("Today founder contextual actions", () => {
     assert.equal(controls.completableJob, false);
     const html = renderToStaticMarkup(
       createElement(ChiefOfStaffToday, {
-        loop: loop({
-          masterSprint: [{
-            id: "sprint-a",
-            title: "Approved CAD follow-up",
-            action: "Advance the approved CAD follow-up",
-            why: "Canonical approved sprint item.",
-          }],
-        }),
+        loop: sprintLoop,
       }),
     );
-    assert.match(html, /Complete/);
-    assert.match(html, /Dismiss from Today/);
-    assert.doesNotMatch(html, /Disregard/);
-    assert.doesNotMatch(html, />Snooze</);
-    assert.doesNotMatch(html, />Approve</);
-    assert.doesNotMatch(html, /Request changes/);
+    assert.doesNotMatch(html, /Advance the approved CAD follow-up/);
   });
 
   it("encodes snooze presets on founder local calendar days", () => {

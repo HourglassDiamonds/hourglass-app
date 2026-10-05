@@ -8,7 +8,6 @@ import { describe, it } from "node:test";
 import { ChiefOfStaffToday } from "../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { composeTodayDocket } from "../chief-of-staff/operating-loop/docket";
 import { selectOpenEmailSources } from "../chief-of-staff/operating-loop/email-source";
-import { COS_SPRINT_CLEAR_COPY } from "../chief-of-staff/operating-loop/master-sprint";
 import {
   COS_OPERATING_LOOP_CONTRACT_VERSION,
   type CosOperatingLoopView,
@@ -95,7 +94,7 @@ describe("Overnight founder operating regression", () => {
     assert.match(actions, /flex-wrap/);
   });
 
-  it("fills unused Up next from Master Sprint without a second queue", () => {
+  it("does not pad a quiet Today with Master Sprint work", () => {
     const docket = composeTodayDocket(
       loop({
         masterSprint: [
@@ -108,9 +107,7 @@ describe("Overnight founder operating regression", () => {
         ],
       }),
     );
-    assert.equal(docket.items.length, 1);
-    assert.equal(docket.items[0]?.lane, "master_sprint");
-    assert.equal(docket.items[0]?.context, COS_SPRINT_CLEAR_COPY);
+    assert.equal(docket.items.length, 0);
     const html = renderToStaticMarkup(
       createElement(ChiefOfStaffToday, {
         loop: loop({
@@ -125,7 +122,8 @@ describe("Overnight founder operating regression", () => {
         }),
       }),
     );
-    assert.match(html, /data-cos-docket-lane="master_sprint"/);
+    assert.doesNotMatch(html, /data-cos-docket-lane="master_sprint"/);
+    assert.doesNotMatch(html, /Advance approved sprint item A/);
     assert.doesNotMatch(html, /Sprint dashboard/);
   });
 

@@ -31,7 +31,6 @@ import {
   type CosOperatingLoopView,
   type CosTop5Item,
 } from "./types";
-import { COS_SPRINT_CLEAR_COPY } from "./master-sprint";
 
 function briefItem(extra: Partial<CosBriefItem> = {}): CosBriefItem {
   return {
@@ -221,8 +220,8 @@ describe("Today Chief of Staff docket", () => {
     );
     assert.match(html, /Up next/i);
     assert.match(html, /Travis Morse \/ Chicken ring/i);
-    assert.match(html, /Confirm the finger size before this moves forward/);
-    assert.match(html, /The project says 6\.5, but the latest evidence says 7/);
+    assert.match(html, /Confirm the current finger size/);
+    assert.doesNotMatch(html, /The project says 6\.5, but the latest evidence says 7/);
     assert.doesNotMatch(html, /differs: approved|meaningful turn|superseded/i);
     assert.doesNotMatch(html, /Review evidence/);
     assert.match(html, /Keep 6\.5/);
@@ -369,7 +368,7 @@ describe("Today Chief of Staff docket", () => {
     assert.ok(activeDocket.items.some((item) => item.origin === "open_job" || item.origin === "brief"));
   });
 
-  it("fills unused Up next slots from approved Master Sprint items", () => {
+  it("does not pad Up next with approved Master Sprint items", () => {
     const sprint = [
       sprintSeed("sprint-a", "Approved sprint item A"),
       sprintSeed("sprint-b", "Approved sprint item B"),
@@ -377,25 +376,18 @@ describe("Today Chief of Staff docket", () => {
       sprintSeed("sprint-d", "Approved sprint item D"),
     ];
     const emptyLive = composeTodayDocket(loopOf({ masterSprint: sprint }));
-    assert.equal(emptyLive.showCaughtUp, false);
-    assert.equal(emptyLive.items.length, 3);
+    assert.equal(emptyLive.showCaughtUp, true);
+    assert.equal(emptyLive.items.length, 0);
     assert.equal(emptyLive.queuedCount, 0);
-    assert.equal(emptyLive.items.every((item) => item.lane === "master_sprint"), true);
-    assert.equal(emptyLive.items[0]?.id, "sprint-a");
-    assert.equal(emptyLive.items[0]?.context, COS_SPRINT_CLEAR_COPY);
-    assert.doesNotMatch(emptyLive.items.map((item) => item.id).join(","), /sprint-d/);
 
     const oneLive = composeTodayDocket(loopOf({
       status: "active",
       brief: [briefItem()],
       masterSprint: sprint,
     }));
-    assert.equal(oneLive.items.length, 3);
+    assert.equal(oneLive.items.length, 1);
     assert.equal(oneLive.items[0]?.lane, "live_work");
-    assert.equal(oneLive.items[1]?.lane, "master_sprint");
-    assert.equal(oneLive.items[2]?.lane, "master_sprint");
     assert.equal(oneLive.queuedCount, 0);
-    assert.equal(oneLive.items[1]?.context, "Approved sprint item A remains on the approved sprint.");
 
     const fullLive = composeTodayDocket(loopOf({
       status: "active",
@@ -418,10 +410,8 @@ describe("Today Chief of Staff docket", () => {
       ],
       masterSprint: sprint,
     }));
-    assert.equal(afterOneLiveClears.items.length, 3);
+    assert.equal(afterOneLiveClears.items.length, 2);
     assert.equal(afterOneLiveClears.items.filter((item) => item.lane === "live_work").length, 2);
-    assert.equal(afterOneLiveClears.items[2]?.id, "sprint-a");
-    assert.equal(afterOneLiveClears.items[2]?.lane, "master_sprint");
 
     const overflowLive = composeTodayDocket(loopOf({
       status: "active",
@@ -446,14 +436,12 @@ describe("Today Chief of Staff docket", () => {
         loop: loopOf({ masterSprint: sprint }),
       }),
     );
-    assert.match(html, /data-cos-docket-lane="master_sprint"/);
-    assert.match(html, /Client work is clear\. Continuing with the sprint\./);
-    assert.match(html, /Complete/);
+    assert.doesNotMatch(html, /data-cos-docket-lane="master_sprint"/);
     assert.doesNotMatch(html, /Sprint dashboard|Master Sprint/);
-    assert.doesNotMatch(html, /caught up/);
+    assert.match(html, /caught up/i);
   });
 
-  it("passes approved Master Sprint items through compose without inventing work", () => {
+  it("keeps approved Master Sprint outside the founder Today queue", () => {
     const view = composeCosOperatingLoop({
       jobs: [],
       nowIso: COS_LOOP_NOW,
@@ -462,7 +450,8 @@ describe("Today Chief of Staff docket", () => {
     assert.equal(view.status, "caught-up");
     assert.equal(view.masterSprint?.length, 1);
     const docket = composeTodayDocket(view);
-    assert.equal(docket.items[0]?.origin, "master_sprint");
+    assert.equal(docket.items.length, 0);
+    assert.equal(docket.showCaughtUp, true);
     const empty = composeCosOperatingLoop({
       jobs: [],
       nowIso: COS_LOOP_NOW,

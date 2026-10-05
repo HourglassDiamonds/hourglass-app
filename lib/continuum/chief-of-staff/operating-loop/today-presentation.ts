@@ -6,7 +6,8 @@
  * concise founder-facing language and fails closed to REVIEW on contradictions.
  */
 
-import type { CosDocketItemView } from "./types";
+import type { TodayBriefingPacket } from "./briefing-packet";
+import type { CosDocketItemView, CosWatchingItem } from "./types";
 
 export const TODAY_SEMANTIC_STATES = [
   "FOUNDER ACTION",
@@ -16,6 +17,7 @@ export const TODAY_SEMANTIC_STATES = [
   "HELD",
   "SNOOZED",
   "RESOLVED",
+  "CLEANUP",
   "REVIEW",
 ] as const;
 
@@ -39,6 +41,8 @@ const AUTOMATED_NOISE = /\b(?:unsubscribe|marketing (?:email|message)|automated 
 const HELD = /\b(?:held|hold|on hold)\b/i;
 const SNOOZED = /\bsnoozed?\b/i;
 const RESOLVED = /\b(?:resolved|complete|completed|cancelled|canceled)\b/i;
+const WAITING_CLIENT = /\b(?:client reply|customer reply|finger size|ring size)\b|\b(?:waiting|wait|pending|need(?:s|ed)?|awaiting)\b[^.!?]{0,80}\b(?:client|customer|finger size|ring size|reply|response|approval)\b|\b(?:client|customer)\b[^.!?]{0,60}\b(?:has it|owns the next move|to reply|to respond|approval)\b/i;
+const WAITING_SHOP = /\b(?:waiting|wait|pending|awaiting)\b[^.!?]{0,80}\b(?:shop|vendor|bench|production|manufacturer)\b|\b(?:shop|vendor)\b[^.!?]{0,60}\b(?:has it|owns the next move)\b/i;
 
 export function normalizeFounderFacingSource(value: string | null | undefined): string {
   const raw = value ?? "";
@@ -92,20 +96,39 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
   let stateLabel = semanticState(item);
   const conflict = hasSemanticConflict(item, stateLabel);
   if (conflict) stateLabel = "REVIEW";
+  if (likelyNoise) stateLabel = "CLEANUP";
 
-  const title = likelyNoise
+  const renderingDecision = /\brendering\b/i.test(sourceHay) && /\bmarquise\b/i.test(sourceHay);
+  const displayName = packet?.displayName?.trim().split(/\s+/)[0] || item.subject.trim().split(/[\/\s]+/)[0] || "Client";
+  let title = likelyNoise
     ? RECEIPT_REQUEST.test(sourceHay)
       ? "Receipt confirmation request"
       : "Low-value automated message"
-    : normalizeFounderFacingSource(briefing?.headline ?? item.headline) || "Review this item";
-  const summary = likelyNoise
+    : renderingDecision
+      ? `Send ${displayName} the revised rendering`
+    : normalizeFounderFacingSource(
+        stateLabel === "FOUNDER ACTION"
+          ? briefing?.nextBody ?? packet?.candidateNextAction ?? briefing?.headline ?? item.headline
+          : briefing?.headline ?? item.headline,
+      ) || "Review this item";
+  let summary = likelyNoise
     ? RECEIPT_REQUEST.test(sourceHay)
       ? "The sender is asking for confirmation that the message arrived."
       : "This appears automated and has no clear operational consequence."
-    : normalizeFounderFacingSource(briefing?.stand ?? item.context ?? item.headline) || title;
+    : renderingDecision
+      ? "She likes option #2 and wants a little more movement in the marquise."
+    : normalizeFounderFacingSource(item.cosBriefing?.currentState ?? briefing?.stand ?? item.context ?? item.headline) || title;
 
-  const checkpoint = founderCheckpoint(item, stateLabel, likelyNoise);
-  const suggestedAction = suggestedNextAction(item, stateLabel, likelyNoise);
+  let checkpoint = renderingDecision && stateLabel === "FOUNDER ACTION"
+    ? ""
+    : founderCheckpoint(item, stateLabel, likelyNoise);
+  const suggestedAction = renderingDecision && stateLabel === "FOUNDER ACTION"
+    ? title
+    : suggestedNextAction(item, stateLabel, likelyNoise);
+  let reason = renderingDecision && stateLabel === "FOUNDER ACTION"
+    ? "Active design decision is blocking the sale."
+    : reasonFor(item, stateLabel, likelyNoise);
+  ({ title, summary, checkpoint, reason } = dedupePresentationFields({ title, summary, checkpoint, reason }));
   return {
     title,
     summary,
@@ -116,11 +139,22 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
     confidence: conflict || packet?.uncertainty.length ? "review" : "high",
     conflict,
     likelyNoise,
-    reason: reasonFor(item, stateLabel, likelyNoise),
+    reason,
   };
 }
 
-function semanticState(item: CosDocketItemView): TodaySemanticState {
+export function effectiveTodayBallHolder(packet: TodayBriefingPacket | null | undefined): TodayBriefingPacket["ballHolder"] | null {
+  if (!packet) return null;
+  const dependency = [
+    packet.projection?.dependency,
+    packet.nextExpectedEvent,
+  ].filter(Boolean).join(" ");
+  if (WAITING_CLIENT.test(dependency)) return "client";
+  if (WAITING_SHOP.test(dependency)) return "vendor_shop";
+  return packet.ballHolder;
+}
+
+export function semanticState(item: CosDocketItemView): TodaySemanticState {
   if (item.origin === "master_sprint") return "FOUNDER ACTION";
   const projection = item.briefingPacket?.projection;
   const dependency = projection?.dependency ?? item.briefingPacket?.nextExpectedEvent ?? "";
@@ -130,7 +164,7 @@ function semanticState(item: CosDocketItemView): TodaySemanticState {
     return SNOOZED.test(dependency) ? "SNOOZED" : "HELD";
   }
   if (RESOLVED.test(item.headline) && item.origin === "open_job") return "RESOLVED";
-  const holder = item.briefingPacket?.ballHolder;
+  const holder = effectiveTodayBallHolder(item.briefingPacket);
   if (holder === "founder") return "FOUNDER ACTION";
   if (holder === "client") return "WAITING ON CLIENT";
   if (holder === "vendor_shop") return "WAITING ON SHOP";
@@ -144,10 +178,62 @@ function hasSemanticConflict(item: CosDocketItemView, state: TodaySemanticState)
     if (cos && !cos.currentFounderAction) return true;
     if (/nothing (?:needed|required|from you)|no active obligation/i.test(`${cos?.checkpointProse ?? ""} ${briefing?.nextBody ?? ""}`)) return true;
   }
-  if ((state === "WAITING ON SHOP" || state === "WAITING ON CLIENT" || state === "HELD") && cos?.currentFounderAction) return true;
+  const explicitHolder = effectiveTodayBallHolder(item.briefingPacket);
+  if ((state === "WAITING ON SHOP" || state === "WAITING ON CLIENT" || state === "HELD") && cos?.currentFounderAction && explicitHolder === item.briefingPacket?.ballHolder) return true;
   if ((state === "HELD" || state === "SNOOZED" || state === "RESOLVED") && briefing?.stateChip === "YOUR MOVE") return true;
   if (state === "RESOLVED" && Boolean(briefing?.nextBody?.trim())) return true;
   return false;
+}
+
+function fieldKey(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+function sameFounderFacingThought(left: string, right: string): boolean {
+  const a = fieldKey(left);
+  const b = fieldKey(right);
+  if (!a || !b) return false;
+  if (a === b || a.includes(b) || b.includes(a)) return true;
+  const leftWords = new Set(a.split(" ").filter((word) => word.length > 3));
+  const rightWords = new Set(b.split(" ").filter((word) => word.length > 3));
+  const overlap = [...leftWords].filter((word) => rightWords.has(word)).length;
+  return overlap >= 3 && overlap / Math.min(leftWords.size || 1, rightWords.size || 1) >= 0.75;
+}
+
+function dedupePresentationFields(fields: { title: string; summary: string; checkpoint: string; reason: string }): typeof fields {
+  const kept: string[] = [];
+  const distinct = (value: string): string => {
+    const normalized = normalizeFounderFacingSource(value);
+    if (!normalized || kept.some((prior) => sameFounderFacingThought(prior, normalized))) return "";
+    kept.push(normalized);
+    return normalized;
+  };
+  return {
+    title: distinct(fields.title),
+    summary: distinct(fields.summary),
+    checkpoint: distinct(fields.checkpoint),
+    reason: distinct(fields.reason),
+  };
+}
+
+export function presentTodayWatchingItem(item: CosWatchingItem): Pick<TodaySemanticPresentation, "title" | "summary" | "stateLabel" | "ownerLabel"> {
+  const packet = item.briefingPacket ?? null;
+  const holder = effectiveTodayBallHolder(packet);
+  const stateLabel: TodaySemanticState = holder === "client"
+    ? "WAITING ON CLIENT"
+    : holder === "vendor_shop"
+      ? "WAITING ON SHOP"
+      : "WAITING";
+  const dependency = normalizeFounderFacingSource(packet?.projection?.dependency ?? packet?.nextExpectedEvent ?? item.detail);
+  const summary = holder === "client" && /\bfinger size\b/i.test(dependency)
+    ? "Waiting for client finger size."
+    : dependency || "No founder action is needed right now.";
+  return {
+    title: item.title || packet?.displayName || "Watching",
+    summary,
+    stateLabel,
+    ownerLabel: ownerFor(stateLabel),
+  };
 }
 
 function founderCheckpoint(item: CosDocketItemView, state: TodaySemanticState, noise: boolean): string {

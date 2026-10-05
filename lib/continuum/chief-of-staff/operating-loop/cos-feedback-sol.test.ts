@@ -162,7 +162,7 @@ describe("cos feedback sol request", () => {
     assert.match(page, /CosFeedbackSettle/);
     assert.match(settle, /settleCosFeedback/);
     assert.doesNotMatch(settle, /setInterval|OPENAI_API_KEY/);
-    assert.match(today, /presentCosFeedback/);
+    assert.doesNotMatch(today, /presentCosFeedback/);
     assert.doesNotMatch(today, /refreshCosFeedback|sol-adapter|OPENAI_API_KEY/);
     assert.doesNotMatch(poll, /settleCosFeedback|sol-adapter|OPENAI_API_KEY/);
     assert.doesNotMatch(probe, /settleCosFeedback|sol-adapter|OPENAI_API_KEY/);

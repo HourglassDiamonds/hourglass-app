@@ -19,12 +19,7 @@ import { CosFounderAttentionControls } from "./cos-founder-attention";
 import { CosUnassignedIdentity } from "./cos-unassigned-identity";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 import { CosBriefingBlock } from "./cos-briefing-block";
-import { presentCosFeedback } from "@/lib/continuum/cos-feedback/feedback";
-import {
-  calendarFeedbackCommitments,
-  calendarTimingRecommendation,
-  type TodayUpcomingItem,
-} from "@/lib/continuum/calendar/today-upcoming";
+import type { TodayUpcomingItem } from "@/lib/continuum/calendar/today-upcoming";
 import {
   TodayDispositionForm,
   TodayMutationFailure,
@@ -125,7 +120,7 @@ function DocketItem({
     : item.job?.attentionStatus === "actionable-now" && item.job.attentionMode === "reminder"
       ? "REMINDER"
       : null;
-  const semantic = item.semanticPresentation ?? presentTodayItem(item);
+  const semantic = presentTodayItem(item);
   const packet = item.briefingPacket ?? item.brief?.briefingPacket ?? null;
   return (
     <TodayOptimisticItem completeAction={completeAction} disposeAction={disposeAction}>
@@ -144,30 +139,17 @@ function DocketItem({
       <div className="min-w-0 overflow-x-hidden">
         <BriefingHeader
           name={briefing ? [briefing.displayName, briefing.projectName].filter((row, i, all) => row && all.indexOf(row) === i).join(" / ") : item.subject}
-          chip={semantic.stateLabel}
+          chip={attentionChip}
         />
         {semantic ? (
           <div data-today-semantic={semantic.stateLabel} data-today-noise={semantic.likelyNoise ? "true" : undefined} data-today-conflict={semantic.conflict ? "true" : undefined}>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.16em] text-[#6f675f]">
-            {attentionChip ? `${attentionChip} · ` : ""}
-            {semantic.ownerLabel === "Justin" ? "Your next move" : `Owned by ${semantic.ownerLabel.toLowerCase()}`}
-          </p>
           <p className="mt-1 break-words font-serif text-[1.18rem] leading-[1.18] tracking-[-0.03em] text-[#efe8de]">
             {semantic.title}
           </p>
           {emailCard ? <CosUnassignedIdentity card={emailCard} /> : null}
-          <p className="hg-cos-docket-context mt-1 break-words text-[13px] leading-[1.45] text-[#b8ada2]">
+          {semantic.summary ? <p className="hg-cos-docket-context mt-1 break-words text-[13px] leading-[1.45] text-[#b8ada2]">
             {semantic.summary}
-          </p>
-          <div className="hg-cos-briefing-next mt-2 min-w-0">
-            <p className="text-[10px] uppercase tracking-[0.16em] text-[#8d8073]">Next move</p>
-            <p className="mt-0.5 break-words text-[13px] leading-[1.45] text-[#d8cfc4]">
-              {semantic.founderCheckpoint}
-            </p>
-          </div>
-          <p className="hg-cos-semantic-reason mt-1.5 break-words text-[11px] leading-[1.4] text-[#81776d]">
-            <span className="uppercase tracking-[0.12em]">Why here</span> · {semantic.reason}
-          </p>
+          </p> : null}
           </div>
         ) : item.cosBriefing && briefing ? (
           <CosBriefingBlock briefing={item.cosBriefing} />
@@ -244,23 +226,6 @@ export function ChiefOfStaffToday({
   const hasBrief = docket.items.some((item) => item.origin === "brief");
   const loopStatus = loop?.status
     ?? (docket.showDisconnected ? "disconnected" : docket.showCaughtUp ? "caught-up" : "active");
-  const calendarCommitments = calendarFeedbackCommitments(upcoming);
-  const feedback = docket.showDisconnected
-    ? null
-    : presentCosFeedback({
-        docket,
-        sourceWatermark: loop?.todayReadModelWatermark ?? null,
-        nowIso: new Date().toISOString(),
-        calendarCommitments,
-      });
-  const waiting = feedback?.safeToIgnore.map((item) => item.why).filter((why, index, all) => all.indexOf(why) === index) ?? [];
-  const timing = calendarTimingRecommendation({
-    focusNames: (feedback?.focusOrder ?? []).map((row) => {
-      const item = docket.items.find((entry) => entry.id === row.itemId);
-      return item?.briefing?.displayName || item?.subject || "";
-    }),
-    upcoming,
-  });
   return (
     <section
       data-cos-operating-loop={loopStatus}
@@ -343,24 +308,27 @@ export function ChiefOfStaffToday({
           ) : null}
         </>
       )}
-      {feedback ? (
-        <div data-cos-feedback className="mt-6 max-w-[46ch]">
-          <p className="break-words text-[14px] leading-relaxed text-[#d8cfc4]">
-            {feedback.founderGuidance}
-          </p>
-          {timing ? (
-            <p data-calendar-timing className="mt-2 break-words text-[14px] leading-relaxed text-[#d8cfc4]">
-              {timing}
-            </p>
-          ) : null}
-          {waiting.length > 0 ? (
-            <p className="mt-2 break-words text-[13px] leading-relaxed text-[#9a8e82]">
-              {waiting.join(" ")}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
       <CosWatchingList watching={docket.watching} askAction={askAction} disposeAction={disposeAction} />
+      {(docket.cleanup?.length ?? 0) > 0 ? (
+        <details data-cos-cleanup className="mt-10 min-w-0">
+          <summary className="cursor-pointer text-[11px] uppercase tracking-[0.22em] text-[#6f675f]">
+            More · {docket.cleanup!.length} low-value {docket.cleanup!.length === 1 ? "item" : "items"}
+          </summary>
+          <ol className="hg-cos-docket mt-5">
+            {docket.cleanup!.map((item, index) => (
+              <DocketItem
+                key={item.id}
+                item={item}
+                index={index + 1}
+                completeAction={completeAction}
+                reviewAction={reviewAction}
+                disposeAction={disposeAction}
+                askAction={askAction}
+              />
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </section>
   );
 }

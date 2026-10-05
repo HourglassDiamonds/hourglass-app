@@ -4,8 +4,8 @@ import Link from "next/link";
 import type { CosBriefItem, CosWatchingItem } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { founderFacingBriefActionLabel } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { COS_BRIEFING_SECTION_TITLE } from "@/lib/continuum/chief-of-staff/operating-loop/cos-briefing-v1";
+import { presentTodayWatchingItem } from "@/lib/continuum/chief-of-staff/operating-loop/today-presentation";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
-import { CosBriefingBlock } from "./cos-briefing-block";
 import {
   TodayDispositionForm,
   TodayMutationFailure,
@@ -114,6 +114,7 @@ export function CosWatchingList({
       <ul className="hg-cos-docket mt-5">
         {watching.map((item) => {
           const briefing = item.briefing;
+          const semantic = presentTodayWatchingItem(item);
           const name = briefing
             ? [briefing.displayName, briefing.projectName]
                 .filter((row, index, all) => row && all.indexOf(row) === index)
@@ -137,33 +138,12 @@ export function CosWatchingList({
                     {name}
                   </p>
                   <p className="shrink-0 text-[10px] uppercase tracking-[0.18em] text-[#ad9164]">
-                    {briefing?.stateChip ?? attentionChip ?? "WAITING"}
+                    {attentionChip ?? semantic.stateLabel}
                   </p>
                 </div>
-                {item.cosBriefing ? (
-                  <CosBriefingBlock briefing={item.cosBriefing} />
-                ) : briefing ? (
-                  <>
-                    <p className="mt-2 break-words font-serif text-[1.28rem] leading-[1.2] tracking-[-0.03em] text-[#efe8de]">
-                      {briefing.headline}
-                    </p>
-                    <p className="mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
-                      {briefing.stand}
-                    </p>
-                    <div className="mt-3 min-w-0">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-[#8d8073]">
-                        {briefing.nextLabel}
-                      </p>
-                      <p className="mt-1 break-words text-[14px] leading-relaxed text-[#d8cfc4]">
-                        {briefing.nextBody}
-                      </p>
-                    </div>
-                  </>
-                ) : (
-                  <p className="mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
-                    {item.detail}
-                  </p>
-                )}
+                <p className="mt-2 break-words text-[14px] leading-relaxed text-[#c4b7aa]">
+                  {semantic.summary}
+                </p>
                 {item.briefingPacket ? (
                   <CosAskConcierge
                     packet={item.briefingPacket}

@@ -331,6 +331,8 @@ export type CosWatchingItem = {
   cosBriefing?: CosBriefingV1 | null;
   todayDocketVersion?: TodayDocketVersion;
   attention?: CosAttentionItem;
+  /** Presentation-only marker for a stale Up next row reclassified at read time. */
+  wasTodayAction?: boolean;
 };
 
 export type CosMasterSprintItem = {

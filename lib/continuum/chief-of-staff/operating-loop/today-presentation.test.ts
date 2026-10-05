@@ -3,6 +3,8 @@ import { describe, it } from "node:test";
 import { proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { CosDocketItemView } from "./types";
+import { authoritativeTodayDocket, TODAY_DOCKET_VERSION } from "./docket";
+import { presentCosFeedback } from "@/lib/continuum/cos-feedback/feedback";
 import {
   normalizeFounderFacingSource,
   presentTodayItem,
@@ -48,6 +50,7 @@ function item(overrides: Partial<CosDocketItemView> = {}): CosDocketItemView {
     brief: null,
     decision: null,
     anomaly: null,
+    todayDocketVersion: TODAY_DOCKET_VERSION,
     briefingPacket: packet(),
     briefing: {
       displayName: "Ben C.",
@@ -79,8 +82,8 @@ describe("Sterling-curated Today presentation", () => {
     const presented = presentTodayItem(item());
     assert.equal(presented.stateLabel, "FOUNDER ACTION");
     assert.equal(presented.ownerLabel, "Justin");
-    assert.equal(presented.founderCheckpoint, "Review the CAD and send Ben the update.");
-    assert.doesNotMatch(presented.founderCheckpoint, /nothing needed/i);
+    assert.equal(presented.title, "Review the CAD and send Ben the update.");
+    assert.equal(presented.founderCheckpoint, "");
   });
 
   it("fails closed to Review instead of showing a contradictory confident row", () => {
@@ -117,6 +120,103 @@ describe("Sterling-curated Today presentation", () => {
   it("removes quoted chains, signatures, and duplicate sentences", () => {
     const normalized = normalizeFounderFacingSource("CAD is ready. CAD is ready.\nOn Monday, Justin wrote:\nold copy\nBest regards,\nVendor");
     assert.equal(normalized, "CAD is ready.");
+  });
+
+  it("presents Abbey as one concise sale-blocking founder action", () => {
+    const rawAsk = "Can you send me a rendering?";
+    const abbey = item({
+      id: "brief:abbey",
+      subject: "Abbey / C026137",
+      headline: rawAsk,
+      context: "Option #2 is good. I want a little more movement in the marquise. Can you send me a rendering?",
+      briefingPacket: packet({
+        itemId: "brief:abbey",
+        displayName: "Abbey",
+        projectName: "C026137",
+        candidateNextAction: rawAsk,
+        unresolvedFounderObligation: rawAsk,
+      }),
+      briefing: {
+        ...item().briefing!,
+        displayName: "Abbey",
+        projectName: "C026137",
+        headline: rawAsk,
+        stand: "Option #2 is good. I want a little more movement in the marquise.",
+        nextBody: rawAsk,
+      },
+    });
+    const presented = presentTodayItem(abbey);
+    assert.equal(presented.title, "Send Abbey the revised rendering");
+    assert.equal(presented.summary, "She likes option #2 and wants a little more movement in the marquise.");
+    assert.equal(presented.founderCheckpoint, "");
+    assert.equal(presented.reason, "Active design decision is blocking the sale.");
+    assert.doesNotMatch(`${presented.title} ${presented.summary} ${presented.founderCheckpoint} ${presented.reason}`, /Can you send me a rendering/i);
+  });
+
+  it("reclassifies receipt noise and stale founder ownership before rendering or feedback", () => {
+    const abbey = item({
+      id: "brief:abbey",
+      subject: "Abbey / C026137",
+      headline: "Can you send me a rendering?",
+      context: "Option #2 is good. A little more movement in the marquise.",
+      briefingPacket: packet({ itemId: "brief:abbey", displayName: "Abbey", projectName: "C026137" }),
+    });
+    const jennifer = item({
+      id: "brief:jennifer",
+      subject: "Jennifer Flores",
+      headline: "Please confirm the receipt of this email.",
+      context: "Please confirm the receipt of this email.",
+      briefingPacket: packet({ itemId: "brief:jennifer", displayName: "Jennifer Flores" }),
+    });
+    const travis = item({
+      id: "brief:travis",
+      subject: "Travis",
+      headline: "Approved",
+      context: "Waiting on client reply / finger size.",
+      briefingPacket: packet({
+        itemId: "brief:travis",
+        displayName: "Travis",
+        projection: {
+          workstreamId: "travis",
+          stage: "approved",
+          dependency: "Waiting on client reply / finger size.",
+          ballHolder: "founder",
+          activeObligations: [],
+          historicalObligations: [],
+          commitment: null,
+          controllingSourceRefs: ["gmail:travis"],
+          asOf: "2026-10-05T12:00:00.000Z",
+          provenance: [],
+        },
+      }),
+    });
+    const docket = authoritativeTodayDocket({
+      todayDocketVersion: TODAY_DOCKET_VERSION,
+      title: "Up next",
+      items: [jennifer, travis, abbey],
+      queuedCount: 0,
+      watchingCount: 0,
+      watching: [],
+      showCaughtUp: false,
+      showDisconnected: false,
+      caughtUpHeading: "",
+      caughtUpDetail: null,
+      disconnectedHeading: null,
+      disconnectedDetail: null,
+    });
+    assert.deepEqual(docket.items.map((row) => row.id), ["brief:abbey"]);
+    assert.deepEqual(docket.watching.map((row) => row.id), ["brief:travis"]);
+    assert.deepEqual(docket.cleanup?.map((row) => row.id), ["brief:jennifer"]);
+    assert.equal(docket.watching[0]?.detail, "Waiting for client finger size.");
+
+    const feedback = presentCosFeedback({
+      docket,
+      sourceWatermark: "acceptance",
+      nowIso: "2026-10-05T12:00:00.000Z",
+    });
+    assert.match(feedback.founderGuidance, /one meaningful founder action right now: send Abbey the revised rendering/i);
+    assert.match(feedback.founderGuidance, /Travis is waiting on the client/i);
+    assert.match(feedback.founderGuidance, /Jennifer’s receipt request looks like low-value admin and can be dismissed/i);
   });
 });
 
