@@ -8,6 +8,7 @@
 
 import { isExactStructuredSpecGmailSource, structuredSpecSourceProvenanceOf } from "@/lib/continuum/candidates/spec-provenance";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { isPermanentlySuppressedCandidate } from "@/lib/continuum/candidates/review";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import {
   COS_ANOMALY_TARGET,
@@ -30,6 +31,7 @@ import {
   isNoiseOnlyCandidate,
   isPaymentStateChange,
   payloadOf,
+  recoveredGmailThreadId,
   waitingOnFounder,
   isActionableSpecConflict,
   isStudioOrVendorLabel,
@@ -560,12 +562,45 @@ export function composeFounderAttentionSurface(input: {
     input.projects,
   );
   const threadByMessageId = gmailThreadByMessageId(input.threadContext);
+  const suppressedEmailHashes = new Set(
+    input.candidates.flatMap((row) => {
+      const payload = payloadOf(row);
+      return isPermanentlySuppressedCandidate(row) &&
+        payload.kind === "person_association" &&
+        payload.emailHash
+        ? [payload.emailHash]
+        : [];
+    }),
+  );
+  const suppressedSourceRefs = new Set(
+    input.candidates.flatMap((row) => {
+      const payload = payloadOf(row);
+      return payload.kind === "person_association" &&
+        payload.emailHash &&
+        suppressedEmailHashes.has(payload.emailHash)
+        ? [row.sourceRef]
+        : [];
+    }),
+  );
+  const suppressedThreads = new Set(
+    input.candidates.flatMap((row) => {
+      if (!suppressedSourceRefs.has(row.sourceRef)) return [];
+      const threadId = recoveredGmailThreadId(row, threadByMessageId);
+      return threadId ? [threadId] : [];
+    }),
+  );
   const judgments = new Map<string, FounderAttentionJudgment>();
   const groups = new Map<string, ContinuumCandidate[]>();
 
   for (const row of input.candidates) {
     const judgment = classifyCandidateAttention(row, ctx);
     judgments.set(row.candidateId, judgment);
+    const rowThread = recoveredGmailThreadId(row, threadByMessageId);
+    if (
+      suppressedSourceRefs.has(row.sourceRef) ||
+      (rowThread != null && suppressedThreads.has(rowThread))
+    )
+      continue;
     if (row.candidateState === "superseded" || row.reviewStatus === "discarded") continue;
     if (isCandidateQuietForToday(row, input.nowIso)) continue;
     const key = groupingKey(row, projectByAssociation, threadByMessageId, input.threadContext);

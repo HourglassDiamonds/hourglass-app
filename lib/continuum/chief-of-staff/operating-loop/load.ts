@@ -11,6 +11,7 @@
 import "server-only";
 
 import { loadFounderCorrectionEvents } from "./founder-corrections-load";
+import { candidateDispositionCorrectionEvents } from "@/lib/continuum/concierge-sol/founder-command";
 import { cookies } from "next/headers";
 import { after } from "next/server";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
@@ -211,7 +212,10 @@ async function rebuildTodayLoop(
     listed,
   );
   const indexedContext = await loadIndexedTodayThreadContext(candidates);
-  const founderCorrections = client ? await loadFounderCorrectionEvents(client) : [];
+  const founderCorrections = [
+    ...(client ? await loadFounderCorrectionEvents(client) : []),
+    ...candidateDispositionCorrectionEvents(candidates),
+  ];
   const composeInput = {
     founderCorrections,
     jobs,
@@ -326,8 +330,11 @@ async function commitComposedLoop(
     }
     if (result === "current") return "published";
     if (result === "stale" || result === "lost-race") return "moved";
-  } catch {
-    // A missing table or a lost race leaves the previous snapshot in place.
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "continuum.today.snapshot_publish_failed",
+      code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
+    }));
   }
   return "skipped";
 }
@@ -360,7 +367,17 @@ async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boole
     }
     throw new Error("today recompute watermark moved");
   };
-  beginTodayRecompute(watermark, run);
+  beginTodayRecompute(watermark, async () => {
+    try {
+      await run();
+    } catch (error) {
+      console.error(JSON.stringify({
+        event: "continuum.today.recompute_failed",
+        code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
+      }));
+      throw error;
+    }
+  });
   try {
     after(() => waitForTodayRecompute());
   } catch {
@@ -455,7 +472,11 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
       return pageFromLoop(loop, "refreshing", watermark);
     }
     return pageFromLoop(loop, "current", watermark);
-  } catch {
+  } catch (error) {
+    console.error(JSON.stringify({
+      event: "continuum.today.authenticated_read_failed",
+      code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
+    }));
     return disconnectedPage();
   }
 }

@@ -198,17 +198,17 @@ describe("persisted Today snapshot", () => {
     );
   });
 
-  it("renders a structurally valid v1 snapshot as labeled stale while v3 rebuilds", () => {
+  it("forces a synchronous rebuild instead of serving an obsolete model version", () => {
     const legacy = record("old", "continuum-today-read-model-v1");
     legacy.payload = {
       readModelVersion: "continuum-today-read-model-v1",
       validUntil: null,
       docket: docket(),
     };
-    assert.ok(readTodaySnapshotPayload(legacy.payload));
+    assert.equal(readTodaySnapshotPayload(legacy.payload), null);
     assert.equal(
       decideSnapshotUse({ record: legacy, liveWatermark: "live" }),
-      "refreshing",
+      "miss",
     );
   });
 

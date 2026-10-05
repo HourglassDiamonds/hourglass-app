@@ -263,5 +263,32 @@ describe("row-scoped Sterling commands", () => {
       assert.deepEqual(dylan.truth, { stage: "in_production", ballHolder: "vendor_shop", dependency: "vendor production" });
       assert.equal(dylan.scope?.workLoopId, "cad:C025610");
     }
+
+    const delivered = proposeTodayFounderOperation(
+      "This was hand delivered weeks ago.",
+      packet({ itemId: "brief:travis", displayName: "Travis" }),
+    );
+    assert.equal(delivered?.kind, "correct");
+    if (delivered?.kind === "correct")
+      assert.deepEqual(delivered.truth, {
+        stage: "complete",
+        ballHolder: "unknown",
+        dependency: null,
+      });
+
+    const followedUp = proposeTodayFounderOperation(
+      "I already followed up this morning.",
+      packet({
+        itemId: "brief:cad:C025999",
+        displayName: "Vendor contact",
+        ballHolder: "founder",
+        identifiers: [{ value: "C025999", role: "cadId", current: true }],
+      }),
+    );
+    assert.equal(followedUp?.kind, "correct");
+    if (followedUp?.kind === "correct") {
+      assert.equal(followedUp.truth.ballHolder, "vendor_shop");
+      assert.equal(followedUp.truth.dependency, "waiting for vendor response");
+    }
   });
 });

@@ -22,6 +22,7 @@ import { hashEmail, hashStoredPersonEmail } from "../lib/continuum/client-memory
 import { loadProjectJobs } from "../lib/continuum/client-memory/project-jobs/load";
 import { composeCosOperatingLoop } from "../lib/continuum/chief-of-staff/operating-loop/compose";
 import { loadFounderCorrectionEvents } from "../lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
+import { candidateDispositionCorrectionEvents } from "../lib/continuum/concierge-sol/founder-command";
 import { composeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/docket";
 import { finalizeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/today-docket-boundary";
 import { parseGmailWebHref } from "../lib/continuum/chief-of-staff/operating-loop/evidence";
@@ -571,13 +572,17 @@ async function main() {
       /* skip malformed */
     }
   }
-  const [candidates, jobs, projects, knownPeople, founderCorrections] = await Promise.all([
+  const [candidates, jobs, projects, knownPeople, noteCorrections] = await Promise.all([
     tagGenerated(client, listed),
     loadProjectJobs(client),
     loadProjects(client),
     loadKnownPeople(client),
     loadFounderCorrectionEvents(client),
   ]);
+  const founderCorrections = [
+    ...noteCorrections,
+    ...candidateDispositionCorrectionEvents(candidates),
+  ];
   const threadContext = await loadIndexedThreadContext(client, candidates);
   const sourceEvents = projectGmailSourceEvents({
     threadContext,

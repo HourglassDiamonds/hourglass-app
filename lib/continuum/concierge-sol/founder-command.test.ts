@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import { readFileSync } from "node:fs";
 import {
   applyFounderOperation,
+  candidateDispositionCorrectionEvents,
   proposeFounderOperation,
   proposeTodayFounderOperation,
   correctionEventsFromNotes,
@@ -13,6 +14,8 @@ import { CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types
 import { InMemoryProjectJobStore } from "@/lib/continuum/client-memory/project-jobs/store";
 import { createInMemoryProjectJobWriter } from "@/lib/continuum/client-memory/project-jobs/writer";
 import { createInMemoryClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/writer";
+import { InMemoryCandidateStore } from "@/lib/continuum/candidates/store";
+import { isPermanentlySuppressedCandidate } from "@/lib/continuum/candidates/review";
 import { composeCosOperatingLoop } from "@/lib/continuum/chief-of-staff/operating-loop/compose";
 import { composeTodayDocket } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 import { fixtureJob } from "@/lib/continuum/chief-of-staff/operating-loop/fixtures";
@@ -229,6 +232,27 @@ describe("explicit founder command canonical boundary", () => {
     assert.equal(production?.kind, "correct");
     if (production?.kind === "correct")
       assert.equal(production.truth.stage, "in_production");
+    for (const statement of [
+      "Travis was delivered.",
+      "Eliah is dead.",
+      "Support for Independent Jewelers is spam.",
+    ]) {
+      const terminal = proposeFounderOperation(statement);
+      assert.equal(terminal?.kind, "correct");
+      if (terminal?.kind === "correct") {
+        assert.deepEqual(terminal.truth, {
+          stage: "complete",
+          ballHolder: "unknown",
+          dependency: null,
+        });
+      }
+    }
+    const followedUp = proposeFounderOperation("I already followed up with Niurka.");
+    assert.equal(followedUp?.kind, "correct");
+    if (followedUp?.kind === "correct") {
+      assert.equal(followedUp.truth.ballHolder, "vendor_shop");
+      assert.equal(followedUp.truth.dependency, "vendor response");
+    }
   });
   it("persists a scoped Today-only correction on the uniquely resolved Person", async () => {
     const w = await world();
@@ -297,6 +321,96 @@ describe("explicit founder command canonical boundary", () => {
       "Please delete all jobs",
     ])
       assert.equal(proposeFounderOperation(text), null);
+  });
+  it("durably closes unresolved source work and permanently marks confirmed spam", async () => {
+    const w = await world();
+    const store = new InMemoryCandidateStore();
+    const sourceRef = "gmail:message:spam-1";
+    const base = {
+      sourceSystem: "gmail" as const,
+      sourceRef,
+      sourceTimestamp: NOW,
+      confidence: "high" as const,
+      evidenceBasis: { ruleIds: ["fixture"], matchedText: null },
+      candidateState: "active" as const,
+      reviewStatus: "pending" as const,
+      lastReviewAction: null,
+      founderEditedPayload: null,
+      founderEditedTarget: null,
+      reviewedAt: null,
+      createdAt: NOW,
+      canonical: false as const,
+      automaticApply: false as const,
+      parserVersion: "fixture",
+      supersedesCandidateId: null,
+      supersededByCandidateId: null,
+    };
+    const association = {
+      ...base,
+      candidateId: randomUUID(),
+      candidateType: "person_association" as const,
+      proposedTarget: { kind: "person" as const, personId: null },
+      payload: {
+        kind: "person_association" as const,
+        displayName: "Support",
+        emailHash: "hash-support",
+        mintPerson: false as const,
+        mergePersons: false as const,
+      },
+    };
+    const work = {
+      ...base,
+      candidateId: randomUUID(),
+      candidateType: "open_job" as const,
+      proposedTarget: { kind: "open_job" as const, projectId: null },
+      payload: {
+        kind: "open_job" as const,
+        jobKind: "follow_up" as const,
+        subject: "Reply",
+        detail: null,
+        waitingOnActor: "founder" as const,
+        dueAt: null,
+        createJob: false as const,
+      },
+    };
+    await store.put(association);
+    await store.put(work);
+    const result = await applyFounderOperation({
+      operation: {
+        kind: "correct",
+        target: "Support",
+        truth: { stage: "complete", ballHolder: "unknown", dependency: null },
+        wording: "Support is spam.",
+        scope: {
+          itemId: "brief:spam",
+          workLoopId: "source:spam",
+          projectId: null,
+          personId: null,
+          cadIds: [],
+          sourceRefs: [sourceRef],
+        },
+      },
+      projects: [],
+      people: [],
+      jobs: [],
+      jobWriter: w.jobWriter,
+      noteWriter: w.noteWriter,
+      candidateStore: store,
+      actor: "founder",
+      mutationId: randomUUID(),
+      now: new Date(NOW),
+      refresh: async () => {},
+    });
+    assert.equal(result.status, "applied");
+    assert.equal((await store.get(work.candidateId))?.reviewStatus, "discarded");
+    assert.equal(
+      isPermanentlySuppressedCandidate((await store.get(association.candidateId))!),
+      true,
+    );
+    const correctionEvents = candidateDispositionCorrectionEvents(await store.list());
+    assert.equal(correctionEvents.length, 1);
+    assert.equal(correctionEvents[0]?.correction?.stage, "complete");
+    assert.equal(correctionEvents[0]?.workLoopId, "source:spam");
   });
   it("F mutation route awaits recomposition and UI requests a refresh", () => {
     const action = readFileSync(

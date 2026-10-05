@@ -16,6 +16,11 @@ import {
 } from "./components/conditional-hold-panel";
 
 export const fetchCache = "force-no-store";
+// Today can perform a one-time synchronous read-model rebuild after a version
+// upgrade. Give that authenticated request the same bounded runway as the
+// Gmail freshness worker instead of letting the platform terminate it at the
+// short page default and preserve an obsolete snapshot indefinitely.
+export const maxDuration = 120;
 
 export default async function ConciergeHomePage() {
   const model = loadContinuumHomeModel();

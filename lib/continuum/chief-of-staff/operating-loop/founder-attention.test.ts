@@ -61,6 +61,71 @@ function gmailRow(
 }
 
 describe("CoS founder-attention classification", () => {
+  it("keeps founder-confirmed spam suppressed across a later message from the same hashed sender", () => {
+    const marked = gmailRow({
+      candidateId: "91919191-1111-4111-8111-111111111111",
+      sourceRef: "gc1|spam-thread-old|spam-old",
+      candidateType: "person_association",
+      proposedTarget: { kind: "person", personId: null },
+      founderEditedTarget: {
+        kind: "person",
+        personId: null,
+        permanentSuppression: true,
+      },
+      payload: {
+        kind: "person_association",
+        displayName: "Support",
+        emailHash: "hashed-spam-sender",
+        mintPerson: false,
+        mergePersons: false,
+      },
+    });
+    const laterAssociation = gmailRow({
+      candidateId: "92929292-2222-4222-8222-222222222222",
+      sourceRef: "gc1|spam-thread-new|spam-new",
+      candidateType: "person_association",
+      proposedTarget: { kind: "person", personId: null },
+      payload: {
+        kind: "person_association",
+        displayName: "Support",
+        emailHash: "hashed-spam-sender",
+        mintPerson: false,
+        mergePersons: false,
+      },
+    });
+    const laterWork = gmailRow({
+      candidateId: "93939393-3333-4333-8333-333333333333",
+      sourceRef: "gc1|spam-thread-new|spam-new",
+      candidateType: "open_job",
+      proposedTarget: { kind: "open_job", projectId: null },
+      payload: {
+        kind: "open_job",
+        jobKind: "required_action",
+        subject: "Review current instructions",
+        detail: null,
+        waitingOnActor: "founder",
+        dueAt: null,
+        createJob: false,
+      },
+      evidenceBasis: {
+        ruleIds: ["explicit_client_request"],
+        matchedText: "Review current instructions",
+      },
+    });
+    const surface = composeFounderAttentionSurface({
+      candidates: [marked, laterAssociation, laterWork],
+      jobs: [],
+      projects: fixtureProjects(),
+      nowIso: COS_LOOP_NOW,
+      top5Ids: new Set(),
+      recap: [],
+      proposedActions: [],
+      anomalies: [],
+    });
+    assert.equal(surface.needsYourDecision.length, 0);
+    assert.equal(surface.worthKnowing.length, 0);
+  });
+
   it("suppresses boilerplate channel-meta, signatures, and incomplete fragments", () => {
     const boilerplate = fixtureCandidate({
       candidateId: "aaaaaaaa-eeee-4eee-8eee-eeeeeeeeeeee",

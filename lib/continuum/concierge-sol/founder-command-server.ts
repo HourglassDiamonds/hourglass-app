@@ -7,6 +7,7 @@ import { getAuthenticatedProjectDeskReader } from "@/lib/continuum/client-memory
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
+import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import {
   applyFounderOperation,
   type FounderOperation,
@@ -23,11 +24,12 @@ export async function executeAuthenticatedFounderOperation(
       text: operation.question,
       refresh: false,
     };
-  const [jobs, notes, desk, peopleReader] = await Promise.all([
+  const [jobs, notes, desk, peopleReader, candidates] = await Promise.all([
     getAuthenticatedProjectJobWriter(),
     getAuthenticatedClientMemoryNoteWriter(),
     getAuthenticatedProjectDeskReader(),
     getAuthenticatedClientMemoryReader(),
+    getAuthenticatedCandidateStore(),
   ]);
   if (!jobs.ok || !notes.ok || !desk.ok || !peopleReader.ok)
     return {
@@ -54,6 +56,7 @@ export async function executeAuthenticatedFounderOperation(
       jobs: canonicalJobs,
       jobWriter: jobs.writer,
       noteWriter: notes.writer,
+      candidateStore: candidates.ok ? candidates.store : null,
       actor: jobs.username,
       mutationId: operation.kind === "correct" ? deterministicMutationId(operation) : randomUUID(),
       now: new Date(),

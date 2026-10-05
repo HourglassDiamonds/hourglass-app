@@ -123,7 +123,7 @@ export type CandidateEvidenceBasis = {
   supportingSourceRefs?: readonly string[];
 };
 
-export type ProposedCanonicalTarget =
+export type ProposedCanonicalTarget = (
   | { kind: "none" }
   | { kind: "person"; personId: string | null }
   | { kind: "project"; projectId: string | null }
@@ -132,7 +132,21 @@ export type ProposedCanonicalTarget =
       projectId: string | null;
       fieldName: EditableProjectSpecField;
     }
-  | { kind: "open_job"; projectId: string | null };
+  | { kind: "open_job"; projectId: string | null }
+) & {
+  /** Founder-audited sender suppression. Additive JSONB metadata, not truth. */
+  permanentSuppression?: true;
+  /** Durable projectless founder disposition over retained source evidence. */
+  founderDisposition?: {
+    kind: "terminal" | "spam";
+    itemId: string;
+    workLoopId: string;
+    cadIds: string[];
+    sourceRefs: string[];
+    label: string;
+    wording: string;
+  };
+};
 
 export type PersonAssociationPayload = {
   kind: "person_association";

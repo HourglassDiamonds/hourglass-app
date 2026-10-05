@@ -6,14 +6,10 @@
 
 import type { CosTodayDocketView } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 
-export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v5" as const;
+export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v6" as const;
 export const TODAY_SNAPSHOT_KEY = "founder_today_v1" as const;
 
-const DISPLAY_COMPATIBLE_READ_MODEL_VERSIONS = new Set([
-  "continuum-today-read-model-v1",
-  "continuum-today-read-model-v2",
-  "continuum-today-read-model-v3",
-  "continuum-today-read-model-v4",
+const DISPLAY_COMPATIBLE_READ_MODEL_VERSIONS = new Set<string>([
   CONTINUUM_TODAY_READ_MODEL_VERSION,
 ]);
 

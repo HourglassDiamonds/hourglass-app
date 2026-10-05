@@ -9,6 +9,11 @@ import type { ProjectJobWriter } from "@/lib/continuum/client-memory/project-job
 import type { ClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/writer";
 import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
 import type { ClientSearchResult } from "@/lib/continuum/client-memory/read/types";
+import type { CandidateStore, ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import {
+  withFounderDisposition,
+  withPermanentSuppression,
+} from "@/lib/continuum/candidates/review";
 
 export type FounderCorrectionScope = {
   itemId: string;
@@ -75,12 +80,13 @@ export function proposeFounderOperation(
       days: command[3] ? +command[3] : null,
     };
   const state = text.match(
-    /^(.{1,100}?)\s+is\s+(?:now\s+)?(in (?:manufacturing|production)|waiting (?:on|for) .+|(?:my|the founder's) (?:move|turn))[.!]?$/i,
+    /^(.{1,100}?)\s+(?:is|was)\s+(?:now\s+)?(in (?:manufacturing|production)|waiting (?:on|for) .+|(?:my|the founder's) (?:move|turn)|delivered|complete|completed|dead|closed|lost|spam)[.!]?$/i,
   );
   const alternate = text.match(/^waiting (?:on|for) (.{1,100}?) to reply\b/i);
-  if (!state && !alternate) return null;
-  const target = state?.[1] ?? alternate![1];
-  const body = state?.[2] ?? text;
+  const followedUp = text.match(/^I\s+(?:already\s+)?followed up with\s+(.{1,100}?)[.!]?$/i);
+  if (!state && !alternate && !followedUp) return null;
+  const target = state?.[1] ?? alternate?.[1] ?? followedUp![1];
+  const body = state?.[2] ?? (followedUp ? "waiting on vendor response" : text);
   let truth: NonNullable<SourceCommunicationEvent["correction"]>;
   if (/^in (?:manufacturing|production)[.!]?$/i.test(body))
     truth = {
@@ -88,6 +94,8 @@ export function proposeFounderOperation(
       ballHolder: "vendor_shop",
       dependency: "vendor production",
     };
+  else if (/^(?:delivered|complete|completed|dead|closed|lost|spam)[.!]?$/i.test(body))
+    truth = { stage: "complete", ballHolder: "unknown", dependency: null };
   else if (/^(?:my|the founder's) (?:move|turn)[.!]?$/i.test(body))
     truth = { ballHolder: "founder", dependency: "founder action" };
   else if (/^waiting (?:on|for)\b/i.test(body)) {
@@ -125,6 +133,32 @@ export function proposeTodayFounderOperation(
 
   if (/\b(?:already handled|already took care of|this is done|mark (?:this|it) done)\b/i.test(text)) {
     return { kind: "resolve", target, days: null };
+  }
+  if (/\b(?:dead|budget (?:was|is) too low|delivered|hand[- ]delivered|closed|lost|spam|complete(?:d)?)\b/i.test(text)) {
+    return {
+      kind: "correct",
+      target,
+      truth: { stage: "complete", ballHolder: "unknown", dependency: null },
+      wording: `${target} is complete.`,
+      scope,
+    };
+  }
+  if (/\b(?:I|we)\s+(?:already\s+)?(?:followed up|messaged|emailed)\b/i.test(text)) {
+    const vendorOwned =
+      packet.entityType === "vendor" ||
+      packet.ballHolder === "vendor_shop" ||
+      packet.identifiers.some((row) => row.current && row.role === "cadId") ||
+      /\b(?:cad|shop|vendor)\b/i.test(packet.candidateNextAction ?? "");
+    return {
+      kind: "correct",
+      target,
+      truth: {
+        ballHolder: vendorOwned ? "vendor_shop" : "client",
+        dependency: vendorOwned ? "waiting for vendor response" : "waiting for client response",
+      },
+      wording: `${target} is ${vendorOwned ? "waiting for the vendor response" : "waiting for the client response"}.`,
+      scope,
+    };
   }
   if (/\b(?:don['’]?t show me this again|do not show me this again|dismiss (?:this|it) permanently)\b/i.test(text)) {
     return { kind: "cancel", target, days: null };
@@ -174,7 +208,7 @@ export function proposeTodayFounderOperation(
 export function looksLikeTodayFounderDirective(query: string): boolean {
   const text = query.replace(/\s+/g, " ").trim();
   if (!text || /\?/.test(text)) return false;
-  return /\b(?:move|put|mark|hold|backburner|waiting|snooze|dismiss|resolve|cancel|production|manufacturing|already handled|took care of)\b/i.test(text);
+  return /\b(?:move|put|mark|hold|backburner|waiting|snooze|dismiss|resolve|cancel|production|manufacturing|already handled|took care of|followed up|messaged|emailed|dead|delivered|complete|completed|closed|lost|spam)\b/i.test(text);
 }
 
 function correctionScope(packet: TodayBriefingPacket): FounderCorrectionScope {
@@ -299,6 +333,7 @@ export async function applyFounderOperation(input: {
   jobs: readonly ProjectJob[];
   jobWriter: ProjectJobWriter;
   noteWriter: Pick<ClientMemoryNoteWriter, "addManualNote">;
+  candidateStore?: CandidateStore | null;
   actor: string;
   mutationId: string;
   now: Date;
@@ -334,7 +369,15 @@ export async function applyFounderOperation(input: {
   });
   const personOnly = op.kind === "correct" && matches.length === 0 && people.length === 1 ? people[0] : null;
   if (matches.length !== 1)
-    if (!personOnly)
+    if (!personOnly) {
+      if (op.kind === "correct" && op.scope?.sourceRefs.length && input.candidateStore) {
+        return applyProjectlessFounderCorrection({
+          operation: op,
+          store: input.candidateStore,
+          now: input.now,
+          refresh: input.refresh,
+        });
+      }
     return {
       status: "clarify",
       text:
@@ -343,6 +386,7 @@ export async function applyFounderOperation(input: {
           : "Which existing project should I update? Please give its full name or project ID.",
       refresh: false,
     };
+    }
   const project = matches[0] ?? null;
   try {
     let success = false;
@@ -432,6 +476,132 @@ export async function applyFounderOperation(input: {
       refresh: false,
     };
   }
+}
+
+async function applyProjectlessFounderCorrection(input: {
+  operation: Extract<FounderOperation, { kind: "correct" }>;
+  store: CandidateStore;
+  now: Date;
+  refresh: () => Promise<void>;
+}): Promise<FounderCommandResult> {
+  const sourceRefs = new Set(input.operation.scope?.sourceRefs ?? []);
+  const rows = (await input.store.list()).filter((row) =>
+    sourceRefs.has(row.sourceRef),
+  );
+  if (rows.length === 0)
+    return {
+      status: "clarify",
+      text: "I could not safely match that Today item to retained source evidence.",
+      refresh: false,
+    };
+  const permanentSpam = /\bspam\b/i.test(input.operation.wording);
+  const reviewedAt = input.now.toISOString();
+  let writes = 0;
+  for (const row of rows) {
+    const payload = row.founderEditedPayload ?? row.payload;
+    const disposition = {
+      kind: permanentSpam ? "spam" as const : "terminal" as const,
+      itemId: input.operation.scope!.itemId,
+      workLoopId: input.operation.scope!.workLoopId,
+      cadIds: input.operation.scope!.cadIds,
+      sourceRefs: input.operation.scope!.sourceRefs,
+      label: input.operation.target,
+      wording: input.operation.wording,
+    };
+    const result =
+      permanentSpam && payload.kind === "person_association" && payload.emailHash
+        ? await input.store.applyReview(
+            row.candidateId,
+            {
+              action: "edit",
+              payload,
+              proposedTarget: withPermanentSuppression(
+                withFounderDisposition(
+                  row.founderEditedTarget ?? row.proposedTarget,
+                  disposition,
+                ),
+              ),
+            },
+            reviewedAt,
+          )
+        : payload.kind === "person_association"
+          ? await input.store.applyReview(
+              row.candidateId,
+              {
+                action: "edit",
+                payload,
+                proposedTarget: withFounderDisposition(
+                  row.founderEditedTarget ?? row.proposedTarget,
+                  disposition,
+                ),
+              },
+              reviewedAt,
+            )
+          : await input.store.applyReview(
+              row.candidateId,
+              { action: "discard" },
+              reviewedAt,
+            );
+    if (result?.ok) writes += 1;
+  }
+  if (writes === 0)
+    return {
+      status: "failed",
+      text: "The update failed. No successful change was confirmed.",
+      refresh: false,
+    };
+  try {
+    await input.refresh();
+  } catch {
+    return {
+      status: "applied",
+      text: "The source disposition was saved, but Today could not refresh. Reload Today before relying on its current display.",
+      refresh: true,
+    };
+  }
+  return {
+    status: "applied",
+    text: permanentSpam
+      ? `${input.operation.target}: sender permanently suppressed from Today.`
+      : `${input.operation.target}: source work closed and retained in audit history.`,
+    refresh: true,
+  };
+}
+
+export function candidateDispositionCorrectionEvents(
+  candidates: readonly ContinuumCandidate[],
+): SourceCommunicationEvent[] {
+  return candidates.flatMap((row) => {
+    const disposition = row.founderEditedTarget?.founderDisposition;
+    if (!disposition || row.payload.kind !== "person_association") return [];
+    const parsed = row.sourceRef.match(/^gc1\|([^|]+)\|([^|]+)$/);
+    const timestamp = row.reviewedAt ?? row.createdAt;
+    return [{
+      sourceType: "founder_note",
+      sourceRef: `founder-candidate-disposition:${row.candidateId}`,
+      messageId: row.candidateId,
+      threadId: parsed?.[1] ?? null,
+      timestamp,
+      direction: "outbound",
+      actor: "founder",
+      subject: null,
+      authorOwnedText: disposition.wording,
+      quotedText: "",
+      attachmentFilenames: [],
+      hasAttachments: false,
+      cadIds: disposition.cadIds,
+      orderIds: [],
+      productionJobIds: [],
+      personLabel: disposition.label,
+      projectId: null,
+      workLoopId: disposition.workLoopId,
+      semanticClass: "founder_correction",
+      evidenceExcerpt: disposition.wording,
+      workIdentityBasis: disposition.cadIds.length ? "cad" : null,
+      provenance: "founder_correction",
+      correction: { stage: "complete", ballHolder: "unknown", dependency: null },
+    } satisfies SourceCommunicationEvent];
+  });
 }
 
 function abbreviatedNameMatch(displayName: string, targetName: string): boolean {

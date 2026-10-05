@@ -12,10 +12,33 @@ import type {
 } from "./types";
 
 const DEFERRED_UNTIL_KEY = "deferredUntil" as const;
+const PERMANENT_SUPPRESSION_KEY = "permanentSuppression" as const;
 
 type TargetWithSnooze = ProposedCanonicalTarget & {
   [DEFERRED_UNTIL_KEY]?: string;
 };
+
+export function withPermanentSuppression(
+  target: ProposedCanonicalTarget | null | undefined,
+): ProposedCanonicalTarget {
+  return {
+    ...(target ?? { kind: "none" }),
+    [PERMANENT_SUPPRESSION_KEY]: true,
+  };
+}
+
+export function withFounderDisposition(
+  target: ProposedCanonicalTarget | null | undefined,
+  disposition: NonNullable<ProposedCanonicalTarget["founderDisposition"]>,
+): ProposedCanonicalTarget {
+  return { ...(target ?? { kind: "none" }), founderDisposition: disposition };
+}
+
+export function isPermanentlySuppressedCandidate(
+  row: ContinuumCandidate,
+): boolean {
+  return row.founderEditedTarget?.[PERMANENT_SUPPRESSION_KEY] === true;
+}
 
 export function deferredUntilOf(row: ContinuumCandidate): string | null {
   const target = row.founderEditedTarget as TargetWithSnooze | null;
