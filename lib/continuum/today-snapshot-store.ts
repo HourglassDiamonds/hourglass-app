@@ -17,6 +17,7 @@ import {
   type TodaySnapshotPayload,
   type TodaySnapshotRecord,
 } from "./today-snapshot";
+import { emitTodaySnapshotPublished } from "./today-publication-telemetry";
 
 const TABLE = "continuum_today_snapshots";
 const UNIQUE_VIOLATION = "23505";
@@ -219,6 +220,20 @@ export async function publishPersistedTodaySnapshot(
     evaluationTime?: string;
   },
 ): Promise<PublishResult> {
+  const reported = (result: PublishResult): PublishResult => {
+    if (result === "published") {
+      try {
+        emitTodaySnapshotPublished({
+          sourceWatermark: input.composedWatermark,
+          composedAt: input.composedAt,
+          payload: input.payload,
+        });
+      } catch {
+        // Diagnostics must never change a successful publication result.
+      }
+    }
+    return result;
+  };
   if (input.payload.readModelVersion !== CONTINUUM_TODAY_READ_MODEL_VERSION) {
     return "unavailable";
   }
@@ -244,16 +259,16 @@ export async function publishPersistedTodaySnapshot(
       if (!isUniqueViolation(error)) return "unavailable";
       inserted = { error };
     }
-    if (!inserted?.error) return "published";
+    if (!inserted?.error) return reported("published");
     if (!isUniqueViolation(inserted.error)) return "unavailable";
 
     observed = await readSnapshotIdentity(client);
     if (!observed) return "lost-race";
     if (winnerIsCurrent(observed, live)) return "current";
-    if (!isCurrentVersion(observed)) return upgradeIncompatible(client, observed, input, live);
+    if (!isCurrentVersion(observed)) return reported(await upgradeIncompatible(client, observed, input, live));
   } else if (!isCurrentVersion(observed)) {
-    return upgradeIncompatible(client, observed, input, live);
+    return reported(await upgradeIncompatible(client, observed, input, live));
   }
 
-  return publishCompatible(client, observed, input, live);
+  return reported(await publishCompatible(client, observed, input, live));
 }
