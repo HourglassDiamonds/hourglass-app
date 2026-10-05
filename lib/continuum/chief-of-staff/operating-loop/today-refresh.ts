@@ -23,6 +23,20 @@ export type TodaySourceHealth = "checking" | "current" | "delayed";
 
 export const TODAY_GMAIL_SOURCE_DELAY_AFTER_MS = 3 * 60 * 1000;
 
+export function todaySourceHealthAfterCycle(input: {
+  requestFulfilled: boolean;
+  durableSourceHealth: TodaySourceHealth | null;
+  safeErrorCode: string | null;
+}): TodaySourceHealth {
+  if (input.requestFulfilled && input.durableSourceHealth) {
+    return input.durableSourceHealth;
+  }
+  if (input.safeErrorCode === "gmail-sync-already-running") return "checking";
+  // A transport/action failure cannot prove source delay. Only the durable
+  // checkpoint age may produce the delayed state.
+  return "checking";
+}
+
 export function durableTodayGmailSourceHealth(input: {
   lastSuccessfulSyncAt: string | null;
   nowIso: string;

@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, it } from "node:test";
+import { ChiefOfStaffToday } from "../../../../app/executive-dashboard/concierge/components/chief-of-staff-today";
 import { proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { CosDocketItemView } from "./types";
@@ -113,6 +116,7 @@ describe("Sterling-curated Today presentation", () => {
     assert.equal(presented.title, "Receipt confirmation request");
     assert.equal(presented.summary, "The sender is asking for confirmation that the message arrived.");
     assert.equal(presented.likelyNoise, true);
+    assert.equal(presented.noiseKind, "receipt");
     assert.equal(presented.suggestedAction, "Dismiss");
     assert.doesNotMatch(`${presented.title} ${presented.summary}`, /receipt.*receipt/i);
   });
@@ -190,10 +194,17 @@ describe("Sterling-curated Today presentation", () => {
         },
       }),
     });
+    const automated = item({
+      id: "brief:automated",
+      subject: "Unassigned",
+      headline: "This is an automated message. Do not reply.",
+      context: "This is an automated message. Do not reply.",
+      briefingPacket: packet({ itemId: "brief:automated", displayName: "Unassigned" }),
+    });
     const docket = authoritativeTodayDocket({
       todayDocketVersion: TODAY_DOCKET_VERSION,
       title: "Up next",
-      items: [jennifer, travis, abbey],
+      items: [jennifer, automated, travis, abbey],
       queuedCount: 0,
       watchingCount: 0,
       watching: [],
@@ -208,6 +219,12 @@ describe("Sterling-curated Today presentation", () => {
     assert.deepEqual(docket.watching.map((row) => row.id), ["brief:travis"]);
     assert.deepEqual(docket.cleanup?.map((row) => row.id), ["brief:jennifer"]);
     assert.equal(docket.watching[0]?.detail, "Waiting for client finger size.");
+
+    const cleanupHtml = renderToStaticMarkup(createElement(ChiefOfStaffToday, { docket }));
+    const cleanupSection = cleanupHtml.split("data-cos-cleanup")[1] ?? "";
+    assert.match(cleanupSection, /Receipt confirmation request/);
+    assert.doesNotMatch(cleanupSection, /data-cos-founder-verb=/);
+    assert.doesNotMatch(cleanupHtml, /This is an automated message/);
 
     const feedback = presentCosFeedback({
       docket,

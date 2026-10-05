@@ -100,6 +100,7 @@ function DocketItem({
   reviewAction,
   disposeAction,
   askAction,
+  allowMutations = true,
 }: {
   item: CosDocketItemView;
   index: number;
@@ -107,6 +108,7 @@ function DocketItem({
   reviewAction?: FormAction;
   disposeAction?: MutationAction;
   askAction?: TodayAskAction;
+  allowMutations?: boolean;
 }) {
   const controls = selectFounderControls(item);
   const emailCard = composeEmailCard(item, controls.emailSources);
@@ -169,14 +171,14 @@ function DocketItem({
           </>
         )}
         <div className="mt-1 flex min-w-0 flex-wrap items-start gap-x-4">
-          {item.job?.attentionMode === "watching"
+          {!allowMutations ? null : item.job?.attentionMode === "watching"
             ? <WatchingDispositionActions item={item} />
             : <CosDocketActions item={item} disposeAction={disposeAction} />}
           {packet ? (
             <CosAskConcierge packet={packet} cosBriefing={item.cosBriefing ?? null} askAction={askAction} />
           ) : null}
         </div>
-        {item.decision ? (
+        {allowMutations && item.decision ? (
           <CosFounderAttentionControls
             item={item.decision}
             completeAction={completeAction}
@@ -324,6 +326,7 @@ export function ChiefOfStaffToday({
                 reviewAction={reviewAction}
                 disposeAction={disposeAction}
                 askAction={askAction}
+                allowMutations={false}
               />
             ))}
           </ol>

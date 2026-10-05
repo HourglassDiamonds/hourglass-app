@@ -234,7 +234,9 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
   const cleanup = [
     ...(docket.cleanup ?? []).filter(isAuthoritativeTodayCard),
     ...authoritativeItems.filter((item) => presentTodayItem(item).likelyNoise),
-  ].filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
+  ]
+    .filter((item) => presentTodayItem(item).noiseKind === "receipt")
+    .filter((item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index);
   const waitingFromItems: CosWatchingItem[] = authoritativeItems
     .filter((item) => {
       const semantic = presentTodayItem(item);
@@ -294,7 +296,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     queuedCount,
     watchingCount: watching.length,
     watching,
-    cleanup: finalized.upNext.filter((item) => presentTodayItem(item).likelyNoise),
+    cleanup: finalized.upNext.filter((item) => presentTodayItem(item).noiseKind === "receipt"),
     showCaughtUp,
     showDisconnected,
     caughtUpHeading: COS_CAUGHT_UP_HEADING,

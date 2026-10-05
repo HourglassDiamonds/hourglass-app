@@ -1256,7 +1256,11 @@ function classifySituation(input: {
   ) {
     communication = "platform";
   }
-  const title = displayTitle(person, attribution.projectTitle, organizationLabel);
+  const title = displayTitle(
+    person ?? (communication === "vendor" ? group.vendorContactName : null),
+    attribution.projectTitle,
+    organizationLabel,
+  );
   const client = pickClientPerson(project);
   const clientConfirmed = Boolean(
     client &&
@@ -1309,6 +1313,22 @@ function classifySituation(input: {
     ...sourceBeatsFor(
       loopSourceEvents.filter(isOperationalSourceEvent),
     ),
+    ...(group.staleInboundSatisfied && group.latestMeaningfulOutbound && group.gmailThreadId
+      ? [{
+          at: formatEvidenceDay(group.latestMeaningfulOutbound.sentAt),
+          label: `${formatEvidenceDay(group.latestMeaningfulOutbound.sentAt)} · ${CONTINUUM_FOUNDER_DISPLAY_NAME}`,
+          summary: "You already wrote.",
+          speaker: "founder" as const,
+          sourceHref: gmailEvidenceHrefFromSourceRef(
+            `gc1|${group.gmailThreadId}|${group.latestMeaningfulOutbound.messageId}`,
+          ),
+          candidateId: group.latestMeaningfulOutbound.messageId,
+          kind: "founder_outbound" as const,
+          timestamp: group.latestMeaningfulOutbound.sentAt,
+          historical: false,
+          superseded: false,
+        }]
+      : []),
   ];
   const production = isProductionStage(project?.lifecycleStage);
   const vendorHandled =
@@ -1892,7 +1912,9 @@ function classifySituation(input: {
         watchingDetail =
           group.waitingState === "client"
             ? "Waiting on the client."
-            : group.waitingState === "cad" || group.waitingState === "shop"
+            : group.waitingState === "cad" ||
+                group.waitingState === "shop" ||
+                group.sourceClass === "vendor"
               ? "Awaiting the shop."
               : "No founder action on the current turn.";
       } else {
@@ -1955,7 +1977,7 @@ function classifySituation(input: {
     lifecycleStage: project?.lifecycleStage ?? null,
     remainingFounderCommitment: remaining,
     declinedCurrentBeat: group.declinedCurrentBeat,
-    vendorContactName: vendorContactFirstName(identityPeople),
+    vendorContactName: group.vendorContactName ?? vendorContactFirstName(identityPeople),
     founderOwnTexts: briefingTexts.founderOwnTexts,
     vendorOwnTexts: briefingTexts.vendorOwnTexts,
     quotedTexts: briefingTexts.quotedTexts,

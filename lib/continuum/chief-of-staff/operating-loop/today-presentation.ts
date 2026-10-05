@@ -33,6 +33,7 @@ export type TodaySemanticPresentation = {
   confidence: "high" | "review";
   conflict: boolean;
   likelyNoise: boolean;
+  noiseKind: "receipt" | "automated" | null;
   reason: string;
 };
 
@@ -92,6 +93,11 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
     ...(item.brief?.evidence.map((beat) => beat.summary) ?? []),
   ].filter((value): value is string => Boolean(value)).join(" ");
   const likelyNoise = isLikelyOperationalNoise(sourceHay);
+  const noiseKind = RECEIPT_REQUEST.test(sourceHay)
+    ? "receipt"
+    : AUTOMATED_NOISE.test(sourceHay)
+      ? "automated"
+      : null;
 
   let stateLabel = semanticState(item);
   const conflict = hasSemanticConflict(item, stateLabel);
@@ -139,6 +145,7 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
     confidence: conflict || packet?.uncertainty.length ? "review" : "high",
     conflict,
     likelyNoise,
+    noiseKind,
     reason,
   };
 }

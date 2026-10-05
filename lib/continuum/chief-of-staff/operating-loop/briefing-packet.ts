@@ -564,6 +564,8 @@ function displayNameOf(
   }
   const hint = input.displayNameHint?.trim() || null;
   if (hint && !VENDOR_ORG_NAME.test(hint) && !/^unassigned$/i.test(hint)) return hint;
+  const vendorContact = input.vendorContactName?.trim() || null;
+  if (input.identityKind === "vendor" && vendorContact) return firstName(vendorContact);
   const org = input.organizationLabel?.trim() || null;
   if (org) return org;
   const project = input.projectName?.trim() || null;

@@ -7,6 +7,7 @@ import {
   shouldPollTodayFreshness,
   shouldRefreshTodaySurface,
   shouldSwapTodayAfterRecompute,
+  todaySourceHealthAfterCycle,
   todaySourceFreshnessLabel,
   type TodaySourceHealth,
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-refresh";
@@ -54,18 +55,19 @@ export function GmailOperatingFreshness({
         if (cancelled) return;
         const currentWatermark = canonical.status === "fulfilled" ? canonical.value : null;
         const result = mail.status === "fulfilled" ? mail.value : null;
-        if (mail.status === "fulfilled" && result?.durableSourceHealth === "current") {
-          setSourceHealth("current");
+        const nextHealth = todaySourceHealthAfterCycle({
+          requestFulfilled: mail.status === "fulfilled",
+          durableSourceHealth: result?.durableSourceHealth ?? null,
+          safeErrorCode: result?.safeErrorCode ?? null,
+        });
+        setSourceHealth(nextHealth);
+        if (nextHealth === "current" && result) {
           setLastCheckedAt(result.lastSuccessfulSyncAt ? Date.parse(result.lastSuccessfulSyncAt) : Date.now());
-        } else if (result?.safeErrorCode === "gmail-sync-already-running") {
-          setSourceHealth("checking");
-        } else {
-          setSourceHealth("delayed");
         }
         const mailChanged = result && result.safeErrorCode !== "unauthorized" && shouldRefreshTodaySurface(result.docketMayHaveChanged);
         if (mailChanged || (currentWatermark && baselineWatermark && currentWatermark !== baselineWatermark)) router.refresh();
       } catch {
-        setSourceHealth("delayed");
+        setSourceHealth("checking");
       } finally {
         inFlight.current = false;
       }
@@ -94,7 +96,6 @@ export function GmailOperatingFreshness({
   }, []);
 
   useEffect(() => {
-    setChecking(refreshing);
     if (!refreshing) return;
     let cancelled = false;
     const started = Date.now();
@@ -146,14 +147,15 @@ export function GmailOperatingFreshness({
     };
   }, [baselineWatermark, refreshing, router]);
 
-  const health = checking ? "checking" : sourceHealth;
+  const activelyChecking = refreshing || checking;
+  const health = activelyChecking ? "checking" : sourceHealth;
   const label = health === "checking"
     ? "Checking for updates…"
     : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock });
   return (
     <p
       data-today-freshness={health}
-      data-today-refreshing={checking ? "" : undefined}
+      data-today-refreshing={activelyChecking ? "" : undefined}
       className={`mb-3 text-[0.72rem] uppercase tracking-[0.16em] ${health === "delayed" ? "text-[#d6a66f]" : "text-[#81776d]"}`}
       role="status"
     >

@@ -195,6 +195,53 @@ function loopOf(input: Parameters<typeof composeCosOperatingLoop>[0]) {
 }
 
 describe("Concierge Executive Moderator V1", () => {
+  it("keeps a projectless vendor thread in Watching when the latest indexed turn is founder outbound", () => {
+    const threadId = "19b321bfd04d7015";
+    const vendorHash = "vendor-niurka-hash";
+    const founderHash = "founder-hash";
+    const result = briefOf({
+      candidates: [
+        row({
+          candidateId: "niurka-person",
+          sourceRef: `gc1|${threadId}|inbound-message`,
+          sourceTimestamp: "2026-10-04T21:27:31.000Z",
+          candidateType: "person_association",
+          proposedTarget: { kind: "person", personId: null },
+          payload: {
+            kind: "person_association",
+            displayName: "Niurka",
+            emailHash: vendorHash,
+            mintPerson: false,
+            mergePersons: false,
+          },
+          evidenceBasis: { ruleIds: ["unresolved_email_hash"], matchedText: null },
+        }),
+      ],
+      jobs: [],
+      projects: new Map(),
+      nowIso: "2026-10-05T18:00:00.000Z",
+      top5: [],
+      knownPeople: [
+        { personId: "vendor-niurka", displayName: "Niurka", roles: ["vendor-contact"], organizationName: "Vlora", emailHash: vendorHash },
+        { personId: "founder", displayName: "Justin Smith", roles: ["founder"], emailHash: founderHash },
+      ],
+      threadContext: new Map([[threadId, {
+        subject: "Re: HGD - Update",
+        fromDisplayName: "Niurka",
+        liveIdentityLoaded: true,
+        messages: [
+          { messageId: "inbound-message", sentAt: "2026-10-04T21:27:31.000Z", direction: "inbound", fromEmailHash: vendorHash },
+          { messageId: "outbound-message", sentAt: "2026-10-05T14:03:38.000Z", direction: "outbound", fromEmailHash: founderHash },
+        ],
+      }]]),
+    });
+
+    assert.equal(result.brief.length, 0);
+    const waiting = result.watching.find((item) => /Niurka/i.test(item.title));
+    assert.ok(waiting, JSON.stringify(result));
+    assert.match(waiting.detail, /waiting on the shop|shop owns the next move/i);
+  });
+
   it("collapses one situation into one brief item", () => {
     const result = briefOf({
       candidates: [

@@ -27,6 +27,9 @@ export async function withDurableTodayGmailSourceHealth(
       lastSuccessfulSyncAt: state.lastSuccessfulSyncAt,
     };
   } catch {
-    return { ...result, durableSourceHealth: "delayed", lastSuccessfulSyncAt: null };
+    // A failed checkpoint read is unknown health, not evidence that Gmail is
+    // delayed. Keep the UI in its neutral checking state until a durable read
+    // proves either current or delayed.
+    return { ...result, durableSourceHealth: "checking", lastSuccessfulSyncAt: null };
   }
 }

@@ -12,6 +12,7 @@ import {
   collectTodayEmailHashes,
   collectTodayFounderEmailHashes,
   isClientPersonLabel,
+  isVendorPerson,
   resolveTodayIdentity,
   type TodayCommunicationClass,
   type TodayGmailIndexedMessage,
@@ -49,6 +50,7 @@ export type TodayGroupTruth = {
   personId: string | null;
   personLabel: string | null;
   organizationLabel: string | null;
+  vendorContactName: string | null;
   sourceClass: TodayCommunicationClass;
   identityKind: TodayResolvedIdentity["kind"];
   staleInboundSatisfied: boolean;
@@ -148,6 +150,14 @@ export function resolveTodayGroupTruth(input: {
     latestInbound?.fromEmailHash?.trim() ||
     collectTodayExternalEmailHashes({ candidates: input.rows, thread })[0] ||
     null;
+  const vendorContacts = (input.knownPeople ?? []).filter(
+    (person) =>
+      person.emailHash === externalSenderHash &&
+      ((person.roles ?? []).includes("vendor-contact") || isVendorPerson(person)),
+  );
+  const vendorContactName = vendorContacts.length === 1
+    ? vendorContacts[0]!.displayName.trim() || null
+    : null;
   const identityHashes = collectTodayExternalEmailHashes({
     candidates: input.rows,
     thread,
@@ -176,7 +186,7 @@ export function resolveTodayGroupTruth(input: {
       isClientPersonLabel(person.displayName),
   );
   if (
-    identity.kind === "vendor" &&
+    (identity.kind === "vendor" || Boolean(vendorContactName)) &&
     !storedClient &&
     sourceClass !== "platform"
   ) {
@@ -210,6 +220,13 @@ export function resolveTodayGroupTruth(input: {
   const asksFounder = VENDOR_ASKS_FOUNDER.test(inboundText);
   const vendor = sourceClass === "vendor";
   let waitingState = chronology.waiting;
+  if (
+    sourceClass === "vendor" &&
+    chronology.staleInboundSatisfied &&
+    waitingState === "client"
+  ) {
+    waitingState = "shop";
+  }
   if (!chronology.remainingCommitment && vendor && forthcoming) {
     waitingState = "cad";
   }
@@ -233,6 +250,7 @@ export function resolveTodayGroupTruth(input: {
     personId: identity.personId,
     personLabel: identity.personLabel,
     organizationLabel: identity.organizationLabel,
+    vendorContactName,
     sourceClass,
     identityKind: identity.kind,
     staleInboundSatisfied: chronology.staleInboundSatisfied,

@@ -34,7 +34,12 @@ import {
   partitionIndexedTodayLiveThreadIds,
   requiredTodayLiveThreadIds,
 } from "@/lib/continuum/gmail/today-required-thread-set";
-import { emitTodayLiveEnrichmentDiagnostics } from "@/lib/continuum/today-enrichment-telemetry";
+import {
+  emitTodayCanonicalInputCounts,
+  emitTodayLiveEnrichmentDiagnostics,
+  emitTodayPipelineFailure,
+  emitTodayUnindexedSourceRefCount,
+} from "@/lib/continuum/today-enrichment-telemetry";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
 import {
   CURRENT_OPERATING_BACKLOG,
@@ -210,13 +215,12 @@ async function rebuildTodayLoop(
     loadTodayKnownEmailPeople(),
     client ? loadActiveConditionalHolds(client) : Promise.resolve([]),
   ]);
-  console.info(JSON.stringify({
-    event: "continuum.today.canonical_inputs_loaded",
+  emitTodayCanonicalInputCounts({
     jobsConnected: jobs !== null,
     jobCount: jobs?.length ?? 0,
     projectCount: summaries.length,
     candidateCount: listed.length,
-  }));
+  });
   const candidates = await tagStoredGeneratedOperatingMailCandidates(
     client,
     listed,
@@ -269,10 +273,7 @@ async function rebuildTodayLoop(
     throw new Error("today-live-enrichment-required-set-moved");
   }
   if (unavailableIndexedThreadIds.size > 0) {
-    console.info(JSON.stringify({
-      event: "continuum.today.live_enrichment.unindexed_source_refs_skipped",
-      count: unavailableIndexedThreadIds.size,
-    }));
+    emitTodayUnindexedSourceRefCount(unavailableIndexedThreadIds.size);
   }
   if (client && jobs) {
     await reconcileConditionalHolds({
@@ -355,10 +356,7 @@ async function commitComposedLoop(
     if (result === "current") return "published";
     if (result === "stale" || result === "lost-race") return "moved";
   } catch (error) {
-    console.error(JSON.stringify({
-      event: "continuum.today.snapshot_publish_failed",
-      code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
-    }));
+    emitTodayPipelineFailure("continuum.today.snapshot_publish_failed", error);
   }
   return "skipped";
 }
@@ -395,10 +393,7 @@ async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boole
     try {
       await run();
     } catch (error) {
-      console.error(JSON.stringify({
-        event: "continuum.today.recompute_failed",
-        code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
-      }));
+      emitTodayPipelineFailure("continuum.today.recompute_failed", error);
       throw error;
     }
   });
@@ -505,10 +500,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
     }
     return pageFromLoop(loop, "current", watermark);
   } catch (error) {
-    console.error(JSON.stringify({
-      event: "continuum.today.authenticated_read_failed",
-      code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
-    }));
+    emitTodayPipelineFailure("continuum.today.authenticated_read_failed", error);
     return reconstructionUnavailablePage();
   }
 }
