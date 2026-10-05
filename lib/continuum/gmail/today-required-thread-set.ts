@@ -7,7 +7,13 @@ import type {
   CosWatchingItem,
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
-import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
+import {
+  payloadOf,
+  type TodayGmailThreadContext,
+} from "@/lib/continuum/candidates/founder-attention";
+
+const RECENT_ANSWERED_IDENTITY_MS = 7 * 24 * 60 * 60 * 1000;
+const RECENT_ANSWERED_IDENTITY_LIMIT = 6;
 
 export const TODAY_THREAD_FRONTIER_CATEGORIES = [
   "actionable",
@@ -38,6 +44,62 @@ export type TodayThreadFrontier = {
   priorBroadThreadCount: number;
   counts: Readonly<Record<TodayThreadFrontierCategory, number>>;
 };
+
+/**
+ * A recent founder reply can satisfy the action before the unresolved sender
+ * has enough identity to survive Today composition. Admit only exact indexed
+ * threads with a hash-matched unresolved Person candidate so live enrichment
+ * can recover a presentation label. This never links or mints canonical state.
+ */
+export function recentAnsweredUnresolvedIdentityThreadIds(input: {
+  candidates: readonly ContinuumCandidate[];
+  threadContext: ReadonlyMap<string, TodayGmailThreadContext>;
+  nowIso: string;
+  limit?: number;
+}): string[] {
+  const nowMs = Date.parse(input.nowIso);
+  if (!Number.isFinite(nowMs)) return [];
+  const unresolvedByThread = new Map<string, Set<string>>();
+  for (const row of input.candidates) {
+    const payload = payloadOf(row);
+    if (payload.kind !== "person_association") continue;
+    const target = row.founderEditedTarget ?? row.proposedTarget;
+    if (target.kind === "person" && target.personId) continue;
+    const exact = exactGmailIdsFromCandidate(row);
+    const threadId = exact.threadIds[0];
+    const messageId = exact.messageIds[0];
+    const hash = payload.emailHash?.trim().toLowerCase() ?? "";
+    if (!threadId || !messageId || !hash) continue;
+    const key = `${messageId}|${hash}`;
+    const set = unresolvedByThread.get(threadId) ?? new Set<string>();
+    set.add(key);
+    unresolvedByThread.set(threadId, set);
+  }
+
+  const eligible: Array<{ threadId: string; outboundMs: number }> = [];
+  for (const [threadId, unresolved] of unresolvedByThread) {
+    const context = input.threadContext.get(threadId);
+    if (!context || context.liveEnrichmentAttempted === true) continue;
+    const messages = [...(context.messages ?? [])].sort(
+      (left, right) => Date.parse(left.sentAt) - Date.parse(right.sentAt),
+    );
+    const inbound = [...messages].reverse().find((message) => message.direction === "inbound");
+    const outbound = [...messages].reverse().find((message) => message.direction === "outbound");
+    if (!inbound || !outbound) continue;
+    const inboundMs = Date.parse(inbound.sentAt);
+    const outboundMs = Date.parse(outbound.sentAt);
+    if (!Number.isFinite(inboundMs) || !Number.isFinite(outboundMs)) continue;
+    if (outboundMs <= inboundMs || nowMs - outboundMs > RECENT_ANSWERED_IDENTITY_MS) continue;
+    const inboundHash = inbound.fromEmailHash?.trim().toLowerCase() ?? "";
+    if (!inboundHash || !unresolved.has(`${inbound.messageId}|${inboundHash}`)) continue;
+    eligible.push({ threadId, outboundMs });
+  }
+  return eligible
+    .sort((left, right) => right.outboundMs - left.outboundMs || left.threadId.localeCompare(right.threadId))
+    .slice(0, input.limit ?? RECENT_ANSWERED_IDENTITY_LIMIT)
+    .map((row) => row.threadId)
+    .sort();
+}
 
 function threadIdFromRef(value: string | null | undefined): string | null {
   const ref = value?.trim() ?? "";

@@ -32,6 +32,7 @@ import {
 } from "@/lib/continuum/gmail/today-thread-context";
 import {
   partitionIndexedTodayLiveThreadIds,
+  recentAnsweredUnresolvedIdentityThreadIds,
   requiredTodayLiveThreadIds,
 } from "@/lib/continuum/gmail/today-required-thread-set";
 import {
@@ -134,13 +135,22 @@ function unassignedLiveIdentityThreadIds(
 function requiredLiveThreadIds(
   loop: CosOperatingLoopView,
   candidates: readonly ContinuumCandidate[],
+  nowIso: string,
 ): string[] {
   const docket = finalizeTodayDocket(loop);
+  const recentAnsweredIdentityThreads = recentAnsweredUnresolvedIdentityThreadIds({
+    candidates,
+    threadContext: loop.threadContext ?? new Map(),
+    nowIso,
+  });
   return requiredTodayLiveThreadIds({
     ...docket,
     candidates,
     associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
-    unresolvedIdentityThreadIds: unassignedLiveIdentityThreadIds(docket, loop),
+    unresolvedIdentityThreadIds: [
+      ...unassignedLiveIdentityThreadIds(docket, loop),
+      ...recentAnsweredIdentityThreads,
+    ],
   });
 }
 
@@ -246,7 +256,7 @@ async function rebuildTodayLoop(
   const enrichedThreadIds = new Set<string>();
   const unavailableIndexedThreadIds = new Set<string>();
   for (let pass = 0; pass < 2; pass += 1) {
-    const required = requiredLiveThreadIds(loop, candidates);
+    const required = requiredLiveThreadIds(loop, candidates, now.toISOString());
     const partition = partitionIndexedTodayLiveThreadIds({
       requiredThreadIds: required,
       threadContext,
@@ -263,7 +273,7 @@ async function rebuildTodayLoop(
     for (const threadId of pending) enrichedThreadIds.add(threadId);
     loop = composeCosOperatingLoop({ ...composeInput, threadContext });
   }
-  const unresolvedRequired = requiredLiveThreadIds(loop, candidates).filter(
+  const unresolvedRequired = requiredLiveThreadIds(loop, candidates, now.toISOString()).filter(
     (threadId) =>
       !enrichedThreadIds.has(threadId) &&
       !unavailableIndexedThreadIds.has(threadId) &&

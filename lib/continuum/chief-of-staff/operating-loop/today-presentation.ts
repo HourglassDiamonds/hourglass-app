@@ -83,6 +83,10 @@ export function isLikelyOperationalNoise(value: string): boolean {
 export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresentation {
   const packet = item.briefingPacket ?? null;
   const briefing = item.briefing ?? null;
+  const latestExternal = packet?.latestMeaningfulExternalEvent?.summary ?? "";
+  const invoicePayment =
+    /\binvoice\b/i.test(latestExternal) &&
+    /\b(?:ready for payment|due|pay(?:ment)?)\b/i.test(latestExternal);
   const sourceHay = [
     item.subject,
     item.headline,
@@ -90,9 +94,10 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
     briefing?.headline,
     briefing?.stand,
     briefing?.nextBody,
+    latestExternal,
     ...(item.brief?.evidence.map((beat) => beat.summary) ?? []),
   ].filter((value): value is string => Boolean(value)).join(" ");
-  const likelyNoise = isLikelyOperationalNoise(sourceHay);
+  const likelyNoise = !invoicePayment && isLikelyOperationalNoise(sourceHay);
   const noiseKind = RECEIPT_REQUEST.test(sourceHay)
     ? "receipt"
     : AUTOMATED_NOISE.test(sourceHay)
@@ -110,6 +115,8 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
     ? RECEIPT_REQUEST.test(sourceHay)
       ? "Receipt confirmation request"
       : "Low-value automated message"
+    : invoicePayment
+      ? "Review the invoice"
     : renderingDecision
       ? `Send ${displayName} the revised rendering`
     : normalizeFounderFacingSource(
@@ -121,18 +128,22 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
     ? RECEIPT_REQUEST.test(sourceHay)
       ? "The sender is asking for confirmation that the message arrived."
       : "This appears automated and has no clear operational consequence."
+    : invoicePayment
+      ? normalizeFounderFacingSource(latestExternal)
     : renderingDecision
       ? "She likes option #2 and wants a little more movement in the marquise."
     : normalizeFounderFacingSource(item.cosBriefing?.currentState ?? briefing?.stand ?? item.context ?? item.headline) || title;
 
-  let checkpoint = renderingDecision && stateLabel === "FOUNDER ACTION"
+  let checkpoint = (renderingDecision || invoicePayment) && stateLabel === "FOUNDER ACTION"
     ? ""
     : founderCheckpoint(item, stateLabel, likelyNoise);
-  const suggestedAction = renderingDecision && stateLabel === "FOUNDER ACTION"
+  const suggestedAction = (renderingDecision || invoicePayment) && stateLabel === "FOUNDER ACTION"
     ? title
     : suggestedNextAction(item, stateLabel, likelyNoise);
-  let reason = renderingDecision && stateLabel === "FOUNDER ACTION"
-    ? "Active design decision is blocking the sale."
+  let reason = (renderingDecision || invoicePayment) && stateLabel === "FOUNDER ACTION"
+    ? invoicePayment
+      ? "A current invoice is ready for founder review."
+      : "Active design decision is blocking the sale."
     : reasonFor(item, stateLabel, likelyNoise);
   ({ title, summary, checkpoint, reason } = dedupePresentationFields({ title, summary, checkpoint, reason }));
   return {

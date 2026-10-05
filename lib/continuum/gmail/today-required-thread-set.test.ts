@@ -8,6 +8,7 @@ import type {
 import {
   classifyTodayLiveThreadFrontier,
   partitionIndexedTodayLiveThreadIds,
+  recentAnsweredUnresolvedIdentityThreadIds,
   requiredTodayLiveThreadIds,
 } from "./today-required-thread-set";
 
@@ -243,6 +244,62 @@ describe("Today required live Gmail thread frontier", () => {
     });
 
     assert.deepEqual(result, ["thread-a", "thread-b"]);
+  });
+
+  it("admits a bounded recent answered thread for sender-label enrichment without linking a Person", () => {
+    const unresolved = {
+      ...candidate("inbound", "answered-thread"),
+      candidateType: "person_association" as const,
+      proposedTarget: { kind: "person" as const, personId: null },
+      payload: {
+        kind: "person_association" as const,
+        displayName: null,
+        emailHash: "external-hash",
+        mintPerson: false,
+        mergePersons: false,
+      },
+    };
+    const result = recentAnsweredUnresolvedIdentityThreadIds({
+      candidates: [unresolved],
+      nowIso: "2026-10-05T15:00:00.000Z",
+      threadContext: new Map([["answered-thread", {
+        messages: [
+          { messageId: "inbound-message", sentAt: "2026-10-04T21:27:31.000Z", direction: "inbound", fromEmailHash: "external-hash" },
+          { messageId: "outbound-message", sentAt: "2026-10-05T14:03:38.000Z", direction: "outbound", fromEmailHash: "founder-hash" },
+        ],
+      }]]),
+    });
+
+    assert.deepEqual(result, ["answered-thread"]);
+    assert.equal(unresolved.proposedTarget.personId, null);
+  });
+
+  it("does not enrich old, unanswered, or already-attempted identity threads", () => {
+    const make = (id: string) => ({
+      ...candidate("inbound", id),
+      candidateType: "person_association" as const,
+      proposedTarget: { kind: "person" as const, personId: null },
+      payload: { kind: "person_association" as const, displayName: null, emailHash: "external-hash", mintPerson: false, mergePersons: false },
+    });
+    const result = recentAnsweredUnresolvedIdentityThreadIds({
+      candidates: [make("old"), make("unanswered"), make("attempted")],
+      nowIso: "2026-10-05T15:00:00.000Z",
+      threadContext: new Map([
+        ["old", { messages: [
+          { messageId: "inbound-message", sentAt: "2026-09-20T12:00:00.000Z", direction: "inbound", fromEmailHash: "external-hash" },
+          { messageId: "outbound-message", sentAt: "2026-09-20T13:00:00.000Z", direction: "outbound" },
+        ] }],
+        ["unanswered", { messages: [
+          { messageId: "inbound-message", sentAt: "2026-10-05T14:00:00.000Z", direction: "inbound", fromEmailHash: "external-hash" },
+        ] }],
+        ["attempted", { liveEnrichmentAttempted: true, messages: [
+          { messageId: "inbound-message", sentAt: "2026-10-05T13:00:00.000Z", direction: "inbound", fromEmailHash: "external-hash" },
+          { messageId: "outbound-message", sentAt: "2026-10-05T14:00:00.000Z", direction: "outbound" },
+        ] }],
+      ]),
+    });
+
+    assert.deepEqual(result, []);
   });
 
   it("does not let a source ref with no indexed messages veto live publication", () => {

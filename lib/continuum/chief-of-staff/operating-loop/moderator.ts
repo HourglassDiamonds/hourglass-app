@@ -44,6 +44,7 @@ import {
   isExplicitNewProject,
   isFounderIdentityName,
   isHistoricalRediscovery,
+  isRecoverableExternalHumanSender,
   isMeaningfulTodayActionText,
   isNakedDateText,
   isNakedContextSnippet,
@@ -1234,6 +1235,25 @@ function classifySituation(input: {
       ? (input.associatedByProject?.get(attribution.projectId) ?? null)
       : null,
   });
+  const recoveredExternalLabels = input.rows
+    .map((row) => payloadOf(row))
+    .filter((payload) => payload.kind === "person_association")
+    .filter((payload) => payload.emailHash === group.externalSenderHash)
+    .map((payload) => payload.displayName?.trim() ?? "")
+    .filter((label) => looksLikeHumanPersonName(label));
+  const uniqueRecoveredExternalLabels = [...new Set(recoveredExternalLabels)];
+  const exactThreadSenderLabel = looksLikeHumanPersonName(thread?.fromDisplayName)
+    ? thread!.fromDisplayName!.trim()
+    : null;
+  const recoveredExternalLabel =
+    group.identityKind === "unresolved" &&
+    group.staleInboundSatisfied &&
+    group.latestMeaningfulOutbound &&
+    thread?.liveEnrichmentAttempted === true &&
+    isRecoverableExternalHumanSender({ thread }) &&
+    (uniqueRecoveredExternalLabels.length === 1 || Boolean(exactThreadSenderLabel))
+      ? uniqueRecoveredExternalLabels[0] ?? exactThreadSenderLabel
+      : null;
   const person =
     (identityLabel && !isVendorOrganizationLabel(identityLabel.name)
       ? identityLabel.name
@@ -1241,7 +1261,8 @@ function classifySituation(input: {
     (group.sourceClass === "vendor"
       ? null
       : (isClientPersonLabel(attribution.personName) ? attribution.personName : null) ||
-        group.personLabel);
+        group.personLabel ||
+        recoveredExternalLabel);
   const organizationLabel = group.organizationLabel;
   let communication = group.sourceClass;
   if (!person && group.identityKind === "vendor") communication = "vendor";

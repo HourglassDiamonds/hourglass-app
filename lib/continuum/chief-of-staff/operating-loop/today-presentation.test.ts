@@ -126,6 +126,44 @@ describe("Sterling-curated Today presentation", () => {
     assert.equal(normalized, "CAD is ready.");
   });
 
+  it("keeps a real invoice useful while rejecting its contact-footer sentence as the action", () => {
+    const footer = "please do not hesitate to get in touch by emailing; invoicing@nivoda";
+    const presented = presentTodayItem(item({
+      id: "brief:invoice",
+      subject: "Unassigned",
+      headline: footer,
+      context: "The client answered a design question.",
+      briefing: {
+        ...item().briefing!,
+        displayName: "Unassigned",
+        headline: footer,
+        stand: "The invoice is attached and ready for payment.",
+        nextBody: footer,
+      },
+      briefingPacket: packet({
+        itemId: "brief:invoice",
+        displayName: "Unassigned",
+        entityType: "unknown",
+        projectName: null,
+        projectId: null,
+        personId: null,
+        candidateNextAction: footer,
+        unresolvedFounderObligation: footer,
+        latestMeaningfulExternalEvent: {
+          at: "2026-10-03T18:51:15.000Z",
+          speaker: "client",
+          summary: "Your invoice is attached and ready for payment.",
+          sourceRef: "gc1|invoice-thread|invoice-message",
+        },
+      }),
+    }));
+
+    assert.equal(presented.title, "Review the invoice");
+    assert.equal(presented.summary, "Your invoice is attached and ready for payment.");
+    assert.equal(presented.likelyNoise, false);
+    assert.doesNotMatch(`${presented.title} ${presented.summary}`, /do not hesitate|invoicing@/i);
+  });
+
   it("presents Abbey as one concise sale-blocking founder action", () => {
     const rawAsk = "Can you send me a rendering?";
     const abbey = item({
