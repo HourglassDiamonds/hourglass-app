@@ -7,6 +7,7 @@ import type {
   CosWatchingItem,
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import type { TodayBriefingPacket } from "@/lib/continuum/chief-of-staff/operating-loop/briefing-packet";
+import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 
 export const TODAY_THREAD_FRONTIER_CATEGORIES = [
   "actionable",
@@ -321,4 +322,25 @@ export function requiredTodayLiveThreadIds(
       ...identity,
     ]),
   ].sort();
+}
+
+/**
+ * Live Gmail fetches require persisted message ids. A direct source reference
+ * without indexed context remains reducer evidence, but cannot be fetched from
+ * Gmail and must not veto the entire canonical Today snapshot.
+ */
+export function partitionIndexedTodayLiveThreadIds(input: {
+  requiredThreadIds: readonly string[];
+  threadContext: ReadonlyMap<string, TodayGmailThreadContext>;
+  attemptedThreadIds?: ReadonlySet<string>;
+}): { eligible: string[]; unavailable: string[] } {
+  const eligible: string[] = [];
+  const unavailable: string[] = [];
+  for (const threadId of [...new Set(input.requiredThreadIds)].sort()) {
+    if (input.attemptedThreadIds?.has(threadId)) continue;
+    const context = input.threadContext.get(threadId);
+    if (context?.messages?.length) eligible.push(threadId);
+    else unavailable.push(threadId);
+  }
+  return { eligible, unavailable };
 }

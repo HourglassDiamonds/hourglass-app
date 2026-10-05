@@ -7,6 +7,7 @@ import type {
 } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
   classifyTodayLiveThreadFrontier,
+  partitionIndexedTodayLiveThreadIds,
   requiredTodayLiveThreadIds,
 } from "./today-required-thread-set";
 
@@ -242,5 +243,18 @@ describe("Today required live Gmail thread frontier", () => {
     });
 
     assert.deepEqual(result, ["thread-a", "thread-b"]);
+  });
+
+  it("does not let a source ref with no indexed messages veto live publication", () => {
+    const result = partitionIndexedTodayLiveThreadIds({
+      requiredThreadIds: ["indexed", "missing", "already-attempted"],
+      threadContext: new Map([
+        ["indexed", { messages: [{ messageId: "m1", sentAt: "2026-10-05T12:00:00.000Z", direction: "inbound" }] }],
+        ["already-attempted", { messages: [{ messageId: "m2", sentAt: "2026-10-05T12:01:00.000Z", direction: "inbound" }] }],
+      ]),
+      attemptedThreadIds: new Set(["already-attempted"]),
+    });
+
+    assert.deepEqual(result, { eligible: ["indexed"], unavailable: ["missing"] });
   });
 });

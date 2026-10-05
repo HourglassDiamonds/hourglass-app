@@ -21,6 +21,19 @@ export function shouldRefreshTodaySurface(docketMayHaveChanged: boolean): boolea
 
 export type TodaySourceHealth = "checking" | "current" | "delayed";
 
+export const TODAY_GMAIL_SOURCE_DELAY_AFTER_MS = 3 * 60 * 1000;
+
+export function durableTodayGmailSourceHealth(input: {
+  lastSuccessfulSyncAt: string | null;
+  nowIso: string;
+}): TodaySourceHealth {
+  if (!input.lastSuccessfulSyncAt) return "delayed";
+  const last = Date.parse(input.lastSuccessfulSyncAt);
+  const now = Date.parse(input.nowIso);
+  if (!Number.isFinite(last) || !Number.isFinite(now)) return "delayed";
+  return now - last < TODAY_GMAIL_SOURCE_DELAY_AFTER_MS ? "current" : "delayed";
+}
+
 export function todaySourceFreshnessLabel(input: {
   health: TodaySourceHealth;
   lastCheckedAt: number | null;

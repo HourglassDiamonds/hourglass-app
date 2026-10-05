@@ -54,9 +54,9 @@ export function GmailOperatingFreshness({
         if (cancelled) return;
         const currentWatermark = canonical.status === "fulfilled" ? canonical.value : null;
         const result = mail.status === "fulfilled" ? mail.value : null;
-        if (mail.status === "fulfilled" && result?.safeErrorCode == null) {
+        if (mail.status === "fulfilled" && result?.durableSourceHealth === "current") {
           setSourceHealth("current");
-          setLastCheckedAt(Date.now());
+          setLastCheckedAt(result.lastSuccessfulSyncAt ? Date.parse(result.lastSuccessfulSyncAt) : Date.now());
         } else if (result?.safeErrorCode === "gmail-sync-already-running") {
           setSourceHealth("checking");
         } else {

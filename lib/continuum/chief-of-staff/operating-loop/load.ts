@@ -30,7 +30,10 @@ import {
   loadIndexedTodayThreadContext,
   loadLiveTodayOperationalFacts,
 } from "@/lib/continuum/gmail/today-thread-context";
-import { requiredTodayLiveThreadIds } from "@/lib/continuum/gmail/today-required-thread-set";
+import {
+  partitionIndexedTodayLiveThreadIds,
+  requiredTodayLiveThreadIds,
+} from "@/lib/continuum/gmail/today-required-thread-set";
 import { emitTodayLiveEnrichmentDiagnostics } from "@/lib/continuum/today-enrichment-telemetry";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
 import {
@@ -207,6 +210,13 @@ async function rebuildTodayLoop(
     loadTodayKnownEmailPeople(),
     client ? loadActiveConditionalHolds(client) : Promise.resolve([]),
   ]);
+  console.info(JSON.stringify({
+    event: "continuum.today.canonical_inputs_loaded",
+    jobsConnected: jobs !== null,
+    jobCount: jobs?.length ?? 0,
+    projectCount: summaries.length,
+    candidateCount: listed.length,
+  }));
   const candidates = await tagStoredGeneratedOperatingMailCandidates(
     client,
     listed,
@@ -230,11 +240,16 @@ async function rebuildTodayLoop(
   let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
   const enrichedThreadIds = new Set<string>();
+  const unavailableIndexedThreadIds = new Set<string>();
   for (let pass = 0; pass < 2; pass += 1) {
     const required = requiredLiveThreadIds(loop, candidates);
-    const pending = required.filter(
-      (threadId) => !enrichedThreadIds.has(threadId),
-    );
+    const partition = partitionIndexedTodayLiveThreadIds({
+      requiredThreadIds: required,
+      threadContext,
+      attemptedThreadIds: enrichedThreadIds,
+    });
+    const pending = partition.eligible;
+    for (const threadId of partition.unavailable) unavailableIndexedThreadIds.add(threadId);
     if (pending.length === 0) break;
     threadContext = await loadLiveTodayOperationalFacts(threadContext, {
       threadIds: pending,
@@ -245,10 +260,19 @@ async function rebuildTodayLoop(
     loop = composeCosOperatingLoop({ ...composeInput, threadContext });
   }
   const unresolvedRequired = requiredLiveThreadIds(loop, candidates).filter(
-    (threadId) => !enrichedThreadIds.has(threadId),
+    (threadId) =>
+      !enrichedThreadIds.has(threadId) &&
+      !unavailableIndexedThreadIds.has(threadId) &&
+      Boolean(threadContext.get(threadId)?.messages?.length),
   );
   if (unresolvedRequired.length > 0) {
     throw new Error("today-live-enrichment-required-set-moved");
+  }
+  if (unavailableIndexedThreadIds.size > 0) {
+    console.info(JSON.stringify({
+      event: "continuum.today.live_enrichment.unindexed_source_refs_skipped",
+      count: unavailableIndexedThreadIds.size,
+    }));
   }
   if (client && jobs) {
     await reconcileConditionalHolds({
@@ -409,6 +433,14 @@ function disconnectedPage(): TodayPageModel {
   return pageFromLoop(disconnectedLoop(), "current", null);
 }
 
+function reconstructionUnavailablePage(): TodayPageModel {
+  return pageFromLoop({
+    ...disconnectedLoop(),
+    heading: "Today couldn't refresh.",
+    quietDetail: "Canonical Open Jobs remain connected. Try again shortly.",
+  }, "current", null);
+}
+
 export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel> {
   const jar = await cookies();
   const client = getSupabaseAdmin();
@@ -477,7 +509,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
       event: "continuum.today.authenticated_read_failed",
       code: error instanceof Error ? error.message.slice(0, 120) : "unknown",
     }));
-    return disconnectedPage();
+    return reconstructionUnavailablePage();
   }
 }
 
