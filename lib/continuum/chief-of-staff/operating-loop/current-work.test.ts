@@ -90,6 +90,51 @@ function both(
   return p;
 }
 describe("Phase 2 current truth through reducer and final docket", () => {
+  it("canonical production supersedes an older approval/place-order projection", () => {
+    const projection = reduceWorkLoop({
+      evidence: [],
+      sourceEvents: [event("approve", "Approved. Please place the order.", 12, "client")],
+      lifecycle: "production",
+      projectId: COS_LOOP_PROJECT_A,
+    }).projection!;
+    assert.equal(projection.stage, "in_production");
+    assert.equal(projection.ballHolder, "vendor_shop");
+    assert.equal(projection.dependency, "production completion");
+    assert.ok(projection.historicalObligations.some((row) => row.deliverable === "place order"));
+    assert.equal(projection.provenance.at(-1)?.origin, "canonical_project_lifecycle");
+  });
+
+  it("canonical production supersedes a stale client finger-size wait", () => {
+    const projection = reduceWorkLoop({
+      evidence: [],
+      sourceEvents: [event("size", "Waiting for the client's finger size.", 12, "founder", {
+        semanticClass: "founder_updates_client",
+      })],
+      lifecycle: "in_production",
+      projectId: COS_LOOP_PROJECT_A,
+    }).projection!;
+    assert.equal(projection.stage, "in_production");
+    assert.equal(projection.ballHolder, "vendor_shop");
+    assert.equal(projection.dependency, "production completion");
+  });
+
+  it("a later founder correction remains authoritative over canonical lifecycle", () => {
+    const projection = reduceWorkLoop({
+      evidence: [],
+      sourceEvents: [event("hold", "Put this on the backburner.", 12, "founder", {
+        semanticClass: "founder_correction",
+        provenance: "founder_correction",
+        correction: { stage: "waiting_external", ballHolder: "client", dependency: "ring size" },
+      })],
+      lifecycle: "production",
+      projectId: COS_LOOP_PROJECT_A,
+    }).projection!;
+    assert.equal(projection.stage, "waiting_external");
+    assert.equal(projection.ballHolder, "client");
+    assert.equal(projection.dependency, "ring size");
+    assert.equal(projection.provenance.at(-1)?.origin, "founder_correction");
+  });
+
   it("A Duane order confirmed until explicit production; stale CAD review closes", () => {
     const events = [
       event("request", "Please send the CAD.", 10, "founder"),
@@ -414,6 +459,21 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     );
     assert.equal(result.items.length, 3);
     assert.equal(result.queuedCount, 5);
+  });
+  it("never presents internal production-acceptance Jobs as founder work", () => {
+    const result = composeTodayDocket(
+      composeCosOperatingLoop({
+        jobs: [fixtureJob({
+          jobId: "internal-acceptance",
+          sourceRef: "continuum:sterling-production-acceptance:20261003152525",
+          subject: "Internal acceptance work",
+        })],
+        projects: fixtureProjects(),
+        nowIso: "2026-10-05T16:00:00Z",
+      }),
+    );
+    assert.equal(result.items.length, 0);
+    assert.equal(result.watching.length, 0);
   });
   it("commitment dates, ranges, missing timestamps and replacements", () => {
     assert.equal(

@@ -29,7 +29,11 @@ before(async () => {
 });
 
 const ISO = "2026-09-23T00:00:00.000Z";
-const LIVE = [1, ISO, ISO, 1, ISO, 1, ISO, ISO, ISO, ISO, 1, ISO, `1:${ISO}:${ISO}:${ISO}`].join("|");
+const LIVE = [
+  1, ISO, ISO, 1, ISO, 1, ISO, ISO, ISO,
+  1, ISO, 1, ISO,
+  ISO, 1, ISO, `1:${ISO}:${ISO}:${ISO}`,
+].join("|");
 
 function emptyDocket(overrides: Partial<CosTodayDocketView> = {}): CosTodayDocketView {
   return {

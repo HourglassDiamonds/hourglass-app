@@ -4,7 +4,11 @@
  * Read-model only.
  */
 
-import { projectCurrentWork, type CurrentWorkProjection } from "./current-work";
+import {
+  projectCurrentWork,
+  reconcileProjectionWithLifecycle,
+  type CurrentWorkProjection,
+} from "./current-work";
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 import { workLoopEventsFromSource } from "@/lib/continuum/source-events/work-loop";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
@@ -189,10 +193,19 @@ export type ReduceWorkLoopInput = {
   communication?: string | null;
   noFounderAction?: boolean;
   staleInboundSatisfied?: boolean;
+  lifecycle?: string | null;
+  projectId?: string | null;
 };
 
 export function reduceWorkLoop(input: ReduceWorkLoopInput): ReducedWorkLoopState {
-  const projection = projectCurrentWork(input.sourceEvents ?? []);
+  const sourceProjection = projectCurrentWork(input.sourceEvents ?? []);
+  const projection = sourceProjection
+    ? reconcileProjectionWithLifecycle({
+        projection: sourceProjection,
+        lifecycle: input.lifecycle,
+        projectId: input.projectId,
+      })
+    : null;
   const historicalClientAsk = Boolean(
     projection &&
       input.staleInboundSatisfied &&

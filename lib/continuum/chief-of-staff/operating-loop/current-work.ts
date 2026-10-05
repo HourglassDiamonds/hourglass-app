@@ -8,6 +8,11 @@ import {
   isOperationalSourceEvent,
   type SourceCommunicationEvent,
 } from "@/lib/continuum/source-events/types";
+import {
+  isPostCompletionObligationText,
+  isProductionExceptionText,
+  todayLifecycleClass,
+} from "@/lib/continuum/candidates/today-lifecycle";
 
 export type WorkStage =
   | "queued"
@@ -71,6 +76,81 @@ export type CurrentWorkProjection = {
     reason: string;
   }[];
 };
+
+/** Durable lifecycle closes earlier source-derived dependencies, while a later
+ * founder correction remains authoritative over both. */
+export function reconcileProjectionWithLifecycle(input: {
+  projection: CurrentWorkProjection;
+  lifecycle: string | null | undefined;
+  projectId: string | null | undefined;
+}): CurrentWorkProjection {
+  const { projection } = input;
+  const lifecycleClass = todayLifecycleClass(input.lifecycle);
+  if (!["production", "ready", "terminal"].includes(lifecycleClass)) return projection;
+  const latestApplied = [...projection.provenance].reverse().find((row) => row.applied);
+  if (latestApplied?.origin === "founder_correction") return projection;
+  const latestWording = latestApplied?.wording ?? "";
+  if (lifecycleClass === "terminal" && isPostCompletionObligationText(latestWording)) {
+    return projection;
+  }
+  if (lifecycleClass === "production" && isProductionExceptionText(latestWording)) {
+    return projection;
+  }
+
+  const targetStage: WorkStage = lifecycleClass === "production"
+    ? "in_production"
+    : lifecycleClass === "ready" ? "ready" : "complete";
+  const rank: Record<WorkStage, number> = {
+    queued: 0, design_requested: 1, revision_requested: 2, cad_review: 3,
+    approved: 4, order_confirmed: 5, waiting_external: 5,
+    in_production: 6, ready: 7, complete: 8,
+  };
+  if (rank[projection.stage] >= rank[targetStage]) return projection;
+
+  const sourceRef = input.projectId
+    ? `canonical-project-lifecycle:${input.projectId}`
+    : "canonical-project-lifecycle";
+  const dependency = lifecycleClass === "production"
+    ? "production completion"
+    : lifecycleClass === "ready" ? "delivery or pickup" : null;
+  const activeObligations: CurrentObligation[] = dependency ? [{
+    id: `${sourceRef}:${targetStage}`,
+    identity: `${sourceRef}:${targetStage}`,
+    scope: input.projectId ? `project:${input.projectId}` : sourceRef,
+    kind: lifecycleClass === "production" ? "production" : "dependency",
+    deliverable: dependency,
+    revision: null,
+    actor: lifecycleClass === "production" ? "vendor_shop" : "unknown",
+    openedBy: sourceRef,
+    closedBy: null,
+    status: "active",
+  }] : [];
+  return {
+    ...projection,
+    stage: targetStage,
+    dependency,
+    ballHolder: lifecycleClass === "production" ? "vendor_shop" : "unknown",
+    activeObligations,
+    historicalObligations: [
+      ...projection.historicalObligations,
+      ...projection.activeObligations.map((obligation) => ({
+        ...obligation,
+        status: "superseded" as const,
+        closedBy: sourceRef,
+      })),
+    ],
+    commitment: lifecycleClass === "production" ? projection.commitment : null,
+    controllingSourceRefs: dependency ? [sourceRef] : [],
+    provenance: [...projection.provenance, {
+      sourceRef,
+      timestamp: projection.asOf ?? "",
+      wording: input.lifecycle?.trim() || lifecycleClass,
+      origin: "canonical_project_lifecycle",
+      applied: true,
+      reason: "Durable lifecycle advances and supersedes earlier-stage dependencies",
+    }],
+  };
+}
 
 export function sourceIdentity(e: SourceCommunicationEvent): string {
   const excerpt = (e.evidenceExcerpt || e.authorOwnedText)

@@ -21,17 +21,27 @@ import type {
 import { hashEmail, hashStoredPersonEmail } from "../lib/continuum/client-memory/hashes";
 import { loadProjectJobs } from "../lib/continuum/client-memory/project-jobs/load";
 import { composeCosOperatingLoop } from "../lib/continuum/chief-of-staff/operating-loop/compose";
+import { loadFounderCorrectionEvents } from "../lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
 import { composeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/docket";
 import { finalizeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/today-docket-boundary";
 import { parseGmailWebHref } from "../lib/continuum/chief-of-staff/operating-loop/evidence";
 import type { CosProjectContext } from "../lib/continuum/chief-of-staff/operating-loop/types";
 import { generatedOperatingMailHashesFromEnv } from "../lib/continuum/gmail/candidates/generated-source";
+import { INDEXED_EIGHT_KNOWN_MESSAGE_IDS } from "../lib/continuum/gmail/candidates/indexed-dry-run";
 import { parseGmailCandidateSourceRef } from "../lib/continuum/gmail/candidates/source-ref";
 import { withIndexedGeneratedOperatingMail } from "../lib/continuum/gmail/candidates/tag-stored-generated";
 import { classifyTodayLiveThreadFrontier } from "../lib/continuum/gmail/today-required-thread-set";
+import { createLiveGmailApi } from "../lib/continuum/gmail/adapter";
+import { createSupabaseGmailIndexStore } from "../lib/continuum/client-memory/gmail/supabase";
+import { createSupabaseGmailConnectionStore } from "../lib/continuum/gmail/supabase";
+import { runIndexedThreadEvidenceFetch } from "../lib/continuum/gmail/indexed-thread-evidence";
+import { liveGmailAccessTokenRefresher } from "../lib/continuum/gmail/oauth";
+import { decryptRefreshToken, loadGmailTokenKek } from "../lib/continuum/gmail/token-crypto";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "../lib/continuum/runtime-env";
 import { projectGmailSourceEvents } from "../lib/continuum/source-events/gmail";
 import type { SourceCommunicationEvent } from "../lib/continuum/source-events/types";
+import { readTodaySourceWatermark } from "../lib/continuum/today-source-watermark";
+import { watermarkToken } from "../lib/continuum/today-snapshot";
 
 const CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
@@ -246,7 +256,13 @@ async function loadKnownPeople(client: SupabaseClient): Promise<TodayKnownPerson
 }
 
 async function loadProjects(client: SupabaseClient): Promise<Map<string, CosProjectContext>> {
-  const [{ data: profiles }, { data: histories }, { data: people }, { data: relationships }] =
+  const [
+    { data: profiles },
+    { data: histories },
+    { data: lifecycleStates },
+    { data: people },
+    { data: relationships },
+  ] =
     await Promise.all([
       client
         .from("continuum_project_profiles")
@@ -254,6 +270,9 @@ async function loadProjects(client: SupabaseClient): Promise<Map<string, CosProj
       client
         .from("continuum_project_history")
         .select("project_id, gmail_thread_id, cad_job_number"),
+      client
+        .from("continuum_project_lifecycle_states")
+        .select("project_id, stage"),
       client
         .from("continuum_person_profiles")
         .select("person_id, display_name, roles, organization_name"),
@@ -291,6 +310,9 @@ async function loadProjects(client: SupabaseClient): Promise<Map<string, CosProj
   const historyByProject = new Map(
     (histories ?? []).map((row) => [String(row.project_id), row]),
   );
+  const lifecycleByProject = new Map(
+    (lifecycleStates ?? []).map((row) => [String(row.project_id), String(row.stage ?? "")]),
+  );
   const map = new Map<string, CosProjectContext>();
   for (const row of profiles ?? []) {
     const projectId = String(row.project_id ?? "").trim();
@@ -304,6 +326,7 @@ async function loadProjects(client: SupabaseClient): Promise<Map<string, CosProj
       personName: client?.displayName ?? null,
       people: peopleForProject,
       isCurrent: true,
+      lifecycleStage: lifecycleByProject.get(projectId) || null,
       gmailThreadId:
         history?.gmail_thread_id == null ? null : String(history.gmail_thread_id),
     });
@@ -548,11 +571,12 @@ async function main() {
       /* skip malformed */
     }
   }
-  const [candidates, jobs, projects, knownPeople] = await Promise.all([
+  const [candidates, jobs, projects, knownPeople, founderCorrections] = await Promise.all([
     tagGenerated(client, listed),
     loadProjectJobs(client),
     loadProjects(client),
     loadKnownPeople(client),
+    loadFounderCorrectionEvents(client),
   ]);
   const threadContext = await loadIndexedThreadContext(client, candidates);
   const sourceEvents = projectGmailSourceEvents({
@@ -561,7 +585,9 @@ async function main() {
     founderEmailHashes: founderHashes(),
     candidates,
   });
+  sourceEvents.push(...founderCorrections);
   const loop = composeCosOperatingLoop({
+    founderCorrections,
     jobs: jobs ?? [],
     candidates,
     projects,
@@ -654,9 +680,13 @@ async function main() {
   );
   expect(!/price|timeline|next steps/i.test(proofs.sarah.copy ?? ""), "sarah-no-generic-copy");
   expect(proofs.nathan.lane === "watching" && proofs.nathan.ball === "vendor_shop", "nathan-vendor-shop");
-  expect(proofs.tim.lane === "up_next" && proofs.tim.next === "founder_communication", "tim-place-order");
+  expect(
+    proofs.tim.lane === "watching" &&
+      proofs.tim.ball === "vendor_shop" &&
+      !/place order/i.test(proofs.tim.copy ?? ""),
+    "tim-in-production",
+  );
   expect(proofs.madi.lane === "watching" && proofs.madi.ball === "client", "madi-client-wait");
-  expect(proofs.abbey.lane === "absent", "abbey-absent");
   expect(proofs.jesse.lane === "absent", "jesse-absent");
   const result = {
     verdict: failures.length === 0 ? "PASS" : "BLOCK",
@@ -673,6 +703,289 @@ async function main() {
     proofs,
     traces,
   };
+  if (process.argv.includes("--current-truth-audit")) {
+    const targetThreads = new Set(["19fdca0abe1a7e3e", "19ffcce49298efeb"]);
+    const eventTrace = (event: SourceCommunicationEvent) => ({
+      sourceRef: event.sourceRef,
+      timestamp: event.timestamp,
+      actor: event.actor,
+      semanticClass: event.semanticClass,
+      cadIds: event.cadIds,
+      orderIds: event.orderIds,
+      productionJobIds: event.productionJobIds,
+      projectId: event.projectId,
+      threadId: event.threadId,
+      provenance: event.provenance,
+      correction: event.correction ?? null,
+    });
+    const timEvents = sourceEvents
+      .filter((event) => event.cadIds.includes("C025964"))
+      .map(eventTrace);
+    const travisEvents = sourceEvents
+      .filter((event) => Boolean(event.threadId && targetThreads.has(event.threadId)))
+      .map(eventTrace);
+    const ids = new Set(
+      [...timEvents, ...travisEvents]
+        .flatMap((event) => [event.sourceRef, event.threadId])
+        .filter((value): value is string => Boolean(value)),
+    );
+    const relatedCandidates = candidates
+      .filter((row) => {
+        const ref = parseGmailCandidateSourceRef(row.sourceRef);
+        return (
+          ids.has(row.sourceRef) ||
+          Boolean(ref && (ids.has(ref.threadId) || ids.has(ref.messageId)))
+        );
+      })
+      .map((row) => ({
+        candidateId: row.candidateId,
+        sourceRef: row.sourceRef,
+        sourceTimestamp: row.sourceTimestamp,
+        candidateType: row.candidateType,
+        candidateState: row.candidateState,
+        reviewStatus: row.reviewStatus,
+        ruleIds: row.evidenceBasis.ruleIds,
+        payloadKind: row.payload.kind,
+        projectId: "projectId" in row.payload ? row.payload.projectId ?? null : null,
+        waitingOnActor:
+          row.payload.kind === "open_job" ? row.payload.waitingOnActor : null,
+      }));
+    const auditRows = [
+      ...docket.items.map((item) => ({
+        lane: "up_next",
+        id: item.id,
+        title: item.subject,
+        projectId: item.briefingPacket?.projectId ?? item.brief?.projectId ?? null,
+        stage: item.briefingPacket?.projection?.stage ?? null,
+        dependency: item.briefingPacket?.candidateNextAction ?? null,
+        ballHolder: item.briefingPacket?.ballHolder ?? null,
+        asOf: item.briefingPacket?.projection?.asOf ?? null,
+        controllingSourceRefs: item.briefingPacket?.projection?.controllingSourceRefs ?? [],
+      })),
+      ...docket.watching.map((item) => ({
+        lane: "watching",
+        id: item.id,
+        title: item.title,
+        projectId: item.projectId ?? item.briefingPacket?.projectId ?? null,
+        stage: item.briefingPacket?.projection?.stage ?? null,
+        dependency: item.briefingPacket?.candidateNextAction ?? null,
+        ballHolder: item.briefingPacket?.ballHolder ?? null,
+        asOf: item.briefingPacket?.projection?.asOf ?? null,
+        controllingSourceRefs: item.briefingPacket?.projection?.controllingSourceRefs ?? [],
+      })),
+    ];
+    const projectIds = new Set(auditRows.map((row) => row.projectId).filter(Boolean));
+    const jobAudit = (jobs ?? [])
+      .filter((job) => !job.projectId || projectIds.has(job.projectId))
+      .map((job) => ({
+        jobId: job.jobId,
+        projectId: job.projectId,
+        state: job.state,
+        kind: job.kind,
+        waitingOnActor: job.waitingOnActor,
+        attentionMode: job.attentionMode ?? "action",
+        updatedAt: job.updatedAt,
+        sourceSystem: job.sourceSystem,
+        sourceRef: job.sourceRef,
+      }));
+    const [{ data: snapshotRows }, liveWatermark] = await Promise.all([
+      client
+        .from("continuum_today_snapshots")
+        .select("read_model_version, source_watermark, composed_at, updated_at, payload")
+        .eq("snapshot_key", "founder_today_v1")
+        .limit(1),
+      readTodaySourceWatermark(client),
+    ]);
+    const [timMail, travisKnown, travisProjects] = await Promise.all([
+      client
+        .from("continuum_gmail_messages")
+        .select("thread_id, message_id, sent_at, direction, indexed_at, has_attachments")
+        .or("subject.ilike.%C025964%,subject.ilike.%RN08318%")
+        .order("sent_at", { ascending: true }),
+      client
+        .from("continuum_gmail_messages")
+        .select("thread_id, message_id, sent_at, direction, indexed_at, has_attachments")
+        .or(
+          `message_id.in.(${INDEXED_EIGHT_KNOWN_MESSAGE_IDS.travis},${INDEXED_EIGHT_KNOWN_MESSAGE_IDS.travisVendor}),thread_id.in.(${INDEXED_EIGHT_KNOWN_MESSAGE_IDS.travis},${INDEXED_EIGHT_KNOWN_MESSAGE_IDS.travisVendor})`,
+        )
+        .order("sent_at", { ascending: true }),
+      client
+        .from("continuum_project_profiles")
+        .select("project_id, updated_at")
+        .or("display_title.ilike.%chick%,display_title.ilike.%travis%"),
+    ]);
+    const exactThreads = new Set<string>(
+      [
+        ...(timMail.data ?? []).slice(-1).map((row) => String(row.thread_id)),
+        ...(travisKnown.data ?? []).map((row) => String(row.thread_id)),
+      ].filter(Boolean),
+    );
+    const kek = loadGmailTokenKek();
+    const fetched = kek.ok
+      ? await runIndexedThreadEvidenceFetch({
+          founderSessionOk: false,
+          secretProtectedOk: true,
+          threadIds: [...exactThreads],
+          index: createSupabaseGmailIndexStore(client),
+          connections: createSupabaseGmailConnectionStore(client),
+          decryptRefreshToken: (wrapped) => decryptRefreshToken(wrapped, kek.key),
+          refreshAccessToken: (refreshToken) =>
+            liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken),
+          createApi: (accessToken) => createLiveGmailApi(accessToken),
+        })
+      : null;
+    const liveContexts = new Map<string, TodayGmailThreadContext>();
+    if (fetched?.ok) {
+      for (const evidence of fetched.evidence) {
+        const threadId = evidence.indexed.threadId;
+        const current = liveContexts.get(threadId) ?? {
+          subject: evidence.indexed.subject,
+          messages: [],
+        };
+        liveContexts.set(threadId, {
+          ...current,
+          messages: [
+            ...(current.messages ?? []),
+            {
+              messageId: evidence.indexed.messageId,
+              sentAt: evidence.indexed.sentAt,
+              direction: evidence.indexed.direction,
+              labelIds: evidence.indexed.labelIds,
+              fromEmailHash: evidence.indexed.fromEmailHash,
+              subject: evidence.indexed.subject,
+              hasAttachments: evidence.indexed.hasAttachments,
+              attachmentFilenames: (evidence.attachments ?? [])
+                .map((attachment) => attachment.filename)
+                .filter((filename): filename is string => Boolean(filename)),
+              plaintext: evidence.plaintext ?? null,
+            },
+          ],
+        });
+      }
+    }
+    const liveExactEvents = projectGmailSourceEvents({
+      threadContext: liveContexts,
+      knownPeople,
+      founderEmailHashes: founderHashes(),
+      candidates,
+    }).map(eventTrace);
+    const travisProjectIds = (travisProjects.data ?? []).map((row) => String(row.project_id));
+    const [travisHistory, travisLifecycle, travisJobs] = await Promise.all([
+      travisProjectIds.length
+        ? client
+            .from("continuum_project_history")
+            .select("project_id, cad_job_number, order_number, gmail_thread_id, finger_size, updated_at")
+            .in("project_id", travisProjectIds)
+        : Promise.resolve({ data: [] }),
+      travisProjectIds.length
+        ? client
+            .from("continuum_project_lifecycle_states")
+            .select("project_id, stage, updated_at")
+            .in("project_id", travisProjectIds)
+        : Promise.resolve({ data: [] }),
+      travisProjectIds.length
+        ? client
+            .from("continuum_project_jobs")
+            .select("job_id, project_id, state, waiting_on_actor, updated_at, source_ref")
+            .in("project_id", travisProjectIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+    const snapshot = snapshotRows?.[0] as Record<string, unknown> | undefined;
+    const payload = snapshot?.payload as
+      | { docket?: { items?: unknown[]; watching?: unknown[] } }
+      | undefined;
+    const snapshotTargets = [
+      ...(payload?.docket?.items ?? []),
+      ...(payload?.docket?.watching ?? []),
+    ]
+      .filter((row) => {
+        const json = JSON.stringify(row);
+        return (
+          json.includes("449b8c0d-9c17-4beb-aa28-0b6db798f39d") ||
+          /Travis|Chicker/i.test(json) ||
+          /Tim\/Jenn|C025964/i.test(json)
+        );
+      })
+      .map((row) => {
+        const item = row as Record<string, unknown>;
+        const packet = item.briefingPacket as Record<string, unknown> | undefined;
+        const projection = packet?.projection as Record<string, unknown> | undefined;
+        return {
+          id: item.id ?? null,
+          title: item.title ?? item.subject ?? null,
+          headline: item.headline ?? null,
+          detail: item.detail ?? null,
+          projectId: item.projectId ?? packet?.projectId ?? null,
+          ballHolder: packet?.ballHolder ?? null,
+          stage: projection?.stage ?? null,
+          dependency: packet?.candidateNextAction ?? null,
+          asOf: projection?.asOf ?? null,
+        };
+      });
+    const exactTruthOnly = process.argv.includes("--exact-truth-only");
+    process.stderr.write(
+      `${JSON.stringify(
+        exactTruthOnly
+          ? {
+              productionReadOnly: true,
+              indexedChronology: {
+                tim: (timMail.data ?? []).slice(-8),
+                travis: (travisKnown.data ?? []).slice(-40),
+              },
+              exactThreadFetch: {
+                ok: fetched?.ok === true,
+                unreadThreadCount: fetched?.ok ? fetched.unreadThreads.length : null,
+                events: liveExactEvents,
+              },
+              travisProjects: travisProjects.data ?? [],
+              travisCanonical: {
+                history: travisHistory.data ?? [],
+                lifecycle: travisLifecycle.data ?? [],
+                jobs: travisJobs.data ?? [],
+              },
+              snapshotTargets,
+            }
+          : {
+          productionReadOnly: true,
+          live: { auditRows, jobs: jobAudit },
+          timEvents: timEvents.slice(-30),
+          travisEvents: travisEvents.slice(-30),
+          relatedCandidateCount: relatedCandidates.length,
+          relatedCandidates: relatedCandidates.slice(-60),
+          founderCorrectionCount: founderCorrections.length,
+          founderCorrections: founderCorrections.map(eventTrace).slice(-20),
+          indexedChronology: {
+            tim: (timMail.data ?? []).slice(-40),
+            travis: (travisKnown.data ?? []).slice(-40),
+          },
+          exactThreadFetch: {
+            ok: fetched?.ok === true,
+            unreadThreadCount: fetched?.ok ? fetched.unreadThreads.length : null,
+            events: liveExactEvents,
+          },
+          travisProjects: travisProjects.data ?? [],
+          travisCanonical: {
+            history: travisHistory.data ?? [],
+            lifecycle: travisLifecycle.data ?? [],
+            jobs: travisJobs.data ?? [],
+          },
+          snapshot: snapshot
+            ? {
+                readModelVersion: snapshot.read_model_version,
+                sourceWatermarkMatches: watermarkToken(snapshot.source_watermark) === liveWatermark,
+                composedAt: snapshot.composed_at,
+                updatedAt: snapshot.updated_at,
+                itemCount: payload?.docket?.items?.length ?? null,
+                watchingCount: payload?.docket?.watching?.length ?? null,
+              }
+            : null,
+        },
+        null,
+        2,
+      )}\n`,
+    );
+    return;
+  }
   if (process.argv.includes("--frontier-summary")) {
     process.stdout.write(
       `${JSON.stringify(

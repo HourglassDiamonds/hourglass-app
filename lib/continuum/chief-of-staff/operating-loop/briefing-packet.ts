@@ -412,6 +412,8 @@ export function composeTodayBriefingPacket(
     communication: input.communication,
     noFounderAction: input.noFounderAction,
     staleInboundSatisfied: input.staleInboundSatisfied,
+    lifecycle,
+    projectId: input.projectId,
   });
   const loopEventInput = {
     evidence: input.evidence,

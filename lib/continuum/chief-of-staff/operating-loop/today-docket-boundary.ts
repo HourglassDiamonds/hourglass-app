@@ -96,6 +96,8 @@ import { mergeCurrentSourceEvents } from "./current-work";
 const UNASSIGNED = "Unassigned";
 const DIAGNOSTIC_COPY =
   /shop evidence is already (?:tied to|on) this production Project|canonical Project is already in production|I do not see a later (?:shop|vendor)|I will not create a reminder Open Job/i;
+const INTERNAL_ACCEPTANCE_SOURCE =
+  /(?:^|:)sterling-production-acceptance(?::|$)|(?:^|:)bounded-production-acceptance(?::|$)/i;
 
 export type TodayDocketSeed = {
   id: string;
@@ -865,6 +867,7 @@ function collectSeeds(loop: CosOperatingLoopView): TodayDocketSeed[] {
 }
 
 function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
+  if (INTERNAL_ACCEPTANCE_SOURCE.test(seed.job?.sourceRef ?? "")) return false;
   const clock = Date.parse(loop.asOfIso ?? "");
   if (loop.quietJobs?.some(j => {
     const exact =
