@@ -9,6 +9,7 @@ import {
   classifyTodayLiveThreadFrontier,
   partitionIndexedTodayLiveThreadIds,
   recentAnsweredUnresolvedIdentityThreadIds,
+  planTodayLiveThreads,
   requiredTodayLiveThreadIds,
 } from "./today-required-thread-set";
 
@@ -244,6 +245,20 @@ describe("Today required live Gmail thread frontier", () => {
     });
 
     assert.deepEqual(result, ["thread-a", "thread-b"]);
+  });
+
+  it("keeps identity-only enrichment from vetoing the actionable publication frontier", () => {
+    const plan = planTodayLiveThreads({
+      upNext: [actionable("project-a", ["action-thread"])],
+      watching: [watching("project-a", ["watch-thread"])],
+      candidates: [],
+      unresolvedIdentityThreadIds: ["identity-thread", "action-thread"],
+    });
+
+    assert.deepEqual(plan, {
+      criticalThreadIds: ["action-thread", "watch-thread"],
+      identityThreadIds: ["identity-thread"],
+    });
   });
 
   it("admits a bounded recent answered thread for sender-label enrichment without linking a Person", () => {

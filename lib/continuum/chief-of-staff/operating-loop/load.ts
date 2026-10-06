@@ -32,8 +32,8 @@ import {
 } from "@/lib/continuum/gmail/today-thread-context";
 import {
   partitionIndexedTodayLiveThreadIds,
+  planTodayLiveThreads,
   recentAnsweredUnresolvedIdentityThreadIds,
-  requiredTodayLiveThreadIds,
 } from "@/lib/continuum/gmail/today-required-thread-set";
 import {
   emitTodayCanonicalInputCounts,
@@ -132,18 +132,18 @@ function unassignedLiveIdentityThreadIds(
   );
 }
 
-function requiredLiveThreadIds(
+function liveThreadPlan(
   loop: CosOperatingLoopView,
   candidates: readonly ContinuumCandidate[],
   nowIso: string,
-): string[] {
+): ReturnType<typeof planTodayLiveThreads> {
   const docket = finalizeTodayDocket(loop);
   const recentAnsweredIdentityThreads = recentAnsweredUnresolvedIdentityThreadIds({
     candidates,
     threadContext: loop.threadContext ?? new Map(),
     nowIso,
   });
-  return requiredTodayLiveThreadIds({
+  return planTodayLiveThreads({
     ...docket,
     candidates,
     associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
@@ -253,27 +253,51 @@ async function rebuildTodayLoop(
   };
   let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
+  const attemptedThreadIds = new Set<string>();
   const enrichedThreadIds = new Set<string>();
   const unavailableIndexedThreadIds = new Set<string>();
   for (let pass = 0; pass < 2; pass += 1) {
-    const required = requiredLiveThreadIds(loop, candidates, now.toISOString());
-    const partition = partitionIndexedTodayLiveThreadIds({
-      requiredThreadIds: required,
+    const plan = liveThreadPlan(loop, candidates, now.toISOString());
+    const critical = partitionIndexedTodayLiveThreadIds({
+      requiredThreadIds: plan.criticalThreadIds,
       threadContext,
-      attemptedThreadIds: enrichedThreadIds,
+      attemptedThreadIds,
     });
-    const pending = partition.eligible;
-    for (const threadId of partition.unavailable) unavailableIndexedThreadIds.add(threadId);
-    if (pending.length === 0) break;
-    threadContext = await loadLiveTodayOperationalFacts(threadContext, {
-      threadIds: pending,
-      requireComplete: true,
-      onDiagnostics: emitTodayLiveEnrichmentDiagnostics,
+    for (const threadId of critical.unavailable) unavailableIndexedThreadIds.add(threadId);
+    if (critical.eligible.length > 0) {
+      threadContext = await loadLiveTodayOperationalFacts(threadContext, {
+        threadIds: critical.eligible,
+        requireComplete: true,
+        onDiagnostics: emitTodayLiveEnrichmentDiagnostics,
+      });
+      for (const threadId of critical.eligible) {
+        attemptedThreadIds.add(threadId);
+        enrichedThreadIds.add(threadId);
+      }
+    }
+    const identity = partitionIndexedTodayLiveThreadIds({
+      requiredThreadIds: plan.identityThreadIds,
+      threadContext,
+      attemptedThreadIds,
     });
-    for (const threadId of pending) enrichedThreadIds.add(threadId);
+    for (const threadId of identity.unavailable) unavailableIndexedThreadIds.add(threadId);
+    if (identity.eligible.length > 0) {
+      threadContext = await loadLiveTodayOperationalFacts(threadContext, {
+        threadIds: identity.eligible,
+        requireComplete: false,
+        onDiagnostics: emitTodayLiveEnrichmentDiagnostics,
+      });
+      for (const threadId of identity.eligible) {
+        attemptedThreadIds.add(threadId);
+        if (threadContext.get(threadId)?.liveIdentityLoaded === true) {
+          enrichedThreadIds.add(threadId);
+        }
+      }
+    }
+    if (critical.eligible.length === 0 && identity.eligible.length === 0) break;
     loop = composeCosOperatingLoop({ ...composeInput, threadContext });
   }
-  const unresolvedRequired = requiredLiveThreadIds(loop, candidates, now.toISOString()).filter(
+  const unresolvedRequired = liveThreadPlan(loop, candidates, now.toISOString()).criticalThreadIds.filter(
     (threadId) =>
       !enrichedThreadIds.has(threadId) &&
       !unavailableIndexedThreadIds.has(threadId) &&

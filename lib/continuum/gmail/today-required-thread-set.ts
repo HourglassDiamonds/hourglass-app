@@ -45,6 +45,11 @@ export type TodayThreadFrontier = {
   counts: Readonly<Record<TodayThreadFrontierCategory, number>>;
 };
 
+export type TodayLiveThreadPlan = {
+  criticalThreadIds: string[];
+  identityThreadIds: string[];
+};
+
 /**
  * A recent founder reply can satisfy the action before the unresolved sender
  * has enough identity to survive Today composition. Admit only exact indexed
@@ -374,16 +379,31 @@ export function classifyTodayLiveThreadFrontier(
 export function requiredTodayLiveThreadIds(
   input: RequiredTodayThreadInput,
 ): string[] {
-  const identity = (input.unresolvedIdentityThreadIds ?? [])
-    .map((threadId) => threadId.trim())
-    .filter(Boolean);
-  return [
-    ...new Set([
-      ...directActionableThreads(input),
-      ...directWatchingThreads(input),
-      ...identity,
-    ]),
-  ].sort();
+  const plan = planTodayLiveThreads(input);
+  return [...plan.criticalThreadIds, ...plan.identityThreadIds].sort();
+}
+
+/**
+ * Current actionable/watching truth is a publication dependency. Identity-only
+ * enrichment improves labels for unresolved senders, but an inaccessible
+ * historical thread must not prevent an otherwise complete Today snapshot.
+ */
+export function planTodayLiveThreads(
+  input: RequiredTodayThreadInput,
+): TodayLiveThreadPlan {
+  const critical = new Set([
+    ...directActionableThreads(input),
+    ...directWatchingThreads(input),
+  ]);
+  const identity = new Set(
+    (input.unresolvedIdentityThreadIds ?? [])
+      .map((threadId) => threadId.trim())
+      .filter((threadId) => Boolean(threadId) && !critical.has(threadId)),
+  );
+  return {
+    criticalThreadIds: [...critical].sort(),
+    identityThreadIds: [...identity].sort(),
+  };
 }
 
 /**

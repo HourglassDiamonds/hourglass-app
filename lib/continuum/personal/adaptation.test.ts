@@ -114,6 +114,62 @@ test("an explicit natural-language date selects the sole plausible missed streng
   assert.ok(proposal);
 });
 
+test("recovers missing Oct 5 Foundation A from anchored program history without clearing browser state", () => {
+  const yesterday = "2026-10-05";
+  const today = "2026-10-06";
+  const state = createInitialPersonalState(today);
+  assert.equal(state.schedule.some((workout) => workout.originalDate === yesterday), false);
+  const easy5k = state.schedule.find(
+    (workout) => workout.date === today && workout.prescription.id === "easy-run",
+  )!;
+
+  const proposal = proposeSterlingAdjustment(
+    state,
+    "We skipped yesterday and rucked instead, can we pull yesterday's workout back on the board for today?",
+    today,
+  );
+
+  assert.ok(proposal);
+  assert.match(proposal.summary, /don't have a saved 2026-10-05 occurrence/i);
+  assert.match(proposal.summary, /Foundation A/i);
+  const confirmed = applySterlingProposal(state, proposal);
+  const recovered = confirmed.schedule.find(
+    (workout) => workout.originalDate === yesterday && workout.prescription.id === "foundation-a",
+  );
+  const restored = confirmed.schedule.find(
+    (workout) => workout.date === today && workout.replacesWorkoutId === recovered?.id,
+  );
+  assert.equal(recovered?.status, "deferred");
+  assert.equal(restored?.prescription.id, "foundation-a");
+  assert.notEqual(confirmed.schedule.find((workout) => workout.id === easy5k.id)?.date, today);
+  assert.equal(
+    confirmed.schedule.filter(
+      (workout) => workout.date === yesterday && workout.prescription.mode === "ruck",
+    ).length,
+    1,
+  );
+  assert.equal(
+    confirmed.schedule.filter(
+      (workout) => workout.date === today && workout.prescription.id === "foundation-a",
+    ).length,
+    1,
+  );
+});
+
+test("does not fabricate missing history when the saved schedule cannot anchor the program", () => {
+  const state = createInitialPersonalState("2026-10-06");
+  state.schedule = state.schedule.map((workout) => ({
+    ...workout,
+    provenance: workout.provenance.filter((source) => source !== "program"),
+  }));
+  const command = "Move yesterday's workout to today";
+  assert.equal(proposeSterlingAdjustment(state, command, "2026-10-06"), null);
+  assert.match(
+    sterlingClarification(state, command, "2026-10-06"),
+    /can't determine it unambiguously/i,
+  );
+});
+
 test("clarification names the actual ambiguity rather than teaching command syntax", () => {
   const state = createInitialPersonalState("2026-10-05");
   const first = state.schedule.find((workout) => workout.date === "2026-10-05")!;

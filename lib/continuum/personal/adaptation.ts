@@ -1,4 +1,4 @@
-import { shiftDate } from "./program";
+import { plannedWorkout, shiftDate } from "./program";
 import { hasRecoverySignal, proposeRecoveryFromNarrative } from "./recovery";
 import type { PersonalState, ScheduledWorkout, SterlingProposal, WorkoutPrescription } from "./types";
 
@@ -56,15 +56,53 @@ function missedStrengthCandidates(
   });
 }
 
+function historicalProgramStrength(
+  state: PersonalState,
+  targetDate: string,
+  today: string,
+): ScheduledWorkout | null {
+  if (targetDate >= today) return null;
+  if (state.schedule.some((item) => item.originalDate === targetDate)) return null;
+  const expected = plannedWorkout(targetDate);
+  if (expected.prescription.domain !== "strength") return null;
+  const anchored = state.schedule.some((item) => {
+    if (!item.provenance.includes("program")) return false;
+    if (item.prescription.trainingBlock !== expected.prescription.trainingBlock) return false;
+    const canonical = plannedWorkout(item.originalDate);
+    return canonical.prescription.id === item.prescription.id;
+  });
+  if (!anchored) return null;
+  return {
+    ...expected,
+    provenance: [...expected.provenance, "sterling"],
+    history: [
+      ...expected.history,
+      {
+        at: new Date().toISOString(),
+        action: "planned",
+        actor: "sterling",
+        note: "Recovered from the deterministic program history because the saved browser schedule did not contain this occurrence.",
+      },
+    ],
+  };
+}
+
 function stateAwareRestoreCandidate(
   state: PersonalState,
   command: string,
   today: string,
-): { targetDate: string; workout: ScheduledWorkout } | null {
+): { targetDate: string; workout: ScheduledWorkout; recoveredFromProgram: boolean } | null {
   const targetDate = referencedPriorDate(command, today);
   if (!targetDate || !/\btoday\b/i.test(command)) return null;
   const candidates = missedStrengthCandidates(state, targetDate);
-  return candidates.length === 1 ? { targetDate, workout: candidates[0]! } : null;
+  if (candidates.length === 1) {
+    return { targetDate, workout: candidates[0]!, recoveredFromProgram: false };
+  }
+  if (candidates.length > 1) return null;
+  const historical = historicalProgramStrength(state, targetDate, today);
+  return historical
+    ? { targetDate, workout: historical, recoveredFromProgram: true }
+    : null;
 }
 
 export function sterlingClarification(
@@ -79,7 +117,10 @@ export function sterlingClarification(
       return `I found ${candidates.length} missed strength sessions on ${targetDate}. Which one should move to today?`;
     }
     if (candidates.length === 0) {
-      return `I couldn't find a missed strength session on ${targetDate} in the saved schedule. Nothing changed.`;
+      const historical = historicalProgramStrength(state, targetDate, today);
+      if (!historical) {
+        return `I don't have a saved ${targetDate} occurrence and can't determine it unambiguously from this program history. Which workout was it?`;
+      }
     }
   }
   return "I need one detail: which workout or day should change? Nothing changed.";
@@ -270,9 +311,12 @@ export function proposeSterlingAdjustment(state: PersonalState, command: string,
         )
       : false;
     const now = new Date().toISOString();
+    const scheduleWithHistoricalOccurrence = resolvedRestore.recoveredFromProgram
+      ? [...state.schedule.map(cloneWorkout), cloneWorkout(prior)]
+      : state.schedule;
     const nextSchedule = alreadyMoved
       ? state.schedule.map(cloneWorkout)
-      : deferAndReflow(state.schedule, prior.id, today, now, "sterling");
+      : deferAndReflow(scheduleWithHistoricalOccurrence, prior.id, today, now, "sterling");
     if (wantsRuck(command) && !nextSchedule.some((item) => item.replacesWorkoutId === prior.id && item.date === yesterday && item.prescription.mode === "ruck")) {
       nextSchedule.push(recoveryRuck(prior, command));
       nextSchedule.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
@@ -285,7 +329,9 @@ export function proposeSterlingAdjustment(state: PersonalState, command: string,
       id: `sterling-restore-proposal-${Date.now()}`,
       command,
       createdAt: now,
-      summary: `Restore yesterday’s intact ${prior.prescription.name} prescription to today, record the recovery ruck substitution, and reflow today’s planned session to the next sensible slot.`,
+      summary: resolvedRestore.recoveredFromProgram
+        ? `I don't have a saved ${yesterday} occurrence, but your program scheduled ${prior.prescription.name} that day. Restore it to today, retain the recovery ruck substitution, and reflow today's planned session to the next sensible slot.`
+        : `Restore yesterday’s intact ${prior.prescription.name} prescription to today, record the recovery ruck substitution, and reflow today’s planned session to the next sensible slot.`,
       recovery,
       nextSchedule,
       affectedWorkoutIds: [prior.id, moved.id, ...nextSchedule.filter((item) => item.history.at(-1)?.action === "reflowed").map((item) => item.id)],
