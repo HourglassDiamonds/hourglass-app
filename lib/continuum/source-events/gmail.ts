@@ -208,9 +208,13 @@ export function projectGmailSourceEvents(input: {
       ]);
       const overlayRow = overlay.get(message.messageId);
       const fromEmailHash = message.fromEmailHash?.trim() || null;
+      // Live, quote-stripped message facts are authoritative for the current
+      // message. Candidate overlays may contain reconstructed thread context;
+      // use them only when live message text is unavailable.
+      const liveOwn = message.operationalText?.trim() ?? "";
       const ownParts = unique([
-        ...(overlayRow?.own ?? []),
-        message.operationalText ?? "",
+        ...(liveOwn ? [] : overlayRow?.own ?? []),
+        liveOwn,
         message.plaintext ? authorOwnedText(message.plaintext) : "",
       ]);
       const quotedParts = unique([

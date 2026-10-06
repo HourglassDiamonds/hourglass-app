@@ -64,6 +64,18 @@ function isQuoteBoundary(lines: readonly string[], index: number): boolean {
   return false;
 }
 
+function inlineQuoteBoundary(line: string): number | null {
+  const markers = [
+    /\bOn\s.{1,400}?wrote:\s*/i,
+    /-{2,}\s*Forwarded message\s*-{2,}/i,
+    /-{2,}\s*Original Message\s*-{2,}/i,
+  ];
+  const indexes = markers
+    .map((marker) => line.search(marker))
+    .filter((index) => index > 0);
+  return indexes.length ? Math.min(...indexes) : null;
+}
+
 export function authorOwnedText(plaintext: string | null | undefined): string {
   return splitOwnAndQuotedText(plaintext).own;
 }
@@ -92,8 +104,19 @@ export function splitOwnAndQuotedText(plaintext: string | null | undefined): {
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index]!;
     if (!inQuote && isQuoteBoundary(lines, index)) inQuote = true;
-    if (inQuote) quoted.push(line);
-    else own.push(line);
+    if (inQuote) {
+      quoted.push(line);
+      continue;
+    }
+    const inlineBoundary = inlineQuoteBoundary(line);
+    if (inlineBoundary != null) {
+      const current = line.slice(0, inlineBoundary).trim();
+      if (current) own.push(current);
+      quoted.push(line.slice(inlineBoundary));
+      inQuote = true;
+      continue;
+    }
+    own.push(line);
   }
   return { own: own.join("\n").trim(), quoted: quoted.join("\n").trim() };
 }

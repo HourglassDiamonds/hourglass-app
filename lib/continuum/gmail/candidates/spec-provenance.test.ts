@@ -94,6 +94,14 @@ function fingerSpecs(rows: ReturnType<typeof proposeGmailCandidates>["candidates
 }
 
 describe("structured_spec Gmail provenance", () => {
+  it("splits a quote boundary collapsed onto the current-message line", () => {
+    const split = splitOwnAndQuotedText(
+      "The package arrived today. On Fri, Oct 2, 2026 at 1:23 PM Justin Smith <justin@example.com> wrote: I'll send chain video, options, and pricing.",
+    );
+    assert.equal(split.own, "The package arrived today.");
+    assert.match(split.quoted, /I'll send chain video/i);
+  });
+
   it("keeps EXACT sourceRef when finger size appears in this message", () => {
     const proposed = proposeGmailCandidates({
       createdAt: NOW,

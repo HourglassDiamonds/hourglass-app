@@ -12,7 +12,8 @@ test("Performance exposes explicit workout resolution controls and confirmation-
   for (const label of ["Start", "Modify today", "Defer", "Skip", "Confirm changes", "Reject"]) assert.match(source, new RegExp(label));
   assert.match(source, /nothing has changed yet/i);
   assert.match(source, /role="status"/);
-  assert.match(source, /couldn’t identify which workout/i);
+  assert.match(source, /sterlingClarification/);
+  assert.doesNotMatch(source, /Name the day and whether to restore, defer, replace, or skip/i);
   assert.match(source, /Sterling couldn’t prepare that adjustment/i);
 });
 

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
-import { applySterlingProposal, deferAndReflow, proposeSterlingAdjustment } from "@/lib/continuum/personal/adaptation";
+import { applySterlingProposal, deferAndReflow, proposeSterlingAdjustment, sterlingClarification } from "@/lib/continuum/personal/adaptation";
 import { createInitialPersonalState, dateKey, shiftDate } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
@@ -163,7 +163,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       const proposal = proposeSterlingAdjustment(state, sterlingText, today);
       setSterlingProposal(proposal);
       if (!proposal) {
-        setSterlingFeedback("I couldn’t identify which workout to change. Name the day and whether to restore, defer, replace, or skip it.");
+        setSterlingFeedback(sterlingClarification(state, sterlingText, today));
       }
     } catch {
       setSterlingProposal(null);
