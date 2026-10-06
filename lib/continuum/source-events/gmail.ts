@@ -390,8 +390,13 @@ export function sourceEventsForWorkLoop(
       if (event.projectId === targetProject) return true;
       if (event.projectId) return false;
       // Project-scoped work may consume an unscoped event only through an
-      // exact associated thread, never through a shared CAD/name token.
-      return Boolean(event.threadId && threads.has(event.threadId));
+      // exact associated thread or one exact CAD asserted by the caller.
+      return Boolean(
+        (event.threadId && threads.has(event.threadId)) ||
+          (input.strictCadMatch === true &&
+            cads.size === 1 &&
+            event.cadIds.some((cad) => cads.has(cad.toUpperCase()))),
+      );
     }
     if (event.threadId && threads.has(event.threadId)) return true;
     if (event.cadIds.some((cad) => cads.has(cad))) return true;

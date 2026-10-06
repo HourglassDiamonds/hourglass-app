@@ -1,4 +1,5 @@
 import { createInitialPersonalState, plannedWorkout, shiftDate } from "./program";
+import { carryYesterdayUnresolvedToToday } from "./adaptation";
 import type { PersonalState, ScheduledWorkout } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -124,7 +125,14 @@ export function ensureSchedule(state: PersonalState, today: string): PersonalSta
     const key = shiftDate(today, offset);
     if (!schedule.some((workout) => workout.originalDate === key)) schedule.push(plannedWorkout(key));
   }
-  return rolloverUnresolved({ ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) }, today);
+  const rolled = rolloverUnresolved(
+    { ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) },
+    today,
+  );
+  return {
+    ...rolled,
+    schedule: carryYesterdayUnresolvedToToday(rolled.schedule, today),
+  };
 }
 
 export function rolloverUnresolved(state: PersonalState, today: string, now = new Date().toISOString()): PersonalState {

@@ -34,3 +34,17 @@ test("existing v2 browser state migrates forward with an empty frequent-meal col
   assert.deepEqual(parsed.frequentMeals, []);
   assert.equal(parsed.schedule.length, 14);
 });
+
+test("refresh carries yesterday's unresolved workout into today and durably reflows today's plan", () => {
+  const prior = createInitialPersonalState("2026-10-05");
+  const yesterday = prior.schedule.find((workout) => workout.date === "2026-10-05")!;
+  const todayPlan = prior.schedule.find((workout) => workout.date === "2026-10-06")!;
+  const parsed = parsePersonalState(JSON.stringify(prior), "2026-10-06");
+  const moved = parsed.schedule.find((workout) => workout.date === "2026-10-06" && workout.replacesWorkoutId === yesterday.id);
+  assert.deepEqual(moved?.prescription, yesterday.prescription);
+  assert.notEqual(parsed.schedule.find((workout) => workout.id === todayPlan.id)?.date, "2026-10-06");
+  assert.equal(parsed.schedule.find((workout) => workout.id === yesterday.id)?.status, "deferred");
+  const refreshed = parsePersonalState(JSON.stringify(parsed), "2026-10-06");
+  assert.equal(refreshed.schedule.filter((workout) => workout.date === "2026-10-06" && workout.replacesWorkoutId === yesterday.id).length, 1);
+  assert.doesNotMatch(JSON.stringify(refreshed), /failed/i);
+});

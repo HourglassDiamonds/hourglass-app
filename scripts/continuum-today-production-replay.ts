@@ -655,6 +655,8 @@ async function main() {
     tim: named(/Tim|Jenn|C025964/i),
     madi: named(/\bMadi\b|C026000|C017756/i),
     abbey: named(/Abbey|C026137/i),
+    shannon: named(/Shannon|Hruza/i),
+    chris: named(/\bChristopher\b|\bKotwicki\b/i),
     jesse: named(/\bJesse\b/i),
   };
   const traces = PROOF_MESSAGES.map((proof) => {
@@ -692,6 +694,13 @@ async function main() {
     "tim-in-production",
   );
   expect(proofs.madi.lane === "watching" && proofs.madi.ball === "client", "madi-client-wait");
+  expect(
+    proofs.abbey.lane === "watching" && proofs.abbey.ball === "vendor_shop",
+    "abbey-vendor-shop",
+  );
+  expect(!/send .*render/i.test(proofs.abbey.copy ?? ""), "abbey-no-stale-rendering-action");
+  expect(proofs.shannon.lane === "absent", "shannon-old-package-action-absent");
+  expect(proofs.chris.lane === "absent", "christopher-stale-work-absent");
   expect(proofs.jesse.lane === "absent", "jesse-absent");
   const result = {
     verdict: failures.length === 0 ? "PASS" : "BLOCK",
@@ -706,6 +715,29 @@ async function main() {
     upNext,
     watching,
     proofs,
+    currentTruthTargets: Object.fromEntries(
+      [
+        ["shannon", /Shannon|Hruza/i],
+        ["christopher", /Christopher|Kotwicki/i],
+        ["abbey", /Abbey|C026137/i],
+      ].map(([label, pattern]) => [
+        label,
+        sourceEvents
+          .filter((event) => pattern.test(`${event.personLabel ?? ""} ${event.subject ?? ""} ${event.authorOwnedText}`))
+          .sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+          .slice(-20)
+          .map((event) => ({
+            timestamp: event.timestamp,
+            direction: event.direction,
+            actor: event.actor,
+            semanticClass: event.semanticClass,
+            subject: clip(event.subject),
+            text: clip(event.authorOwnedText, 180),
+            threadId: event.threadId,
+            workIdentityBasis: event.workIdentityBasis,
+          })),
+      ]),
+    ),
     traces,
   };
   if (process.argv.includes("--current-truth-audit")) {

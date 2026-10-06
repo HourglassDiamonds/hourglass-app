@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { reduceWorkLoop } from "./work-loop-state";
 import { composeCosOperatingLoop } from "./compose";
 import { composeTodayDocket } from "./docket";
+import { finalizeTodayDocket } from "./today-docket-boundary";
 import { classifySourceCommunication } from "@/lib/continuum/source-events/classify";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import { COS_LOOP_PROJECT_A, fixtureProjects, fixtureJob } from "./fixtures";
@@ -90,6 +91,62 @@ function both(
   return p;
 }
 describe("Phase 2 current truth through reducer and final docket", () => {
+  it("Shannon: a newer package arrival supersedes the prior founder send obligation", () => {
+    const projection = project([
+      event("promise", "I'll send chain video, options, and pricing.", 10, "founder", {
+        personLabel: "Shannon Hruza",
+        semanticClass: "founder_fulfills_commitment",
+      }),
+      event("arrival", "The relevant package arrived today.", 11, "client", {
+        personLabel: "Shannon Hruza",
+        semanticClass: "material_arrives",
+      }),
+    ]);
+    assert.equal(projection.ballHolder, "unknown");
+    assert.equal(projection.dependency, null);
+    assert.equal(projection.activeObligations.length, 0);
+    assert.ok(projection.historicalObligations.some((row) => /chain video/i.test(row.deliverable)));
+  });
+
+  it("Abbey: later founder vendor follow-up wins and repeated client copy is collapsed", () => {
+    const projection = project([
+      event("request", "Can you send me a rendering Can you send me a rendering Can you send me a rendering", 10, "client", {
+        personLabel: "Abbey",
+        semanticClass: "client_requests",
+      }),
+      event("follow-up", "Checking on the revised rendering.", 11, "founder", {
+        personLabel: "Abbey",
+        semanticClass: "founder_requests_vendor",
+      }),
+    ]);
+    assert.equal(projection.ballHolder, "vendor_shop");
+    assert.equal(projection.dependency, "revised CAD");
+    assert.equal(projection.activeObligations.length, 1);
+    assert.doesNotMatch(JSON.stringify(projection), /rendering Can you send me a rendering/i);
+  });
+
+  it("Christopher: year-old source-only fragments cannot re-enter current work", () => {
+    const stale = event("old", "Can you send the old December and January details?", 10, "client", {
+      timestamp: "2025-12-10T16:00:00Z",
+      personLabel: "Christopher Kotwicki",
+      projectId: null,
+      workLoopId: "thread:christopher-old",
+      threadId: "christopher-old",
+      sourceRef: "gc1|christopher-old|old",
+      semanticClass: "client_requests",
+      workIdentityBasis: "candidate_message",
+    });
+    const loop = composeCosOperatingLoop({
+      jobs: [],
+      projects: new Map(),
+      candidates: [],
+      founderCorrections: [stale],
+      nowIso: "2026-10-06T16:00:00Z",
+    });
+    const final = finalizeTodayDocket(loop);
+    assert.equal(final.upNext.some((row) => /Christopher|December|January/i.test(`${row.subject} ${row.headline}`)), false);
+    assert.equal(final.watching.some((row) => /Christopher|December|January/i.test(`${row.title} ${row.detail}`)), false);
+  });
   it("canonical production supersedes an older approval/place-order projection", () => {
     const projection = reduceWorkLoop({
       evidence: [],

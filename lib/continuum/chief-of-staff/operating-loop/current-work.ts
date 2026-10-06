@@ -153,7 +153,7 @@ export function reconcileProjectionWithLifecycle(input: {
 }
 
 export function sourceIdentity(e: SourceCommunicationEvent): string {
-  const excerpt = (e.evidenceExcerpt || e.authorOwnedText)
+  const excerpt = collapseRepeatedWording(e.evidenceExcerpt || e.authorOwnedText)
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 160);
@@ -319,6 +319,24 @@ function dependencyOf(text: string, fallback: string | null): string | null {
   return named?.[1].trim() || fallback;
 }
 
+function collapseRepeatedWording(value: string): string {
+  const words = value.replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
+  for (let width = 3; width <= Math.floor(words.length / 2); width += 1) {
+    if (words.length % width !== 0) continue;
+    const first = words.slice(0, width).join(" ").replace(/[.!?]+$/, "").toLowerCase();
+    const repeats = words.length / width;
+    if (
+      repeats > 1 &&
+      Array.from({ length: repeats }, (_, index) =>
+        words.slice(index * width, (index + 1) * width).join(" ").replace(/[.!?]+$/, "").toLowerCase(),
+      ).every((part) => part === first)
+    ) {
+      return words.slice(0, width).join(" ");
+    }
+  }
+  return words.join(" ");
+}
+
 function founderCommitmentDependency(text: string): string | null {
   if (
     /\b(?:chain|video|options?|pric(?:e|ing)|availability)\b/i.test(text) &&
@@ -335,16 +353,56 @@ function founderCommitmentDependency(text: string): string | null {
 export function projectCurrentWork(
   sourceEvents: readonly SourceCommunicationEvent[],
 ): CurrentWorkProjection | null {
+  const chronological = mergeCurrentSourceEvents(sourceEvents);
+  const sourceThread = (sourceRef: string) => sourceRef.split("|")[1] ?? sourceRef;
+  const withVendorFollowups = chronological.map((event, index) => {
+    if (
+      event.semanticClass !== "unknown_communication" ||
+      event.actor !== "founder" ||
+      !/\bHGD\s*x\s+.+-C\d{5,}/i.test(event.subject ?? "") ||
+      /\b(?:i(?:'ll| will)|let me|report back|i can find|i can get|i can send)\b/i.test(
+        event.evidenceExcerpt || event.authorOwnedText,
+      )
+    ) {
+      return event;
+    }
+    const eventMs = Date.parse(event.timestamp);
+    const cads = new Set(event.cadIds.map((cad) => cad.toUpperCase()));
+    const priorRows = chronological.slice(0, index);
+    const vendorBlockingRequest = priorRows.some((prior) => {
+      const priorMs = Date.parse(prior.timestamp);
+      const wording = prior.evidenceExcerpt || prior.authorOwnedText;
+      return ["vendor_shop", "unknown"].includes(prior.actor) &&
+        prior.direction === "inbound" &&
+        Number.isFinite(eventMs) &&
+        Number.isFinite(priorMs) &&
+        priorMs < eventMs &&
+        /\b(?:can you|could you|please|need you to)\b|\?/i.test(wording) &&
+        (prior.workLoopId === event.workLoopId || prior.cadIds.some((cad) => cads.has(cad.toUpperCase())));
+    });
+    const answeredClientRequest = chronological.slice(0, index).some((prior) => {
+      const priorMs = Date.parse(prior.timestamp);
+      return prior.semanticClass === "client_requests" &&
+        sourceThread(prior.sourceRef) !== sourceThread(event.sourceRef) &&
+        Number.isFinite(eventMs) &&
+        Number.isFinite(priorMs) &&
+        priorMs < eventMs &&
+        (prior.workLoopId === event.workLoopId || prior.cadIds.some((cad) => cads.has(cad.toUpperCase())));
+    });
+    return answeredClientRequest && !vendorBlockingRequest
+      ? { ...event, semanticClass: "founder_requests_vendor" as const }
+      : event;
+  });
   if (
     new Set(
-      sourceEvents
+      withVendorFollowups
         .filter(isOperationalSourceEvent)
         .map((e) => e.projectId)
         .filter(Boolean),
     ).size > 1
   )
     return null;
-  const admitted = mergeCurrentSourceEvents(sourceEvents).filter(
+  const admitted = withVendorFollowups.filter(
     isOperationalSourceEvent,
   );
   if (!admitted.length) return null;
@@ -418,7 +476,7 @@ export function projectCurrentWork(
       result.commitment = null;
   };
   for (const e of admitted) {
-    const text = e.evidenceExcerpt || e.authorOwnedText;
+    const text = collapseRepeatedWording(e.evidenceExcerpt || e.authorOwnedText);
     const hasTime = Number.isFinite(Date.parse(e.timestamp));
     const record = {
       sourceRef: e.sourceRef,
@@ -462,6 +520,11 @@ export function projectCurrentWork(
     } else if (cls === "work_ready") {
       stage = "ready";
       close(e, "satisfied");
+    } else if (cls === "material_arrives") {
+      stage = "waiting_external";
+      close(e, "superseded");
+      dependency = null;
+      actor = "unknown";
     } else if (cls === "founder_correction") {
       const correction = e.correction;
       if (!correction) continue;
@@ -565,16 +628,20 @@ export function projectCurrentWork(
       stage = /revis|updated|change/i.test(text)
         ? "revision_requested"
         : "design_requested";
-      dependency = dependencyOf(
-        text,
-        /STL/i.test(text)
-          ? "STL"
-          : stage === "revision_requested"
-            ? "revised CAD"
-            : "CAD",
-      );
+      const fallback = /STL/i.test(text)
+        ? "STL"
+        : stage === "revision_requested"
+          ? "revised CAD"
+          : "CAD";
+      dependency = /\b(?:can you|could you|please|checking|follow(?:ing)? up|send|revise|update|change|render)\b/i.test(text)
+        ? dependencyOf(text, fallback)
+        : fallback;
       actor = "vendor_shop";
-      close(e, "superseded", cad);
+      close(
+        e,
+        "superseded",
+        (obligation) => sameScope(obligation, e) && obligation.kind !== "service",
+      );
     } else if (cls === "vendor_promises") {
       dependency = dependencyOf(text, result.dependency ?? "revised CAD");
       actor = "vendor_shop";

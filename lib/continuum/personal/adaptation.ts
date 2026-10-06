@@ -13,11 +13,17 @@ function isSleepCompromised(command: string): boolean {
 }
 
 function wantsRuck(command: string): boolean {
-  return /\bruck(?:ing)?\b/i.test(command);
+  return /\bruck(?:ed|ing)?\b/i.test(command);
 }
 
 function wantsMoveTomorrow(command: string): boolean {
   return /\b(move|push|defer|reschedule)\b[\s\S]{0,50}\b(tomorrow|next day)\b/i.test(command) || /\b(tomorrow|next day)\b[\s\S]{0,50}\b(weights?|strength|workout)\b/i.test(command);
+}
+
+function wantsRestoreYesterdayToday(command: string): boolean {
+  return /\byesterday(?:'s)?\b/i.test(command) &&
+    /\b(?:today|back on the board|pull|restore|bring back|move)\b/i.test(command) &&
+    /\b(?:workout|weights?|strength|session|skipped|missed)\b/i.test(command);
 }
 
 function recoveryRuck(base: ScheduledWorkout, command: string): ScheduledWorkout {
@@ -70,7 +76,7 @@ export function deferAndReflow(schedule: readonly ScheduledWorkout[], workoutId:
     status: "deferred",
     deferredTo: targetDate,
     provenance: [...new Set([...source.provenance, actor === "sterling" ? "sterling" as const : "user" as const, "user_confirmed" as const])],
-    history: [...source.history, { at: now, action: "deferred", actor, note: `Original occurrence intentionally deferred to ${targetDate}; not failed.` }],
+    history: [...source.history, { at: now, action: "deferred", actor, note: `Original occurrence intentionally deferred to ${targetDate}; kept unresolved with no penalty.` }],
   });
   const deferred: ScheduledWorkout = {
     ...cloneWorkout(source),
@@ -104,8 +110,72 @@ export function deferAndReflow(schedule: readonly ScheduledWorkout[], workoutId:
   return placed.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }
 
+export function carryYesterdayUnresolvedToToday(
+  schedule: readonly ScheduledWorkout[],
+  today: string,
+  now = new Date().toISOString(),
+): ScheduledWorkout[] {
+  const yesterday = shiftDate(today, -1);
+  const prior = schedule.find(
+    (item) => item.date === yesterday && item.status === "unresolved",
+  );
+  if (!prior) return [...schedule];
+  if (
+    schedule.some(
+      (item) =>
+        item.date === today &&
+        item.replacesWorkoutId === prior.id &&
+        !["deferred", "skipped", "replaced"].includes(item.status),
+    )
+  ) {
+    return [...schedule];
+  }
+  return deferAndReflow(schedule, prior.id, today, now, "sterling");
+}
+
 export function proposeSterlingAdjustment(state: PersonalState, command: string, today: string): SterlingProposal | null {
   const recovery = proposeRecoveryFromNarrative(command, today);
+  if (wantsRestoreYesterdayToday(command)) {
+    const yesterday = shiftDate(today, -1);
+    const prior = [...state.schedule]
+      .reverse()
+      .find(
+        (item) =>
+          item.date === yesterday &&
+          ["planned", "unresolved", "skipped", "deferred"].includes(item.status),
+      );
+    const alreadyMoved = prior
+      ? state.schedule.some(
+          (item) =>
+            item.date === today &&
+            item.replacesWorkoutId === prior.id &&
+            !["deferred", "skipped", "replaced"].includes(item.status),
+        )
+      : false;
+    if (!prior) return null;
+    const now = new Date().toISOString();
+    const nextSchedule = alreadyMoved
+      ? state.schedule.map(cloneWorkout)
+      : deferAndReflow(state.schedule, prior.id, today, now, "sterling");
+    if (wantsRuck(command) && !nextSchedule.some((item) => item.replacesWorkoutId === prior.id && item.date === yesterday && item.prescription.mode === "ruck")) {
+      nextSchedule.push(recoveryRuck(prior, command));
+      nextSchedule.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
+    }
+    const moved = nextSchedule.find(
+      (item) => item.replacesWorkoutId === prior.id && item.date === today,
+    );
+    if (!moved) return null;
+    return {
+      id: `sterling-restore-proposal-${Date.now()}`,
+      command,
+      createdAt: now,
+      summary: `Restore yesterday’s intact ${prior.prescription.name} prescription to today, record the recovery ruck substitution, and reflow today’s planned session to the next sensible slot.`,
+      recovery,
+      nextSchedule,
+      affectedWorkoutIds: [prior.id, moved.id, ...nextSchedule.filter((item) => item.history.at(-1)?.action === "reflowed").map((item) => item.id)],
+      warnings: [],
+    };
+  }
   const todayWorkout = state.schedule.find((item) => item.date === today && (item.status === "planned" || item.status === "unresolved"));
   if (!todayWorkout || !wantsMoveTomorrow(command)) {
     if (!hasRecoverySignal(recovery)) return null;

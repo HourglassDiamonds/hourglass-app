@@ -44,6 +44,8 @@ const DIRECT_NEGATION =
 const COMPLETE_STATUS =
   /\b(?:order|ring|piece|job|work)\b.{0,35}\b(?:is |was |has been )?(?:delivered|completed|complete)\b/i;
 const READY_STATUS = /\b(?:ready for (?:pickup|collection|delivery)|ready to ship)\b/i;
+const MATERIAL_ARRIVES =
+  /\b(?:package|parcel|shipment|materials?|stone|chain|item(?:s)?)\b[^.!?\n]{0,55}\b(?:arrived|came in|was delivered|was received|has arrived|has been delivered|has been received)\b|\b(?:received|got)\b[^.!?\n]{0,35}\b(?:the )?(?:package|parcel|shipment|materials?|stone|chain|item(?:s)?)\b/i;
 
 function operationalClauses(text: string): string[] {
   return text
@@ -104,6 +106,7 @@ export function classifySourceCommunication(
   const actor = input.actor;
   const outbound = input.direction === "outbound" || actor === "founder";
 
+  if (hasAffirmativeStatus(hay, MATERIAL_ARRIVES)) return "material_arrives";
   if (["vendor_shop", "founder", "client"].includes(actor)) {
     if (hasAffirmativeStatus(hay, COMPLETE_STATUS) && !/\b(?:will|when|once|if)\b/i.test(hay)) return "work_complete";
     if (hasAffirmativeStatus(hay, READY_STATUS) && !/\b(?:will|when|once|if)\b/i.test(hay)) return "work_ready";

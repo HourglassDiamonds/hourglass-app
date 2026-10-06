@@ -41,6 +41,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const view = initialView;
   const [sterlingText, setSterlingText] = useState("");
   const [sterlingProposal, setSterlingProposal] = useState<SterlingProposal | null>(null);
+  const [sterlingFeedback, setSterlingFeedback] = useState("");
   const [modifyOpen, setModifyOpen] = useState(false);
   const [deferOpen, setDeferOpen] = useState(false);
   const [mealEstimate, setMealEstimate] = useState<MealEstimate | null>(null);
@@ -156,8 +157,18 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   }
 
   function askSterling(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const proposal = proposeSterlingAdjustment(state, sterlingText, today);
-    setSterlingProposal(proposal);
+    event.preventDefault();
+    setSterlingFeedback("");
+    try {
+      const proposal = proposeSterlingAdjustment(state, sterlingText, today);
+      setSterlingProposal(proposal);
+      if (!proposal) {
+        setSterlingFeedback("I couldn’t identify which workout to change. Name the day and whether to restore, defer, replace, or skip it.");
+      }
+    } catch {
+      setSterlingProposal(null);
+      setSterlingFeedback("Sterling couldn’t prepare that adjustment. Nothing changed; please retry or use the workout controls above.");
+    }
   }
 
   function confirmSterling() {
@@ -295,6 +306,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         </> : <p>Completed, deferred, or consciously skipped sessions remain in the week history.</p>}
       </section>
       <section className={styles.card}><p className={styles.kicker}>Ask Sterling · adaptive coach</p><h2>What changed in real life?</h2><form className={styles.sterling} onSubmit={askSterling}><textarea value={sterlingText} onChange={(event) => setSterlingText(event.target.value)} placeholder="I got about four hours of sleep and I’m gassed. Skip the weights today. I’m going to ruck. Move the weights to tomorrow." required /><button className={styles.primary}>Review adjustment</button></form>
+        {sterlingFeedback ? <p role="status" aria-live="polite" className={styles.warning}>{sterlingFeedback}</p> : null}
         {sterlingProposal ? <div className={styles.proposal}><strong>Proposed — nothing has changed yet</strong><p>{sterlingProposal.summary}</p>{sterlingProposal.warnings.map((warning) => <p key={warning} className={styles.warning}>{warning}</p>)}<div className={styles.proposalGrid}>{sterlingProposal.nextSchedule.filter((item) => item.date >= today && item.status !== "deferred").slice(0, 5).map((item) => <div key={`${item.id}-${item.date}`}><span>{prettyDate(item.date)}</span><strong>{item.prescription.name}</strong><small>{item.prescription.intent} · {item.prescription.durationMinutes} min</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={confirmSterling}>Confirm changes</button><button onClick={() => setSterlingProposal(null)}>Reject</button></div></div> : null}
       </section>
       {latestRecovery ? <section className={styles.card}><p className={styles.kicker}>Today’s recovery context</p><h2>{latestRecovery.sleepHours ? `${latestRecovery.sleepHours.value}h sleep` : "Recovery logged"}{latestRecovery.fatigue ? ` · ${latestRecovery.fatigue.value} fatigue` : ""}</h2><p>Only supplied values are recorded. Missing WHOOP metrics remain blank.</p></section> : null}

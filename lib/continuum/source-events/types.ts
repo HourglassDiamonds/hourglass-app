@@ -41,6 +41,7 @@ export const SOURCE_COMMUNICATION_EVENT_CLASSES = [
   "workshop_started",
   "work_ready",
   "work_complete",
+  "material_arrives",
   "founder_correction",
   "unknown_communication",
 ] as const;

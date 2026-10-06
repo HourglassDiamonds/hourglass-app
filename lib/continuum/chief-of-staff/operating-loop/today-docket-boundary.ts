@@ -881,6 +881,17 @@ function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
         (!j.sourceRef && j.soleProjectJob && seed.projectId === j.projectId));
   })) return false;
   if (seed.packet?.projection) {
+    const projectionMs = Date.parse(seed.packet.projection.asOf ?? "");
+    const staleSourceOnly =
+      Number.isFinite(clock) &&
+      Number.isFinite(projectionMs) &&
+      clock - projectionMs > 120 * 24 * 60 * 60 * 1000 &&
+      !seed.job &&
+      !seed.projectId &&
+      !seed.packet.projection.provenance.some(
+        (row) => row.applied && row.origin === "founder_correction",
+      );
+    if (staleSourceOnly) return false;
     if (seed.packet.projection.stage === "complete") return false;
     if (seed.packet.projection.activeObligations.length === 0)
       return ["in_production", "ready"].includes(seed.packet.projection.stage);

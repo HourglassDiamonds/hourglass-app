@@ -89,6 +89,31 @@ describe("source communication classification", () => {
     );
   });
 
+  it("does not infer a vendor request from subject alone without chronology", () => {
+    assert.equal(
+      classifySourceCommunication({
+        actor: "founder",
+        direction: "outbound",
+        subject: "Re: HGD x Abbey-C026137",
+        authorOwnedText: "Checking on the revised rendering.",
+        hasAttachments: false,
+      }),
+      "unknown_communication",
+    );
+  });
+
+  it("a current package arrival is material evidence, not a nonblocking reply", () => {
+    assert.equal(
+      classifySourceCommunication({
+        actor: "client",
+        direction: "inbound",
+        subject: "Re: Shannon Hruza",
+        authorOwnedText: "The relevant package arrived today.",
+      }),
+      "material_arrives",
+    );
+  });
+
   it("headed to you fulfills a founder commitment", () => {
     assert.equal(
       classifySourceCommunication({
