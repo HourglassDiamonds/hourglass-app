@@ -48,3 +48,49 @@ test("refresh carries yesterday's unresolved workout into today and durably refl
   assert.equal(refreshed.schedule.filter((workout) => workout.date === "2026-10-06" && workout.replacesWorkoutId === yesterday.id).length, 1);
   assert.doesNotMatch(JSON.stringify(refreshed), /failed/i);
 });
+
+test("existing founder v2 state reconciles a skipped strength day and completed ruck exactly once", () => {
+  const prior = createInitialPersonalState("2026-10-05");
+  const strength = prior.schedule.find((workout) => workout.date === "2026-10-05")!;
+  const easyRun = prior.schedule.find((workout) => workout.date === "2026-10-06")!;
+  strength.status = "skipped";
+  strength.history.push({
+    at: "2026-10-05T23:00:00.000Z",
+    action: "skipped",
+    actor: "user",
+    note: "Skipped in the existing founder browser state.",
+  });
+  delete (prior as unknown as { appliedReconciliations?: string[] }).appliedReconciliations;
+
+  const parsed = parsePersonalState(JSON.stringify(prior), "2026-10-06");
+  const restored = parsed.schedule.find(
+    (workout) => workout.date === "2026-10-06" && workout.replacesWorkoutId === strength.id,
+  );
+  const ruck = parsed.schedule.find(
+    (workout) =>
+      workout.date === "2026-10-05" &&
+      workout.replacesWorkoutId === strength.id &&
+      workout.prescription.mode === "ruck",
+  );
+  assert.deepEqual(restored?.prescription, strength.prescription);
+  assert.equal(ruck?.status, "completed");
+  assert.notEqual(parsed.schedule.find((workout) => workout.id === easyRun.id)?.date, "2026-10-06");
+  assert.equal(parsed.schedule.find((workout) => workout.id === strength.id)?.status, "deferred");
+  assert.equal(parsed.appliedReconciliations.length, 1);
+
+  const refreshed = parsePersonalState(JSON.stringify(parsed), "2026-10-06");
+  assert.equal(
+    refreshed.schedule.filter(
+      (workout) => workout.date === "2026-10-06" && workout.replacesWorkoutId === strength.id,
+    ).length,
+    1,
+  );
+  assert.equal(
+    refreshed.schedule.filter(
+      (workout) => workout.date === "2026-10-05" && workout.prescription.mode === "ruck",
+    ).length,
+    1,
+  );
+  assert.equal(refreshed.appliedReconciliations.length, 1);
+  assert.doesNotMatch(JSON.stringify(refreshed), /failed/i);
+});

@@ -84,6 +84,7 @@ export function plannedWorkout(key: string): ScheduledWorkout {
 export function createInitialPersonalState(today = dateKey()): PersonalState {
   return {
     version: 2,
+    appliedReconciliations: [],
     schedule: Array.from({ length: 14 }, (_, offset) => plannedWorkout(shiftDate(today, offset))),
     sessions: [],
     recoveryEntries: [],

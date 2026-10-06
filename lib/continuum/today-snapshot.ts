@@ -6,7 +6,10 @@
 
 import type { CosTodayDocketView } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
 
-export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v6" as const;
+// Bump whenever reducer/presentation semantics change without a canonical-source
+// write. The version is part of snapshot compatibility; a bump forces one
+// synchronous reconstruction instead of serving a semantically stale payload.
+export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v7" as const;
 export const TODAY_SNAPSHOT_KEY = "founder_today_v1" as const;
 
 const DISPLAY_COMPATIBLE_READ_MODEL_VERSIONS = new Set<string>([

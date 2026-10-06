@@ -198,6 +198,16 @@ describe("persisted Today snapshot", () => {
     );
   });
 
+  it("invalidates the pre-current-truth v6 production snapshot even when its watermark matches", () => {
+    assert.equal(
+      decideSnapshotUse({
+        record: record("same-data", "continuum-today-read-model-v6"),
+        liveWatermark: "same-data",
+      }),
+      "miss",
+    );
+  });
+
   it("forces a synchronous rebuild instead of serving an obsolete model version", () => {
     const legacy = record("old", "continuum-today-read-model-v1");
     legacy.payload = {

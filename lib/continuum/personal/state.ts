@@ -1,5 +1,9 @@
 import { createInitialPersonalState, plannedWorkout, shiftDate } from "./program";
-import { carryYesterdayUnresolvedToToday } from "./adaptation";
+import {
+  carryYesterdayUnresolvedToToday,
+  FOUNDER_RUCK_ROLLOVER_RECONCILIATION,
+  reconcileFounderRuckRollover,
+} from "./adaptation";
 import type { PersonalState, ScheduledWorkout } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -21,6 +25,9 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
     if (!isRecord(value) || value.version !== 2) return fallback;
     return ensureSchedule({
       version: 2,
+      appliedReconciliations: Array.isArray(value.appliedReconciliations)
+        ? value.appliedReconciliations.filter((item): item is string => typeof item === "string").slice(0, 40)
+        : [],
       schedule: Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120) : [],
       sessions: Array.isArray(value.sessions) ? value.sessions as PersonalState["sessions"] : [],
       recoveryEntries: Array.isArray(value.recoveryEntries) ? value.recoveryEntries as PersonalState["recoveryEntries"] : [],
@@ -129,9 +136,23 @@ export function ensureSchedule(state: PersonalState, today: string): PersonalSta
     { ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) },
     today,
   );
+  let reconciled = rolled;
+  if (!rolled.appliedReconciliations.includes(FOUNDER_RUCK_ROLLOVER_RECONCILIATION)) {
+    const schedule = reconcileFounderRuckRollover(rolled.schedule, today);
+    if (schedule) {
+      reconciled = {
+        ...rolled,
+        schedule,
+        appliedReconciliations: [
+          ...rolled.appliedReconciliations,
+          FOUNDER_RUCK_ROLLOVER_RECONCILIATION,
+        ],
+      };
+    }
+  }
   return {
-    ...rolled,
-    schedule: carryYesterdayUnresolvedToToday(rolled.schedule, today),
+    ...reconciled,
+    schedule: carryYesterdayUnresolvedToToday(reconciled.schedule, today),
   };
 }
 

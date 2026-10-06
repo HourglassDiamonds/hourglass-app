@@ -55,6 +55,7 @@ test("yesterday ruck wording restores unresolved strength today and reflows the 
   const reflowedRun = confirmed.schedule.find((workout) => workout.id === easy5k.id);
   assert.deepEqual(moved?.prescription, strength.prescription);
   assert.equal(ruck?.prescription.intent, "easy");
+  assert.equal(ruck?.status, "completed");
   assert.notEqual(reflowedRun?.date, today);
   assert.equal(confirmed.schedule.filter((workout) => workout.date === today && workout.replacesWorkoutId === strength.id).length, 1);
   assert.doesNotMatch(JSON.stringify(confirmed), /failed/i);

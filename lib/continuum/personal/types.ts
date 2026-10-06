@@ -180,6 +180,7 @@ export type SterlingProposal = {
 
 export type PersonalState = {
   version: 2;
+  appliedReconciliations: string[];
   schedule: ScheduledWorkout[];
   sessions: WorkoutSession[];
   recoveryEntries: RecoveryEntry[];

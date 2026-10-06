@@ -26,7 +26,11 @@ function wantsRestoreYesterdayToday(command: string): boolean {
     /\b(?:workout|weights?|strength|session|skipped|missed)\b/i.test(command);
 }
 
-function recoveryRuck(base: ScheduledWorkout, command: string): ScheduledWorkout {
+function recoveryRuck(
+  base: ScheduledWorkout,
+  command: string,
+  now = new Date().toISOString(),
+): ScheduledWorkout {
   const prescription: WorkoutPrescription = {
     id: `recovery-ruck-${base.date}`,
     name: "Recovery-conscious ruck",
@@ -43,11 +47,11 @@ function recoveryRuck(base: ScheduledWorkout, command: string): ScheduledWorkout
     id: `sterling-${base.date}-recovery-ruck`,
     date: base.date,
     originalDate: base.date,
-    status: "planned",
+    status: "completed",
     prescription,
     replacesWorkoutId: base.id,
     provenance: ["sterling"],
-    history: [{ at: new Date().toISOString(), action: "replaced", actor: "sterling", note: `Proposed from founder command: ${command}` }],
+    history: [{ at: now, action: "completed", actor: "sterling", note: `Recorded from founder current truth: ${command}` }],
   };
 }
 
@@ -131,6 +135,65 @@ export function carryYesterdayUnresolvedToToday(
     return [...schedule];
   }
   return deferAndReflow(schedule, prior.id, today, now, "sterling");
+}
+
+export const FOUNDER_RUCK_ROLLOVER_RECONCILIATION =
+  "2026-10-06-missed-strength-ruck-rollover-v1";
+
+/**
+ * One-time reconciliation for the founder's already-persisted Oct 5 state.
+ * The earlier UI could store the missed strength occurrence as skipped or
+ * deferred, while the failed Review Adjustment stored neither the restored
+ * workout nor the completed ruck. Keep the scope exact so ordinary skips are
+ * never reinterpreted as rucks.
+ */
+export function reconcileFounderRuckRollover(
+  schedule: readonly ScheduledWorkout[],
+  today: string,
+  now = new Date().toISOString(),
+): ScheduledWorkout[] | null {
+  if (today !== "2026-10-06") return null;
+  const yesterday = shiftDate(today, -1);
+  const prior = schedule.find(
+    (item) =>
+      item.date === yesterday &&
+      item.prescription.domain === "strength" &&
+      ["unresolved", "skipped", "deferred"].includes(item.status),
+  );
+  const currentRun = schedule.find(
+    (item) =>
+      item.date === today &&
+      item.prescription.id === "easy-run" &&
+      ["planned", "unresolved"].includes(item.status),
+  );
+  if (!prior || !currentRun) return null;
+
+  const alreadyRestored = schedule.some(
+    (item) =>
+      item.date === today &&
+      item.replacesWorkoutId === prior.id &&
+      !["deferred", "skipped", "replaced"].includes(item.status),
+  );
+  const next = alreadyRestored
+    ? schedule.map(cloneWorkout)
+    : deferAndReflow(schedule, prior.id, today, now, "sterling");
+  if (
+    !next.some(
+      (item) =>
+        item.date === yesterday &&
+        item.replacesWorkoutId === prior.id &&
+        item.prescription.mode === "ruck",
+    )
+  ) {
+    next.push(
+      recoveryRuck(
+        prior,
+        "We skipped yesterday and rucked instead; restore the missed strength workout today.",
+        now,
+      ),
+    );
+  }
+  return next.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }
 
 export function proposeSterlingAdjustment(state: PersonalState, command: string, today: string): SterlingProposal | null {
