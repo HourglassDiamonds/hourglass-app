@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "include": [
+    "next-env.d.ts",
+    "app/executive-dashboard/concierge/personal/**/*.ts",
+    "app/executive-dashboard/concierge/personal/**/*.tsx",
+    "lib/continuum/personal/**/*.ts"
+  ],
+  "exclude": ["node_modules"]
+}
