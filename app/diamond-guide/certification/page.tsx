@@ -170,7 +170,8 @@ export default function CertificationPage() {
               >
                 Diamond Intelligence
               </Link>{" "}
-              can help translate a report into practical insight. For why
+                can help translate an original GIA, IGI, or supported GCAL PDF
+                for a round brilliant into practical insight. For why
               trained judgment still matters beyond the grades, read{" "}
               <Link
                 href="/diamond-guide/why-work-with-a-graduate-gemologist"

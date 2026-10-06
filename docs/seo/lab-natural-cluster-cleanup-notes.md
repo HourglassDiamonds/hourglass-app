@@ -35,7 +35,7 @@ Execute after monitoring flagship performance and search absorption.
 | Source slug | Target | Action | Why | Content to preserve |
 |-------------|--------|--------|-----|---------------------|
 | `are-lab-diamonds-a-good-choice` | `natural-vs-lab-diamonds` | **Merge** (redirect later) | Overlapping purchase-decision intent; flagship now covers when lab fits and satisfaction framing | "Who tends to be happiest" and "who may not be" H2s; long-term satisfaction habits |
-| `do-lab-grown-diamonds-have-certificates` | `natural-vs-lab-diamonds` | **Stay supporting** (defer merge) | Cert cluster owns report-reading flow; Phase 2.1 already links both ways | GIA June 2024 lab-grown grading shift note; lab report field list |
+| `do-lab-grown-diamonds-have-certificates` | `natural-vs-lab-diamonds` | **Stay supporting** (defer merge) | Cert cluster owns report-reading flow; Phase 2.1 already links both ways | GIA October 2025 laboratory-grown service launch note; lab report field list |
 | `fluorescence-in-natural-vs-lab-diamonds` | `natural-vs-lab-diamonds` | **Stay supporting** | Distinct fluorescence × origin intent; thin but not duplicate | Natural vs lab growth fluorescence differences; report documentation |
 
 **Do not redirect yet:**
@@ -52,7 +52,7 @@ Execute after monitoring flagship performance and search absorption.
 
 **If merging `do-lab-grown-diamonds-have-certificates` later:**
 
-1. Fold GIA June 2024 note into flagship certification section (already partially referenced)
+1. Keep the GIA October 2025 service distinction aligned across the flagship and supporting certification article
 2. Redirect to flagship OR to `how-to-read-a-diamond-certificate` depending on query intent (cert vs origin)
 3. Prefer keeping cert URL live with canonical to cert flagship if cert queries dominate
 

@@ -43,7 +43,7 @@ export const CONSUMER_COPY = {
   ingestSectionSupportingCopy:
     "Diamond Intelligence is most reliable when it reads the lab report itself.",
   uploadBestPracticeLine:
-    "For best results, use the original PDF from GIA, IGI, or GCAL 8X.",
+    "Use an original GIA, IGI, or supported GCAL PDF for a round brilliant diamond.",
   uploadMobileHelperLine:
     "Mobile works when the PDF is already saved in Files. If you only see ‘Save to Photos,’ use Concierge instead.",
   uploadDesktopHelperLine:

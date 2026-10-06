@@ -56,6 +56,9 @@ export type Article = {
   visualStatus?: ArticleVisualStatus;
 };
 
+const DIAMOND_INTELLIGENCE_SUPPORTED_REPORT =
+  "an original GIA, IGI, or supported GCAL grading report PDF for a round brilliant";
+
 export const articles: Article[] = [
 
     {
@@ -79,7 +82,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Although the laboratory landscape continues to evolve, AGS reports remain part of the broader conversation around diamond cut evaluation." },
 
     { type: "paragraph", text: "AGS diamond certification helped advance the way the industry evaluates cut quality and light behavior. By combining proportion measurements with optical analysis, the reports provided additional insight into how diamonds perform visually." },
-    { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances. Laboratories such as GCAL have since extended that performance-oriented approach. See [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how modern reports address light behavior. If you hold an AGS or similar performance-oriented report, you can [upload a grading report to Diamond Intelligence](/diamond-intelligence) for a structured read of how those measurements may translate in practice." },
+    { type: "paragraph", text: "Understanding AGS certification can help buyers appreciate how grading methods continue to evolve as gemology advances. Laboratories such as GCAL have since extended that performance-oriented approach. See [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how modern reports address light behavior. If you hold a historical AGS report, [begin a private conversation](/concierge) for a report-specific review." },
   ],
   related: [
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
@@ -113,7 +116,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How to Read Reports With Lab Context" },
     { type: "paragraph", text: "Start with laboratory credibility for your specific purchase. Then read proportions and the inclusion plot, not just the summary. [What is a diamond certificate](/diamond-guide/what-is-a-diamond-certificate) covers what the document includes. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where performance actually lives on the page." },
-    { type: "paragraph", text: "When you have a report number in hand, [Diamond Intelligence](/diamond-intelligence) can help you interpret that certificate in practical terms rather than in abstract grade language alone." },
+    { type: "paragraph", text: `A report number can help you verify a document with the issuing laboratory, but it is not enough for automated interpretation. Start with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) supports a structured document review.` },
   ],
   related: [
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
@@ -226,7 +229,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Misconceptions Worth Clearing Up" },
     { type: "paragraph", text: "Lab diamonds are not simulants. They are not cubic zirconia or moissanite dressed up in marketing language. They test as diamond because they are diamond." },
     { type: "paragraph", text: "They are not automatically superior optically either. Origin does not replace cut quality, inclusion placement, or side-by-side comparison. A mediocre lab stone is still mediocre." },
-    { type: "paragraph", text: "They do not remove the need for a grading report or informed review. Certificates, inclusion plots, and proportion data still matter. [Diamond Intelligence](/diamond-intelligence) can help interpret a specific lab-grown report before you commit." },
+    { type: "paragraph", text: `They do not remove the need for a grading report or informed review. Certificates, inclusion plots, and proportion data still matter. If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret supported report data before you commit.` },
 
     { type: "heading", text: "Long-Term Satisfaction" },
     { type: "paragraph", text: "The buyers who stay happy tend to share a few traits. They chose lab origin consciously, not defensively. They prioritized how the diamond looked on the hand over how the specification read online. They held the stone to the same performance standard they would demand from a natural diamond." },
@@ -382,7 +385,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "A Practical Decision Path" },
     { type: "paragraph", text: "Set your shape and setting first. Decide your minimum eye-clean standard. Compare stones that meet that standard side by side, prioritizing cut. Use the certificate to explain differences, not to replace viewing. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where inclusion plots and grades fit on the page." },
-    { type: "paragraph", text: "If inclusion placement is hard to read from a plot alone, [Diamond Intelligence](/diamond-intelligence) or a [private conversation](/concierge) can clarify whether a specific stone is right for your ring. The goal is confidence on the hand, not anxiety under magnification." },
+    { type: "paragraph", text: "A plot cannot establish whether a diamond will look eye clean in person or work in a particular setting. A [private conversation](/concierge) can help you arrange the visual review that question requires. The goal is confidence on the hand, not anxiety under magnification." },
   ],
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
@@ -459,7 +462,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How Cut Quality Is Evaluated" },
     { type: "paragraph", text: "Gemological laboratories evaluate cut quality by analyzing the proportions, symmetry, and polish of a diamond. These characteristics influence how efficiently the stone reflects light." },
     { type: "paragraph", text: "For round diamonds, grading systems typically include categories such as Excellent, Very Good, Good, Fair, and Poor. Diamonds with higher cut grades generally demonstrate stronger light performance. Laboratories such as GCAL have pushed further into performance-oriented reporting. See [GCAL 8X diamond certification explained](/diamond-guide/gcal-8x-diamond-certification-explained) for how that approach differs from standard cut grades." },
-    { type: "paragraph", text: "While grading reports provide helpful guidance, observing the diamond directly can still reveal subtle differences in brightness and sparkle. [Diamond Intelligence](/diamond-intelligence) can help you interpret how proportion data on a report may translate to those visual qualities." },
+    { type: "paragraph", text: `While grading reports provide helpful guidance, observing the diamond directly can still reveal subtle differences in brightness and sparkle. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret the documented proportions and performance indicators.` },
 
     { type: "heading", text: "The Balance of Brilliance, Fire, and Scintillation" },
     { type: "paragraph", text: "Strong light performance requires a balance between several visual effects." },
@@ -544,7 +547,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Whether an inclusion can be seen without magnification depends on several factors." },
     { type: "paragraph", text: "In diamonds with higher clarity grades, such as VS or VVS, inclusions are usually too small to detect with the naked eye. Even under magnification, they may be difficult to locate." },
     { type: "paragraph", text: "In diamonds with lower clarity grades, particularly SI2 or Included grades, inclusions may sometimes become visible during normal viewing." },
-    { type: "paragraph", text: "The position of the inclusion plays an important role as well. Inclusions directly beneath the table facet may be easier to notice than those located near the edge of the diamond. When inclusion placement is difficult to assess from a report alone, [Diamond Intelligence](/diamond-intelligence) can help clarify whether a stone is likely to read eye clean for your setting." },
+    { type: "paragraph", text: "The position of the inclusion plays an important role as well. Inclusions directly beneath the table facet may be easier to notice than those located near the edge of the diamond. A report plot cannot prove that a stone is eye clean; [begin a private conversation](/concierge) when you want a specific diamond reviewed in images, video, or person." },
 
     { type: "heading", text: "How Diamond Cut Influences Visibility" },
     { type: "paragraph", text: "Cut quality can influence how noticeable inclusions appear." },
@@ -669,7 +672,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Choosing a Beautiful Cushion Diamond" },
     { type: "paragraph", text: "When evaluating cushion diamonds, several visual elements deserve attention. Cut quality and proportion matter differently by shape, and [what is diamond cut](/diamond-guide/what-is-diamond-cut) explains why lab cut grades alone rarely describe cushion appearance." },
     { type: "paragraph", text: "First is overall shape. The diamond should appear balanced, with smooth curves and evenly rounded corners." },
-    { type: "paragraph", text: "Next is brilliance. Whether the stone has a modern brilliant pattern or larger antique-style facets, the diamond should still appear lively and bright under light. [Diamond Intelligence](/diamond-intelligence) can help when you are comparing report measurements against how a cushion actually returns light." },
+    { type: "paragraph", text: "Next is brilliance. Whether the stone has a modern brilliant pattern or larger antique-style facets, the diamond should still appear lively and bright under light. Because cushion performance requires shape-specific visual review, [begin a private conversation](/concierge) when you want to compare candidates." },
     { type: "paragraph", text: "Symmetry is also important. The facets should align well, and the reflections within the diamond should feel balanced rather than uneven." },
     { type: "paragraph", text: "Because cushion diamonds vary widely in appearance, viewing multiple stones often helps reveal which style feels most appealing." },
 
@@ -927,7 +930,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "It feels quieter as you go, not louder. Each conversation should narrow the field and sharpen your criteria. If you are more confused after three appointments than you were after one, something in the process is working against you." },
 
     { type: "heading", text: "If You Already Have a Report in Hand" },
-    { type: "paragraph", text: "Many buyers arrive with a grading report before they have seen the diamond, or with a link to a stone they are considering online. That is a reasonable place to start. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through the report section by section. The next step is interpretation: what do these measurements suggest about how the diamond will perform, and what do they leave out? [Diamond Intelligence](/diamond-intelligence) was built for that translation. It does not replace judgment. It gives you a clearer starting point before you compare stones in person or ask someone experienced to weigh in." },
+    { type: "paragraph", text: `Many buyers arrive with a grading report before they have seen the diamond, or with a link to a stone they are considering online. That is a reasonable place to start. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through the report section by section. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) provides a structured interpretation of the document. It does not replace judgment or visual review.` },
 
     { type: "paragraph", text: "The best jewelers are not trying to impress you with terminology. They are trying to make sure you will still love the diamond on an ordinary Tuesday, long after the excitement of the proposal has settled into everyday life. That is a higher bar than finding a stone that looks impressive under a spotlight for thirty seconds. It is also the one worth holding yourself to — and when you are ready for that kind of conversation, you can [begin a conversation](/concierge) at your own pace." },
   ],
@@ -1100,7 +1103,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Advisors Think Through Tradeoffs" },
     { type: "paragraph", text: "Start with performance. Then ask what you can see at arm's length in the ring you plan to build. Compare a few stones side by side rather than comparing grades in a spreadsheet. Ask where budget would go if you shifted one clarity grade or one color grade. Notice whether anyone is steering you toward inventory instead of toward what you actually perceive." },
-    { type: "paragraph", text: "If you are working from listings, use the report as a starting point, not a finish line. [Diamond Intelligence](/diamond-intelligence) can help translate proportion and grade data into practical context for a specific stone. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) can tell you plainly when a lower grade serves you better. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers the comparison habits that make these tradeoffs visible." },
+    { type: "paragraph", text: `If you are working from listings, use the report as a starting point, not a finish line. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate documented proportions and grades into practical context. A [Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) can tell you plainly when a lower grade serves you better. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers the comparison habits that make these tradeoffs visible.` },
     { type: "paragraph", text: "Color versus clarity is not a moral test. It is a budget question with a visual answer. Choose what you can see, protect what changes how light moves, and let the rest of the alphabet serve you rather than govern you." },
   ],
   related: [
@@ -1498,7 +1501,7 @@ export const articles: Article[] = [
       { type: "paragraph", text: "Start with the wearing experience you want: size presence, sparkle character, simplicity or halo, metal color. Then work backward to grades, not forward from a filter preset." },
       { type: "paragraph", text: "Set a cut standard first. For rounds, that usually means prioritizing stones that perform strongly in person, not only on paper. For fancy shapes, it means evaluating proportions and symmetry visually because grading is less standardized." },
       { type: "paragraph", text: "Find eye clean at the lowest clarity that satisfies your shape and size. Choose color with the setting in mind, not in isolation. Size the carat weight last, using face-up measurements and in-person comparison rather than the number alone." },
-      { type: "paragraph", text: "If you are comparing listings online, treat price per carat as a clue, not a verdict. Two stones at the same price can deliver entirely different value depending on how they were cut and whether the grades describe what you will see. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the starting point for that review. [Diamond Intelligence](/diamond-intelligence) can help interpret a specific report before you commit. Side-by-side viewing still wins when you can manage it." },
+      { type: "paragraph", text: `If you are comparing listings online, treat price per carat as a clue, not a verdict. Two stones at the same price can deliver entirely different value depending on how they were cut and whether the grades describe what you will see. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the starting point. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret the document before you commit. Side-by-side viewing still wins when you can manage it.` },
 
       { type: "heading", text: "How to Know You Got It Right" },
       { type: "paragraph", text: "You can explain why you chose this diamond without reciting grades. You know what you traded and what you protected. You are not secretly hoping a higher clarity or color grade will rescue a stone that looked flat when you compared it." },
@@ -1880,23 +1883,23 @@ export const articles: Article[] = [
   category: "Certification",
   body: [
     { type: "heading", text: "Certification for Laboratory-Grown Diamonds" },
-    { type: "paragraph", text: "Laboratory-grown diamonds receive grading reports using many of the same fields as natural stones. For how to read those fields in practice, see [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). For origin and value context, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
-    { type: "paragraph", text: "These certificates describe the diamond’s carat weight, color, clarity, and proportions in a standardized report." },
-    { type: "paragraph", text: "Although the diamond is created in a laboratory rather than formed in the earth, the grading process focuses on the same visible and structural features." },
+    { type: "paragraph", text: "Laboratory-grown diamonds can receive independent documentation from gemological laboratories, but the document and terminology depend on the issuing laboratory and date. For how to read report fields in practice, see [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). For origin and value context, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds)." },
+    { type: "paragraph", text: "IGI laboratory-grown reports commonly document carat weight, color, clarity, proportions, and laboratory-grown origin. GIA's current quality-assessment service uses a different format and terminology for qualifying colorless-to-near-colorless laboratory-grown diamonds." },
+    { type: "paragraph", text: "The purpose remains independent identification and documentation, but a current GIA assessment should not be described as if it uses the same color and clarity nomenclature as a natural-diamond grading report." },
 
     { type: "heading", text: "What Information Appears on a Lab Diamond Report" },
-    { type: "paragraph", text: "Certificates for laboratory-grown diamonds include many of the same measurements found on natural diamond reports. These include carat weight, color grade, clarity grade, and details about the diamond’s proportions." },
-    { type: "paragraph", text: "The report will also identify the diamond as laboratory-grown and may describe the growth method used during its creation." },
+    { type: "paragraph", text: "Laboratory-grown documents may include measurements, proportions, finish information, origin disclosure, and—depending on the laboratory and report generation—color and clarity grades or a broader quality assessment." },
+    { type: "paragraph", text: "The document identifies the diamond as laboratory-grown. Some report formats may also describe the growth method or post-growth treatment." },
     { type: "paragraph", text: "This distinction ensures that the origin of the diamond is clearly documented." },
-    { type: "paragraph", text: "*As of June 2024, GIA has begun shifting how laboratory-grown diamonds are described, moving away from traditional color and clarity grading toward broader classifications such as “premium” and “standard.” This reflects an evolving approach to evaluating lab-grown diamonds within the industry." },
+    { type: "paragraph", text: "GIA announced a revised service for D-to-Z laboratory-grown diamonds in 2025 and launched it on October 1, 2025. Under the current service, qualifying loose colorless-to-near-colorless laboratory-grown diamonds receive an overall Premium or Standard quality assessment instead of the color and clarity nomenclature used for natural diamonds. Older GIA laboratory-grown reports may use the earlier reporting format. See [GIA's service announcement](https://www.gia.edu/gia-news-press/updated-laboratory-grown-diamond-services-to-launch-october-1) for the current criteria and scope." },
 
     { type: "heading", text: "Why Certification Still Matters" },
     { type: "paragraph", text: "Certification remains important for laboratory-grown diamonds because it provides independent verification of the diamond’s characteristics." },
     { type: "paragraph", text: "Even though lab-grown diamonds are produced using advanced technology, variations in quality can still occur. Certification allows buyers to compare stones using standardized grading information." },
     { type: "paragraph", text: "This transparency helps buyers understand the qualities of the diamond they are selecting." },
 
-    { type: "paragraph", text: "Laboratory-grown diamonds can receive certification just like natural diamonds. These reports provide detailed measurements describing the stone’s characteristics and confirming its origin." },
-    { type: "paragraph", text: "For buyers exploring both natural and laboratory-grown options, certification offers a clear and consistent reference point. When you have a lab-grown report in hand, [Diamond Intelligence](/diamond-intelligence) can help you review how its grading details may translate to everyday appearance. For origin and buyer decision context beyond paperwork, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds). [Begin the conversation](/concierge) when you want a Graduate Gemologist to review a specific report with you." },
+    { type: "paragraph", text: "Laboratory-grown diamonds can receive independent laboratory documentation, but compare like with like: the issuing laboratory, service, terminology, and report date all matter." },
+    { type: "paragraph", text: `For buyers exploring both natural and laboratory-grown options, documentation provides a useful reference point. If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret its supported data. For origin and buyer decision context beyond paperwork, see [natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds). [Begin the conversation](/concierge) when you want a Graduate Gemologist to review a different report or the diamond itself.` },
     
   ],
   related: [
@@ -1968,7 +1971,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How Jewelers Evaluate Fancy Shape Cut Quality" },
     { type: "paragraph", text: "Since fancy shapes do not receive a formal cut grade, evaluating their beauty requires a slightly different approach, one that often begins with [diamond cut versus diamond shape](/diamond-guide/diamond-cut-vs-diamond-shape) to separate outline from craftsmanship." },
     { type: "paragraph", text: "Experts often begin by looking at the diamond’s overall proportions, including length-to-width ratio, depth percentage, and table size. These measurements help indicate whether the diamond’s structure is balanced. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where those fields appear when a cut grade does not." },
-    { type: "paragraph", text: "The next step is visual evaluation. Jewelers examine how the diamond reflects light, looking for brightness, contrast patterns, and overall liveliness. [Diamond Intelligence](/diamond-intelligence) can help when you want report proportions and light-performance context together." },
+    { type: "paragraph", text: "The next step is visual evaluation. Jewelers examine how the diamond reflects light, looking for brightness, contrast patterns, and overall liveliness. Because fancy shapes require shape-specific visual review, [begin a private conversation](/concierge) when you want help comparing candidates." },
     { type: "paragraph", text: "Certain issues, such as dark areas or uneven light patterns, may suggest that the diamond’s proportions are less effective." },
 
     { type: "heading", text: "The Role of Personal Preference" },
@@ -2165,7 +2168,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For buyers who value maximum sparkle, Excellent cut is often the safest choice." },
 
     { type: "paragraph", text: "Excellent and Very Good cut diamonds both represent high-quality stones. The difference between them lies in how closely the diamond’s proportions align with the ideal range for light performance." },
-    { type: "paragraph", text: "While the visual distinction may be subtle in many cases, cut remains one of the most important factors in determining how a diamond will look once it is set and worn. Proportion details on the report often explain those differences; [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) and [Diamond Intelligence](/diamond-intelligence) help translate measurements into practical questions." },
+    { type: "paragraph", text: `While the visual distinction may be subtle in many cases, cut remains one of the most important factors in determining how a diamond will look once it is set and worn. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) explains the fields. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate documented measurements into practical questions.` },
     
   ],
   related: [
@@ -2202,7 +2205,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "When You Need Extra Help" },
     { type: "paragraph", text: "Inclusion plots are useful, but they do not show you how a feature behaves in your halo, solitaire, or bezel. If you are deciding between two stones with similar grades and different plots, side-by-side viewing is the tiebreaker." },
-    { type: "paragraph", text: "When the plot alone is not enough, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where clarity grades and inclusion maps appear. [Diamond Intelligence](/diamond-intelligence) or a [private conversation](/concierge) can clarify whether a specific stone is truly eye clean for your ring. The goal is confidence you can feel, not a grade you can defend under a loupe." },
+    { type: "paragraph", text: "When the plot alone is not enough, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where clarity grades and inclusion maps appear. A [private conversation](/concierge) can arrange the image, video, or in-person review needed to judge whether a specific stone is truly eye clean for your ring. The goal is confidence you can feel, not a grade you can defend under a loupe." },
   ],
   related: [
     { title: "What is Diamond Clarity", href: "/diamond-guide/what-is-diamond-clarity" },
@@ -2236,7 +2239,7 @@ export const articles: Article[] = [
 
     { type: "paragraph", text: "Whether a diamond is natural or lab-grown, fluorescence is documented on grading reports issued by gemological laboratories. The report will typically describe the intensity of fluorescence using categories such as none, faint, medium, strong, or very strong. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where that line lives on the page." },
 
-    { type: "paragraph", text: "Understanding this characteristic helps buyers interpret grading reports for both natural and laboratory-grown diamonds. When you have a specific report in hand, [Diamond Intelligence](/diamond-intelligence) can help you review how its fluorescence grade fits the rest of the stone. For buying guidance, see [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond)." },
+    { type: "paragraph", text: `Understanding this characteristic helps buyers interpret grading reports for both natural and laboratory-grown diamonds. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can place a documented fluorescence grade in report context. For buying guidance, see [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond).` },
     
   ],
   related: [
@@ -2306,7 +2309,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "While not as widely encountered as some larger laboratories, GCAL reports tend to appear in more curated or performance-driven selections." },
 
     { type: "paragraph", text: "GCAL 8X certification offers a more performance-focused perspective on diamond grading. By combining traditional grading methods with detailed light analysis, the report provides additional insight into how a diamond will actually appear." },
-    { type: "paragraph", text: "For buyers who want to understand both the structure and visual performance of a diamond, GCAL certification can provide useful context when comparing options. You can upload a GCAL report to [Diamond Intelligence](/diamond-intelligence) for a structured review of its performance-oriented grading details." },
+    { type: "paragraph", text: `For buyers who want to understand both the structure and visual performance of a diamond, GCAL certification can provide useful context when comparing options. If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, upload it to [Diamond Intelligence](/diamond-intelligence) for a structured review of supported performance-oriented data.` },
     
   ],
   related: [
@@ -2332,7 +2335,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "A GIA diamond certificate provides an independent assessment of a diamond’s measurable qualities. Because the organization operates independently from retailers, its reports are designed to provide consistent and unbiased grading." },
 
     { type: "heading", text: "What a GIA Report Includes" },
-    { type: "paragraph", text: "A GIA certificate includes detailed information about a diamond’s physical and visual characteristics. The report records the diamond’s carat weight, color grade, clarity grade, and cut grade when applicable." },
+    { type: "paragraph", text: "A GIA natural-diamond grading report records carat weight, color grade, clarity grade, and cut grade when applicable. GIA laboratory-grown documents must be read according to their service and issue date: the current colorless-to-near-colorless quality assessment uses Premium or Standard terminology rather than natural-diamond color and clarity nomenclature." },
     { type: "paragraph", text: "Beyond the core grading categories, the report also includes measurements such as table percentage, depth percentage, crown angle, pavilion angle, and girdle thickness. These details help explain how the diamond is proportioned and how it may interact with light." },
     { type: "paragraph", text: "Most GIA reports also include a plotted diagram showing the diamond’s inclusions and identifying characteristics, along with a unique report number that can often be laser inscribed on the diamond’s girdle. Fluorescence, when present, appears as its own line on the report; [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains that field." },
 
@@ -2342,7 +2345,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For many engagement ring buyers, choosing a GIA-certified diamond provides reassurance that the grading has been performed using widely recognized standards." },
 
     { type: "paragraph", text: "GIA diamond certification provides a clear and detailed description of a diamond’s measurable characteristics. By documenting the stone’s qualities using established grading standards, the report allows buyers to compare diamonds more confidently." },
-    { type: "paragraph", text: "Understanding how GIA certification works can make the diamond selection process far more transparent and easier to navigate. If you already have a GIA report in hand, [Diamond Intelligence](/diamond-intelligence) can help translate those measurements into practical performance insight." },
+    { type: "paragraph", text: `Understanding the specific GIA document in hand makes the selection process more transparent. If it is ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate supported measurements into practical performance context.` },
     
   ],
   related: [
@@ -2473,7 +2476,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How Laboratories Grade Diamond Cut" },
     { type: "paragraph", text: "Major gemological laboratories evaluate cut quality by examining proportions, symmetry, and polish. These factors influence how effectively the diamond handles light." },
     { type: "paragraph", text: "For round brilliant diamonds, grading systems often range from Excellent to Poor. Diamonds with higher cut grades generally demonstrate stronger light performance and more balanced visual effects." },
-    { type: "paragraph", text: "Although grading reports provide useful guidance, observing the diamond in person can still reveal important differences in how it interacts with light. Uploading a report to [Diamond Intelligence](/diamond-intelligence) can offer a structured starting point before you compare stones side by side." },
+    { type: "paragraph", text: `Although grading reports provide useful guidance, observing the diamond in person can still reveal important differences in how it interacts with light. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) offers a structured document review before you compare stones side by side.` },
 
     { type: "heading", text: "Why Cut Should Be a Priority for Buyers" },
     { type: "paragraph", text: "Because cut influences every aspect of a diamond’s appearance, many experts recommend prioritizing it when selecting a stone. A diamond with excellent cut quality can maximize the visual impact of its size and clarity." },
@@ -2703,8 +2706,8 @@ export const articles: Article[] = [
     { type: "paragraph", text: "They also cannot tell you whether this particular stone is the right use of your budget. That requires tradeoff thinking: where to protect performance, where to accept a lower grade, whether origin matters to you personally. [Our Approach](/our-approach) at Hourglass treats the report as the opening of that conversation, not the end." },
 
     { type: "heading", text: "When Diamond Intelligence Helps" },
-    { type: "paragraph", text: "When you have a specific report in hand, [Diamond Intelligence](/diamond-intelligence) can help translate measurements into performance context. Upload the certificate or enter the report details. Use it to prepare sharper questions before you view stones in person. It supports judgment. It does not replace your eyes or a gemologist when the purchase is significant." },
-    { type: "paragraph", text: "Diamond Intelligence is especially useful when you are comparing two similar summaries, reviewing a fancy shape without a cut grade, or trying to understand whether proportions sit in a strong range before you travel to see a stone." },
+    { type: "paragraph", text: `When you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate supported measurements into performance context. Upload the original PDF rather than entering a report number, screenshot, or listing link. Use it to prepare sharper questions before you view stones in person. It supports judgment; it does not replace your eyes or a gemologist.` },
+    { type: "paragraph", text: "Fancy shapes, historical AGS documents, HRD reports, and questions about eye cleanliness require shape-specific or visual review. Use the relevant Guide article for background or [begin a private conversation](/concierge) for a report and stone review." },
 
     { type: "heading", text: "When a Private Conversation Makes Sense" },
     { type: "paragraph", text: "Some decisions stay easier in conversation. If two reports look alike but prices diverge, if you are unsure about inclusion placement in your setting, or if you want a second opinion before a major purchase, a calm review with a gemologist can save regret later." },
@@ -2724,7 +2727,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Match laboratory and report numbers to the stones. Compare proportions and plots, not only the summary line. Note fluorescence and measurements. Then view the diamonds side by side. Reports narrow the field. Comparison in person resolves what paper cannot." },
 
     { type: "heading", text: "When should you use Diamond Intelligence?" },
-    { type: "paragraph", text: "When you have a report in hand and want help translating grades and proportions into practical context before you buy or compare stones. It is a preparation tool, not a substitute for viewing the diamond or speaking with a gemologist on a significant purchase." },
+    { type: "paragraph", text: "Use it when you have an original GIA, IGI, or supported GCAL grading report PDF for a round brilliant and want help translating supported grades and proportions into practical context. It is a preparation tool, not a substitute for viewing the diamond or speaking with a gemologist." },
 
     { type: "heading", text: "When should you ask a Graduate Gemologist?" },
     { type: "paragraph", text: "When two reports look alike but stones do not, when inclusion placement is unclear for your setting, when fancy-shape proportions are hard to interpret, or when you want independent judgment before you commit. Trained review reads for performance and daily wear, not for memorizing field names." },
@@ -2756,7 +2759,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Buyers researching diamonds may encounter HRD certification when reviewing stones sourced through European markets." },
 
     { type: "paragraph", text: "HRD diamond certification offers an independent evaluation of a diamond’s measurable characteristics. By documenting grading details and structural features, the report provides a consistent reference for understanding diamond quality." },
-    { type: "paragraph", text: "For buyers exploring international diamond sources, familiarity with HRD certification can provide useful context when reviewing grading reports. [Diamond Intelligence](/diamond-intelligence) offers a straightforward way to review a specific HRD report before you compare stones side by side." },
+    { type: "paragraph", text: "For buyers exploring international diamond sources, familiarity with HRD certification can provide useful context when reviewing grading reports. Diamond Intelligence does not currently support HRD reports; [begin a private conversation](/concierge) when you want a specific HRD document and stone reviewed before comparing candidates." },
     
   ],
   related: [
@@ -2797,7 +2800,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Why Proportions Alone Do Not Tell the Whole Story" },
     { type: "paragraph", text: "While proportion ranges are helpful guidelines, they do not guarantee beauty on their own. A diamond’s appearance also depends on how the facets are aligned and polished." },
     { type: "paragraph", text: "Two diamonds may have similar measurements yet perform differently because of small variations in symmetry or cutting precision." },
-    { type: "paragraph", text: "For this reason, many experts recommend looking at both the cut grade and the proportions together when evaluating a diamond. If you have a grading report in hand, [Diamond Intelligence](/diamond-intelligence) can help you see how those proportion measurements may influence light performance." },
+    { type: "paragraph", text: `For this reason, many experts recommend looking at both the cut grade and the proportions together when evaluating a diamond. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret the documented proportion measurements and performance indicators.` },
     { type: "paragraph", text: "Proportions provide useful insight, but they are only one part of the overall picture." },
 
     { type: "paragraph", text: "Ideal proportions help a diamond capture and reflect light in ways that create brightness, fire, and sparkle. When the measurements of a diamond are balanced carefully, the stone can appear lively and full of life." },
@@ -2832,7 +2835,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "For buyers researching diamonds, understanding IGI certification helps place these reports within the broader landscape of diamond grading." },
 
     { type: "paragraph", text: "IGI diamond certification provides documented grading information about a diamond’s measurable characteristics. Like other laboratory reports, it offers an independent reference describing the stone’s qualities." },
-    { type: "paragraph", text: "Understanding the differences between certification labs can help buyers interpret diamond reports more clearly during the selection process. If you are reviewing an IGI report, [Diamond Intelligence](/diamond-intelligence) offers a straightforward way to explore how the grading details may translate to real-world appearance." },
+    { type: "paragraph", text: `Understanding the differences between certification labs can help buyers interpret diamond reports more clearly during the selection process. If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) offers a structured interpretation of its supported grading details.` },
     
   ],
   related: [
@@ -2873,7 +2876,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Most buyers eventually choose a balance among all four factors based on personal preference and budget." },
 
     { type: "paragraph", text: "Cut is often considered the most important of the Four Cs because it directly influences how a diamond interacts with light. A well-cut diamond appears brighter, more lively, and more visually appealing." },
-    { type: "paragraph", text: "While color, clarity, and carat weight still play important roles, the craftsmanship of the cut is what ultimately brings a diamond to life. When you are comparing reports, [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where proportion data lives, and [Diamond Intelligence](/diamond-intelligence) can help interpret what those numbers suggest about performance." },
+    { type: "paragraph", text: `While color, clarity, and carat weight still play important roles, the craftsmanship of the cut is what ultimately brings a diamond to life. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where proportion data lives. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret supported performance indicators.` },
     
   ],
   related: [
@@ -2891,7 +2894,7 @@ export const articles: Article[] = [
   body: [
     { type: "paragraph", text: "The balanced overview is in [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). For a practical helps-versus-hurts framework, see [when fluorescence improves a diamond](/diamond-guide/when-fluorescence-improves-a-diamond)." },
     { type: "heading", text: "Why Fluorescence Raises Questions" },
-    { type: "paragraph", text: "Diamond fluorescence often sparks debate among buyers because it is one of the more misunderstood characteristics listed on grading reports. Some people worry that fluorescence may negatively affect the appearance of a diamond, while others see it as a harmless natural feature. Uploading a report to [Diamond Intelligence](/diamond-intelligence) can help clarify how the fluorescence grade relates to the stone you are considering." },
+    { type: "paragraph", text: `Diamond fluorescence often sparks debate among buyers because it is one of the more misunderstood characteristics listed on grading reports. Some people worry that fluorescence may negatively affect the appearance of a diamond, while others see it as a harmless natural feature. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can place the documented fluorescence grade in report context; visual effects still require viewing the stone.` },
     { type: "paragraph", text: "In reality, fluorescence is neither inherently good nor bad. Its impact depends on how strong the fluorescence is and how it interacts with the diamond’s natural color." },
 
     { type: "heading", text: "When Fluorescence Has Little Effect" },
@@ -2961,7 +2964,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The bow tie occurs because of the way light travels through the elongated facets of the stone. Nearly all marquise diamonds will show some degree of this effect." },
     { type: "paragraph", text: "A faint bow tie is completely normal. What matters is that the diamond still appears bright and lively overall. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why proportion and light return matter more here than a single lab cut grade." },
     { type: "paragraph", text: "In well-cut stones, the bow tie blends into the surrounding brilliance rather than appearing as a harsh or distracting dark band." },
-    { type: "paragraph", text: "Viewing the diamond under movement and different lighting can help reveal how balanced the light performance truly is. [Diamond Intelligence](/diamond-intelligence) is useful when you want report proportions and light-performance context side by side." },
+    { type: "paragraph", text: "Viewing the diamond under movement and different lighting can help reveal how balanced the light performance truly is. Because marquise performance and bow-tie severity require shape-specific visual review, [begin a private conversation](/concierge) when you want help comparing candidates." },
 
     { type: "heading", text: "Setting Marquise Diamonds in Engagement Rings" },
     { type: "paragraph", text: "Because of their pointed ends, marquise diamonds are usually set with protective prongs." },
@@ -3016,8 +3019,8 @@ export const articles: Article[] = [
     { type: "paragraph", text: "The noise in this debate often comes from people arguing past each other. One side defends meaning. The other defends value. Both can be right without agreeing. The mistake is treating origin as a proxy for quality before you have defined what quality means visually." },
 
     { type: "heading", text: "What Is Actually the Same" },
-    { type: "paragraph", text: "Natural and laboratory-grown diamonds share the same fundamental crystal structure. They test as diamond. They can display comparable brilliance, hardness, and durability when cut well. Grading laboratories evaluate both using the same color, clarity, and proportion standards. A G VS2 Excellent round is described the same way on paper whether the stone formed underground or in a chamber." },
-    { type: "paragraph", text: "That parity is useful. It means you can compare performance using the same tools: grading reports, side-by-side viewing, and judgment about how the stone handles light. It also means the same pitfalls apply to both. A mediocre cut on a strong certificate disappoints regardless of origin. A beautiful stone with a poorly positioned inclusion can frustrate in a halo setting whether it is natural or lab." },
+    { type: "paragraph", text: "Natural and laboratory-grown diamonds share the same fundamental crystal structure. They test as diamond and can display comparable brilliance, hardness, and durability when cut well. Laboratories document both, but report terminology is not universally identical. IGI commonly uses familiar color and clarity grades for laboratory-grown diamonds; GIA's current colorless-to-near-colorless laboratory-grown service uses an overall Premium or Standard assessment." },
+    { type: "paragraph", text: "You can still compare performance using grading documents, side-by-side viewing, and judgment about how the stone handles light, but compare the actual fields and service behind each document rather than assuming two summary labels are interchangeable. A mediocre cut disappoints regardless of origin." },
 
     { type: "heading", text: "What Is Actually Different" },
     { type: "paragraph", text: "Price is the most immediate difference most buyers encounter. At comparable grades, lab-grown diamonds typically cost less per carat. That gap can allow a larger stone, a higher cut standard, or more budget for the setting. It can also invite the trap of buying more carat without buying more beauty. A bigger lab diamond with mediocre proportions is still a mediocre diamond." },
@@ -3029,9 +3032,9 @@ export const articles: Article[] = [
     { type: "paragraph", text: "This is true for lab and natural stones alike. Origin does not replace side-by-side viewing. [How diamond cut affects light performance](/diamond-guide/how-diamond-cut-affects-light-performance) and [what is diamond clarity](/diamond-guide/what-is-diamond-clarity) explain why paper grades are only the start. At Hourglass, we would rather pass on attractive grades than recommend a stone that fails in the setting you are building." },
 
     { type: "heading", text: "Certification and Grading Reports" },
-    { type: "paragraph", text: "Both paths should come with independent grading documentation. Natural diamonds are commonly graded by GIA and other established laboratories. Laboratory-grown diamonds are frequently graded by IGI and, increasingly, by GIA with clear laboratory-grown identification on the report." },
-    { type: "paragraph", text: "Read reports the same way regardless of origin: verify the report number, study proportions, read the inclusion plot, and ask what the summary leaves out. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the field guide. [Do lab-grown diamonds have certificates](/diamond-guide/do-lab-grown-diamonds-have-certificates) answers the paperwork question for lab stones specifically. [GIA certification explained](/diamond-guide/gia-diamond-certification-explained) and [IGI certification explained](/diamond-guide/igi-diamond-certification-explained) add laboratory context when you are comparing sellers." },
-    { type: "paragraph", text: "When you have a specific report in hand, [Diamond Intelligence](/diamond-intelligence) can help translate grades and proportions into practical performance questions before you view the stone in person." },
+    { type: "paragraph", text: "Both paths should come with appropriate independent laboratory documentation. Natural diamonds are commonly graded by GIA and other established laboratories. Laboratory-grown diamonds are frequently documented by IGI. GIA's revised quality-assessment service for qualifying colorless-to-near-colorless laboratory-grown diamonds launched October 1, 2025 and identifies the origin while using Premium or Standard terminology." },
+    { type: "paragraph", text: "Verify the report or assessment number, then read the fields the issuing service actually provides. Study proportions and any available clarity information, and ask what the document leaves out. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the field guide. [Do lab-grown diamonds have certificates](/diamond-guide/do-lab-grown-diamonds-have-certificates) explains the current GIA and IGI distinction." },
+    { type: "paragraph", text: `If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate supported grades and proportions into practical performance questions before you view the stone in person.` },
 
     { type: "heading", text: "The Mistake We See Most Often" },
     { type: "paragraph", text: "Buyers settle origin before they settle performance. They debate natural versus lab for weeks, then choose whichever option fits the budget on paper without comparing how stones actually look. The regret that follows is rarely about geology. It is about a diamond that looked fine online and felt flat in person, or about paying for clarity no one will ever see because the budget was locked into origin before cut quality was protected." },
@@ -3060,7 +3063,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How to Choose Without Regret" },
     { type: "paragraph", text: "Start with a performance standard, not an origin vote. View diamonds in person when you can. Compare stones with similar reports and notice which your eye returns to. Ask where budget would go if you shifted one color grade or one clarity grade. Ask how cut quality was judged beyond the certificate for your shape." },
-    { type: "paragraph", text: "If you are working from listings alone, use the report as a starting point, not a finish line. [Diamond Intelligence](/diamond-intelligence) can help translate proportion data into practical performance context for a specific stone you are considering. So can a Graduate Gemologist who will tell you plainly when a certificate overstates what you are likely to see." },
+    { type: "paragraph", text: `If you are working from listings alone, use the report as a starting point, not a finish line. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate supported proportion data into practical performance context. A Graduate Gemologist can review other report formats and the visual evidence the PDF cannot supply.` },
     { type: "paragraph", text: "Origin deserves an honest conversation. So does budget. But the diamond you propose with will be worn, not debated. Choose the path that aligns with your values, then hold that path to the same optical standard you would demand either way. [Diamond buying tips from jewelers](/diamond-guide/diamond-buying-tips-from-jewelers) covers the habits that protect any purchase, lab or natural." },
 
     { type: "paragraph", text: "Natural and lab are not moral opposites. They are two supply paths to the same material. The right choice is the one you can explain with conviction, defend with performance, and still love on an ordinary Tuesday years from now." },
@@ -3075,7 +3078,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Natural diamonds have a longer-established secondary market, though most engagement ring stones resell below purchase price either way. Lab-grown pricing has shifted as production scales. If the ring is keep-forever, resale may be the wrong lens." },
 
     { type: "heading", text: "Do lab-grown diamonds have certificates?" },
-    { type: "paragraph", text: "Yes. IGI and GIA commonly grade laboratory-grown diamonds. Reports document weight, color, clarity, proportions, and origin. Read proportions and the plot, not only the summary line." },
+    { type: "paragraph", text: "Yes. IGI commonly issues laboratory-grown diamond grading reports with familiar grade fields. GIA's current service for qualifying colorless-to-near-colorless laboratory-grown diamonds, launched October 1, 2025, uses an overall Premium or Standard quality assessment. Older GIA laboratory-grown reports may use the earlier format, so check the issuing service and date." },
 
     { type: "heading", text: "How do you choose between lab and natural diamonds?" },
     { type: "paragraph", text: "Set a performance standard first. Decide whether rarity or budget flexibility matters more to you. Compare stones side by side. Hold either path to the same cut and eye-clean standard." },
@@ -3170,7 +3173,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "Cut quality is the most important factor. Unlike round diamonds, oval diamonds do not have a single strict formula for ideal proportions. Because of this, visual evaluation becomes especially important. [What is diamond cut](/diamond-guide/what-is-diamond-cut) explains why craftsmanship still matters when a formal cut grade is absent." },
     { type: "paragraph", text: "Length-to-width ratio also affects the personality of the diamond. Some oval diamonds are more elongated, while others appear slightly wider and softer in shape. Most people tend to prefer proportions that feel balanced and symmetrical. Those measurements appear on [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate)." },
     { type: "paragraph", text: "Symmetry is another detail to watch. A well-cut oval should have evenly curved sides and aligned ends so the shape feels harmonious." },
-    { type: "paragraph", text: "Finally, brilliance matters. When the diamond moves under light, the entire surface should remain lively and bright rather than showing large dull areas. [Diamond Intelligence](/diamond-intelligence) can help when you are comparing oval reports and want light-performance context beyond the grades." },
+    { type: "paragraph", text: "Finally, brilliance matters. When the diamond moves under light, the entire surface should remain lively and bright rather than showing large dull areas. Because oval performance and bow-tie severity require shape-specific visual review, [begin a private conversation](/concierge) when you want help comparing candidates." },
     { type: "paragraph", text: "When these characteristics come together, the result is an oval diamond that feels elegant, balanced, and full of life." },
 
     { type: "heading", text: "Why Oval Diamonds Work Beautifully in Engagement Rings" },
@@ -3456,7 +3459,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When evaluating radiant diamonds, several visual characteristics are important. Cut quality and proportion matter differently by shape, especially when a formal cut grade is incomplete, which [what is diamond cut](/diamond-guide/what-is-diamond-cut) covers in depth." },
     { type: "paragraph", text: "Proportions influence the overall shape of the diamond. Buyers often choose between square and rectangular outlines depending on their style preference. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) shows where those measurements live on the report." },
     { type: "paragraph", text: "Symmetry should be well balanced, with evenly cut corners and smooth sides." },
-    { type: "paragraph", text: "The diamond should also appear lively under light. A well-cut radiant diamond will display consistent sparkle across the entire surface rather than dull areas. [Diamond Intelligence](/diamond-intelligence) can help when you are comparing radiant reports and want light-performance context beyond polish and symmetry lines." },
+    { type: "paragraph", text: "The diamond should also appear lively under light. A well-cut radiant diamond will display consistent sparkle across the entire surface rather than dull areas. Because radiant performance requires shape-specific visual review beyond polish and symmetry lines, [begin a private conversation](/concierge) when you want help comparing candidates." },
     { type: "paragraph", text: "When these elements come together, the radiant cut can deliver both brilliance and strong visual structure." },
 
     { type: "paragraph", text: "The radiant diamond offers a unique combination of brilliance and geometry." },
@@ -3520,7 +3523,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Choosing a Beautiful Round Diamond" },
     { type: "paragraph", text: "While round diamonds are easier to evaluate than many other shapes, several factors still deserve attention." },
-    { type: "paragraph", text: "Cut quality remains the most important. A well-cut round diamond will display strong brilliance, crisp reflections, and balanced sparkle across the surface of the stone. [Diamond Intelligence](/diamond-intelligence) can help when you want to compare cut grades and proportions across candidate reports." },
+    { type: "paragraph", text: `Cut quality remains the most important. A well-cut round diamond will display strong brilliance, crisp reflections, and balanced sparkle across the surface of the stone. If each candidate has ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can help compare the documented cut grades and proportions.` },
     { type: "paragraph", text: "Symmetry is another important element. The facets should appear evenly aligned, and the overall shape should feel perfectly circular." },
     { type: "paragraph", text: "Clarity and color also influence the diamond’s appearance, but many buyers prioritize cut first because it has the greatest impact on visual performance." },
     { type: "paragraph", text: "When these characteristics come together, the result is a round diamond that feels bright, lively, and refined." },
@@ -3546,7 +3549,7 @@ export const articles: Article[] = [
   body: [
     { type: "paragraph", text: "You do not need to avoid fluorescence by default. Start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence), then evaluate each stone individually." },
     { type: "heading", text: "Why Fluorescence Causes Uncertainty" },
-    { type: "paragraph", text: "Many buyers hesitate when they see fluorescence listed on a diamond grading report. Because this characteristic involves the diamond reacting to ultraviolet light, some people assume it may negatively affect the diamond’s beauty. In reality, fluorescence is simply a natural property found in many diamonds, and reviewing the full report through [Diamond Intelligence](/diamond-intelligence) often makes its practical significance clearer." },
+    { type: "paragraph", text: `Many buyers hesitate when they see fluorescence listed on a diamond grading report. Because this characteristic involves the diamond reacting to ultraviolet light, some people assume it may negatively affect the diamond’s beauty. In reality, fluorescence is simply a natural property found in many diamonds. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can place the documented grade in report context; its visible effect still requires viewing the stone.` },
 
     { type: "heading", text: "When Fluorescence Is Not a Concern" },
     { type: "paragraph", text: "Diamonds with faint or medium fluorescence rarely show any visible difference in everyday lighting conditions. In these cases, the diamond will typically appear the same as a non-fluorescent stone." },
@@ -3642,7 +3645,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "In many cases, a carefully selected VS2 diamond offers exceptional visual performance while allowing more flexibility for other priorities such as cut quality or carat weight." },
 
     { type: "paragraph", text: "VS1 and VS2 diamonds both fall within the Very Slightly Included range of the clarity scale and are considered high clarity grades. Their inclusions are minor and typically invisible during normal viewing. For the eye-clean standard that governs most ring decisions, see [eye clean diamonds explained](/diamond-guide/eye-clean-diamonds-explained)." },
-    { type: "paragraph", text: "For most engagement ring buyers, the visual difference between the two grades is extremely small. Understanding how these grades compare helps buyers choose a diamond that delivers both beauty and value without focusing solely on technical perfection. Compare inclusion plots using [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), or upload a report to [Diamond Intelligence](/diamond-intelligence) when you are deciding between similar VS stones." },
+    { type: "paragraph", text: "For most engagement ring buyers, the visual difference between the two grades is extremely small. Compare inclusion plots using [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), then use images, video, or in-person viewing to judge eye cleanliness. [Begin a private conversation](/concierge) when you want help deciding between similar VS stones." },
     
   ],
   related: [
@@ -3709,7 +3712,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How to Use It in a Real Decision" },
     { type: "paragraph", text: "Verify the report number matches the stone. Confirm you trust the laboratory for this purchase. Read proportions and the plot, not only the summary line. Ask what the grades leave out: performance nuance, inclusion behavior in your setting, and whether this stone is the best use of your budget." },
-    { type: "paragraph", text: "[How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through that sequence step by step. [Why diamond certification matters](/diamond-guide/why-diamond-certification-matters) explains when the report protects you most. When you want help translating a specific report, [Diamond Intelligence](/diamond-intelligence) is built for that gap between paper grades and practical judgment." },
+    { type: "paragraph", text: `[How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through that sequence step by step. [Why diamond certification matters](/diamond-guide/why-diamond-certification-matters) explains when the report protects you most. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) provides a structured interpretation of supported document data.` },
   ],
   related: [
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },
@@ -3740,7 +3743,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "This verification step provides additional reassurance during the buying process." },
 
     { type: "paragraph", text: "A diamond report number serves as the connection between the physical diamond and its official grading certificate. By linking the stone to a documented report, the number helps maintain transparency and traceability." },
-    { type: "paragraph", text: "For buyers researching diamonds, understanding report numbers adds another layer of confidence when reviewing certification details. Once you have a report number, [Diamond Intelligence](/diamond-intelligence) can use it to help interpret the grading data behind the stone." },
+    { type: "paragraph", text: `For buyers researching diamonds, a report number adds confidence by letting you verify the document with its issuing laboratory. Diamond Intelligence cannot analyze a report number alone. If you also have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, you can upload that document to [Diamond Intelligence](/diamond-intelligence) for supported interpretation.` },
     
   ],
   related: [
@@ -3770,7 +3773,7 @@ export const articles: Article[] = [
     { type: "heading", text: "The Role of Cut in Diamond Brilliance" },
     { type: "paragraph", text: "Cut quality is the single most important factor affecting brilliance. Even a diamond with excellent color and clarity can look lifeless if it is poorly cut." },
     { type: "paragraph", text: "When a diamond is proportioned correctly, light enters the stone, reflects internally, and returns upward in a balanced and controlled way. This creates the bright, even illumination that defines a brilliant diamond." },
-    { type: "paragraph", text: "Well-cut diamonds distribute light across the entire face of the stone. Poorly cut diamonds often show dark areas, uneven brightness, or patches where light simply disappears. This is one reason experienced reviewers protect light performance before paper grades — a principle we outline in [Our Approach](/our-approach). If you have proportion data on a report, [Diamond Intelligence](/diamond-intelligence) can help interpret what those measurements suggest about brilliance before you view the stone in person." },
+    { type: "paragraph", text: `Well-cut diamonds distribute light across the entire face of the stone. Poorly cut diamonds often show dark areas, uneven brightness, or patches where light simply disappears. This is one reason experienced reviewers protect light performance before paper grades — a principle we outline in [Our Approach](/our-approach). For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can interpret documented proportions and performance indicators before visual review.` },
 
     { type: "heading", text: "Brilliance vs. Sparkle" },
     { type: "paragraph", text: "While brilliance refers to the overall brightness of white light, it is often confused with sparkle. Sparkle actually includes multiple effects working together." },
@@ -3866,7 +3869,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Why a Grading Report Alone Is Not Enough" },
     { type: "paragraph", text: "A report summarizes what a laboratory observed in controlled conditions. It does not show how lively the diamond looks when it moves, how inclusions behave in your metal color, or whether a feature flashes under restaurant light. Two diamonds with the same clarity grade can perform differently because placement and cut differ." },
-    { type: "paragraph", text: "If you are working from a listing, [Diamond Intelligence](/diamond-intelligence) can help translate plot and proportion data into practical questions before you commit. Side-by-side viewing still wins when you can arrange it." },
+    { type: "paragraph", text: "If you are working from a listing, use the report to understand the clarity grade and plot, then use images, video, or in-person viewing to judge eye cleanliness and transparency. [Begin a private conversation](/concierge) when you want help with that visual review." },
 
     { type: "heading", text: "Hourglass Clarity Standards" },
     { type: "paragraph", text: "Hourglass does not sell I1, I2, or I3 diamonds. Those grades often show obvious inclusions that distract in wear or affect durability. SI2 may be considered only after individual inspection confirms the stone is eye clean in the intended setting." },
@@ -3973,7 +3976,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Why Two Diamonds With the Same Grade May Look Different" },
     { type: "paragraph", text: "Identical color letters do not mean identical face-up tone. Cut proportions, fluorescence, size, and side-by-side crystal character all shift perception. One H can look crisp. Another H can look muted under the same spotlight." },
-    { type: "paragraph", text: "This is why comparison matters. If you are working from a listing, upload the report to [Diamond Intelligence](/diamond-intelligence) to translate grades and proportions into practical questions before you view the stone." },
+    { type: "paragraph", text: `This is why comparison matters. If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, upload it to [Diamond Intelligence](/diamond-intelligence) to translate supported grades and proportions into practical questions before you view the stone.` },
 
     { type: "heading", text: "Fluorescence and Color" },
     { type: "paragraph", text: "Fluorescence is graded separately. It describes a glow under ultraviolet light, not body color. In rare cases strong fluorescence can influence how crisp a diamond looks in certain daylight, which is why it belongs in the conversation without becoming a pass-fail rule." },
@@ -4083,7 +4086,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Why Two Excellent Diamonds Can Perform Differently" },
     { type: "paragraph", text: "The cut grade compresses many measurements into one word. Two Excellent rounds can differ in table size, crown angle, and facet precision in ways that change how evenly light pools across the crown. One may show crisp contrast as it moves. The other may look flat under restaurant light." },
-    { type: "paragraph", text: "That is routine, not exotic. It is why side-by-side comparison matters and why a summary line alone is an incomplete buying strategy. If you are working from a listing, upload the report to [Diamond Intelligence](/diamond-intelligence) to translate proportion data into practical questions before you view the stone." },
+    { type: "paragraph", text: `That is routine, not exotic. It is why side-by-side comparison matters and why a summary line alone is an incomplete buying strategy. If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, upload it to [Diamond Intelligence](/diamond-intelligence) to translate supported proportion data into practical questions before visual review.` },
 
     { type: "heading", text: "Fancy Shape Cut Considerations" },
     { type: "paragraph", text: "Oval, cushion, emerald, pear, and other fancy shapes rarely receive an overall cut grade on GIA reports. Polish and symmetry are graded. Overall light performance is left to visual evaluation. Length-to-width ratio, bow ties, and open tables all change how forgiving a shape is on color and clarity." },
@@ -4091,7 +4094,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Diamond Intelligence and Beyond the Grading Report" },
     { type: "paragraph", text: "A report records measurements in controlled laboratory conditions. It does not show how lively the diamond looks when it moves, how contrast patterns form in your metal color, or whether the stone looks smaller than its carat weight because of depth. Two diamonds with matching grades can perform differently because proportions and facet precision differ." },
-    { type: "paragraph", text: "[Diamond Intelligence](/diamond-intelligence) helps translate proportion and symmetry data from a specific report into questions you can ask before you commit. Side-by-side viewing still wins when you can arrange it. [Natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) covers origin; cut standards apply to both." },
+    { type: "paragraph", text: `For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) helps translate supported proportion and symmetry data into questions you can ask before you commit. Side-by-side viewing still wins when you can arrange it. [Natural vs lab diamonds](/diamond-guide/natural-vs-lab-diamonds) covers origin; cut standards apply to both.` },
 
     { type: "heading", text: "Hourglass Cut Standards" },
     { type: "paragraph", text: "Hourglass prioritizes visible beauty on the hand over paper perfection. For round brilliants, Excellent cut is our baseline when performance is the goal. We still review proportion data and compare stones side by side because Excellent alone is not a substitute for liveliness." },
@@ -4150,7 +4153,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How Common Fluorescence Is" },
     { type: "paragraph", text: "A substantial share of diamonds show some fluorescence under UV testing. Many exhibit none. Others fall anywhere on the scale. The grade on your report simply documents how strong the reaction was in standardized laboratory conditions, not how the diamond will behave at your kitchen table." },
-    { type: "paragraph", text: "If you are reading a listing and unsure what the fluorescence line means for that stone, [Diamond Intelligence](/diamond-intelligence) can help translate report data into practical questions before you view it in person." },
+    { type: "paragraph", text: `If you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can place its documented fluorescence grade in report context. Whether fluorescence has a visible effect still requires viewing the stone under appropriate lighting.` },
 
     { type: "heading", text: "The GIA Fluorescence Scale" },
     { type: "paragraph", text: "Major laboratories including GIA describe fluorescence with five standard grades. None means no observable reaction under UV. Faint means a subtle reaction that is difficult to see even under a UV lamp. Medium is easier to observe in controlled UV lighting. Strong and Very Strong produce a more noticeable glow when UV is present." },
@@ -4217,7 +4220,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "It can influence list price, especially at stronger grades. Faint and medium are often neutral. Beauty and cut still drive the worth of a keep-forever ring." },
 
     { type: "heading", text: "How should I evaluate fluorescence before buying?" },
-    { type: "paragraph", text: "Read the report line, compare stones side by side, and view in person when you can. Use [Diamond Intelligence](/diamond-intelligence) for report context or [Concierge](/concierge) when you want trained review before you commit." },
+    { type: "paragraph", text: `Read the report line, compare stones side by side, and view in person when you can. Use [Diamond Intelligence](/diamond-intelligence) when you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}; use [Concierge](/concierge) for other documents or trained visual review.` },
   ],
   related: [
     { title: "When Fluorescence Improves a Diamond", href: "/diamond-guide/when-fluorescence-improves-a-diamond" },
@@ -4319,7 +4322,7 @@ export const articles: Article[] = [
     { type: "paragraph", text: "When chosen carefully, an SI1 diamond can deliver excellent visual performance while maintaining strong overall value." },
 
     { type: "paragraph", text: "SI1 diamond clarity indicates the presence of small inclusions that are visible under magnification but often difficult to detect during normal viewing." },
-    { type: "paragraph", text: "With careful selection, many SI1 diamonds appear clean to the naked eye and offer a strong balance between clarity, beauty, and value. Understanding how SI1 clarity works helps buyers evaluate diamonds more confidently and focus on how the stone truly looks in everyday conditions. Review inclusion plots with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), or use [Diamond Intelligence](/diamond-intelligence) when you are deciding between similar SI1 candidates." },
+    { type: "paragraph", text: "With careful selection, many SI1 diamonds appear clean to the naked eye and offer a strong balance between clarity, beauty, and value. Review inclusion plots with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate), then use images, video, or in-person viewing to judge eye cleanliness and transparency. [Begin a private conversation](/concierge) when you want help comparing SI1 candidates." },
     
   ],
   related: [
@@ -4396,7 +4399,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "A Practical Decision Framework" },
     { type: "paragraph", text: "Start with how the diamond looks, not with whether fluorescence makes you nervous. Compare it with a non-fluorescent stone at similar color and clarity. Move it near a window, then under indoor light. Ask whether it stays bright and crisp in both." },
-    { type: "paragraph", text: "If you are working from listings, read the fluorescence line on the report, then ask what it might mean for this specific combination of color, cut, and price. [Diamond Intelligence](/diamond-intelligence) can help interpret a report before you view the stone. When two finalists differ mainly by fluorescence grade, [begin the conversation](/concierge) and compare them with a Graduate Gemologist." },
+    { type: "paragraph", text: `If you are working from listings, read the fluorescence line on the report, then ask what it might mean for this specific combination of color, cut, and price. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can place the documented grade in report context. When two finalists differ mainly by fluorescence, [begin the conversation](/concierge) and compare them visually with a Graduate Gemologist.` },
     { type: "paragraph", text: "Reject a stone when your eyes confirm haze, milkiness, or flatness. Do not reject it because a blog told you all fluorescence is bad. [Our Approach](/our-approach) at Hourglass treats fluorescence as one field among many, not as a shortcut around judgment." },
 
     { type: "heading", text: "Strong Blue Fluorescence in Context" },
@@ -4497,7 +4500,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "How to Use a Certificate Without Overweighting It" },
     { type: "paragraph", text: "Start with identity and laboratory credibility. Then read proportions and the inclusion plot with your setting in mind. Use the 4Cs as orientation, not as a finish line. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) walks through that sequence in practical terms." },
-    { type: "paragraph", text: "When you are ready to go beyond the grades, [Diamond Intelligence](/diamond-intelligence) can help translate measurements into performance context. For judgment you can actually use in conversation, [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains how trained reviewers read the same page differently." },
+    { type: "paragraph", text: `When you have ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can translate supported measurements into performance context. For other documents or visual judgment, [why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explains how trained reviewers read the same page differently.` },
 
     { type: "heading", text: "When Certification Matters Most" },
     { type: "paragraph", text: "Certification matters most when you cannot see the stone easily, when you are comparing similar-looking options, or when the purchase is large enough that documentation will follow the diamond for years. It matters less when you have already viewed the stone extensively in person and trust the seller's transparency, but even then a report protects you at resale and insurance." },
@@ -4596,7 +4599,7 @@ export const articles: Article[] = [
     { type: "heading", text: "How Guidance Should Feel" },
     { type: "paragraph", text: "Working with a gemologist should not feel like being sold to. It should feel like having a knowledgeable person in your corner, someone who will tell you when a diamond is genuinely beautiful and when it merely looks good on paper. Someone who will say, without hesitation, that a lower grade might serve you better than a higher one, if the visual difference is imperceptible and the savings are meaningful." },
     { type: "paragraph", text: "At Hourglass, gemological training informs every recommendation, but it does not dictate them. We are selective about what we recommend, not about who we help. The goal is not to impress you with terminology. It is to help you avoid the mistakes that are difficult to undo: overpaying for grades you cannot see, choosing a stone that underperforms its certificate, rushing a decision because an inventory sheet suggested urgency." },
-    { type: "paragraph", text: "If you are early in your search, reading about [how to interpret a certificate](/diamond-guide/how-to-read-a-diamond-certificate) or [why certification matters](/diamond-guide/why-diamond-certification-matters) will give you a solid foundation. When you are ready to go further, [Diamond Intelligence](/diamond-intelligence) offers a structured way to understand what a specific report suggests about performance, not just grades." },
+    { type: "paragraph", text: `If you are early in your search, reading about [how to interpret a certificate](/diamond-guide/how-to-read-a-diamond-certificate) or [why certification matters](/diamond-guide/why-diamond-certification-matters) will give you a solid foundation. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) offers a structured interpretation of supported performance data.` },
     { type: "paragraph", text: "The credential opens the door. The years behind it are what make the guidance worth trusting. When you want that kind of review for a specific stone or shortlist, [begin a conversation](/concierge) at your own pace." },
   ],
   related: [
@@ -4627,7 +4630,7 @@ export const articles: Article[] = [
 
     { type: "heading", text: "Serving Charlotte, Waxhaw, and Union County" },
     { type: "paragraph", text: "Couples in Waxhaw and Union County often shop in Charlotte while living slightly outside the city core. That is normal. The decision framework is the same whether your search begins in SouthPark, along Providence Road, or from a kitchen table in Weddington: prioritize what you will see every day, compare stones together when possible, and understand who benefits when a recommendation is made." },
-    { type: "paragraph", text: "Local shopping offers immediacy: weight on the finger, metal color beside skin tone, answers in the moment. Online shopping offers breadth. The strongest outcomes combine both, and include someone who can read a grading report with context. [Diamond Intelligence](/diamond-intelligence) is one way to review a report before you commit. [Diamond Size Studio](/diamond-studio) helps compare how size and shape read on the hand when scale is still uncertain." },
+    { type: "paragraph", text: `Local shopping offers immediacy: weight on the finger, metal color beside skin tone, answers in the moment. Online shopping offers breadth. The strongest outcomes combine both. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) offers a structured document review. [Diamond Size Studio](/diamond-studio) helps compare how size and shape read on the hand when scale is still uncertain.` },
 
     { type: "heading", text: "Local Stores and Online Options" },
     { type: "paragraph", text: "Buying locally in Charlotte offers something difficult to replicate on a screen: the ability to see diamonds together, to feel the weight of a setting, to ask questions and receive immediate answers. Many couples value the ritual of visiting jewelers together, trying on styles, and building a relationship with someone who may also handle sizing, maintenance, and future anniversaries." },
@@ -4723,7 +4726,7 @@ export const articles: Article[] = [
     { type: "heading", text: "Advantages of Independent Guidance" },
     { type: "paragraph", text: "Objectivity is the clearest benefit. When nothing on the table must be sold, the conversation can start from zero. An advisor can tell you that your budget is better spent on cut quality than on a clarity grade you will never see. They can source three stones from different suppliers and compare them without preference for any particular one." },
     { type: "paragraph", text: "Breadth is another. The trade networks available to an independent advisor often exceed what any single store can stock. That matters especially for buyers seeking something specific: an elongated oval in a narrow proportion range, a particular make of cushion, a stone that performs above its paper grades." },
-    { type: "paragraph", text: "Education tends to be deeper. Advisors who are not racing toward a close have time to explain why two certificates that look identical describe very different diamonds. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the flagship guide for that review. [Diamond Intelligence](/diamond-intelligence) can help compare specific reports before you buy. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) explores how that training translates into judgment you can actually use." },
+    { type: "paragraph", text: `Education tends to be deeper. Advisors who are not racing toward a close have time to explain why two reports that look similar can describe very different diamonds. [How to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) is the flagship guide. For ${DIAMOND_INTELLIGENCE_SUPPORTED_REPORT}, [Diamond Intelligence](/diamond-intelligence) can compare supported document data. [Why work with a Graduate Gemologist](/diamond-guide/why-work-with-a-graduate-gemologist) covers other reports and the visual judgment software cannot provide.` },
 
     { type: "heading", text: "Which Model Fits You" },
     { type: "paragraph", text: "If you already know what you want, value the experience of shopping in person, and prefer to support a local retailer with a physical presence, a traditional jewelry store may serve you well, especially if you have a referral to someone trustworthy." },

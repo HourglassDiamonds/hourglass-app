@@ -77,19 +77,20 @@ export default function PrivacyPage() {
               Analyze Sparkle
             </h2>
             <p>
-              Analyze Sparkle (Diamond Intelligence) lets you upload a grading
-              report as a PDF or image, or provide a supported report or listing
-              URL. The system may extract text and grading details through
-              automated processing, including optical character recognition.
-              What we keep for that work can include the original file, the
-              source filename, listing or report URLs you provide, extracted
-              text, and related interpretation metadata. Those files and
-              records are stored privately with Supabase and become eligible
-              for automatic deletion after 30 days. A daily cleanup removes
-              expired storage objects and the matching archive rows. Analyze
-              Sparkle is informational guidance and does not replace the
-              grading laboratory’s official report. Hourglass does not use
-              your uploaded reports or photos to train a public AI model.
+              Analyze Sparkle (Diamond Intelligence) currently accepts original
+              GIA, IGI, or supported GCAL grading report PDFs for round brilliant
+              diamonds. Other report formats, images, or listing URLs may be sent
+              through Concierge for personal review. The system may extract text
+              and grading details through automated processing, including optical
+              character recognition. What we keep for that work can include the
+              original file, the source filename, listing or report URLs you
+              provide, extracted text, and related interpretation metadata. Those
+              files and records are stored privately with Supabase and become
+              eligible for automatic deletion after 30 days. A daily cleanup
+              removes expired storage objects and the matching archive rows.
+              Analyze Sparkle is informational guidance and does not replace the
+              grading laboratory’s official report. Hourglass does not use your
+              uploaded reports or photos to train a public AI model.
             </p>
             <p>
               When an optional remote OCR processor is configured, report

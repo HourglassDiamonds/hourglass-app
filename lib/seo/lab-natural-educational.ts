@@ -24,7 +24,7 @@ export const LAB_NATURAL_FAQS: LabNaturalFaq[] = [
   {
     question: "Do lab-grown diamonds have certificates?",
     answer:
-      "Yes. Laboratory-grown diamonds are commonly graded by institutes such as IGI and GIA. Reports document carat weight, color, clarity, proportions, and laboratory-grown origin. The same discipline applies: read proportions and the inclusion plot, not only the summary line.",
+      "Yes. IGI and other laboratories issue grading reports for laboratory-grown diamonds. GIA's current service for qualifying colorless-to-near-colorless laboratory-grown diamonds, launched October 1, 2025, uses an overall Premium or Standard quality assessment instead of the color and clarity nomenclature used for natural diamonds. Older GIA laboratory-grown reports may use an earlier format, so read the document according to its issuing laboratory and date.",
   },
   {
     question: "How do you choose between lab and natural diamonds?",

@@ -36,7 +36,7 @@ export default function DiUploadStrip({
           <p className={`${DI_BODY_MUTED} mt-2 text-[0.9rem]`}>
             {hasReport
               ? "Upload a different report to start a new read."
-              : "Upload a GIA, IGI, or GCAL grading report PDF to begin."}
+              : "Upload an original GIA, IGI, or supported GCAL report PDF for a round brilliant."}
           </p>
         </div>
         <div className="min-w-0 flex-1 md:max-w-xl">

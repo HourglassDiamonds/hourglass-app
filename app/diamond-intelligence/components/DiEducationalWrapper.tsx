@@ -40,11 +40,11 @@ export default function DiEducationalWrapper() {
             <div className={bodyCopy}>
               <p>
                 Diamond Intelligence is an independent interpretation layer for
-                original diamond grading reports. You upload a PDF from a
-                recognized laboratory, and the tool extracts the measurements,
-                proportions, and performance signals the report contains—then
-                translates them into practical context using Hourglass review
-                standards.
+                supported round brilliant grading reports. You upload an
+                original GIA, IGI, or supported GCAL PDF, and the tool extracts
+                the measurements, proportions, and performance signals the
+                report contains—then translates them into practical context
+                using Hourglass review standards.
               </p>
             </div>
           </DiV3Chapter>
@@ -82,10 +82,12 @@ export default function DiEducationalWrapper() {
                 GIA, IGI, and GCAL 8X each present that data differently.
               </p>
               <p>
-                Diamond Intelligence is built to read those documents on their
-                own terms: extracting what the laboratory measured and
-                interpreting how those measurements may translate in real-world
-                viewing. For background on each laboratory&apos;s approach, see
+                For supported round brilliants, Diamond Intelligence reads those
+                documents on their own terms: extracting what the laboratory
+                measured and interpreting how those measurements may translate
+                in real-world viewing. It does not determine eye cleanliness or
+                replace visual review. For background on each laboratory&apos;s
+                approach, see
                 our guides to{" "}
                 <Link
                   href="/diamond-guide/gia-diamond-certification-explained"

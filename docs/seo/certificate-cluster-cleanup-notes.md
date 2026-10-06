@@ -44,7 +44,7 @@ Execute in Phase 2.2 after monitoring and content absorption.
 | `gia-diamond-certification-explained` | `how-to-read-a-diamond-certificate` | GIA context now covered in flagship GIA section | Keep GIA hero image path if redirected; or retain URL as thin appendix with canonical to flagship |
 | `ags-diamond-certification-explained` | `are-all-diamond-certificates-the-same` | Secondary lab; AGS 2023 merger context | AGS history + cut philosophy paragraph |
 | `hrd-diamond-certification-explained` | `are-all-diamond-certificates-the-same` | European lab appendix | HRD market context (Antwerp) |
-| `do-lab-grown-diamonds-have-certificates` | `natural-vs-lab-diamonds` | Lab pillar owns cert + origin narrative | GIA June 2024 lab-grown grading shift note |
+| `do-lab-grown-diamonds-have-certificates` | `natural-vs-lab-diamonds` | Lab pillar owns cert + origin narrative | GIA October 2025 laboratory-grown service launch note |
 
 **Do not redirect yet:**
 

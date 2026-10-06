@@ -16,7 +16,7 @@ export function DiSuiteToolIntro() {
     >
       <DiamondStudioToolHeader
         title="Analyze Sparkle"
-        subhead="Upload an original GIA, IGI, or GCAL grading report for independent interpretation before you decide."
+        subhead="Upload an original GIA, IGI, or supported GCAL report PDF for a round brilliant diamond."
       />
       <p className="mx-auto mt-2 max-w-[36rem] text-center text-[10px] uppercase tracking-[0.22em] text-[#6d655e]">
         Diamond Intelligence · Private · No sales pressure

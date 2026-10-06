@@ -7,7 +7,7 @@ export type DiamondIntelligenceFaq = {
 
 /** Collapsed-card supporting lines for the landing-page educational accordions. */
 export const DIAMOND_INTELLIGENCE_LANDING_ACCORDION_NOTES = {
-  howItWorks: "Independent interpretation for original grading reports.",
+  howItWorks: "Independent interpretation for supported round brilliant reports.",
   whatItDoes: "Clearer judgment—not a listing search or price engine.",
   readingReports: "What laboratory measurements mean in practice.",
   startingPoint: "Paper grades narrow the field; the final choice is still yours.",
@@ -20,17 +20,17 @@ export const DIAMOND_INTELLIGENCE_FAQS: DiamondIntelligenceFaq[] = [
   {
     question: "What is Diamond Intelligence?",
     answer:
-      "Diamond Intelligence is an independent report interpretation tool from Hourglass Diamonds. Upload an original grading report PDF and review how the stone's proportions, light performance, and craftsmanship read against trained gemological standards—not a sales script.",
+      "Diamond Intelligence is an independent report interpretation tool from Hourglass Diamonds for round brilliant diamonds. Upload an original GIA, IGI, or GCAL grading report PDF and review how the report's proportions and performance indicators read against trained gemological standards—not a sales script.",
   },
   {
     question: "Which grading reports does Diamond Intelligence accept?",
     answer:
-      "Diamond Intelligence accepts original PDF grading reports from GIA, IGI, and GCAL 8X. The tool extracts measurements and performance data from the document you provide and interprets them through Hourglass review standards.",
+      "Diamond Intelligence currently accepts original PDF grading reports from GIA, IGI, and supported GCAL or GCAL 8X formats for round brilliant diamonds. Fancy shapes, HRD reports, report numbers without the original PDF, screenshots, and listing links require a different review path.",
   },
   {
     question: "How does Diamond Intelligence help read a GIA, IGI, or GCAL report?",
     answer:
-      "A certificate summarizes grades and measurements, but the practical meaning of those numbers is not always obvious. Diamond Intelligence translates proportions, optical balance, and performance indicators into clearer context so you can understand what the report suggests before you buy.",
+      "For a supported round brilliant report, Diamond Intelligence translates proportions, optical balance, and performance indicators into clearer context so you can understand what the document suggests before you buy. It does not determine eye cleanliness or replace visual review.",
   },
   {
     question: "How is this different from GIA Report Check?",

@@ -56,7 +56,7 @@ const STUDIO_TOOLS = [
   },
   {
     title: "Analyze Sparkle",
-    description: "Evaluate likely light performance from a grading report.",
+    description: "Interpret a supported round brilliant grading report PDF.",
     href: "/diamond-intelligence",
   },
 ] as const;

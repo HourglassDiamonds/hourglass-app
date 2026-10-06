@@ -20,9 +20,9 @@ function MidPageCta() {
           Still Evaluating a Diamond?
         </h2>
         <p className="mx-auto mt-5 max-w-[36rem] text-[0.96rem] leading-[1.88] text-[#615a53]">
-          Diamond Intelligence was built to help consumers understand how a
-          diamond is likely to perform in the real world — not just how it
-          appears on a grading report.
+          Diamond Intelligence interprets supported data from an original GIA,
+          IGI, or GCAL grading report PDF for a round brilliant. It sharpens the
+          questions to ask before visual review; it does not replace that review.
         </p>
         <div className="mt-8">
           <CTAGlimmer>
