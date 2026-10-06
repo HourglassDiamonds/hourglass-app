@@ -27,6 +27,13 @@ export type ArticleBlock =
       zones: { label: string; description: string }[];
       note?: string;
     }
+  | {
+      type: "comparison-table";
+      eyebrow: string;
+      columns: string[];
+      rows: { cells: string[] }[];
+      note?: string;
+    }
   | { type: "studio-callout"; heading: string; text: string }
   | { type: "editorial-image"; src: string; alt: string };
 
@@ -810,28 +817,33 @@ export const articles: Article[] = [
 
 {
   slug: "d-vs-e-vs-f-diamond-color",
-  title: "D vs E vs F Diamond Color",
+  title: "D vs E vs F Diamond Color: Is the Difference Visible?",
   category: "Diamond Color",
   body: [
-    { type: "paragraph", text: "D, E, and F diamonds share the colorless range. For how color fits into the full GIA scale and buying decisions, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article compares the three top letters." },
-    { type: "heading", text: "The Colorless Diamond Range" },
-    { type: "paragraph", text: "Diamonds graded D, E, and F are all classified as colorless on the diamond color scale. This category represents the highest range of color quality for traditional white diamonds. Each of these grades contains extremely little color, often appearing perfectly white in most viewing conditions." },
-    { type: "paragraph", text: "Although these diamonds sit next to one another on the grading scale, the differences between them are very subtle. Determining the exact grade typically requires careful comparison with reference stones under professional grading conditions." },
-
-    { type: "heading", text: "What Makes a D Color Diamond Unique" },
-    { type: "paragraph", text: "D color diamonds sit at the very top of the color scale and represent the absence of detectable color. Because they are the rarest within the traditional color grading system, they are often associated with the highest level of diamond purity." },
-    { type: "paragraph", text: "In practice, however, the visual difference between a D color diamond and the next grades down is extremely small. Most viewers cannot distinguish a D color diamond from an E or F without side-by-side comparison." },
-
-    { type: "heading", text: "Understanding E and F Color Diamonds" },
-    { type: "paragraph", text: "E and F color diamonds are also considered colorless, though they may contain minute traces of color detectable only by trained graders. These stones still appear exceptionally bright and white when viewed in normal lighting." },
-    { type: "paragraph", text: "Because they are slightly more common than D color diamonds, E and F diamonds can sometimes offer a more balanced combination of visual appearance and price." },
-
-    { type: "heading", text: "How the Differences Appear in Real Life" },
-    { type: "paragraph", text: "Once a diamond is set in an engagement ring, the small distinctions between D, E, and F color grades become even more difficult to detect. Lighting conditions, diamond cut, and the color of the metal setting all influence how color is perceived." },
-    { type: "paragraph", text: "For most buyers, these three grades appear virtually identical when worn. As a result, many people focus more on the diamond’s cut quality or size while remaining within the colorless range." },
-
-    { type: "paragraph", text: "D, E, and F diamonds all fall within the colorless category and represent the highest range of diamond color quality. While D color diamonds are technically the most pure, the visual differences between these grades are extremely subtle." },
-    { type: "paragraph", text: "Understanding how these color grades compare helps buyers evaluate whether the rarity of a D color diamond is meaningful to them or whether an E or F diamond offers a similar appearance with a different balance of priorities. Fluorescence, when present, is graded separately; [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) covers that field on GIA reports." },
+    { type: "paragraph", text: "D, E, and F are all colorless grades. Most buyers will not see a face-up difference once set, so F often delivers the strongest value of the three." },
+    { type: "heading", text: "D vs E vs F at a Glance" },
+    {
+      type: "comparison-table",
+      eyebrow: "Colorless Range · Buying Differences",
+      columns: ["Grade", "What the grade means", "When it earns its price", "Hourglass judgment"],
+      rows: [
+        { cells: ["D", "Top of the GIA D-to-Z scale", "Rarity, symbolic importance, or a strict no-compromise brief", "Buy D for what it represents, not because it will always look whiter face-up."] },
+        { cells: ["E", "Colorless, one grade below D", "A high-color specification with a modest step away from D", "A nuanced middle choice, but not automatically the best value."] },
+        { cells: ["F", "Still inside the colorless band", "Colorless appearance with more budget flexibility", "Often the practical choice when all other quality factors are equal."] },
+      ],
+      note: "These judgments assume comparable shape, carat weight, cut, clarity, fluorescence, and mounting.",
+    },
+    { type: "heading", text: "Is the Difference Visible in Real Life?" },
+    { type: "paragraph", text: "The laboratory difference is real, but the visual difference is narrow. GIA separates adjacent grades by comparing loose diamonds to master stones under controlled lighting. Once a diamond is viewed face-up, set, and moving through everyday light, D, E, and F commonly look alike to an untrained observer." },
+    { type: "paragraph", text: "Visibility rises with stone size and in open step cuts such as emerald and Asscher. It falls when strong light return, prongs, a halo, or warm-toned metal draws attention away from subtle body color." },
+    { type: "heading", text: "Which Color Grade Should You Buy?" },
+    { type: "paragraph", text: "Choose D when owning the highest color grade is itself part of the brief. Choose E when you want an uncompromising colorless specification but do not need the top letter. Choose F when you want the colorless category while keeping more room for cut quality, size, or design." },
+    { type: "paragraph", text: "Our judgment: compare F first. Move to E or D only if the difference is visible to you in a matched pair or the rarity has personal value. A color grade should not outrank a clearly better cut." },
+    { type: "heading", text: "What Can Change the Decision?" },
+    { type: "paragraph", text: "Setting metal, fluorescence, shape, and lighting can all change perception. Read [what is diamond color](/diamond-guide/what-is-diamond-color) for the full framework, [does fluorescence affect diamond value](/diamond-guide/does-fluorescence-affect-diamond-value) for market context, and [how lighting affects diamonds](/diamond-guide/how-lighting-affects-diamonds) before comparing candidates." },
+    { type: "heading", text: "What Justin Would Inspect Next" },
+    { type: "paragraph", text: "I would compare matched stones for face-up color, light return, transparency, millimeter spread, and fluorescence, then view them beside the intended metal. If F looks equally crisp outside grading light, the premium for E or D needs to be justified by rarity or personal meaning—not an assumed visual advantage." },
+    { type: "paragraph", text: "Source basis: [GIA’s D-to-Z color scale](https://www.gia.edu/gia-about/4cs-color) places D, E, and F in the colorless range and explains the controlled comparison used to assign each grade." },
   ],
   related: [
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
@@ -1212,39 +1224,32 @@ export const articles: Article[] = [
 
 {
     slug: "diamond-cut-vs-polish-vs-symmetry",
-    title: "Diamond Cut vs Polish vs Symmetry",
+    title: "Diamond Cut vs Polish vs Symmetry: Key Differences",
     category: "Diamond Cut",
     body: [
-      { type: "paragraph", text: "For the full cut guide and GIA scale context, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains how cut, polish, and symmetry differ on a grading report." },
-      { type: "heading", text: "Why These Terms Appear on Diamond Grading Reports" },
-      { type: "paragraph", text: "When reviewing a diamond grading report, buyers often see separate categories for cut, polish, and symmetry. At first glance these terms can seem similar, but they describe different aspects of how the diamond has been crafted." },
-      { type: "paragraph", text: "Cut refers to the overall quality of the diamond’s proportions and how effectively the stone handles light. Polish and symmetry are more specific measurements that describe the precision and finish of the cutting process." },
-      { type: "paragraph", text: "Together, these characteristics help determine how refined the diamond’s craftsmanship is." },
-
-      { type: "heading", text: "What Diamond Cut Describes" },
-      { type: "paragraph", text: "Cut is the most influential factor in a diamond’s appearance. It describes how well the diamond’s facets are positioned to capture and reflect light." },
-      { type: "paragraph", text: "When a diamond is cut with balanced proportions, light entering the stone reflects internally before returning through the top surface. This process creates brightness, fire, and sparkle." },
-      { type: "paragraph", text: "If the diamond’s proportions are poorly balanced, light may escape through the bottom or sides of the stone. The diamond may appear darker or less lively as a result." },
-      { type: "paragraph", text: "For round diamonds, laboratories such as the Gemological Institute of America assign an overall cut grade to represent this balance." },
-
-      { type: "heading", text: "What Diamond Polish Describes" },
-      { type: "paragraph", text: "Polish refers to the smoothness of the diamond’s surface after cutting. Once the facets are shaped, they must be polished carefully so that light can move cleanly through the stone." },
-      { type: "paragraph", text: "A well-polished diamond has smooth facet surfaces that allow reflections to remain clear and crisp. If the polishing process leaves microscopic marks or abrasions, it may slightly reduce the sharpness of the reflections." },
-      { type: "paragraph", text: "These imperfections are usually extremely small and often invisible to the naked eye, but they are still evaluated during the grading process." },
-
-      { type: "heading", text: "What Diamond Symmetry Describes" },
-      { type: "paragraph", text: "Symmetry evaluates how precisely the diamond’s facets align with one another. Each facet should be positioned carefully so that reflections within the stone remain balanced." },
-      { type: "paragraph", text: "If the facets are slightly misaligned, the internal reflections may appear uneven or irregular. This can affect the pattern of light and dark areas seen when the diamond moves." },
-      { type: "paragraph", text: "High symmetry helps maintain consistent sparkle and a pleasing visual structure across the diamond’s surface." },
-
-      { type: "heading", text: "How These Three Factors Work Together" },
-      { type: "paragraph", text: "Although cut, polish, and symmetry are evaluated separately, they work together to influence the diamond’s overall appearance." },
-      { type: "paragraph", text: "Cut determines how effectively the diamond handles light, while polish and symmetry reflect the level of precision in the cutting process." },
-      { type: "paragraph", text: "A diamond with strong grades in all three areas typically shows balanced light performance and refined craftsmanship." },
-
-        { type: "paragraph", text: "Diamond cut, polish, and symmetry describe different aspects of how a diamond has been shaped and finished. Cut focuses on light performance, while polish and symmetry measure the precision of the cutting process." },
-      { type: "paragraph", text: "By understanding these distinctions, buyers can read grading reports more confidently and appreciate the craftsmanship involved in creating a well-cut diamond." },
-      
+      { type: "paragraph", text: "Cut is the broad appearance grade; polish rates facet surfaces; symmetry rates facet alignment. They are related, but they are not interchangeable." },
+      { type: "heading", text: "Cut, Polish, and Symmetry at a Glance" },
+      {
+        type: "comparison-table",
+        eyebrow: "Grading Report · Three Different Judgments",
+        columns: ["Field", "What it evaluates", "What it can affect", "Buying priority"],
+        rows: [
+          { cells: ["Cut", "Face-up appearance, proportions, and craftsmanship in the lab’s cut system", "Brightness, fire, scintillation, durability, and spread", "Highest of the three for a standard round brilliant."] },
+          { cells: ["Polish", "Surface finish of the facets", "Visible polish marks at lower grades; usually subtle at high grades", "Excellent is required for Hourglass round screening."] },
+          { cells: ["Symmetry", "Outline and the placement and alignment of facets", "Pattern precision and, at lower grades, visible unevenness", "Excellent is required for Hourglass round screening, but is not proof of superior light return."] },
+        ],
+        note: "On current GIA reports, only standard round brilliants receive an overall GIA cut grade; fancy shapes still receive polish and symmetry grades.",
+      },
+      { type: "heading", text: "What the Overall Cut Grade Means" },
+      { type: "paragraph", text: "For a standard round brilliant, GIA’s overall cut grade combines observed appearance, design, and craftsmanship. It considers brightness, fire, scintillation, weight ratio, durability, polish, and symmetry rather than reducing cut to a single proportion or finish mark." },
+      { type: "paragraph", text: "That makes cut the more comprehensive buying signal, but it is still a category, not a promise that every diamond in it will look identical. Compare the actual light-and-dark pattern and movement within the grade." },
+      { type: "heading", text: "What Polish and Symmetry Do—and Do Not—Tell You" },
+      { type: "paragraph", text: "Polish describes the condition of facet surfaces, including polishing features and wear. Symmetry describes the precision of the outline and the shape, placement, and alignment of facets. Both are graded separately because a diamond can be finished differently even when its proportions are similar." },
+      { type: "paragraph", text: "For a GIA-graded round brilliant, Hourglass requires Excellent cut, polish, and symmetry as an initial screening floor. This “Triple Excellent” result does not independently prove exceptional beauty or light performance; it earns the stone a closer look." },
+      { type: "heading", text: "How to Prioritize the Three Grades" },
+      { type: "paragraph", text: "For round brilliants, start with overall cut and direct observation, then use polish and symmetry to understand craftsmanship and any limiting feature. For fancy shapes, where GIA does not currently assign an overall cut grade, polish and symmetry remain useful but cannot stand in for shape-specific proportions and visual performance." },
+      { type: "paragraph", text: "Our judgment: do not pay a premium for three matching words on a report without comparing the diamond itself. Read [what is diamond cut](/diamond-guide/what-is-diamond-cut), review [ideal diamond cut proportions](/diamond-guide/ideal-diamond-cut-proportions), and use [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) to place each field in context." },
+      { type: "paragraph", text: "Source basis: [GIA’s cut-grade guide](https://4cs.gia.edu/en-us/blog/gia-diamond-cut-grade-six-things-to-know/) explains the seven cut components and the separate roles of polish and symmetry." },
     ],
     related: [
       { title: "What is Diamond Cut", href: "/diamond-guide/what-is-diamond-cut" },
@@ -2029,29 +2034,34 @@ export const articles: Article[] = [
 
 {
   slug: "does-fluorescence-affect-diamond-value",
-  title: "Does Fluorescence Affect Diamond Value",
+  title: "Does Fluorescence Affect Diamond Value?",
   category: "Diamond Color",
   body: [
-    { type: "paragraph", text: "Value context for fluorescence belongs in the broader guide: [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence). This article focuses on pricing alone." },
-    { type: "heading", text: "Why Fluorescence Influences Pricing" },
-    { type: "paragraph", text: "Diamond value is influenced by many characteristics, including cut, color, clarity, and carat weight. Fluorescence is not part of the traditional Four Cs, but it can still affect how diamonds are priced in the market." },
-    { type: "paragraph", text: "Because fluorescence has historically been misunderstood, diamonds with stronger fluorescence sometimes trade at slightly lower prices compared to similar diamonds without fluorescence." },
-
-    { type: "heading", text: "How the Market Views Fluorescence" },
-    { type: "paragraph", text: "In the diamond trade, faint and medium fluorescence typically have little impact on value. These levels are often considered neutral characteristics that do not significantly affect the diamond’s appearance." },
-    { type: "paragraph", text: "Strong or very strong fluorescence may influence pricing more noticeably, particularly in diamonds that already have very high color grades." },
-
-    { type: "heading", text: "When Fluorescence Can Help Value" },
-    { type: "paragraph", text: "In certain diamonds with slight warmth, blue fluorescence can improve visual balance in sunlight. This can sometimes make a diamond appear slightly whiter, which may benefit its overall appearance." },
-    { type: "paragraph", text: "Because of this, some buyers intentionally consider fluorescent diamonds as an opportunity to find a visually attractive stone at a favorable price." },
-
-    { type: "heading", text: "Why Each Diamond Is Evaluated Individually" },
-    { type: "paragraph", text: "The impact of fluorescence on value ultimately depends on the individual diamond. Two diamonds with similar fluorescence grades may perform differently depending on their color, cut quality, and transparency." },
-    { type: "paragraph", text: "For this reason, many jewelers evaluate fluorescent diamonds in person rather than relying solely on the report." },
-
-    { type: "paragraph", text: "Fluorescence can influence diamond pricing, but its impact varies from one diamond to another. In many cases, faint or medium fluorescence has little effect on value." },
-    { type: "paragraph", text: "Understanding how the market views fluorescence helps buyers evaluate whether this characteristic plays a meaningful role in the diamond they are considering." },
-    
+    { type: "paragraph", text: "Fluorescence can affect price, but it rarely harms appearance. Judge the individual diamond in daylight before treating the report grade as a discount." },
+    { type: "heading", text: "How Fluorescence Can Affect Value" },
+    {
+      type: "comparison-table",
+      eyebrow: "Fluorescence · Practical Value Context",
+      columns: ["Report strength", "Typical appearance question", "Value judgment"],
+      rows: [
+        { cells: ["None", "No long-wave UV reaction reported", "Useful comparison baseline, not inherently better."] },
+        { cells: ["Faint", "Usually no visible effect in ordinary viewing", "Rarely a reason to reject or pay a premium."] },
+        { cells: ["Medium", "May be noticeable under UV-rich light", "Can offer value if the diamond remains transparent and attractive."] },
+        { cells: ["Strong", "Inspect in diffused daylight for any milky or oily appearance", "A discount may be rational, but appearance—not the word alone—decides."] },
+        { cells: ["Very Strong", "Requires the same careful daylight check", "Consider only with direct visual evidence and price context."] },
+      ],
+      note: "These are evaluation priorities, not fixed price adjustments. Market discounts vary by color, shape, supply, and the individual stone.",
+    },
+    { type: "heading", text: "Does Fluorescence Make a Diamond Look Hazy?" },
+    { type: "paragraph", text: "Usually no. GIA reports that fluorescence has no widely noticeable effect on appearance for the overwhelming majority of diamonds. An extremely strong reaction can coincide with a hazy or oily look in rare cases, so the right response is inspection—not a blanket rule." },
+    { type: "paragraph", text: "Also separate fluorescence from transparency issues caused by inclusions, graining, or other factors. If a stone looks sleepy, determine why rather than assigning the cause from one report field." },
+    { type: "heading", text: "Can Blue Fluorescence Make a Diamond Look Whiter?" },
+    { type: "paragraph", text: "It can under lighting with ultraviolet energy, because blue and yellow are visual opposites. That effect may make a warmer diamond appear less yellow in sunlight, but it is lighting-dependent and should not be described as a permanent color-grade upgrade." },
+    { type: "heading", text: "When Fluorescence Is a Value Opportunity" },
+    { type: "paragraph", text: "A medium or strong fluorescent diamond may be attractive when it looks transparent in daylight, compares well beside a nonfluorescent alternative, and is priced favorably. In higher color grades, market resistance can create a larger discount even when the visual effect is negligible." },
+    { type: "paragraph", text: "Our judgment: never reject fluorescence from the report alone. Compare the diamond in diffused daylight, direct sunlight, and ordinary indoor light; check transparency from several angles; then decide whether any price difference rewards or compensates you appropriately." },
+    { type: "paragraph", text: "Start with [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) for the grading field, compare [strong blue fluorescence](/diamond-guide/strong-blue-fluorescence-diamond), and review [how lighting affects diamonds](/diamond-guide/how-lighting-affects-diamonds) before assessing appearance." },
+    { type: "paragraph", text: "Source basis: [GIA’s fluorescence guidance](https://4cs.gia.edu/interactive-4cs/more-diamond-info/fluorescence.html) summarizes prevalence, appearance research, and the rarity of hazy or oily effects." },
   ],
   related: [
     { title: "What is Diamond Fluorescence", href: "/diamond-guide/what-is-diamond-fluorescence" },
@@ -2253,29 +2263,34 @@ export const articles: Article[] = [
 
 {
   slug: "g-vs-h-diamond-color",
-  title: "G vs H Diamond Color",
+  title: "G vs H Diamond Color: Which Should You Choose?",
   category: "Diamond Color",
   body: [
-    { type: "paragraph", text: "G and H sit at the top of the near colorless range. For the full color scale and how metal and cut change what you see, see [what is diamond color](/diamond-guide/what-is-diamond-color). This article compares G and H directly." },
-    { type: "heading", text: "The Near Colorless Diamond Range" },
-    { type: "paragraph", text: "G and H diamonds both fall within the near colorless category of the diamond color scale. These grades represent diamonds that contain extremely faint traces of color, though the difference is typically very difficult to see in everyday viewing." },
-    { type: "paragraph", text: "Because they sit just below the colorless range, G and H diamonds often appear bright and white when set in engagement rings. Many buyers consider these grades to offer a strong balance between visual appearance and overall value." },
-
-    { type: "heading", text: "How G Color Diamonds Appear" },
-    { type: "paragraph", text: "G color diamonds sit at the very top of the near colorless range. They contain only the slightest hint of color, often detectable only when compared directly against higher color grades in controlled lighting." },
-    { type: "paragraph", text: "In most engagement ring settings, a G color diamond will appear nearly indistinguishable from diamonds in the colorless category. This makes it a popular choice for buyers seeking a high-quality look without selecting the very top color grades." },
-
-    { type: "heading", text: "How H Color Diamonds Compare" },
-    { type: "paragraph", text: "H color diamonds contain slightly more warmth than G color diamonds, though the difference is still subtle. When viewed individually, many H color diamonds still appear white to the eye, particularly when the diamond has strong light performance." },
-    { type: "paragraph", text: "The way color appears can also depend on the diamond shape and setting. Certain diamond cuts may reveal color more easily, while others reflect light in a way that helps mask faint warmth." },
-
-    { type: "heading", text: "Choosing Between G and H" },
-    { type: "paragraph", text: "For many engagement ring buyers, the choice between G and H color comes down to personal preference and overall diamond priorities. Both grades typically offer excellent visual brightness, especially when paired with a well-cut diamond." },
-    { type: "paragraph", text: "Because the difference between the two grades is minor, buyers often evaluate them alongside factors such as cut quality, clarity, and carat weight to determine which diamond best fits their goals." },
-
-    { type: "paragraph", text: "G and H diamonds sit at the top of the near colorless range and are known for their clean, bright appearance. While a G color diamond contains slightly less color, the difference between the two grades is often difficult to detect once the diamond is set in a ring." },
-    { type: "paragraph", text: "Understanding how these grades compare helps buyers make more informed decisions about where color fits within their overall diamond priorities. If a report lists fluorescence alongside color, [what is diamond fluorescence](/diamond-guide/what-is-diamond-fluorescence) explains how those fields interact." },
-    
+    { type: "paragraph", text: "Choose G for a slightly cooler face-up look; choose H when value matters more. In a well-cut round, most buyers cannot separate them once set." },
+    { type: "heading", text: "G vs H at a Glance" },
+    {
+      type: "comparison-table",
+      eyebrow: "Near Colorless · Practical Comparison",
+      columns: ["Factor", "G color", "H color", "Hourglass judgment"],
+      rows: [
+        { cells: ["GIA range", "Top of near colorless", "Near colorless", "Both sit in GIA’s G–J near-colorless band."] },
+        { cells: ["Face-up appearance", "Usually reads cool white", "Usually reads white with marginally more warmth", "The difference is subtle without controlled side-by-side viewing."] },
+        { cells: ["Best fit", "Platinum, white gold, step cuts, or color-sensitive buyers", "Well-cut rounds, yellow or rose gold, and value-led briefs", "Shape, cut, size, and setting can matter more than one letter."] },
+        { cells: ["Value decision", "Pay more only if the cooler result is visible and preferred", "Often the stronger value", "Do not trade away cut quality merely to move from H to G."] },
+      ],
+      note: "Color should be compared at the same shape, size, cut quality, fluorescence, and setting—not as an isolated letter.",
+    },
+    { type: "heading", text: "Can You See the Difference Between G and H?" },
+    { type: "paragraph", text: "Usually not at normal viewing distance. GIA assigns color under standardized lighting by comparing a loose diamond with master stones, usually through the pavilion. That controlled process can separate adjacent grades more reliably than casual face-up viewing." },
+    { type: "paragraph", text: "A larger diamond, an open step cut, or a side-by-side comparison can make warmth easier to notice. A lively round brilliant, a halo, and yellow or rose gold can make the distinction less important." },
+    { type: "heading", text: "When G Is Worth the Premium" },
+    { type: "paragraph", text: "G is the better choice when you are sensitive to warmth, want a crisp platinum or white-gold presentation, or are choosing an emerald or Asscher cut whose broad facets reveal body color more readily. It can also be the safer preference in larger stones, where more material makes tint easier to perceive." },
+    { type: "heading", text: "When H Is the Smarter Buy" },
+    { type: "paragraph", text: "H is often the value choice in a well-cut round brilliant. The small amount of additional warmth is commonly difficult to see once mounted, while the savings may protect a better cut, a more attractive clarity profile, or the carat target that matters to you." },
+    { type: "heading", text: "What Justin Would Inspect Next" },
+    { type: "paragraph", text: "I would match shape, millimeter spread, cut quality, fluorescence, and transparency, then compare the stones loose and face-up in diffused daylight and ordinary indoor light. I would also place each beside the intended metal: prongs, a halo, and reflected band color can change the decision." },
+    { type: "paragraph", text: "Our judgment: start with H, then move to G only when a matched comparison shows a difference you genuinely prefer. Review [what is diamond color](/diamond-guide/what-is-diamond-color) for the full scale, [does fluorescence affect diamond value](/diamond-guide/does-fluorescence-affect-diamond-value) for UV-rich lighting context, and [how lighting affects diamonds](/diamond-guide/how-lighting-affects-diamonds) before making the final call." },
+    { type: "paragraph", text: "Source basis: [GIA’s D-to-Z color scale](https://www.gia.edu/gia-about/4cs-color) defines G through J as near colorless and explains that grading uses master stones under controlled conditions." },
   ],
   related: [
     { title: "What is Diamond Color", href: "/diamond-guide/what-is-diamond-color" },
@@ -2544,48 +2559,34 @@ export const articles: Article[] = [
 },
 {
   slug: "how-lighting-affects-diamonds",
-  title: "How Lighting Affects Diamonds",
+  title: "How Lighting Affects Diamond Sparkle and Color",
   category: "Light Performance",
   body: [
-    { type: "paragraph", text: "Lighting changes how brilliance, fire, and scintillation read on the hand. For how cut creates those effects, see [what is diamond cut](/diamond-guide/what-is-diamond-cut). This article explains environment, not craftsmanship." },
-    { type: "heading", text: "Why Lighting Changes the Way Diamonds Look" },
-    { type: "paragraph", text: "Diamonds are highly responsive to light, which means their appearance can change noticeably depending on the environment. A diamond that looks bright and lively in one setting may appear softer or more subtle in another." },
-    { type: "paragraph", text: "This variation occurs because diamonds rely on external light sources to reveal their brilliance, fire, and sparkle. Different lighting conditions interact with the diamond’s facets in different ways." },
-    { type: "paragraph", text: "Understanding how lighting affects diamonds can help explain why jewelers often evaluate stones under multiple lighting environments." },
-
-    { type: "heading", text: "Direct Lighting and Sparkle" },
-    { type: "paragraph", text: "Direct lighting tends to produce the most dramatic visual effects in a diamond. When a focused light source shines on the stone, it creates strong reflections inside the diamond." },
-    { type: "paragraph", text: "These reflections generate bright flashes of brilliance and vibrant bursts of fire. Jewelry store lighting often uses multiple spotlights specifically designed to highlight these effects." },
-    { type: "paragraph", text: "In these environments, diamonds may appear especially lively because the lighting encourages strong flashes of color and sparkle." },
-
-    { type: "heading", text: "Soft Lighting and Brilliance" },
-    { type: "paragraph", text: "In softer lighting conditions, the diamond’s appearance can feel more understated. Instead of strong flashes of color, the stone often shows a more even glow of white light." },
-    { type: "paragraph", text: "This type of lighting emphasizes brilliance rather than fire. The diamond may appear calm and luminous rather than intensely sparkling." },
-    { type: "paragraph", text: "Many people notice this effect when viewing diamonds in natural indoor lighting or on cloudy days." },
-
-    { type: "heading", text: "Natural Sunlight" },
-    { type: "paragraph", text: "Sunlight can produce some of the most vivid diamond effects. Because sunlight contains a broad spectrum of light, it can create strong dispersion and colorful flashes within the diamond." },
-    { type: "paragraph", text: "Direct sunlight often produces dramatic bursts of fire, while indirect daylight tends to emphasize brilliance." },
-    { type: "paragraph", text: "Many jewelers recommend viewing a diamond in natural light before making a final decision because it provides a balanced perspective on how the stone will appear in everyday settings." },
-
-    { type: "heading", text: "Low Lighting Environments" },
-    { type: "paragraph", text: "In low lighting conditions, diamonds tend to display less sparkle simply because there is less light available to reflect. However, a well-cut diamond can still maintain a sense of brightness even in softer environments." },
-    { type: "paragraph", text: "This is one of the reasons cut quality is so important. A diamond with strong light performance can capture and reflect even small amounts of available light." },
-    { type: "paragraph", text: "As a result, it will often appear more lively than a poorly cut diamond under the same conditions." },
-
-    { type: "heading", text: "How Movement Interacts with Lighting" },
-    { type: "paragraph", text: "Movement plays an important role in how diamonds respond to light. As the diamond shifts, different facets interact with the surrounding light sources." },
-    { type: "paragraph", text: "This movement causes flashes of brilliance and scintillation to appear and disappear. Even small movements of the hand can dramatically change how the diamond looks in a given lighting environment." },
-    { type: "paragraph", text: "The combination of lighting and movement is what gives diamonds their dynamic visual character." },
-
-    { type: "heading", text: "Why Jewelers View Diamonds in Multiple Lights" },
-    { type: "paragraph", text: "Because lighting conditions influence how diamonds appear, professionals often evaluate diamonds under several types of light." },
-    { type: "paragraph", text: "By viewing the stone under direct lighting, soft lighting, and natural daylight, jewelers can gain a more complete understanding of how the diamond performs." },
-    { type: "paragraph", text: "This approach helps ensure the diamond will remain visually appealing in everyday situations rather than only under ideal showroom lighting." },
-
-    { type: "paragraph", text: "Lighting plays a significant role in how diamonds display brilliance, fire, and sparkle. Different environments can highlight different aspects of the stone’s light performance." },
-    { type: "paragraph", text: "A well-cut diamond tends to perform consistently across a wide range of lighting conditions. By understanding how lighting affects diamonds, buyers can better appreciate the subtle variations that make each stone unique." },
-    
+    { type: "paragraph", text: "Lighting can make the same diamond look bright, fiery, dark, or quiet. Judge it in several environments—especially the ones where you will wear it." },
+    { type: "heading", text: "What Different Lighting Reveals" },
+    {
+      type: "comparison-table",
+      eyebrow: "Lighting · What You Are Actually Seeing",
+      columns: ["Environment", "What it tends to reveal", "How to use it"],
+      rows: [
+        { cells: ["Diffused daylight", "Broad white-light brightness and body color", "Use near a window, out of direct sun, to compare overall brightness and tint."] },
+        { cells: ["Direct sunlight or spotlights", "Strong fire and sharp flashes", "Enjoy the spectacle, but do not use it as the only basis for comparison."] },
+        { cells: ["Office or retail lighting", "A mix of brightness, contrast, and localized sparkle", "Move away from jewelry-case spotlights to see whether performance remains convincing."] },
+        { cells: ["Warm home lighting", "A warmer overall cast and more subdued fire", "Check the rooms where the ring will be seen most often."] },
+        { cells: ["Low light", "Contrast and isolated scintillation rather than continuous brightness", "Expect every diamond to quiet down; compare movement, not static brightness alone."] },
+      ],
+      note: "The diamond, observer, distance, movement, and surrounding room all form part of the viewing environment.",
+    },
+    { type: "heading", text: "Why the Same Diamond Changes" },
+    { type: "paragraph", text: "A diamond behaves like a small arrangement of mirrors. Its facets return parts of the room, the light sources, and even the observer. Change the number, size, direction, or color of those sources and the visible pattern changes too." },
+    { type: "paragraph", text: "Brightness is returned white light, fire is dispersed color, and scintillation is the pattern of flashes created as the diamond, light, or viewer moves. No single lighting setup displays all three in the same way." },
+    { type: "heading", text: "Does Bright Store Lighting Hide Problems?" },
+    { type: "paragraph", text: "It can exaggerate sparkle. Multiple small spotlights create many opportunities for sharp flashes, so almost any clean diamond can look animated under a jewelry case. That does not make the view false; it makes it incomplete." },
+    { type: "paragraph", text: "Ask to see the diamond away from the case, near diffused daylight, and under ordinary room light. Compare candidates in the same position and at the same distance. A photograph taken under unknown lighting is weak evidence for a final choice." },
+    { type: "heading", text: "How to Evaluate a Diamond Across Lighting" },
+    { type: "paragraph", text: "First, hold the diamond at a normal viewing distance and compare overall brightness. Second, rock it gently to judge scintillation and whether dark areas break up attractively. Third, inspect it in diffused daylight for color. Finally, repeat in the setting or a similar mounting because metal and prongs alter what surrounds the stone." },
+    { type: "paragraph", text: "Our judgment: prefer the diamond that remains engaging across ordinary environments, not merely the one that produces the largest flash under a spotlight. Use [what is diamond cut](/diamond-guide/what-is-diamond-cut) for the craftsmanship behind these effects and [diamond sparkle explained](/diamond-guide/diamond-sparkle-explained) for the visual vocabulary." },
+    { type: "paragraph", text: "Source basis: [GIA’s lighting guide](https://www.gia.edu/gia-news-research/light-affect-diamond-appearance?limit=all) explains how environment, distance, and reflections change a diamond’s appearance." },
   ],
   related: [
     { title: "What is Diamond Brilliance", href: "/diamond-guide/what-is-diamond-brilliance" },
@@ -2742,25 +2743,33 @@ export const articles: Article[] = [
 },
 {
   slug: "hrd-diamond-certification-explained",
-  title: "HRD Diamond Certification Explained",
+  title: "HRD Diamond Certification: What the Report Means",
   category: "Certification",
   body: [
-    { type: "heading", text: "The European Diamond Grading Authority" },
-    { type: "paragraph", text: "HRD reports appear often in European trade inventories. For how to read the fields on any laboratory report, start with [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate). This article covers HRD-specific context." },
-    { type: "paragraph", text: "HRD provides diamond grading reports that document the measurable qualities of diamonds using internationally recognized grading methods." },
-
-    { type: "heading", text: "What an HRD Diamond Report Includes" },
-    { type: "paragraph", text: "HRD certificates contain information about the diamond’s carat weight, color grade, clarity grade, and proportions. The report also includes measurements describing the diamond’s shape, dimensions, and structural characteristics." },
-    { type: "paragraph", text: "Many HRD reports include diagrams mapping the diamond’s inclusions and identifying surface features. Like other laboratories, the report may also include a unique identification number connected to the diamond." },
-    { type: "paragraph", text: "These reports provide a detailed description of the stone’s physical characteristics." },
-
-    { type: "heading", text: "Where HRD Certification Is Commonly Used" },
-    { type: "paragraph", text: "HRD reports are widely used in European diamond markets, particularly within the Antwerp trading community. Because Antwerp has historically been a global hub for diamond trading, HRD reports appear frequently in international inventories." },
-    { type: "paragraph", text: "Buyers researching diamonds may encounter HRD certification when reviewing stones sourced through European markets." },
-
-    { type: "paragraph", text: "HRD diamond certification offers an independent evaluation of a diamond’s measurable characteristics. By documenting grading details and structural features, the report provides a consistent reference for understanding diamond quality." },
-    { type: "paragraph", text: "For buyers exploring international diamond sources, familiarity with HRD certification can provide useful context when reviewing grading reports. Diamond Intelligence does not currently support HRD reports; [begin a private conversation](/concierge) when you want a specific HRD document and stone reviewed before comparing candidates." },
-    
+    { type: "paragraph", text: "An HRD Antwerp report independently records a diamond’s identity and quality factors. Treat it as evidence—not a substitute for seeing the stone." },
+    { type: "heading", text: "What Is HRD Diamond Certification?" },
+    { type: "paragraph", text: "HRD Antwerp is a diamond laboratory associated with the Antwerp trade. Its natural-diamond grading report confirms that the examined stone is a natural diamond and documents the 4Cs plus identifying and finish information." },
+    {
+      type: "comparison-table",
+      eyebrow: "HRD Report · Field Guide",
+      columns: ["Report field", "What it tells you", "What to verify"],
+      rows: [
+        { cells: ["Identity", "Natural-diamond identification and report number", "Match the report number and any girdle inscription to the stone."] },
+        { cells: ["Carat and measurements", "Weight, shape, and dimensions", "Compare spread and proportions, not carat weight alone."] },
+        { cells: ["Colour and clarity", "Grades assigned under HRD’s systems", "Read the plot and comments alongside the headline grades."] },
+        { cells: ["Proportions, polish, symmetry", "Separate finish and cut-related assessments", "For fancy shapes, do not infer total light performance from finish grades alone."] },
+        { cells: ["Fluorescence", "Reaction under long-wave ultraviolet light", "Judge appearance in relevant lighting rather than treating the field as automatically good or bad."] },
+      ],
+      note: "Available fields vary by report type. Verify the exact report in HRD Antwerp’s online archive.",
+    },
+    { type: "heading", text: "How HRD Compares with GIA and IGI" },
+    { type: "paragraph", text: "HRD, GIA, and IGI are separate laboratories with their own documents, terminology, procedures, and market presence. A matching letter or clarity symbol should not be treated as proof that two different labs will always make identical judgments on the same borderline stone." },
+    { type: "paragraph", text: "The disciplined comparison is report-specific: confirm identity, understand the grading system named on that document, inspect the diamond, and price it against genuinely comparable stones. The laboratory name is one input, not a quality grade by itself." },
+    { type: "heading", text: "Is an HRD-Certified Diamond Worth Buying?" },
+    { type: "paragraph", text: "Yes, an HRD-graded diamond can be worth buying when the report verifies cleanly, the stone performs well in person, and the price reflects the total evidence. The report does not guarantee beauty, value, or suitability for a particular setting." },
+    { type: "paragraph", text: "Use [how to read a diamond certificate](/diamond-guide/how-to-read-a-diamond-certificate) to work through any report field by field, then compare [GIA diamond certification](/diamond-guide/gia-diamond-certification-explained) and [IGI diamond certification](/diamond-guide/igi-diamond-certification-explained) if laboratory choice is part of the decision." },
+    { type: "paragraph", text: "Diamond Intelligence does not currently support HRD reports; [begin a private conversation](/concierge) when you want a specific HRD document and stone reviewed before comparing candidates." },
+    { type: "paragraph", text: "Source basis: [HRD Antwerp’s 4Cs guide](https://hrdantwerp.com/4cs/) explains its report framework, including its separate proportions, polish, and symmetry assessments." },
   ],
   related: [
     { title: "How to Read a Diamond Certificate", href: "/diamond-guide/how-to-read-a-diamond-certificate" },

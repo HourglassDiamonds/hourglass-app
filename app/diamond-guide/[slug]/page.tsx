@@ -20,6 +20,7 @@ import ArticleHeroImage from "../components/ArticleHeroImage";
 import {
   ArticleEditorialImage,
   CaratMmReference,
+  ComparisonTable,
   FingerCoverageScale,
   PerceivedSizeRanking,
   ReferenceFactorList,
@@ -47,6 +48,7 @@ const VISUAL_BLOCK_TYPES = new Set<ArticleBlock["type"]>([
   "perceived-size-ranking",
   "reference-factor-list",
   "finger-coverage-scale",
+  "comparison-table",
   "studio-callout",
   "editorial-image",
 ]);
@@ -157,6 +159,10 @@ export default async function ArticlePage({ params }: ArticlePageProps) {
 
     if (block.type === "finger-coverage-scale") {
       return <FingerCoverageScale key={key} {...block} />;
+    }
+
+    if (block.type === "comparison-table") {
+      return <ComparisonTable key={key} {...block} />;
     }
 
     if (block.type === "studio-callout") {

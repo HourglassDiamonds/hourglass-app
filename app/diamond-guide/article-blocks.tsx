@@ -55,6 +55,73 @@ function ReferenceNote({ children }: { children: string }) {
   return <p className={noteClass}>{children}</p>;
 }
 
+export function ComparisonTable({
+  eyebrow,
+  columns,
+  rows,
+  note,
+}: Extract<ArticleBlock, { type: "comparison-table" }>) {
+  return (
+    <figure className={FIGURE_SPACE}>
+      <header className={FIGURE_HEADER}>
+        <FigureEyebrow>{eyebrow}</FigureEyebrow>
+      </header>
+
+      <div className={`${tableShellClass} md:hidden`}>
+        {rows.map((row, rowIndex) => (
+          <dl
+            key={`${row.cells[0]}-${rowIndex}`}
+            className={`${tableInset} border-b border-[#ebe4da]/45 py-5 last:border-b-0`}
+          >
+            <div className={serifLabelClass}>{row.cells[0]}</div>
+            {columns.slice(1).map((column, columnIndex) => (
+              <div key={column} className="mt-4 grid gap-1.5">
+                <dt className="text-[9px] uppercase tracking-[0.28em] text-hg-eyebrow">
+                  {column}
+                </dt>
+                <dd className={bodyCopyClass}>{row.cells[columnIndex + 1]}</dd>
+              </div>
+            ))}
+          </dl>
+        ))}
+      </div>
+
+      <div className={`${tableShellClass} hidden md:block`}>
+        <table className="w-full border-collapse text-left">
+          <thead>
+            <tr className="border-b border-[#ebe4da]/40">
+              {columns.map((column) => (
+                <th key={column} scope="col" className="px-5 py-5 text-[9px] font-normal uppercase tracking-[0.28em] text-hg-eyebrow first:pl-7 last:pr-7">
+                  {column}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, rowIndex) => (
+              <tr key={`${row.cells[0]}-${rowIndex}`} className={rowDivider}>
+                {row.cells.map((cell, cellIndex) =>
+                  cellIndex === 0 ? (
+                    <th key={cellIndex} scope="row" className="px-5 py-5 pl-7 align-top font-serif text-[1rem] font-normal leading-snug text-[#1c1b1a]">
+                      {cell}
+                    </th>
+                  ) : (
+                    <td key={cellIndex} className={`px-5 py-5 align-top last:pr-7 ${bodyCopyClass}`}>
+                      {cell}
+                    </td>
+                  ),
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {note ? <ReferenceNote>{note}</ReferenceNote> : null}
+    </figure>
+  );
+}
+
 const circleSurfaceClass =
   "rounded-full border border-[#d5cdc2]/70 bg-[radial-gradient(circle_at_34%_30%,#fbf8f4_0%,#ebe3d8_52%,#ddd4c8_100%)] shadow-[inset_0_1px_1px_rgba(255,255,255,0.5)]";
 
