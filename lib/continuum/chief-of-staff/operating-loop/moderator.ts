@@ -1136,11 +1136,17 @@ function classifySituation(input: {
     : null;
   const vendorName = pickVendorName(project);
   const thread = indexedThreadForGroup(input.key, input.rows, input.threadContext);
-  const associatedThreadIds = gmailThreadIdsForGroup(
+  const groupedThreadIds = gmailThreadIdsForGroup(
     input.key,
     input.rows,
     input.threadContext,
   );
+  const projectThreadIds = attribution.projectId
+    ? (input.associatedByProject?.get(attribution.projectId) ?? [])
+    : [];
+  const associatedThreadIds = projectThreadIds.length > 0
+    ? [...projectThreadIds]
+    : groupedThreadIds;
   const attachmentNames = [
     ...new Set(
       associatedThreadIds.flatMap(

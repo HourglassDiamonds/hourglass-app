@@ -70,6 +70,39 @@ export function proposeFounderOperation(
     )
   )
     return null;
+  const terminal = text.match(
+    /^(.{1,100}?)\s+(?:is\s+)?(dead|closed|lost|spam|delivered|complete|completed|done)(?:[.!]|\s|$)/i,
+  );
+  if (terminal && text.slice(terminal[0].length).trim()) {
+    if (/^this$/i.test(terminal[1].trim())) return null;
+    return {
+      kind: /delivered|complete|completed|done/i.test(terminal[2]) ? "resolve" : "cancel",
+      target: terminal[1].trim(),
+      days: null,
+    };
+  }
+  const emailed = text.match(
+    /^I\s+(?:already\s+)?(?:emailed|replied to|responded to)\s+(.+?)(?:\s+already)?[.!]?$/i,
+  );
+  if (emailed) {
+    return {
+      kind: "correct",
+      target: emailed[1].trim(),
+      truth: { ballHolder: "client", dependency: "client response" },
+      wording: `${emailed[1].trim()} is waiting on client response.`,
+    };
+  }
+  const deferred = text.match(
+    /^(?:put\s+)?(.{1,100}?)\s+(?:on\s+the\s+)?(?:backburner|back burner|on hold|held|deferred)[.!]?$/i,
+  );
+  if (deferred) {
+    return {
+      kind: "correct",
+      target: deferred[1].trim(),
+      truth: { ballHolder: "unknown", dependency: "held until the founder releases the hold" },
+      wording: `${deferred[1].trim()} is waiting on held until the founder releases the hold.`,
+    };
+  }
   const command = text.match(
     /^(?:please\s+)?(snooze|resolve|cancel)\s+(.+?)(?:\s+for\s+(\d+)\s+days?)?[.!]?$/i,
   );
@@ -86,6 +119,7 @@ export function proposeFounderOperation(
   const followedUp = text.match(/^I\s+(?:already\s+)?followed up with\s+(.{1,100}?)[.!]?$/i);
   if (!state && !alternate && !followedUp) return null;
   const target = state?.[1] ?? alternate?.[1] ?? followedUp![1];
+  if (/^this$/i.test(target.trim())) return null;
   const body = state?.[2] ?? (followedUp ? "waiting on vendor response" : text);
   let truth: NonNullable<SourceCommunicationEvent["correction"]>;
   if (/^in (?:manufacturing|production)[.!]?$/i.test(body))
@@ -163,7 +197,7 @@ export function proposeTodayFounderOperation(
   if (/\b(?:don['’]?t show me this again|do not show me this again|dismiss (?:this|it) permanently)\b/i.test(text)) {
     return { kind: "cancel", target, days: null };
   }
-  if (/\b(?:bring (?:this|it) back|snooze (?:this|it))\b/i.test(text)) {
+  if (/\b(?:bring (?:this|it) back|snooze (?:this|it)|(?:I )?need to do (?:this|it)|do (?:this|it))\b/i.test(text)) {
     const weekday = text.match(/\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/i)?.[1];
     const explicitDays = text.match(/\b(?:in|for)\s+(\d{1,3})\s+days?\b/i)?.[1];
     const days = explicitDays ? Number(explicitDays) : weekday ? daysUntilWeekday(now, weekday) : null;
@@ -203,6 +237,37 @@ export function proposeTodayFounderOperation(
     return operation?.kind === "correct" ? { ...operation, scope } : operation;
   }
   return null;
+}
+
+export function proposeTargetedFounderOperation(
+  query: string,
+  label: string,
+  now = new Date(),
+): FounderOperation | null {
+  return proposeTodayFounderOperation(query, {
+    itemId: label,
+    displayName: label,
+    entityType: "unknown",
+    briefingKind: "generic",
+    projectName: null,
+    projectId: null,
+    personId: null,
+    organizationLabel: null,
+    vendorContactName: null,
+    identifiers: [],
+    lifecycle: null,
+    latestMeaningfulExternalEvent: null,
+    latestMeaningfulFounderAction: null,
+    ballHolder: "unknown",
+    unresolvedFounderObligation: null,
+    externalCommitment: null,
+    nextExpectedEvent: null,
+    candidateNextAction: null,
+    uncertainty: [],
+    mustNotState: [],
+    sourceRefs: [],
+    authoritative: true,
+  }, now);
 }
 
 export function looksLikeTodayFounderDirective(query: string): boolean {

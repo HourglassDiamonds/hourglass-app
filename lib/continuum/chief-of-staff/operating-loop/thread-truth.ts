@@ -521,6 +521,7 @@ export function gmailThreadIdsForGroup(
   };
   if (key.startsWith("thread:")) {
     add(key.slice("thread:".length));
+    return ids;
   }
   if (key.startsWith("cad:") && threadContext) {
     const cad = key.slice("cad:".length).toUpperCase();
@@ -528,6 +529,11 @@ export function gmailThreadIdsForGroup(
       const hay = [thread.subject, ...(thread.attachmentFilenames ?? [])].join(" ");
       if (hay.toUpperCase().includes(cad)) add(threadId);
     }
+    // A CAD group can contain generated/supporting candidates whose source refs
+    // point at other work. Once the Gmail index gives us exact CAD matches, those
+    // threads are authoritative for the group; admitting candidate refs here can
+    // blend an unrelated client's timeline into this CAD's current truth.
+    if (ids.length > 0) return ids;
   }
   const latestRow = [...rows].sort(
     (a, b) => parseMs(a.sourceTimestamp) - parseMs(b.sourceTimestamp),

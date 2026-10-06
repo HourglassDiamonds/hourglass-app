@@ -101,6 +101,58 @@ describe("Today actionability text boundary", () => {
 });
 
 describe("Today actionability gate", () => {
+  it("does not collapse an exact CAD group into an unrelated supporting project thread", () => {
+    const nathanThread = "nathan-c026176-thread";
+    const unrelatedThread = "a-miller-c026510-thread";
+    const projectRow = gmailRow({
+      candidateId: "a-miller-project",
+      sourceRef: `gc1|${unrelatedThread}|a-miller-message`,
+    });
+    const cadRow = gmailRow({
+      candidateId: "nathan-cross-reference",
+      sourceRef: `gc1|${unrelatedThread}|a-miller-message`,
+      evidenceBasis: {
+        ruleIds: ["generated_support"],
+        matchedText: "C026176",
+      },
+    });
+    const groups = new Map<string, ContinuumCandidate[]>([
+      ["project:a-miller-project-id", [projectRow]],
+      ["cad:C026176", [cadRow]],
+    ]);
+    const threadContext = new Map<string, TodayGmailThreadContext>([
+      [
+        nathanThread,
+        {
+          subject: "HGD x Nathan-C026176",
+          attachmentFilenames: ["Nathan-C026176-Mod1.jpg"],
+          messages: [],
+        },
+      ],
+      [
+        unrelatedThread,
+        {
+          subject: "HGD x A.Miller-C026510",
+          attachmentFilenames: ["A.Miller-C026510-Mod1.jpg"],
+          messages: [
+            { messageId: "a-miller-message", sentAt: NOW, direction: "inbound" },
+          ],
+        },
+      ],
+    ]);
+
+    const collapsed = collapseTodayCandidateGroups(
+      groups,
+      gmailThreadByMessageId(threadContext),
+      threadContext,
+    );
+
+    assert.deepEqual([...collapsed.keys()].sort(), [
+      "cad:C026176",
+      "project:a-miller-project-id",
+    ]);
+  });
+
   it("IMAGE FILENAME: candidate text=image001.jpg is not a Today item", () => {
     const candidates = [
       gmailRow({

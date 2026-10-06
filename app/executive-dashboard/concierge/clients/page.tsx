@@ -1,4 +1,5 @@
 import { loadOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/load";
+import { getAuthenticatedClientWebsiteIntakeReader } from "@/lib/continuum/client-memory/read/website-intake-load";
 import {
   isFounderIdentityName,
   isVendorPerson,
@@ -14,7 +15,13 @@ export const metadata = {
 };
 
 export default async function ConciergeClientsPage() {
-  const work = await loadOpenProjectWork();
+  const [work, intakeAccess] = await Promise.all([
+    loadOpenProjectWork(),
+    getAuthenticatedClientWebsiteIntakeReader(),
+  ]);
+  const intakes = intakeAccess.ok
+    ? await intakeAccess.reader.listRecent().catch(() => [])
+    : [];
   const seen = new Set<string>();
   const people: ClientsHomePerson[] = [];
   for (const project of work) {
@@ -30,13 +37,23 @@ export default async function ConciergeClientsPage() {
       });
     }
   }
+  for (const intake of intakes) {
+    if (!intake.personId || seen.has(intake.personId)) continue;
+    seen.add(intake.personId);
+    people.push({
+      personId: intake.personId,
+      displayName: intake.fullName,
+      projectTitle: intake.projectType,
+      kind: "prospect",
+    });
+  }
   people.sort((a, b) =>
     a.displayName.localeCompare(b.displayName, "en", { sensitivity: "base" }),
   );
 
   return (
     <ConciergeShell variant="book">
-      <ClientsHome people={people} />
+      <ClientsHome people={people} intakes={intakes} />
     </ConciergeShell>
   );
 }

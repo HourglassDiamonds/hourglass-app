@@ -14,6 +14,8 @@ import {
   ConditionalHoldPanel,
   ConditionalHoldPanelFallback,
 } from "./components/conditional-hold-panel";
+import { loadActiveClientWebsiteIntakes } from "@/lib/continuum/client-memory/read/website-intake-load";
+import { composeBusinessTodayContext } from "@/lib/continuum/chief-of-staff/operating-loop/business-today-context";
 
 export const fetchCache = "force-no-store";
 // Today can perform a one-time synchronous read-model rebuild after a version
@@ -24,10 +26,16 @@ export const maxDuration = 120;
 
 export default async function ConciergeHomePage() {
   const model = loadContinuumHomeModel();
-  const [today, upcoming] = await Promise.all([
+  const [today, upcoming, intakes] = await Promise.all([
     loadTodaySurface(),
     loadTodayUpcoming(),
+    loadActiveClientWebsiteIntakes(),
   ]);
+  const businessTodayContext = composeBusinessTodayContext({
+    docket: today.docket,
+    intakes,
+    nowIso: new Date().toISOString(),
+  });
   return (
     <ConciergeShell variant="home">
       <GmailOperatingFreshness
@@ -49,6 +57,8 @@ export default async function ConciergeHomePage() {
         disposeAction={disposeTodayDocketItemAction}
         askAction={askConcierge}
         upcoming={upcoming}
+        intakes={intakes}
+        businessTodayContext={businessTodayContext}
       />
     </ConciergeShell>
   );

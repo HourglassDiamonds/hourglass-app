@@ -10,9 +10,95 @@ import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memor
 import { getAuthenticatedCandidateStore } from "@/lib/continuum/candidates/load";
 import {
   applyFounderOperation,
+  correctionNote,
   type FounderOperation,
   type FounderCommandResult,
 } from "./founder-command";
+
+export type TodayCommandTarget = {
+  itemId: string;
+  label: string;
+  projectId: string | null;
+  jobId: string | null;
+};
+
+export async function executeAuthenticatedTargetedFounderOperation(
+  operation: FounderOperation,
+  target: TodayCommandTarget,
+  refresh: () => Promise<void>,
+): Promise<FounderCommandResult> {
+  if (operation.kind === "clarify") {
+    return { status: "clarify", text: operation.question, refresh: false };
+  }
+  const [jobs, notes] = await Promise.all([
+    getAuthenticatedProjectJobWriter(),
+    getAuthenticatedClientMemoryNoteWriter(),
+  ]);
+  if (!jobs.ok || !notes.ok) {
+    return { status: "failed", text: "Unable to authorize this change. Sign in and try again.", refresh: false };
+  }
+  try {
+    let changed = false;
+    if (operation.kind === "correct") {
+      if (!target.projectId) {
+        return { status: "clarify", text: "Which existing project should I update?", refresh: false };
+      }
+      if (target.jobId && operation.truth.ballHolder !== "founder") {
+        const job = await jobs.writer.getJob(target.projectId, target.jobId);
+        if (job && (job.state === "open" || job.state === "snoozed")) {
+          const resolved = await jobs.writer.mutateJob({
+            mutationId: randomUUID(),
+            projectId: target.projectId,
+            jobId: target.jobId,
+            action: "resolve",
+            actor: jobs.username,
+          });
+          if (!resolved.ok) throw new Error("job-mutation-failed");
+        }
+      }
+      const note = await notes.writer.addManualNote({
+        submissionId: randomUUID(),
+        projectId: target.projectId,
+        personId: null,
+        contextLayer: "client",
+        noteText: correctionNote(operation),
+        actor: jobs.username,
+      });
+      changed = note.ok;
+    } else {
+      if (!target.jobId) {
+        return executeAuthenticatedFounderOperation(operation, refresh);
+      }
+      const job = await jobs.writer.getJob(target.projectId, target.jobId);
+      if (!job || (job.state !== "open" && job.state !== "snoozed")) {
+        return { status: "failed", text: "That active work item could not be found.", refresh: false };
+      }
+      if (operation.kind === "snooze" && (!operation.days || operation.days < 1 || operation.days > 365)) {
+        return { status: "clarify", text: "When should I bring it back?", refresh: false };
+      }
+      const result = await jobs.writer.mutateJob({
+        mutationId: randomUUID(),
+        projectId: target.projectId,
+        jobId: target.jobId,
+        action: operation.kind,
+        actor: jobs.username,
+        ...(operation.kind === "snooze"
+          ? { deferredUntil: new Date(Date.now() + operation.days! * 86_400_000).toISOString() }
+          : {}),
+      });
+      changed = result.ok;
+    }
+    if (!changed) return { status: "failed", text: "The update failed. No successful change was confirmed.", refresh: false };
+    try {
+      await refresh();
+    } catch {
+      return { status: "applied", text: "Saved. Today is still refreshing.", refresh: true };
+    }
+    return { status: "applied", text: `${target.label} updated.`, refresh: true };
+  } catch {
+    return { status: "failed", text: "The update failed. No successful change was confirmed.", refresh: false };
+  }
+}
 
 export async function executeAuthenticatedFounderOperation(
   operation: FounderOperation,

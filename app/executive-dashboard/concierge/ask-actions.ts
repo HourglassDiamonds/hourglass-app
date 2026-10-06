@@ -1,8 +1,8 @@
 "use server";
 
-import { executeAuthenticatedFounderOperation } from "@/lib/continuum/concierge-sol/founder-command-server";
+import { executeAuthenticatedFounderOperation, executeAuthenticatedTargetedFounderOperation } from "@/lib/continuum/concierge-sol/founder-command-server";
 import { revalidatePath } from "next/cache";
-import { looksLikeTodayFounderDirective, proposeFounderOperation, proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
+import { looksLikeTodayFounderDirective, proposeFounderOperation, proposeTargetedFounderOperation, proposeTodayFounderOperation } from "@/lib/continuum/concierge-sol/founder-command";
 import { refreshTodayAfterFounderMutation } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import { answerAskConciergeQuery } from "@/lib/continuum/client-memory/ask/query";
@@ -47,12 +47,21 @@ export async function askConcierge(
           packet: TodayBriefingPacket;
           briefing?: CosBriefingV1 | null;
         };
+        businessTodayContext?: string;
+        todayTarget?: {
+          itemId: string;
+          label: string;
+          projectId: string | null;
+          jobId: string | null;
+        };
       },
 ): Promise<AskConciergeAnswer | ConciergeSolAnswer> {
   const query = typeof input === "string" ? input : input.query;
   const mode = typeof input === "string" ? "conversation" : input.mode ?? "conversation";
   const history = typeof input === "string" ? [] : input.history ?? [];
   const todayContext = typeof input === "string" ? undefined : input.todayContext;
+  const businessTodayContext = typeof input === "string" ? "" : input.businessTodayContext ?? "";
+  const todayTarget = typeof input === "string" ? undefined : input.todayTarget;
   const packet = todayContext?.packet ? readTodayBriefingPacket(todayContext.packet) : null;
   if (todayContext && (!packet || packet.itemId !== todayContext.itemId)) {
     return { kind: "error" };
@@ -65,10 +74,14 @@ export async function askConcierge(
     if (sterling) return presentSterling(sterling);
   }
   const operation = mode === "conversation" || packet
-    ? proposeFounderOperation(query) ?? (packet ? proposeTodayFounderOperation(query, packet) : null)
+    ? proposeFounderOperation(query)
+      ?? (packet ? proposeTodayFounderOperation(query, packet) : null)
+      ?? (todayTarget ? proposeTargetedFounderOperation(query, todayTarget.label) : null)
     : null;
   if (operation) {
-    const result = await executeAuthenticatedFounderOperation(operation, refreshTodayAfterFounderMutation);
+    const result = todayTarget
+      ? await executeAuthenticatedTargetedFounderOperation(operation, todayTarget, refreshTodayAfterFounderMutation)
+      : await executeAuthenticatedFounderOperation(operation, refreshTodayAfterFounderMutation);
     if (result.refresh) revalidatePath(CONCIERGE_HOME_PATH);
     return { kind: "conversation", mode: "conversation", text: result.text, actions: [], brainDump: null, writesCanonical: result.status === "applied", refreshToday: result.refresh, founderDirectiveStatus: result.status, telemetry: { requestModel: conciergeForegroundModel(), brain: "fallback", promptTokens: null, completionTokens: null, latencyMs: 0, toolCount: 1, toolNames: ["apply_founder_operation"] } };
   }
@@ -133,6 +146,7 @@ export async function askConcierge(
     query,
     mode,
     history,
+    businessTodayContext,
     world: loaded.world,
     brain,
   });

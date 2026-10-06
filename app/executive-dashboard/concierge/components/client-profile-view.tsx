@@ -12,16 +12,19 @@ import {
   wishHeadline,
 } from "@/lib/continuum/client-memory/read/presentation";
 import type { PersonCockpit } from "@/lib/continuum/client-memory/read/types";
+import type { ClientWebsiteIntake } from "@/lib/continuum/client-memory/read/website-intake";
 import { ClientMemorySection } from "./client-memory-section";
 import { ClientNoteList } from "./client-note-list";
 import { ClientProfileHeader } from "./client-profile-header";
 import { PersonProjectBooksSection } from "./person-project-books";
 import { ConciergeBackLink } from "./concierge-back-link";
+import { ConciergeIntakeDetail } from "./concierge-intake-detail";
 
 export { ConciergeBackLink };
 
 export function ClientProfileView({
   cockpit,
+  intakes = [],
   justSaved = false,
   justSavedBirthday = false,
   justSavedClient = false,
@@ -32,6 +35,7 @@ export function ClientProfileView({
   justTrashedNote = false,
 }: {
   cockpit: PersonCockpit;
+  intakes?: ClientWebsiteIntake[];
   justSaved?: boolean;
   justSavedBirthday?: boolean;
   justSavedClient?: boolean;
@@ -74,6 +78,18 @@ export function ClientProfileView({
         person={cockpit.person}
         openCount={cockpit.reviews.openCount}
       />
+
+      {intakes.map((intake, index) => (
+        <ConciergeIntakeDetail
+          key={intake.intakeId}
+          intake={intake}
+          defaultOpen={
+            index === 0 &&
+            cockpit.person.roles.includes("prospect") &&
+            cockpit.projects.length === 0
+          }
+        />
+      ))}
 
       {justSaved ? (
         <p className="mt-6 text-[13px] tracking-[0.04em] text-[#c4b7aa]" role="status">

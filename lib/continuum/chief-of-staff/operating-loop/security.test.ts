@@ -114,7 +114,12 @@ describe("CoS operating loop security", () => {
     );
     assert.match(today, /composeTodayDocket/);
     assert.match(today, /CosDocketActions/);
-    assert.match(today, /CosWatchingList/);
+    assert.match(today, /TodayOperatingSections/);
+    const operatingSections = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/components/today-operating-sections.tsx"),
+      "utf8",
+    );
+    assert.match(operatingSections, /data-cos-watching/);
     assert.doesNotMatch(today, /COS_PROPOSED_ACTIONS_TITLE|Proposed actions/);
     assert.match(page, /reviewProposedActionFromForm/);
     assert.doesNotMatch(page, /composeChiefOfStaffBrief|runChiefOfStaffShadow/);

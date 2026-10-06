@@ -81,6 +81,8 @@ export type ConciergeSolRequest = {
   query: string;
   mode?: ConciergeSolMode | null;
   history?: readonly ConciergeSolHistoryTurn[] | null;
+  /** Compact, already-curated Today state. Never raw mailbox content. */
+  businessTodayContext?: string | null;
 };
 
 export type ConciergeToolJson = Record<string, unknown>;

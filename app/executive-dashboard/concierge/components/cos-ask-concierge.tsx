@@ -10,12 +10,25 @@ import { useTodayMutationActions } from "./today-optimistic-item";
 export type TodayAskAction = (input: {
   query: string;
   mode?: "brain-dump" | "conversation" | "design";
-  todayContext: {
+  todayContext?: {
     itemId: string;
     packet: TodayBriefingPacket;
     briefing?: CosBriefingV1 | null;
   };
-}) => Promise<{ text?: string; founderDirectiveStatus?: "applied" | "clarify" | "failed"; refreshToday?: boolean } | { kind: string }>;
+  businessTodayContext?: string;
+  todayTarget?: {
+    itemId: string;
+    label: string;
+    projectId: string | null;
+    jobId: string | null;
+  };
+}) => Promise<{
+  kind?: string;
+  text?: string;
+  writesCanonical?: boolean;
+  founderDirectiveStatus?: "applied" | "clarify" | "failed";
+  refreshToday?: boolean;
+}>;
 
 export function CosAskConcierge({
   packet,

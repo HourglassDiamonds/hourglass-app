@@ -12,6 +12,7 @@ import { composeTodayDocket } from "./docket";
 import { selectFounderControls } from "./founder-actions";
 import { fixtureCandidate } from "./fixtures";
 import {
+  gmailThreadIdsForGroup,
   reconcileThreadTruthState,
   type ThreadTruthState,
 } from "./thread-truth";
@@ -333,6 +334,56 @@ function nateContext(): Map<string, TodayGmailThreadContext> {
 }
 
 describe("Today thread truth-state reconciliation", () => {
+  it("keeps exact CAD groups isolated from unrelated supporting thread refs", () => {
+    const nathanThread = "nathan-c026176-thread";
+    const unrelatedThread = "a-miller-c026510-thread";
+    const rows = [
+      gmailRow({
+        candidateId: "cross-referenced-support",
+        sourceRef: `gc1|${unrelatedThread}|unrelated-message`,
+      }),
+    ];
+    const threadContext = new Map<string, TodayGmailThreadContext>([
+      [
+        nathanThread,
+        {
+          subject: "C026176 Nathan CAD revision",
+          attachmentFilenames: ["C026176_Mod1.jpg"],
+          messages: [],
+        },
+      ],
+      [
+        unrelatedThread,
+        {
+          subject: "C026510 A. Miller CAD",
+          attachmentFilenames: ["C026510_Mod1.jpg"],
+          messages: [{ messageId: "unrelated-message", sentAt: NOW, direction: "inbound" }],
+        },
+      ],
+    ]);
+
+    assert.deepEqual(
+      gmailThreadIdsForGroup("cad:C026176", rows, threadContext),
+      [nathanThread],
+    );
+  });
+
+  it("keeps an exact thread group isolated from unrelated supporting thread refs", () => {
+    const exactThread = "exact-thread";
+    const unrelatedThread = "unrelated-support-thread";
+    const rows = [
+      gmailRow({
+        candidateId: "thread-cross-reference",
+        sourceRef: `gc1|${unrelatedThread}|unrelated-message`,
+      }),
+    ];
+
+    assert.deepEqual(
+      gmailThreadIdsForGroup(`thread:${exactThread}`, rows),
+      [exactThread],
+    );
+  });
+
   it("Nate: later founder outbound replaces recap with chain video/options/pricing", () => {
     const candidates = nateCandidates();
     const truth = reconcileThreadTruthState({

@@ -40,6 +40,7 @@ export async function runConciergeSol(input: RunConciergeSolInput): Promise<Conc
   const query = String(input.query ?? "").trim().slice(0, CONCIERGE_SOL_QUERY_MAX_LENGTH);
   const history = clipHistory(input.history);
   const now = input.now ?? new Date();
+  const businessTodayContext = String(input.businessTodayContext ?? "").trim().slice(0, 12_000);
 
   if (!query) {
     return answer({
@@ -64,7 +65,10 @@ export async function runConciergeSol(input: RunConciergeSolInput): Promise<Conc
           mode,
           system: conciergeSystemPrompt(mode),
           tools: [...CONCIERGE_TOOL_DEFINITIONS],
-          messages: [{ role: "user", content: query }],
+          messages: [
+            ...(businessTodayContext ? [{ role: "user" as const, content: `Business Today context:\n${businessTodayContext}` }] : []),
+            { role: "user", content: query },
+          ],
         });
         usage = completed.usage;
         if (completed.turn.kind === "message" && completed.turn.text.trim()) {
@@ -101,6 +105,7 @@ export async function runConciergeSol(input: RunConciergeSolInput): Promise<Conc
         query,
         history,
         now,
+        businessTodayContext,
       });
       collected.push(...loop.results);
       usage = loop.usage;
@@ -147,8 +152,12 @@ async function runBrainLoop(input: {
   query: string;
   history: ReturnType<typeof clipHistory>;
   now: Date;
+  businessTodayContext: string;
 }): Promise<{ results: ConciergeToolResult[]; text: string; usage: ReturnType<typeof emptyUsage> }> {
   const messages: ReasoningBrainInputMessages = [];
+  if (input.businessTodayContext) {
+    messages.push({ role: "user", content: `Business Today context:\n${input.businessTodayContext}` });
+  }
   for (const turn of input.history) {
     messages.push({
       role: turn.role === "founder" ? "user" : "assistant",

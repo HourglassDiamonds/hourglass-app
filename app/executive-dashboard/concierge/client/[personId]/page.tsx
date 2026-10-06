@@ -1,5 +1,6 @@
 import { getAuthenticatedClientMemoryReader } from "@/lib/continuum/client-memory/read/load";
 import { isPersonIdParam } from "@/lib/continuum/client-memory/read/presentation";
+import { getAuthenticatedClientWebsiteIntakeReader } from "@/lib/continuum/client-memory/read/website-intake-load";
 import { ConciergeShell } from "../../components/concierge-shell";
 import {
   ClientProfileView,
@@ -71,12 +72,18 @@ export default async function ConciergeClientPage({
     );
   }
 
+  const intakeAccess = await getAuthenticatedClientWebsiteIntakeReader();
+  const intakes = intakeAccess.ok
+    ? await intakeAccess.reader.listForPerson(personId).catch(() => [])
+    : [];
+
   return (
     <ConciergeShell>
       <ConciergeBackLink label="Clients" />
       <div className="hg-concierge-fade mt-8">
         <ClientProfileView
           cockpit={result.cockpit}
+          intakes={intakes}
           justSaved={query.saved === "1"}
           justSavedBirthday={query.saved === "birthday"}
           justSavedClient={query.saved === "client"}

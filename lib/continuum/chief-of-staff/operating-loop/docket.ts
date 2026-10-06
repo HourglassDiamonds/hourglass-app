@@ -52,6 +52,7 @@ export type CosTodayDocketView = {
   watchingCount: number;
   watching: readonly CosWatchingItem[];
   cleanup?: readonly CosDocketItemView[];
+  sections?: readonly CosTodaySectionView[];
   showCaughtUp: boolean;
   showDisconnected: boolean;
   caughtUpHeading: string;
@@ -59,6 +60,122 @@ export type CosTodayDocketView = {
   disconnectedHeading: string | null;
   disconnectedDetail: string | null;
 };
+
+export type CosTodaySectionId =
+  | "founder"
+  | "ready"
+  | "waiting_client"
+  | "cad_design"
+  | "production"
+  | "repairs"
+  | "watching";
+
+export type CosTodaySectionItem = {
+  id: string;
+  title: string;
+  summary: string;
+  stateLabel: string;
+  origin: CosDocketOrigin | "watching";
+  ballHolder: string | null;
+  lifecycle: string | null;
+  projectId: string | null;
+  jobId: string | null;
+  packet: CosDocketItemView["briefingPacket"];
+  cosBriefing: CosDocketItemView["cosBriefing"];
+};
+
+export type CosTodaySectionView = {
+  id: CosTodaySectionId;
+  title: string;
+  items: readonly CosTodaySectionItem[];
+};
+
+const SECTION_TITLES: Record<CosTodaySectionId, string> = {
+  founder: "Founder / Your Turn",
+  ready: "Ready / Delivery",
+  waiting_client: "Waiting on Client",
+  cad_design: "CAD / Design",
+  production: "In Production",
+  repairs: "Repairs",
+  watching: "Watching / Held / Deferred",
+};
+
+function sectionIdFor(item: CosTodaySectionItem): CosTodaySectionId {
+  const hay = `${item.title} ${item.summary} ${item.stateLabel} ${item.lifecycle ?? ""}`.toLowerCase();
+  if (item.origin === "master_sprint" || item.ballHolder === "founder") return "founder";
+  if (/ready[_ ]for[_ ](?:delivery|return)|final qc|ready for (?:pickup|shipping|presentation|delivery)/.test(hay)) return "ready";
+  if (item.ballHolder === "client") return "waiting_client";
+  if (/\b(?:cad|design|stl|render)\b/.test(hay) && item.ballHolder === "vendor_shop") return "cad_design";
+  if (/\b(?:repair|resize|sizing|restoration)\b/.test(hay)) return "repairs";
+  if (/\b(?:in[_ ]production|production|manufacturing|bench)\b/.test(hay)) return "production";
+  return "watching";
+}
+
+function hasOnlyNonblockingClientReplyEvidence(item: CosDocketItemView): boolean {
+  const events = item.briefingPacket?.sourceEvents ?? [];
+  return (
+    !item.job &&
+    events.length > 0 &&
+    events.every((event) => event.semanticClass === "client_replies_nonblocking")
+  );
+}
+
+export function composeTodaySections(input: {
+  active: readonly CosDocketItemView[];
+  watching: readonly CosWatchingItem[];
+  masterSprint?: readonly CosDocketItemView[];
+}): CosTodaySectionView[] {
+  const active = [...input.active, ...(input.masterSprint ?? [])]
+    .filter((item) => item.semanticPresentation?.likelyNoise !== true)
+    .filter((item) => !hasOnlyNonblockingClientReplyEvidence(item))
+    .filter(
+      (item) =>
+        item.origin !== "decision" ||
+        !isAmbiguousFollowUpFragment(`${item.headline} ${item.context ?? ""}`),
+    )
+    .filter(
+      (item) =>
+        !item.decision ||
+        Boolean(item.job) ||
+        hasRealFounderOwnedObligation(item.briefingPacket),
+    )
+    .map((item): CosTodaySectionItem => ({
+    id: item.id,
+    title: item.subject,
+    summary: item.semanticPresentation?.founderCheckpoint || item.headline,
+    stateLabel: item.semanticPresentation?.stateLabel || item.briefing?.stateChip || (item.origin === "master_sprint" ? "MASTER SPRINT" : "ACTIVE"),
+    origin: item.origin,
+    ballHolder: item.briefingPacket?.ballHolder ?? (item.origin === "master_sprint" ? "founder" : null),
+    lifecycle: item.briefingPacket?.lifecycle ?? null,
+    projectId: item.briefingPacket?.projectId ?? item.job?.projectId ?? null,
+    jobId: item.job?.id ?? null,
+    packet: item.briefingPacket,
+    cosBriefing: item.cosBriefing,
+    }));
+  const resting = input.watching.map((item): CosTodaySectionItem => ({
+    id: item.id,
+    title: item.title,
+    summary: item.briefing?.nextBody || item.detail,
+    stateLabel: item.briefing?.stateChip || "WATCHING",
+    origin: "watching",
+    ballHolder: item.briefingPacket?.ballHolder ?? null,
+    lifecycle: item.briefingPacket?.lifecycle ?? null,
+    projectId: item.projectId,
+    jobId: null,
+    packet: item.briefingPacket,
+    cosBriefing: item.cosBriefing,
+  }));
+  const seen = new Set<string>();
+  const buckets = new Map<CosTodaySectionId, CosTodaySectionItem[]>();
+  for (const item of [...active, ...resting]) {
+    if (seen.has(item.id)) continue;
+    seen.add(item.id);
+    const id = sectionIdFor(item);
+    buckets.set(id, [...(buckets.get(id) ?? []), item]);
+  }
+  const order: CosTodaySectionId[] = ["founder", "ready", "waiting_client", "cad_design", "production", "repairs", "watching"];
+  return order.map((id) => ({ id, title: SECTION_TITLES[id], items: buckets.get(id) ?? [] }));
+}
 
 export function cosQueuedLabel(count: number): string {
   return `+${count} queued`;
@@ -222,6 +339,7 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
       watchingCount: 0,
       watching: [],
       cleanup: [],
+      sections: composeTodaySections({ active: [], watching: [] }),
       showCaughtUp: !docket.showDisconnected,
       showDisconnected: docket.showDisconnected,
       caughtUpHeading: COS_CAUGHT_UP_HEADING,
@@ -261,11 +379,13 @@ export function authoritativeTodayDocket(docket: CosTodayDocketView): CosTodayDo
       const semantic = presentTodayWatchingItem(item);
       return { ...item, title: semantic.title, detail: semantic.summary };
     });
+  const sections = docket.sections ?? composeTodaySections({ active: items, watching });
   return {
     ...docket,
     items,
     watching,
     cleanup,
+    sections,
     watchingCount: watching.length,
     showCaughtUp: !docket.showDisconnected && items.length === 0,
   };
@@ -279,6 +399,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
   const actionableLive = finalized.upNext
     .filter((item) => !item.job || !terminalAttentionIds.has(item.job.id))
     .filter(isActionableTodayDocketItem);
+  const allSprint = masterSprintDocketItems(loop, loop.masterSprint?.length ?? 0);
   const items = actionableLive.slice(0, COS_DOCKET_VISIBLE_LIMIT);
   const queuedCount = Math.max(0, actionableLive.length - COS_DOCKET_VISIBLE_LIMIT);
   const showDisconnected = loop.status === "disconnected";
@@ -297,6 +418,11 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
     watchingCount: watching.length,
     watching,
     cleanup: finalized.upNext.filter((item) => presentTodayItem(item).noiseKind === "receipt"),
+    sections: composeTodaySections({
+      active: actionableLive,
+      watching,
+      masterSprint: allSprint,
+    }),
     showCaughtUp,
     showDisconnected,
     caughtUpHeading: COS_CAUGHT_UP_HEADING,

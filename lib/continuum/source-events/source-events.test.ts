@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { classifySourceCommunication } from "./classify";
 import { projectGmailSourceEvents } from "./gmail";
+import { isOperationalSourceEvent } from "./types";
 import { workLoopEventsFromSource } from "./work-loop";
 import { reduceWorkLoop } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
@@ -151,6 +152,45 @@ describe("source communication classification", () => {
 });
 
 describe("gmail source projection", () => {
+  it("makes a classified event operational when it inherits one exact CAD from its thread", () => {
+    const events = projectGmailSourceEvents({
+      threadContext: new Map([
+        [
+          "client-cad-thread",
+          {
+            subject: "Re: Featured Ring",
+            messages: [
+              {
+                messageId: "client-cad-reference",
+                sentAt: "2026-09-29T19:26:36.000Z",
+                direction: "inbound",
+                subject: "HGD x Nate-C026176",
+                hasAttachments: true,
+                attachmentFilenames: ["Nate-C026176-Mod1.jpg"],
+              },
+              {
+                messageId: "founder-fulfillment",
+                sentAt: "2026-09-30T16:28:04.000Z",
+                direction: "outbound",
+                fromEmailHash: FOUNDER_HASH,
+                plaintext: "Attached is the update for you.",
+                hasAttachments: true,
+                attachmentFilenames: ["image0.jpeg"],
+              },
+            ],
+          },
+        ],
+      ]),
+      founderEmailHashes: new Set([FOUNDER_HASH]),
+    });
+    const fulfilled = events.find((event) => event.messageId === "founder-fulfillment");
+
+    assert.equal(fulfilled?.semanticClass, "founder_fulfills_commitment");
+    assert.deepEqual(fulfilled?.cadIds, ["C026176"]);
+    assert.equal(fulfilled?.workIdentityBasis, "cad");
+    assert.equal(fulfilled ? isOperationalSourceEvent(fulfilled) : false, true);
+  });
+
   it("projects an indexed vendor delivery with no useful candidates", () => {
     const threadContext = new Map<string, TodayGmailThreadContext>([
       [

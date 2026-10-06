@@ -178,7 +178,12 @@ describe("in-app email viewer presentation", () => {
     assert.match(html, /data-cos-gmail-href="https:\/\/mail\.google\.com\/mail\/u\/0\/#all\/abc123def0\/aaa111bbb2"/);
     assert.doesNotMatch(html, new RegExp(UNIQUE_BODY));
     assert.doesNotMatch(html, />Open email</);
-    assert.doesNotMatch(html, /Reply|Archive|Mark unread|>Send</);
+    assert.match(html, /data-tell-sterling=""/);
+    const withoutSterlingComposer = html.replace(
+      /<form[^>]*data-tell-sterling=""[\s\S]*?<\/form>/,
+      "",
+    );
+    assert.doesNotMatch(withoutSterlingComposer, />Reply<|>Archive<|>Mark unread<|>Send</);
   });
 
   it("surfaces unknown-sender identity on Unassigned without a Person label", () => {

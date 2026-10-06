@@ -1262,11 +1262,23 @@ export function collapseTodayCandidateGroups(
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
 ): Map<string, ContinuumCandidate[]> {
   const entries = [...groups.entries()].map(([key, rows]) => {
-    const threads = new Set<string>();
+    let threads = new Set<string>();
     if (key.startsWith("thread:")) threads.add(key.slice("thread:".length));
     for (const row of rows) {
       const threadId = recoveredGmailThreadId(row, threadByMessageId);
       if (threadId) threads.add(threadId);
+    }
+    if (key.startsWith("cad:") && threadContext) {
+      const cad = key.slice("cad:".length).toUpperCase();
+      const exactThreads = new Set<string>();
+      for (const [threadId, thread] of threadContext) {
+        const hay = [thread.subject, ...(thread.attachmentFilenames ?? [])].join(" ");
+        if (hay.toUpperCase().includes(cad)) exactThreads.add(threadId);
+      }
+      // Generated support can cite a different work loop's Gmail message.
+      // Exact CAD identity in the Gmail index is stronger than that support ref
+      // and keeps unrelated project groups from collapsing together.
+      if (exactThreads.size > 0) threads = exactThreads;
     }
     const identityHay: string[] = [];
     for (const threadId of threads) {

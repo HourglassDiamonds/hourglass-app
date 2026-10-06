@@ -1,0 +1,26 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "noEmit": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "app/executive-dashboard/concierge/page.tsx",
+    "app/executive-dashboard/concierge/ask-actions.ts",
+    "app/executive-dashboard/concierge/components/chief-of-staff-today.tsx",
+    "app/executive-dashboard/concierge/components/command-center-home.tsx",
+    "app/executive-dashboard/concierge/components/today-operating-sections.tsx",
+    "lib/continuum/chief-of-staff/operating-loop/business-today-context.ts",
+    "lib/continuum/chief-of-staff/operating-loop/docket.ts",
+    "lib/continuum/concierge-sol/founder-command.ts",
+    "lib/continuum/concierge-sol/founder-command-server.ts",
+    "lib/continuum/concierge-sol/prompts.ts",
+    "lib/continuum/concierge-sol/runtime.ts",
+    "lib/continuum/concierge-sol/types.ts",
+    "lib/continuum/client-memory/read/website-intake.ts",
+    "lib/continuum/client-memory/read/website-intake-load.ts",
+    "lib/continuum/client-memory/read/website-intake-presentation.ts"
+  ],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

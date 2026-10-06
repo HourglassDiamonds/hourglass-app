@@ -196,7 +196,12 @@ describe("Today founder contextual actions", () => {
     assert.match(html, /abc123def0\/aaa111bbb2/);
     assert.match(html, /Evidence/);
     assert.doesNotMatch(html, />Open email</);
-    assert.doesNotMatch(html, /Reply|Archive|Mark unread|Send</);
+    assert.match(html, /data-tell-sterling=""/);
+    const withoutSterlingComposer = html.replace(
+      /<form[^>]*data-tell-sterling=""[\s\S]*?<\/form>/,
+      "",
+    );
+    assert.doesNotMatch(withoutSterlingComposer, />Reply<|>Archive<|>Mark unread<|>Send</);
   });
 
   it("hides Open Email when no real Gmail source can be identified", () => {

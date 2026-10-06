@@ -195,6 +195,30 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     assert.equal(p.activeObligations.length, 1);
     assert.equal(p.historicalObligations[0].status, "satisfied");
   });
+  it("same-CAD founder fulfillment attachment closes an older shop wait and a later request reopens it", () => {
+    const request = event("request", "Please revise the CAD.", 16, "founder");
+    const fulfillment = event("client-update", "Updated client attachment.", 22, "founder", {
+      threadId: "client-thread",
+      sourceRef: "gc1|client-thread|client-update",
+      semanticClass: "founder_fulfills_commitment",
+      hasAttachments: true,
+      attachmentFilenames: ["image0.jpeg"],
+      workIdentityBasis: "cad",
+    });
+    const closed = project([request, fulfillment]);
+    assert.equal(closed.activeObligations.length, 0);
+    assert.equal(closed.ballHolder, "unknown");
+    assert.equal(closed.historicalObligations[0]?.status, "satisfied");
+
+    const reopened = project([
+      request,
+      fulfillment,
+      event("new-request", "Please revise the CAD.", 23, "founder"),
+    ]);
+    assert.equal(reopened.ballHolder, "vendor_shop");
+    assert.equal(reopened.stage, "revision_requested");
+    assert.equal(reopened.activeObligations.length, 1);
+  });
   it("E marketing admits no work", () => {
     const rows = [
       event("marketing", "Growth Support for Independent Jewelers", 10),

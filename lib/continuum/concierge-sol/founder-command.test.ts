@@ -6,6 +6,7 @@ import {
   applyFounderOperation,
   candidateDispositionCorrectionEvents,
   proposeFounderOperation,
+  proposeTargetedFounderOperation,
   proposeTodayFounderOperation,
   correctionEventsFromNotes,
 } from "./founder-command";
@@ -84,6 +85,35 @@ async function world() {
   };
 }
 describe("explicit founder command canonical boundary", () => {
+  it("recognizes founder-language terminal, handoff, production, and held directives", () => {
+    assert.deepEqual(proposeFounderOperation("Eliah is dead. Budget too low."), {
+      kind: "cancel",
+      target: "Eliah",
+      days: null,
+    });
+    assert.deepEqual(proposeFounderOperation("Dylan is in manufacturing."), {
+      kind: "correct",
+      target: "Dylan",
+      truth: { stage: "in_production", ballHolder: "vendor_shop", dependency: "vendor production" },
+      wording: "Dylan is in manufacturing.",
+    });
+    assert.deepEqual(proposeFounderOperation("I already emailed Niurka."), {
+      kind: "correct",
+      target: "Niurka",
+      truth: { ballHolder: "client", dependency: "client response" },
+      wording: "Niurka is waiting on client response.",
+    });
+    assert.equal(proposeFounderOperation("This is spam."), null);
+    assert.equal(proposeFounderOperation("Put Dylan on the backburner.")?.kind, "correct");
+    assert.deepEqual(
+      proposeTargetedFounderOperation(
+        "I need to do this Friday",
+        "Dylan",
+        new Date("2026-10-06T12:00:00.000Z"),
+      ),
+      { kind: "snooze", target: "Dylan", days: 3 },
+    );
+  });
   it("C snooze writes canonical job, refreshes, suppresses until exact expiry and retains row", async () => {
     const w = await world();
     const result = await w.run("Snooze Ben for 3 days.");

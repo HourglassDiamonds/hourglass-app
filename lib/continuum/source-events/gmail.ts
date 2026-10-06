@@ -342,6 +342,8 @@ function propagateThreadIdentity(
         cadIds: nextCads,
         personLabel: row.personLabel ?? personLabel,
         projectId: row.projectId ?? projectId,
+        workIdentityBasis:
+          row.workIdentityBasis ?? (nextCads.length === 1 ? "cad" : null),
         workLoopId: workLoopIdOf({
           projectId: row.projectId ?? projectId,
           cadIds: nextCads.length === 1 ? nextCads : inheritCads.length === 1 ? inheritCads : nextCads,

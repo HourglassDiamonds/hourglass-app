@@ -1,6 +1,7 @@
 import type { CosOperatingLoopView } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import {
   authoritativeTodayDocket,
+  composeTodaySections,
   composeTodayDocket,
   COS_DOCKET_TITLE,
   cosQueuedLabel,
@@ -14,12 +15,13 @@ import type { TodayRenderedBriefing } from "@/lib/continuum/chief-of-staff/opera
 import { presentTodayItem } from "@/lib/continuum/chief-of-staff/operating-loop/today-presentation";
 import { CosCompleteControl } from "./cos-complete-control";
 import { CosDocketActions } from "./cos-docket-actions";
-import { CosWatchingList } from "./cos-concierge-brief";
 import { CosFounderAttentionControls } from "./cos-founder-attention";
 import { CosUnassignedIdentity } from "./cos-unassigned-identity";
 import { CosAskConcierge, type TodayAskAction } from "./cos-ask-concierge";
 import { CosBriefingBlock } from "./cos-briefing-block";
 import type { TodayUpcomingItem } from "@/lib/continuum/calendar/today-upcoming";
+import { TodayOperatingSections } from "./today-operating-sections";
+import type { ClientWebsiteIntake } from "@/lib/continuum/client-memory/read/website-intake";
 import {
   TodayDispositionForm,
   TodayMutationFailure,
@@ -200,6 +202,8 @@ export function ChiefOfStaffToday({
   reviewAction,
   disposeAction,
   askAction,
+  intakes = [],
+  businessTodayContext = "",
 }: {
   loop?: CosOperatingLoopView;
   docket?: CosTodayDocketView;
@@ -208,6 +212,8 @@ export function ChiefOfStaffToday({
   reviewAction?: FormAction;
   disposeAction?: MutationAction;
   askAction?: TodayAskAction;
+  intakes?: readonly ClientWebsiteIntake[];
+  businessTodayContext?: string;
 }) {
   const docket = authoritativeTodayDocket(
     incomingDocket ?? (loop ? composeTodayDocket(loop) : {
@@ -310,7 +316,14 @@ export function ChiefOfStaffToday({
           ) : null}
         </>
       )}
-      <CosWatchingList watching={docket.watching} askAction={askAction} disposeAction={disposeAction} />
+      <TodayOperatingSections
+        initialSections={incomingDocket
+          ? docket.sections ?? composeTodaySections({ active: docket.items, watching: docket.watching })
+          : composeTodaySections({ active: docket.items, watching: docket.watching })}
+        intakes={intakes}
+        businessTodayContext={businessTodayContext}
+        askAction={askAction}
+      />
       {(docket.cleanup?.length ?? 0) > 0 ? (
         <details data-cos-cleanup className="mt-10 min-w-0">
           <summary className="cursor-pointer text-[11px] uppercase tracking-[0.22em] text-[#6f675f]">
