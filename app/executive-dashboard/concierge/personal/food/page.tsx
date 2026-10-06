@@ -1,3 +1,8 @@
-import { PersonalApp } from "../components/personal-app";
-export const metadata = { title: "Personal Food" };
-export default function PersonalFoodPage() { return <PersonalApp section="food" />; }
+import { PerformanceApp } from "../performance-app";
+
+export const dynamic = "force-dynamic";
+export const metadata = { title: "Nutrition", robots: { index: false, follow: false } };
+
+export default function PersonalFoodPage() {
+  return <PerformanceApp initialView="nutrition" />;
+}

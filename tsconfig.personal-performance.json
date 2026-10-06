@@ -1,13 +1,14 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "noEmit": true,
     "incremental": false
   },
   "include": [
-    "node_modules/next/types/global.d.ts",
+    "next-env.d.ts",
     "app/executive-dashboard/concierge/personal/**/*.ts",
     "app/executive-dashboard/concierge/personal/**/*.tsx",
-    "lib/continuum/personal-performance/**/*.ts"
+    "lib/continuum/personal/**/*.ts"
   ],
-  "exclude": []
+  "exclude": ["node_modules"]
 }

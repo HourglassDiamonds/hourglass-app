@@ -1,4 +1,4 @@
-import { PersonalApp } from "./components/personal-app";
+import { PerformanceApp } from "./performance-app";
 
 export const dynamic = "force-dynamic";
 
@@ -8,5 +8,5 @@ export const metadata = {
 };
 
 export default function ConciergePersonalPage() {
-  return <PersonalApp section="today" />;
+  return <PerformanceApp />;
 }

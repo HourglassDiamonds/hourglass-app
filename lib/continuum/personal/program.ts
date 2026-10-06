@@ -1,46 +1,95 @@
-import type { PersonalState, WorkoutPlan } from "./types";
+import type { PersonalState, ScheduledWorkout, WorkoutPrescription } from "./types";
 
-const plans: WorkoutPlan[] = [
-  { id: "foundation-tonal-a", weekday: 1, name: "Foundation A · Tonal strength", mode: "tonal", intent: "moderate", durationMinutes: 48, notes: "Leave 2–3 good reps in reserve. Clean, repeatable reps beat soreness.", exercises: [
-    { id: "tonal-front-squat", name: "Tonal front squat", kind: "loaded", equipment: "Tonal", sets: 3, targetReps: [8, 10], targetLoad: 40, loadUnit: "lb", restSeconds: 90, notes: "Brace first; knees track over the middle toes." },
-    { id: "tonal-bench-press", name: "Tonal bench press", kind: "loaded", equipment: "Tonal + bench", sets: 3, targetReps: [8, 12], targetLoad: 35, loadUnit: "lb", restSeconds: 90, notes: "Shoulder blades settled; stop before form changes." },
-    { id: "tonal-lat-pulldown", name: "Tonal lat pulldown", kind: "loaded", equipment: "Tonal bar", sets: 3, targetReps: [8, 12], targetLoad: 40, loadUnit: "lb", restSeconds: 75, notes: "Pull elbows down; do not lean back to finish." },
-    { id: "dead-hang", name: "Dead hang", kind: "skill", equipment: "Pull-up bar", sets: 3, targetReps: [15, 30], loadUnit: "level", restSeconds: 60, notes: "Seconds per set. Keep a gentle active shoulder, ribs down.", regression: "Feet-supported hang with only comfortable bodyweight through the hands.", progressionCriterion: "Three pain-free 30-second hangs with controlled shoulders." },
-  ] },
-  { id: "aerobic-movement", weekday: 2, name: "Aerobic base + movement", mode: "combination", intent: "aerobic", durationMinutes: 42, notes: "Conversation-pace ride followed by unhurried beginner movement practice.", swap: { name: "Outdoor brisk walk", mode: "recovery", intent: "aerobic", durationMinutes: 40, notes: "35–45 minutes at the same conversational effort.", exercises: [
-    { id: "outdoor-brisk-walk", name: "Outdoor brisk walk", kind: "cardio", equipment: "Outdoors", sets: 1, targetReps: [35, 45], loadUnit: "level", notes: "Minutes. Keep a conversational pace and finish fresher than you started." },
-  ] }, exercises: [
-    { id: "peloton-zone-two", name: "Peloton Zone 2", kind: "cardio", equipment: "Peloton", sets: 1, targetReps: [30, 35], loadUnit: "level", notes: "Minutes. You should be able to speak in full sentences." },
-    { id: "incline-pushup", name: "Incline push-up", kind: "bodyweight", equipment: "Stable elevated surface", sets: 3, targetReps: [6, 10], notes: "Hands just wider than shoulders; body stays in one line.", regression: "Use a higher surface or wall.", progressionCriterion: "Three sets of 10 clean reps with 2 reps in reserve." },
-    { id: "supported-squat", name: "Supported bodyweight squat", kind: "bodyweight", equipment: "Doorframe or rail", sets: 3, targetReps: [8, 15], notes: "Tripod foot, knees track over toes, use only the support you need.", regression: "Sit-to-stand from a firm chair.", progressionCriterion: "Three sets of 15 to a repeatable depth without knee collapse." },
-  ] },
-  { id: "foundation-tonal-b", weekday: 3, name: "Foundation B · Tonal + pull-up", mode: "combination", intent: "moderate", durationMinutes: 50, notes: "Build muscle and pull-up skill without max-rep testing.", exercises: [
-    { id: "tonal-rdl", name: "Tonal Romanian deadlift", kind: "loaded", equipment: "Tonal bar", sets: 3, targetReps: [8, 10], targetLoad: 45, loadUnit: "lb", restSeconds: 90, notes: "Hips back, long spine, stop at the hamstring limit." },
-    { id: "tonal-standing-press", name: "Tonal standing press", kind: "loaded", equipment: "Tonal handles", sets: 3, targetReps: [8, 12], targetLoad: 20, loadUnit: "lb", restSeconds: 75, notes: "Glutes and ribs stacked; no backbend." },
-    { id: "tonal-row", name: "Tonal seated row", kind: "loaded", equipment: "Tonal", sets: 3, targetReps: [10, 12], targetLoad: 35, loadUnit: "lb", restSeconds: 75, notes: "Finish with elbows, not a torso swing." },
-    { id: "scap-pull", name: "Scapular pull", kind: "skill", equipment: "Pull-up bar", sets: 3, targetReps: [4, 8], notes: "From a supported hang, keep elbows straight and pull shoulders away from ears.", regression: "Feet-supported scapular pull with partial bodyweight.", progressionCriterion: "Three sets of 8 smooth reps with a one-second hold." },
-  ] },
-  { id: "restore", weekday: 4, name: "Restore · mobility + walk", mode: "recovery", intent: "easy", durationMinutes: 30, notes: "Recovery creates room to progress. Nothing today should feel forced.", swap: { name: "Peloton recovery ride", mode: "peloton", intent: "easy", durationMinutes: 25, notes: "20–30 easy minutes; no intervals.", exercises: [
-    { id: "peloton-recovery", name: "Peloton recovery ride", kind: "cardio", equipment: "Peloton", sets: 1, targetReps: [20, 30], loadUnit: "level", notes: "Minutes. Stay easy; this replaces the walk and mobility session." },
-  ] }, exercises: [
-    { id: "easy-walk", name: "Easy walk", kind: "cardio", equipment: "Outdoors", sets: 1, targetReps: [20, 30], loadUnit: "level", notes: "Minutes at an easy pace." },
-    { id: "mobility-flow", name: "Beginner mobility flow", kind: "skill", equipment: "Floor space", sets: 2, targetReps: [5, 6], notes: "Slow cat-cow, half-kneeling hip flexor, supported deep-squat breathing." },
-  ] },
-  { id: "foundation-tonal-c", weekday: 5, name: "Foundation C · full body", mode: "tonal", intent: "moderate", durationMinutes: 46, notes: "Finish the week with crisp volume, not failure.", exercises: [
-    { id: "tonal-split-squat", name: "Tonal split squat", kind: "loaded", equipment: "Tonal handles", sets: 3, targetReps: [8, 10], targetLoad: 20, loadUnit: "lb", restSeconds: 90, notes: "Use a short stable stance and control the descent." },
-    { id: "tonal-chest-press", name: "Tonal standing chest press", kind: "loaded", equipment: "Tonal handles", sets: 3, targetReps: [10, 12], targetLoad: 25, loadUnit: "lb", restSeconds: 75, notes: "Staggered stance; resist rotation." },
-    { id: "tonal-pullover", name: "Tonal pullover", kind: "loaded", equipment: "Tonal rope", sets: 3, targetReps: [10, 15], targetLoad: 25, loadUnit: "lb", restSeconds: 60, notes: "Keep ribs down and move through the shoulders." },
-    { id: "pushup-practice", name: "Push-up practice", kind: "bodyweight", equipment: "Floor or incline", sets: 3, targetReps: [5, 10], notes: "Choose the height that keeps every rep strict.", regression: "Raise the hands until the trunk stays rigid.", progressionCriterion: "Three sets of 10 strict floor reps with clean alignment." },
-  ] },
-  { id: "ruck-foundation", weekday: 6, name: "Outdoor 20 lb ruck", mode: "ruck", intent: "aerobic", durationMinutes: 35, notes: "Use the 20 lb ruck only. Add time or terrain before load. Stop for sharp/joint pain. The 100 lb ruck stays locked for a future advanced block.", swap: { name: "Peloton aerobic base", mode: "peloton", intent: "aerobic", durationMinutes: 35, notes: "35 minutes at conversational effort.", exercises: [
-    { id: "peloton-aerobic-base", name: "Peloton aerobic base", kind: "cardio", equipment: "Peloton", sets: 1, targetReps: [35, 35], loadUnit: "level", notes: "Minutes. Ride at a conversational effort with no hard intervals." },
-  ] }, exercises: [{ id: "ruck-20", name: "20 lb ruck walk", kind: "cardio", equipment: "20 lb ruck", sets: 1, targetReps: [30, 40], targetLoad: 20, loadUnit: "lb", notes: "Minutes. Upright posture, natural stride, easy breathing." }] },
-  { id: "benchmark-foundation", weekday: 0, name: "5 / 10 / 15 foundation", mode: "bodyweight", intent: "easy", durationMinutes: 20, notes: "Stage 1: complete three unhurried rounds. Build to five rounds, then shorten rest, then use harder movement versions. Never turn pain or broken form into an AMRAP score.", exercises: [
-    { id: "benchmark-pull", name: "Pull-up progression", kind: "skill", equipment: "Pull-up bar", sets: 3, targetReps: [5, 5], progressionMode: "amrap-rounds", progressionStage: 1, notes: "Five quality reps per round using the easiest version that stays controlled.", regression: "Feet-supported scapular pulls, band-assisted pull-ups, or controlled negatives.", progressionCriterion: "Build from 3 to 5 rounds, then advance the movement and finally use the controlled AMRAP stage." },
-    { id: "benchmark-push", name: "Push-up progression", kind: "bodyweight", equipment: "Floor or stable elevated surface", sets: 3, targetReps: [10, 10], progressionMode: "amrap-rounds", progressionStage: 1, notes: "Ten strict reps per round at a repeatable incline.", regression: "Raise the hands until the trunk stays rigid.", progressionCriterion: "Build from 3 to 5 rounds, then lower the incline and finally use the controlled AMRAP stage." },
-    { id: "benchmark-squat", name: "Squat progression", kind: "bodyweight", equipment: "Floor or support", sets: 3, targetReps: [15, 15], progressionMode: "amrap-rounds", progressionStage: 1, notes: "Fifteen controlled reps per round to a repeatable depth.", regression: "Use a doorframe or sit-to-stand from a firm chair.", progressionCriterion: "Build from 3 to 5 rounds, then reduce support and finally use the controlled AMRAP stage." },
-  ] },
-];
+const DAY_MS = 86_400_000;
 
-export function createInitialPersonalState(): PersonalState { return { version: 1, activePlanId: null, plans, sessions: [], proposals: [], foodEntries: [], nutritionTargets: { calories: 2200, protein: 180, carbs: 215, fat: 70 }, bodyMeasurements: [] }; }
-export function planForDate(allPlans: WorkoutPlan[], date = new Date()): WorkoutPlan { return allPlans.find((plan) => plan.weekday === date.getDay()) ?? allPlans[0]; }
+export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
+  {
+    id: "foundation-a", name: "Foundation A · Tonal strength", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 45,
+    notes: "Full-body strength. Leave 2–3 clean reps in reserve.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "moderate",
+    exercises: [
+      { id: "front-squat", name: "Tonal front squat", equipment: "Tonal", sets: 3, targetReps: [8, 10], targetLoad: 40, notes: "Brace first; keep every rep clean.", progressionContext: "Add the smallest load only after all sets reach 10 with 2 RIR." },
+      { id: "bench", name: "Tonal bench press", equipment: "Tonal + bench", sets: 3, targetReps: [8, 12], targetLoad: 35, notes: "Stop before form changes.", progressionContext: "Build reps before load." },
+      { id: "pulldown", name: "Tonal lat pulldown", equipment: "Tonal bar", sets: 3, targetReps: [8, 12], targetLoad: 40, notes: "Pull elbows down without leaning back.", progressionContext: "Build clean reps before load." },
+    ],
+  },
+  {
+    id: "easy-run", name: "Easy 5K development", domain: "engine", mode: "run", intent: "aerobic", durationMinutes: 32,
+    notes: "Conversational run/walk. Finish wanting one more interval.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [],
+    alternative: { name: "Peloton Zone 2 + movement", domain: "engine", mode: "combination", intent: "aerobic", durationMinutes: 42, notes: "Conversation-pace ride followed by unhurried beginner movement practice.", lowerBodyLoad: "low", exercises: [] },
+  },
+  {
+    id: "foundation-b", name: "Foundation B · hinge + pull", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 45,
+    notes: "Hinge, press, row, and trunk work without grinding.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "high",
+    exercises: [
+      { id: "rdl", name: "Tonal Romanian deadlift", equipment: "Tonal bar", sets: 3, targetReps: [8, 10], targetLoad: 45, notes: "Hips back; stop at the hamstring limit.", progressionContext: "Hold when recovery is poor; never chase missed volume." },
+      { id: "press", name: "Tonal standing press", equipment: "Tonal handles", sets: 3, targetReps: [8, 12], targetLoad: 20, notes: "Ribs stacked; no backbend.", progressionContext: "Build reps before load." },
+      { id: "row", name: "Tonal seated row", equipment: "Tonal", sets: 3, targetReps: [10, 12], targetLoad: 35, notes: "Finish with elbows, not momentum.", progressionContext: "Add load after three clean top-range sets." },
+    ],
+  },
+  {
+    id: "restore", name: "Restore · walk + mobility", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 25,
+    notes: "Easy movement only. Recovery creates room to progress.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "none", exercises: [],
+  },
+  {
+    id: "foundation-c", name: "Foundation C · full body", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 46,
+    notes: "Finish the strength week with crisp volume, not failure.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "moderate",
+    exercises: [
+      { id: "split-squat", name: "Tonal split squat", equipment: "Tonal handles", sets: 3, targetReps: [8, 10], targetLoad: 20, notes: "Use a short stable stance and control the descent.", progressionContext: "Build clean reps before load." },
+      { id: "chest-press", name: "Tonal standing chest press", equipment: "Tonal handles", sets: 3, targetReps: [10, 12], targetLoad: 25, notes: "Staggered stance; resist rotation.", progressionContext: "Progress only after repeatable top-range sets." },
+      { id: "pullover", name: "Tonal pullover", equipment: "Tonal rope", sets: 3, targetReps: [10, 15], targetLoad: 25, notes: "Keep ribs down and move through the shoulders.", progressionContext: "Hold load until all reps stay controlled." },
+    ],
+  },
+  {
+    id: "ruck-foundation", name: "Outdoor 20 lb ruck", domain: "engine", mode: "ruck", intent: "aerobic", durationMinutes: 35,
+    notes: "Use the 20 lb ruck only. Add time or terrain before load.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [],
+    alternative: { name: "Peloton aerobic base", domain: "engine", mode: "peloton", intent: "aerobic", durationMinutes: 35, notes: "Conversational effort with no hard intervals.", lowerBodyLoad: "low", exercises: [] },
+  },
+  {
+    id: "benchmark-foundation", name: "5 / 10 / 15 foundation", domain: "strength", mode: "bodyweight", intent: "easy", durationMinutes: 20,
+    notes: "Three unhurried rounds. Build capacity without turning broken form into a score.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [
+      { id: "benchmark-pull", name: "Pull-up progression", equipment: "Pull-up bar", sets: 3, targetReps: [5, 5], notes: "Use the easiest version that stays controlled.", progressionContext: "Build rounds before advancing the movement." },
+      { id: "benchmark-push", name: "Push-up progression", equipment: "Floor or incline", sets: 3, targetReps: [10, 10], notes: "Choose an incline that keeps every rep strict.", progressionContext: "Lower the incline only after repeatable rounds." },
+      { id: "benchmark-squat", name: "Squat progression", equipment: "Floor or support", sets: 3, targetReps: [15, 15], notes: "Controlled reps to a repeatable depth.", progressionContext: "Reduce support only after clean repeatable rounds." },
+    ],
+  },
+] as const;
+
+export function dateKey(date = new Date()): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+export function shiftDate(key: string, days: number): string {
+  const at = new Date(`${key}T12:00:00Z`);
+  return new Date(at.valueOf() + days * DAY_MS).toISOString().slice(0, 10);
+}
+
+export function weekdayIndex(key: string): number {
+  const day = new Date(`${key}T12:00:00Z`).getUTCDay();
+  return day === 0 ? 6 : day - 1;
+}
+
+export function plannedWorkout(key: string): ScheduledWorkout {
+  const prescription = structuredClone(WEEKLY_PROGRAM[weekdayIndex(key)]!);
+  return {
+    id: `program-${key}-${prescription.id}`,
+    date: key,
+    originalDate: key,
+    status: "planned",
+    prescription,
+    provenance: ["program"],
+    history: [{ at: `${key}T05:00:00.000Z`, action: "planned", actor: "program", note: `Planned by ${prescription.trainingBlock}.` }],
+  };
+}
+
+export function createInitialPersonalState(today = dateKey()): PersonalState {
+  return {
+    version: 2,
+    schedule: Array.from({ length: 14 }, (_, offset) => plannedWorkout(shiftDate(today, offset))),
+    sessions: [],
+    recoveryEntries: [],
+    meals: [],
+    frequentMeals: [],
+    progressionProposals: [],
+    nutritionTargets: { calories: 2200, protein: 180, carbs: 215, fat: 70 },
+  };
+}
