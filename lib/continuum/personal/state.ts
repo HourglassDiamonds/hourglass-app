@@ -1,6 +1,7 @@
-import { createInitialPersonalState, plannedWorkout, shiftDate } from "./program";
+import { createInitialPersonalState, isRestDayWorkout, isSunday, nextTrainingDate, plannedWorkout, shiftDate } from "./program";
 import {
   carryYesterdayUnresolvedToToday,
+  deferAndReflow,
   FOUNDER_RUCK_ROLLOVER_RECONCILIATION,
   reconcileFounderRuckRollover,
 } from "./adaptation";
@@ -132,8 +133,9 @@ export function ensureSchedule(state: PersonalState, today: string): PersonalSta
     const key = shiftDate(today, offset);
     if (!schedule.some((workout) => workout.originalDate === key)) schedule.push(plannedWorkout(key));
   }
+  const sundaySafe = enforceSundayRest(schedule, new Date().toISOString());
   const rolled = rolloverUnresolved(
-    { ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) },
+    { ...state, schedule: sundaySafe.sort((a, b) => a.date.localeCompare(b.date)) },
     today,
   );
   let reconciled = rolled;
@@ -159,7 +161,7 @@ export function ensureSchedule(state: PersonalState, today: string): PersonalSta
 export function rolloverUnresolved(state: PersonalState, today: string, now = new Date().toISOString()): PersonalState {
   return {
     ...state,
-    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned"
+    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned" && !isSunday(workout.date) && !isRestDayWorkout(workout)
       ? {
           ...workout,
           status: "unresolved" as const,
@@ -168,4 +170,43 @@ export function rolloverUnresolved(state: PersonalState, today: string, now = ne
         }
       : workout),
   };
+}
+
+function isSupersededSundayProgramWorkout(workout: ScheduledWorkout): boolean {
+  return isSunday(workout.date) &&
+    workout.originalDate === workout.date &&
+    workout.provenance.includes("program") &&
+    !workout.replacesWorkoutId &&
+    workout.history.every((event) => event.action === "planned" || event.action === "rolled_unresolved");
+}
+
+function isExplicitSundayRecovery(workout: ScheduledWorkout): boolean {
+  return workout.prescription.domain === "recovery" &&
+    workout.prescription.mode === "recovery" &&
+    (workout.provenance.includes("user") || workout.provenance.includes("user_confirmed"));
+}
+
+export function enforceSundayRest(
+  schedule: readonly ScheduledWorkout[],
+  now = new Date().toISOString(),
+): ScheduledWorkout[] {
+  let next = schedule.map((workout) => structuredClone(workout));
+  const activeSundayTraining = next.filter(
+    (workout) =>
+      isSunday(workout.date) &&
+      !isRestDayWorkout(workout) &&
+      !isExplicitSundayRecovery(workout) &&
+      (workout.status === "planned" || workout.status === "unresolved"),
+  );
+  for (const workout of activeSundayTraining) {
+    if (isSupersededSundayProgramWorkout(workout)) {
+      next = next.filter((item) => item.id !== workout.id);
+      if (!next.some((item) => item.date === workout.date && isRestDayWorkout(item))) {
+        next.push(plannedWorkout(workout.date));
+      }
+      continue;
+    }
+    next = deferAndReflow(next, workout.id, nextTrainingDate(workout.date), now, "sterling");
+  }
+  return next.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }

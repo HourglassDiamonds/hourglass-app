@@ -45,12 +45,8 @@ export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
     alternative: { name: "Peloton aerobic base", domain: "engine", mode: "peloton", intent: "aerobic", durationMinutes: 35, notes: "Conversational effort with no hard intervals.", lowerBodyLoad: "low", exercises: [] },
   },
   {
-    id: "benchmark-foundation", name: "5 / 10 / 15 foundation", domain: "strength", mode: "bodyweight", intent: "easy", durationMinutes: 20,
-    notes: "Three unhurried rounds. Build capacity without turning broken form into a score.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [
-      { id: "benchmark-pull", name: "Pull-up progression", equipment: "Pull-up bar", sets: 3, targetReps: [5, 5], notes: "Use the easiest version that stays controlled.", progressionContext: "Build rounds before advancing the movement." },
-      { id: "benchmark-push", name: "Push-up progression", equipment: "Floor or incline", sets: 3, targetReps: [10, 10], notes: "Choose an incline that keeps every rep strict.", progressionContext: "Lower the incline only after repeatable rounds." },
-      { id: "benchmark-squat", name: "Squat progression", equipment: "Floor or support", sets: 3, targetReps: [15, 15], notes: "Controlled reps to a repeatable depth.", progressionContext: "Reduce support only after clean repeatable rounds." },
-    ],
+    id: "rest-day", name: "REST DAY", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 0,
+    notes: "No planned training. Recovery check-in, mobility, or a light walk only when explicitly chosen.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "none", exercises: [],
   },
 ] as const;
 
@@ -66,6 +62,20 @@ export function shiftDate(key: string, days: number): string {
 export function weekdayIndex(key: string): number {
   const day = new Date(`${key}T12:00:00Z`).getUTCDay();
   return day === 0 ? 6 : day - 1;
+}
+
+export function isSunday(key: string): boolean {
+  return new Date(`${key}T12:00:00Z`).getUTCDay() === 0;
+}
+
+export function nextTrainingDate(key: string): string {
+  let candidate = key;
+  while (isSunday(candidate)) candidate = shiftDate(candidate, 1);
+  return candidate;
+}
+
+export function isRestDayWorkout(workout: ScheduledWorkout): boolean {
+  return workout.prescription.id === "rest-day";
 }
 
 export function plannedWorkout(key: string): ScheduledWorkout {

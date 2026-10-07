@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, type ChangeEvent, type FormEvent } from "react";
 import { applySterlingProposal, deferAndReflow, proposeSterlingAdjustment, sterlingClarification } from "@/lib/continuum/personal/adaptation";
-import { createInitialPersonalState, dateKey, shiftDate } from "@/lib/continuum/personal/program";
+import { createInitialPersonalState, dateKey, isRestDayWorkout, nextTrainingDate, shiftDate } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
 import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealName, mealSignature, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
@@ -123,7 +123,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   function deferWorkout(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!activeToday) return;
-    const target = String(new FormData(event.currentTarget).get("date") || shiftDate(today, 1));
+    const target = String(new FormData(event.currentTarget).get("date") || nextTrainingDate(shiftDate(today, 1)));
     setState((current) => ({ ...current, schedule: deferAndReflow(current.schedule, activeToday.id, target) })); setDeferOpen(false);
   }
 
@@ -300,9 +300,9 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       <section className={`${styles.card} ${styles.hero}`}>
         <div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(today)} · {activeToday?.status.replace("_", " ") ?? "resolved"}</p><h2>{activeToday?.prescription.name ?? "Today is resolved"}</h2></div>{activeToday ? <span>{activeToday.prescription.durationMinutes} min</span> : null}</div>
         {activeToday ? <><p>{activeToday.prescription.notes}</p><p className={styles.provenance}>Planned by {activeToday.prescription.trainingBlock} · {activeToday.provenance.join(" · ")}</p>
-          {activeSession ? <WorkoutLogger workout={activeToday} session={activeSession} onSet={updateSet} onComplete={completeWorkout} /> : <div className={styles.actions}><button className={styles.primary} onClick={() => startWorkout(activeToday)}>Start</button><button onClick={() => setModifyOpen((open) => !open)}>Modify today</button><button onClick={() => setDeferOpen((open) => !open)}>Defer</button><button onClick={skipWorkout}>Skip</button>{activeToday.prescription.alternative ? <button onClick={() => swapWorkout(activeToday.id)}>Swap equivalent</button> : null}</div>}
+          {isRestDayWorkout(activeToday) ? null : activeSession ? <WorkoutLogger workout={activeToday} session={activeSession} onSet={updateSet} onComplete={completeWorkout} /> : <div className={styles.actions}><button className={styles.primary} onClick={() => startWorkout(activeToday)}>Start</button><button onClick={() => setModifyOpen((open) => !open)}>Modify today</button><button onClick={() => setDeferOpen((open) => !open)}>Defer</button><button onClick={skipWorkout}>Skip</button>{activeToday.prescription.alternative ? <button onClick={() => swapWorkout(activeToday.id)}>Swap equivalent</button> : null}</div>}
           {modifyOpen ? <form className={styles.editPanel} onSubmit={saveModification}><label>Name<input name="name" defaultValue={activeToday.prescription.name} /></label><label>Minutes<input name="duration" type="number" min="5" max="180" defaultValue={activeToday.prescription.durationMinutes} /></label><label>Notes<textarea name="notes" defaultValue={activeToday.prescription.notes} /></label><button className={styles.primary}>Save today’s modification</button></form> : null}
-          {deferOpen ? <form className={styles.editPanel} onSubmit={deferWorkout}><label>Move to<input name="date" type="date" min={shiftDate(today, 1)} defaultValue={shiftDate(today, 1)} /></label><p>Later sessions will reflow; this workout keeps its prescription and history.</p><button className={styles.primary}>Confirm defer</button></form> : null}
+          {deferOpen ? <form className={styles.editPanel} onSubmit={deferWorkout}><label>Move to<input name="date" type="date" min={nextTrainingDate(shiftDate(today, 1))} defaultValue={nextTrainingDate(shiftDate(today, 1))} /></label><p>Later sessions will reflow; this workout keeps its prescription and history. Sunday remains a rest day.</p><button className={styles.primary}>Confirm defer</button></form> : null}
         </> : <p>Completed, deferred, or consciously skipped sessions remain in the week history.</p>}
       </section>
       <section className={styles.card}><p className={styles.kicker}>Ask Sterling · adaptive coach</p><h2>What changed in real life?</h2><form className={styles.sterling} onSubmit={askSterling}><textarea value={sterlingText} onChange={(event) => setSterlingText(event.target.value)} placeholder="I got about four hours of sleep and I’m gassed. Skip the weights today. I’m going to ruck. Move the weights to tomorrow." required /><button className={styles.primary}>Review adjustment</button></form>

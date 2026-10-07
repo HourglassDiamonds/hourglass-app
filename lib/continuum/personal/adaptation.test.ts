@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applySterlingProposal, proposeSterlingAdjustment, sterlingClarification } from "./adaptation";
-import { createInitialPersonalState, shiftDate } from "./program";
+import { applySterlingProposal, deferAndReflow, proposeSterlingAdjustment, sterlingClarification } from "./adaptation";
+import { createInitialPersonalState, isRestDayWorkout, isSunday, shiftDate } from "./program";
 
 test("four hours sleep / gassed / ruck today / weights tomorrow is proposed, confirmed, and reflowed", () => {
   const today = "2026-10-05";
@@ -179,4 +179,97 @@ test("clarification names the actual ambiguity rather than teaching command synt
     sterlingClarification(state, "Move yesterday's workout to today", "2026-10-06"),
     /found 2 missed strength sessions/i,
   );
+});
+
+test("deferring Saturday work to Sunday skips Sunday and lands on Monday", () => {
+  const state = createInitialPersonalState("2026-10-10");
+  const saturday = state.schedule.find((workout) => workout.date === "2026-10-10")!;
+  const reflowed = deferAndReflow(
+    state.schedule,
+    saturday.id,
+    "2026-10-11",
+    "2026-10-10T12:00:00.000Z",
+  );
+  const moved = reflowed.find((workout) => workout.replacesWorkoutId === saturday.id && workout.status === "planned");
+  assert.equal(moved?.date, "2026-10-12");
+  assert.equal(reflowed.find((workout) => workout.id === saturday.id)?.deferredTo, "2026-10-12");
+  assert.ok(reflowed.some((workout) => workout.date === "2026-10-11" && isRestDayWorkout(workout)));
+  assert.equal(
+    reflowed.some(
+      (workout) => isSunday(workout.date) && !isRestDayWorkout(workout) && workout.status === "planned",
+    ),
+    false,
+  );
+});
+
+test("weekly reflow skips Sunday while continuing through Monday", () => {
+  const state = createInitialPersonalState("2026-10-09");
+  const friday = state.schedule.find((workout) => workout.date === "2026-10-09")!;
+  const saturday = state.schedule.find((workout) => workout.date === "2026-10-10")!;
+  const reflowed = deferAndReflow(
+    state.schedule,
+    friday.id,
+    "2026-10-10",
+    "2026-10-09T12:00:00.000Z",
+  );
+  assert.equal(reflowed.find((workout) => workout.id === saturday.id)?.date, "2026-10-12");
+  assert.equal(
+    reflowed.some(
+      (workout) => isSunday(workout.date) && !isRestDayWorkout(workout) && workout.status === "planned",
+    ),
+    false,
+  );
+});
+
+test("Sterling moves a Saturday workout to Monday when tomorrow is Sunday", () => {
+  const today = "2026-10-10";
+  const state = createInitialPersonalState(today);
+  const saturday = state.schedule.find((workout) => workout.date === today)!;
+  const proposal = proposeSterlingAdjustment(
+    state,
+    "Move today's workout to tomorrow.",
+    today,
+  );
+  assert.ok(proposal);
+  assert.match(proposal.summary, /2026-10-12/);
+  assert.ok(
+    proposal.nextSchedule.some(
+      (workout) => workout.replacesWorkoutId === saturday.id && workout.date === "2026-10-12",
+    ),
+  );
+  assert.equal(
+    proposal.nextSchedule.some(
+      (workout) => isSunday(workout.date) && !isRestDayWorkout(workout) && workout.status === "planned",
+    ),
+    false,
+  );
+});
+
+test("Sunday REST DAY remains on Sunday beside recorded completed activity", () => {
+  const state = createInitialPersonalState("2026-10-09");
+  const friday = state.schedule.find((workout) => workout.date === "2026-10-09")!;
+  const completedRuck = {
+    ...structuredClone(friday),
+    id: "completed-sunday-ruck",
+    date: "2026-10-11",
+    originalDate: "2026-10-11",
+    status: "completed" as const,
+    prescription: {
+      ...friday.prescription,
+      id: "completed-ruck",
+      name: "Founder-chosen ruck",
+      domain: "recovery" as const,
+      mode: "ruck" as const,
+      exercises: [],
+    },
+  };
+  const reflowed = deferAndReflow(
+    [...state.schedule, completedRuck],
+    friday.id,
+    "2026-10-10",
+    "2026-10-09T12:00:00.000Z",
+  );
+  assert.ok(reflowed.some((workout) => workout.date === "2026-10-11" && isRestDayWorkout(workout)));
+  assert.ok(reflowed.some((workout) => workout.id === completedRuck.id && workout.date === "2026-10-11"));
+  assert.equal(reflowed.some((workout) => workout.date !== "2026-10-11" && isRestDayWorkout(workout) && workout.originalDate === "2026-10-11"), false);
 });
