@@ -105,7 +105,16 @@ export function reconcileProjectionWithLifecycle(input: {
     approved: 4, order_confirmed: 5, waiting_external: 5,
     in_production: 6, ready: 7, complete: 8,
   };
-  if (rank[projection.stage] >= rank[targetStage]) return projection;
+  const staleFounderStageWork =
+    lifecycleClass === "production" &&
+    projection.activeObligations.some(
+      (obligation) =>
+        obligation.actor === "founder" &&
+        (obligation.kind === "cad" || obligation.kind === "confirmation"),
+    );
+  if (rank[projection.stage] >= rank[targetStage] && !staleFounderStageWork) {
+    return projection;
+  }
 
   const sourceRef = input.projectId
     ? `canonical-project-lifecycle:${input.projectId}`
@@ -139,7 +148,10 @@ export function reconcileProjectionWithLifecycle(input: {
         closedBy: sourceRef,
       })),
     ],
-    commitment: lifecycleClass === "production" ? projection.commitment : null,
+    commitment:
+      lifecycleClass === "production" && projection.commitment?.actor !== "founder"
+        ? projection.commitment
+        : null,
     controllingSourceRefs: dependency ? [sourceRef] : [],
     provenance: [...projection.provenance, {
       sourceRef,
@@ -196,8 +208,169 @@ function obligationIdentity(
   return `${eventScope(e)}:${kind}:${revision ?? "current"}:${deliverable.toLowerCase()}`;
 }
 
+function cadScope(scope: string): Set<string> | null {
+  if (!scope.startsWith("cad:")) return null;
+  return new Set(
+    scope
+      .slice(4)
+      .split(",")
+      .map((value) => value.trim().toUpperCase())
+      .filter(Boolean),
+  );
+}
+
+function scopesOverlap(left: string, right: string): boolean {
+  if (left === right) return true;
+  const leftCads = cadScope(left);
+  const rightCads = cadScope(right);
+  if (!leftCads || !rightCads) return false;
+  return [...leftCads].some((cad) => rightCads.has(cad));
+}
+
 function sameScope(obligation: CurrentObligation, event: SourceCommunicationEvent): boolean {
-  return obligation.scope === eventScope(event);
+  return scopesOverlap(obligation.scope, eventScope(event));
+}
+
+function eventsShareScope(
+  authority: SourceCommunicationEvent,
+  event: SourceCommunicationEvent,
+): boolean {
+  if (authority.projectId && authority.projectId === event.projectId) return true;
+  if (authority.workLoopId && authority.workLoopId === event.workLoopId) return true;
+  if (authority.threadId && authority.threadId === event.threadId) return true;
+  return scopesOverlap(eventScope(authority), eventScope(event));
+}
+
+type FounderDirectiveTransition = "blocked" | "reinforce" | "advance";
+
+function transitionAfterFounderDirective(
+  authority: SourceCommunicationEvent,
+  event: SourceCommunicationEvent,
+  text: string,
+): FounderDirectiveTransition {
+  const authorityMs = Date.parse(authority.timestamp);
+  const eventMs = Date.parse(event.timestamp);
+  if (
+    !Number.isFinite(authorityMs) ||
+    !Number.isFinite(eventMs) ||
+    eventMs <= authorityMs ||
+    !eventsShareScope(authority, event)
+  ) {
+    return "blocked";
+  }
+  const correction = authority.correction;
+  if (!correction) return "blocked";
+  const explicitlyHeld =
+    correction.ballHolder === "unknown" &&
+    /\bheld?\b|\bhold\b/i.test(correction.dependency ?? authority.evidenceExcerpt);
+  if (explicitlyHeld) return "blocked";
+  const explicitNewWork =
+    /\b(?:new (?:work|order|repair|project|piece)|service|resize|repair|rework)\b/i.test(
+      text,
+    );
+  if (correction.stage === "complete") {
+    return explicitNewWork ? "advance" : "blocked";
+  }
+  if (event.semanticClass === "work_complete" || event.semanticClass === "work_ready") {
+    return "advance";
+  }
+  if (explicitNewWork) return "advance";
+  if (correction.stage === "in_production") {
+    if (event.semanticClass === "material_arrives") return "advance";
+    if (event.semanticClass === "workshop_started") return "reinforce";
+    if (
+      event.semanticClass === "vendor_order_confirmation" &&
+      !/\b(?:discrepanc|please (?:review|check|confirm|report)|report .{0,40}asap)\b/i.test(
+        text,
+      )
+    ) {
+      return "reinforce";
+    }
+    return "blocked";
+  }
+  if (
+    event.semanticClass === "workshop_started" ||
+    event.semanticClass === "material_arrives" ||
+    event.semanticClass === "vendor_order_confirmation"
+  ) {
+    return "advance";
+  }
+  if (
+    correction.ballHolder === "vendor_shop" &&
+    (event.semanticClass === "vendor_delivers_artifact" ||
+      event.semanticClass === "vendor_promises")
+  ) {
+    return "advance";
+  }
+  if (
+    correction.ballHolder === "client" &&
+    (event.semanticClass === "client_requests" ||
+      event.semanticClass === "client_approves" ||
+      event.semanticClass === "client_promises" ||
+      event.semanticClass === "client_replies_nonblocking")
+  ) {
+    return "advance";
+  }
+  return "blocked";
+}
+
+function obligationTokens(value: string): Set<string> {
+  return new Set(
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .split(/\s+/)
+      .filter(
+        (token) =>
+          token.length >= 3 &&
+          !["the", "and", "for", "with", "over", "here", "shortly", "tomorrow"].includes(token),
+      ),
+  );
+}
+
+function substantiallySameDeliverable(left: string, right: string): boolean {
+  const a = obligationTokens(left);
+  const b = obligationTokens(right);
+  if (a.size === 0 || b.size === 0) {
+    return left.trim().toLowerCase() === right.trim().toLowerCase();
+  }
+  const overlap = [...a].filter((token) => b.has(token)).length;
+  return overlap / Math.min(a.size, b.size) >= 0.75;
+}
+
+function materialClosureEvent(event: SourceCommunicationEvent | undefined): boolean {
+  if (!event) return false;
+  if (
+    [
+      "client_replies_nonblocking",
+      "material_arrives",
+      "workshop_started",
+      "vendor_order_confirmation",
+      "work_ready",
+      "work_complete",
+    ].includes(event.semanticClass)
+  ) {
+    return true;
+  }
+  return event.semanticClass === "founder_fulfills_commitment" && event.hasAttachments;
+}
+
+function materiallyClosedFounderCommitment(
+  projection: CurrentWorkProjection,
+  deliverable: string,
+  sourceRef: string,
+  sourceEvents: readonly SourceCommunicationEvent[],
+): boolean {
+  const byRef = new Map(sourceEvents.map((event) => [event.sourceRef, event]));
+  return projection.historicalObligations.some(
+    (obligation) =>
+      obligation.actor === "founder" &&
+      obligation.openedBy !== sourceRef &&
+      obligation.closedBy !== null &&
+      materialClosureEvent(byRef.get(obligation.closedBy)) &&
+      (obligation.status === "satisfied" || obligation.status === "superseded") &&
+      substantiallySameDeliverable(obligation.deliverable, deliverable),
+  );
 }
 
 function isFounderReceiptAcknowledgement(event: SourceCommunicationEvent): boolean {
@@ -409,13 +582,20 @@ export function projectCurrentWork(
       ? { ...event, semanticClass: "founder_requests_vendor" as const }
       : event;
   });
+  const authoritativeCorrections = withVendorFollowups.filter(
+    (event) =>
+      event.semanticClass === "founder_correction" &&
+      event.provenance === "founder_correction" &&
+      event.correction,
+  );
   if (
     new Set(
       withVendorFollowups
         .filter(isOperationalSourceEvent)
         .map((e) => e.projectId)
         .filter(Boolean),
-    ).size > 1
+    ).size > 1 &&
+    authoritativeCorrections.length === 0
   )
     return null;
   const admitted = withVendorFollowups.filter(
@@ -428,11 +608,18 @@ export function projectCurrentWork(
   if (!admitted.length) return null;
   const projects = new Set(admitted.map((e) => e.projectId).filter(Boolean));
   const keys = new Set(admitted.map((e) => e.workLoopId).filter(Boolean));
-  if (projects.size > 1 || (projects.size === 0 && keys.size !== 1))
+  const latestFounderCorrection = authoritativeCorrections.at(-1) ?? null;
+  if (
+    (projects.size > 1 && !latestFounderCorrection) ||
+    (projects.size === 0 && keys.size !== 1 && !latestFounderCorrection)
+  )
     return null;
-  const workstreamId = projects.size
-    ? `project:${[...projects][0]}`
-    : [...keys][0]!;
+  const workstreamId =
+    latestFounderCorrection?.workLoopId ??
+    (latestFounderCorrection?.projectId
+      ? `project:${latestFounderCorrection.projectId}`
+      : null) ??
+    (projects.size === 1 ? `project:${[...projects][0]}` : [...keys].sort()[0]!);
   const result: CurrentWorkProjection = {
     workstreamId,
     stage: "queued",
@@ -458,6 +645,7 @@ export function projectCurrentWork(
     return result;
   }
   let controlled = false;
+  let founderAuthority: SourceCommunicationEvent | null = null;
   const close = (
     e: SourceCommunicationEvent,
     status: "satisfied" | "superseded",
@@ -511,6 +699,14 @@ export function projectCurrentWork(
       record.reason = "Unknown timestamp cannot establish newer truth";
       continue;
     }
+    if (founderAuthority && e.semanticClass !== "founder_correction") {
+      const transition = transitionAfterFounderDirective(founderAuthority, e, text);
+      if (transition === "blocked") {
+        record.reason = "Founder directive outranks lower-authority evidence";
+        continue;
+      }
+      if (transition === "advance") founderAuthority = null;
+    }
     if (
       result.stage === "complete" &&
       e.semanticClass !== "founder_correction" &&
@@ -552,6 +748,7 @@ export function projectCurrentWork(
       actor = correction.ballHolder;
       dependency = correction.dependency;
       close(e, "superseded");
+      founderAuthority = e;
     } else if (cls === "vendor_order_confirmation") {
       close(e, "superseded", cad);
       if (/discrepanc|please (?:review|check|confirm|report)/i.test(text)) {
@@ -750,6 +947,14 @@ export function projectCurrentWork(
       // that text cannot reopen the same obligation it just satisfied.
       // Text-only messages may still establish a genuine new commitment.
       dependency = e.hasAttachments ? null : founderCommitmentDependency(text);
+      if (
+        dependency &&
+        materiallyClosedFounderCommitment(result, dependency, e.sourceRef, admitted) &&
+        !/\b(?:again|still need|new request|new commitment|actually|reopen)\b/i.test(text)
+      ) {
+        dependency = null;
+        record.reason = "Materially closed founder commitment cannot reopen without explicit new intent";
+      }
       actor = dependency ? "founder" : actor;
     } else continue;
     // A changed blocker replaces only its own scoped stage obligation.
@@ -804,7 +1009,7 @@ export function projectCurrentWork(
     ];
     result.asOf = hasTime ? e.timestamp : null;
     record.applied = true;
-    record.reason = "Current operational evidence";
+    if (!record.reason) record.reason = "Current operational evidence";
     controlled = true;
   }
   return controlled ? result : null;

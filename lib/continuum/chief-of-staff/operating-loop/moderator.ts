@@ -2285,6 +2285,46 @@ function situationKeys(item: RankedSituation): string[] {
   return keys;
 }
 
+function situationEvidenceAuthority(item: RankedSituation): number {
+  if (
+    item.sourceEvents?.some(
+      (event) =>
+        event.semanticClass === "founder_correction" &&
+        event.provenance === "founder_correction",
+    )
+  ) {
+    return 4;
+  }
+  if (todayLifecycleClass(item.lifecycleStage) !== "unknown") return 3;
+  if (item.sourceEvents?.some(isOperationalSourceEvent)) return 2;
+  return 1;
+}
+
+function lifecyclePrecedence(stage: string | null | undefined): number {
+  const rank = {
+    terminal: 6,
+    ready: 5,
+    production: 4,
+    cad: 3,
+    design: 2,
+    queued: 1,
+    unknown: 0,
+  } as const;
+  return rank[todayLifecycleClass(stage)];
+}
+
+function strongerLifecycle(
+  left: string | null | undefined,
+  right: string | null | undefined,
+): string | null {
+  const a = left?.trim() || null;
+  const b = right?.trim() || null;
+  const delta = lifecyclePrecedence(a) - lifecyclePrecedence(b);
+  if (delta !== 0) return delta > 0 ? a : b;
+  if (!a || !b) return a ?? b;
+  return a.localeCompare(b) <= 0 ? a : b;
+}
+
 function strongerSituation(a: RankedSituation, b: RankedSituation): RankedSituation {
   const score = (item: RankedSituation): number => {
     const packet = item.briefingPacket;
@@ -2304,12 +2344,20 @@ function strongerSituation(a: RankedSituation, b: RankedSituation): RankedSituat
     if (item.disposition === "brief") return 15;
     return 10;
   };
-  return score(a) >= score(b) ? a : b;
+  const scoreDelta = score(a) - score(b);
+  if (scoreDelta !== 0) return scoreDelta > 0 ? a : b;
+  const authorityDelta = situationEvidenceAuthority(a) - situationEvidenceAuthority(b);
+  if (authorityDelta !== 0) return authorityDelta > 0 ? a : b;
+  return a.id.localeCompare(b.id) <= 0 ? a : b;
 }
 
 function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSituation {
   const primary = strongerSituation(a, b);
   const secondary = primary === a ? b : a;
+  const lifecycleStage = strongerLifecycle(
+    primary.lifecycleStage,
+    secondary.lifecycleStage,
+  );
   const client =
     clientLabelFromIdentityHay([
       primary.threadSubject,
@@ -2349,20 +2397,29 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     personName: client && !isVendorOrganizationLabel(client) ? client : primary.personName,
     projectId: primary.projectId || secondary.projectId,
     projectTitle: primary.projectTitle || secondary.projectTitle,
-    candidateIds: [...new Set([...primary.candidateIds, ...secondary.candidateIds])],
-    beats: [...primary.beats, ...secondary.beats],
+    candidateIds: [...new Set([...primary.candidateIds, ...secondary.candidateIds])].sort(),
+    beats: [...primary.beats, ...secondary.beats].sort(
+      (left, right) =>
+        (left.timestamp ?? left.at ?? "").localeCompare(
+          right.timestamp ?? right.at ?? "",
+        ) ||
+        (left.sourceHref ?? "").localeCompare(right.sourceHref ?? "") ||
+        left.candidateId.localeCompare(right.candidateId),
+    ),
     threadSubject: primary.threadSubject || secondary.threadSubject,
     recoveredGmailThreadId: primary.recoveredGmailThreadId || secondary.recoveredGmailThreadId,
     waitingState,
     remainingFounderCommitment: remaining,
     vendorContactName: primary.vendorContactName || secondary.vendorContactName,
     organizationLabel: primary.organizationLabel || secondary.organizationLabel,
-    founderOwnTexts: [...(primary.founderOwnTexts ?? []), ...(secondary.founderOwnTexts ?? [])],
-    vendorOwnTexts,
-    quotedTexts: [...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])],
-    sourceRefs: [...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])],
-    attachmentNames: [...new Set([...(primary.attachmentNames ?? []), ...(secondary.attachmentNames ?? [])])],
+    founderOwnTexts: [...new Set([...(primary.founderOwnTexts ?? []), ...(secondary.founderOwnTexts ?? [])])].sort(),
+    vendorOwnTexts: [...new Set(vendorOwnTexts)].sort(),
+    quotedTexts: [...new Set([...(primary.quotedTexts ?? []), ...(secondary.quotedTexts ?? [])])].sort(),
+    sourceRefs: [...new Set([...(primary.sourceRefs ?? []), ...(secondary.sourceRefs ?? [])])].sort(),
+    attachmentNames: [...new Set([...(primary.attachmentNames ?? []), ...(secondary.attachmentNames ?? [])])].sort(),
     sourceEvents: mergeSourceEvents(primary.sourceEvents, secondary.sourceEvents),
+    lifecycleStage,
+    projectStateLabel: projectStateLabel(lifecycleStage),
     briefingPacket: null,
   };
 }

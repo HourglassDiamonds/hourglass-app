@@ -210,6 +210,31 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     assert.equal(p.activeObligations.length, 1);
   });
 
+  it("Duane precedence: canonical production suppresses an earlier confirmation-discrepancy founder action", () => {
+    const reduced = reduceWorkLoop({
+      evidence: [],
+      sourceEvents: [
+        event(
+          "confirmation-review",
+          "Order confirmation SP13530: please review discrepancy.",
+          10,
+        ),
+        event("production-start", "Production has started.", 11),
+      ],
+      lifecycle: "production",
+      projectId: COS_LOOP_PROJECT_A,
+    });
+    assert.equal(reduced.projection?.stage, "in_production");
+    assert.equal(reduced.projection?.ballHolder, "vendor_shop");
+    assert.equal(reduced.projection?.dependency, "production completion");
+    assert.equal(
+      reduced.projection?.activeObligations.some(
+        (obligation) => obligation.kind === "confirmation",
+      ),
+      false,
+    );
+  });
+
   it("Nate: later send and client acknowledgement permanently close the older founder promise", () => {
     const projection = project([
       event("promise", "I'll send over the pic of the pendant size tomorrow.", 25, "founder", {
@@ -251,6 +276,47 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     ]);
     assert.equal(projection.ballHolder, "unknown");
     assert.equal(projection.activeObligations.length, 0);
+  });
+
+  it("Nate precedence: a closed mixed-CAD founder promise cannot be resurrected by replayed lower-authority text", () => {
+    const promise = event(
+      "promise",
+      "I'll send the pendant-size picture tomorrow.",
+      25,
+      "founder",
+      {
+        cadIds: ["C017492", "C026176"],
+        semanticClass: "founder_fulfills_commitment",
+      },
+    );
+    const acknowledgement = event(
+      "ack",
+      "Sounds great. Thanks!",
+      26,
+      "client",
+      {
+        cadIds: ["C026176"],
+        semanticClass: "client_replies_nonblocking",
+      },
+    );
+    const replayed = event(
+      "quoted-replay",
+      "I'll send the pendant-size picture tomorrow.",
+      27,
+      "founder",
+      {
+        cadIds: ["C026176"],
+        semanticClass: "founder_fulfills_commitment",
+      },
+    );
+    const projection = project([promise, acknowledgement, replayed]);
+    assert.equal(projection.ballHolder, "unknown");
+    assert.equal(projection.dependency, null);
+    assert.equal(projection.activeObligations.length, 0);
+    assert.match(
+      projection.provenance.at(-1)?.reason ?? "",
+      /cannot reopen without explicit new intent/i,
+    );
   });
 
   it("acceptance lifecycle and ownership records resolve from newest material evidence", () => {
@@ -623,6 +689,79 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     assert.equal(p.activeObligations.length, 0);
     assert.deepEqual(project([...rows].reverse()), p);
   });
+  it("Eliah precedence: a terminal founder disposition survives mixed project associations and older CAD evidence", () => {
+    const correction = event(
+      "terminal",
+      "This work is dead and closed.",
+      15,
+      "founder",
+      {
+        timestamp: "2026-10-05T16:27:23Z",
+        projectId: null,
+        workLoopId: "cad:C026130",
+        cadIds: ["C026130"],
+        semanticClass: "founder_correction",
+        provenance: "founder_correction",
+        correction: { stage: "complete", ballHolder: "unknown", dependency: null },
+      },
+    );
+    const rows = [
+      event("older-cad", "CAD attached.", 10, "vendor_shop", {
+        projectId: "project-a",
+        workLoopId: "cad:C026130",
+        cadIds: ["C026130"],
+      }),
+      event("contaminated-cad", "CAD attached.", 11, "vendor_shop", {
+        projectId: "project-b",
+        workLoopId: "cad:C026130",
+        cadIds: ["C026130"],
+      }),
+      correction,
+    ];
+    const projection = project(rows);
+    assert.equal(projection.stage, "complete");
+    assert.equal(projection.ballHolder, "unknown");
+    assert.equal(projection.activeObligations.length, 0);
+    assert.equal(projection.provenance.at(-1)?.origin, "founder_correction");
+  });
+
+  it("enforces founder directive > lifecycle > newer email > older evidence", () => {
+    const terminal = event("terminal", "This work is dead and closed.", 12, "founder", {
+      semanticClass: "founder_correction",
+      provenance: "founder_correction",
+      correction: { stage: "complete", ballHolder: "unknown", dependency: null },
+    });
+    const founderWins = reduceWorkLoop({
+      evidence: [],
+      sourceEvents: [event("old-cad", "CAD attached.", 10), terminal],
+      lifecycle: "production",
+      projectId: COS_LOOP_PROJECT_A,
+    }).projection!;
+    assert.equal(founderWins.stage, "complete");
+
+    const lifecycleWins = reduceWorkLoop({
+      evidence: [],
+      sourceEvents: [
+        event("old-request", "Please send the CAD.", 10, "founder"),
+        event("newer-cad", "CAD attached.", 13),
+      ],
+      lifecycle: "production",
+      projectId: COS_LOOP_PROJECT_A,
+    }).projection!;
+    assert.equal(lifecycleWins.stage, "in_production");
+    assert.equal(lifecycleWins.ballHolder, "vendor_shop");
+
+    const newerEmailWins = project([
+      event("older-candidate", "CAD attached.", 10, "vendor_shop", {
+        provenance: "indexed_gmail+interpretation",
+      }),
+      event("newer-email", "Production has started.", 13, "vendor_shop", {
+        provenance: "indexed_gmail+live_operational_fact",
+      }),
+    ]);
+    assert.equal(newerEmailWins.stage, "in_production");
+    assert.equal(newerEmailWins.ballHolder, "vendor_shop");
+  });
   it("partial artifacts and mismatched projects cannot close unrelated work", () => {
     const rows = [
       event("stl-request", "Please send the STL.", 10, "founder"),
@@ -671,6 +810,38 @@ describe("Phase 2 current truth through reducer and final docket", () => {
       "in_production",
     );
     assert.equal(result.watching[0].briefingPacket?.sourceEvents?.length, 2);
+  });
+  it("repeated reconstruction is deterministic for identical canonical inputs", () => {
+    const rows = [
+      event("request", "Please send the CAD.", 10, "founder"),
+      event("cad", "CAD attached.", 11),
+      event("production", "Production has started.", 12),
+      event("duplicate-production", "Production has started.", 12),
+    ];
+    const render = (sourceEvents: SourceCommunicationEvent[]) => {
+      const loop = composeCosOperatingLoop({
+        jobs: [],
+        projects: fixtureProjects(),
+        founderCorrections: sourceEvents,
+        nowIso: "2026-10-07T16:00:00Z",
+        newMutationId: () => "deterministic-replay",
+      });
+      const result = composeTodayDocket(loop);
+      return [...result.items, ...result.watching]
+        .map((item) => ({
+          id: item.id,
+          holder: item.briefingPacket?.ballHolder ?? null,
+          stage: item.briefingPacket?.projection?.stage ?? null,
+          dependency: item.briefingPacket?.projection?.dependency ?? null,
+          actionable: result.items.some((row) => row.id === item.id),
+        }))
+        .sort((left, right) => left.id.localeCompare(right.id));
+    };
+    const first = render(rows);
+    const second = render(rows);
+    const reordered = render([...rows].reverse());
+    assert.deepEqual(second, first);
+    assert.deepEqual(reordered, first);
   });
   it("counts independent obligations beyond the old top-five cutoff", () => {
     const jobs = Array.from({ length: 8 }, (_, i) =>
