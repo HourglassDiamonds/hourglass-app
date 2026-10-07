@@ -3,7 +3,7 @@
  * Does not write Open Jobs, Candidates, People, or Lifecycle.
  */
 
-import { randomUUID } from "node:crypto";
+import { createHash } from "node:crypto";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import { selectOpenProjectWork } from "@/lib/continuum/client-memory/open-projects/select";
@@ -90,6 +90,31 @@ export type ComposeCosOperatingLoopInput = {
   heldJobIds?: ReadonlySet<string>;
 };
 
+function deterministicUuid(seed: string): string {
+  const hex = createHash("sha256").update(seed).digest("hex").slice(0, 32).split("");
+  hex[12] = "4";
+  hex[16] = ["8", "9", "a", "b"][parseInt(hex[16]!, 16) % 4]!;
+  const value = hex.join("");
+  return `${value.slice(0, 8)}-${value.slice(8, 12)}-${value.slice(12, 16)}-${value.slice(16, 20)}-${value.slice(20)}`;
+}
+
+function deterministicMutationIds(input: ComposeCosOperatingLoopInput): () => string {
+  const seed = JSON.stringify({
+    nowIso: input.nowIso,
+    jobs: (input.jobs ?? [])
+      .map((row) => [row.jobId, row.updatedAt, row.state, row.sourceRef])
+      .sort((left, right) => String(left[0]).localeCompare(String(right[0]))),
+    candidates: (input.candidates ?? [])
+      .map((row) => [row.candidateId, row.sourceTimestamp, row.candidateState, row.reviewStatus])
+      .sort((left, right) => String(left[0]).localeCompare(String(right[0]))),
+    projects: [...(input.projects?.entries() ?? [])]
+      .map(([projectId, row]) => [projectId, row.lifecycleStage, row.title])
+      .sort((left, right) => String(left[0]).localeCompare(String(right[0]))),
+  });
+  let index = 0;
+  return () => deterministicUuid(`continuum-today:${seed}:${index++}`);
+}
+
 function clientDisplayName(
   title: string,
   people: readonly { displayName: string; role?: string | null }[],
@@ -150,7 +175,7 @@ export function composeCosOperatingLoop(
   input: ComposeCosOperatingLoopInput,
 ): CosOperatingLoopView {
   const ranker = input.ranker ?? DETERMINISTIC_ACTIONABLE_RANKER;
-  const newMutationId = input.newMutationId ?? (() => randomUUID());
+  const newMutationId = input.newMutationId ?? deterministicMutationIds(input);
   const projects =
     input.projects ?? projectContextFromSummaries(input.summaries ?? []);
   const candidates = input.candidates ?? [];

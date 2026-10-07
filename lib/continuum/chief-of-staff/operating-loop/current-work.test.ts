@@ -13,6 +13,7 @@ import {
   correctionEventsFromNotes,
 } from "@/lib/continuum/concierge-sol/founder-command";
 import { normalizeCommitment } from "./current-work";
+import { projectTodaySnapshot } from "@/lib/continuum/today-snapshot";
 
 function event(
   id: string,
@@ -861,6 +862,26 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     const reordered = render([...rows].reverse());
     assert.deepEqual(second, first);
     assert.deepEqual(reordered, first);
+  });
+  it("produces byte-identical snapshot payloads without injected mutation ids", () => {
+    const input = {
+      jobs: [fixtureJob({
+        jobId: "11111111-1111-4111-8111-111111111111",
+        subject: "Review appointment preparation",
+        createdMutationId: "22222222-2222-4222-8222-222222222222",
+        updatedAt: "2026-10-07T16:00:00Z",
+      })],
+      projects: fixtureProjects(),
+      nowIso: "2026-10-07T16:00:00Z",
+    };
+    const render = () => {
+      const loop = composeCosOperatingLoop(input);
+      return projectTodaySnapshot(
+        composeTodayDocket(loop),
+        loop.attentionValidUntil ?? null,
+      );
+    };
+    assert.deepEqual(render(), render());
   });
   it("counts independent obligations beyond the old top-five cutoff", () => {
     const jobs = Array.from({ length: 8 }, (_, i) =>
