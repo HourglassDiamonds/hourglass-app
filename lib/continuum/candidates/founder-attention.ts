@@ -166,6 +166,7 @@ export type TodayGmailIndexedMessage = {
   direction: "inbound" | "outbound" | "unknown";
   labelIds?: readonly string[];
   fromEmailHash?: string | null;
+  toEmailHashes?: readonly string[];
   subject?: string | null;
   hasAttachments?: boolean;
   attachmentFilenames?: readonly string[];

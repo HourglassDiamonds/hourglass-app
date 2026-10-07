@@ -35,7 +35,7 @@ const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
 const LIVE_FACT_CONCURRENCY = 4;
 const INDEX_SELECT =
-  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, has_attachments";
+  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
 
 export type TodayLiveEnrichmentDiagnostics = {
   requestedThreadCount: number;
@@ -79,6 +79,14 @@ function asLabelIds(value: unknown): string[] | undefined {
     .map((row) => String(row ?? "").trim())
     .filter(Boolean);
   return labels.length > 0 ? labels : undefined;
+}
+
+function asEmailHashes(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const hashes = value
+    .map((row) => String(row ?? "").trim().toLowerCase())
+    .filter((row) => /^[a-f0-9]{64}$/.test(row));
+  return hashes.length > 0 ? [...new Set(hashes)] : undefined;
 }
 
 function internalEmails(): string[] {
@@ -180,6 +188,7 @@ function ingestIndexedRows(
           direction: indexedDirection(row.direction, fromEmailHash, founderHashes),
           labelIds: asLabelIds(row.label_ids),
           fromEmailHash,
+          toEmailHashes: asEmailHashes(row.to_email_hashes),
           subject: row.subject == null ? null : String(row.subject),
           hasAttachments: Boolean(row.has_attachments),
         });

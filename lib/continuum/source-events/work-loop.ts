@@ -5,6 +5,7 @@
 
 import type { WorkLoopActor, WorkLoopDependency, WorkLoopEvent, WorkLoopEventType } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
 import type { SourceCommunicationEvent } from "./types";
+import { hasMaterialOrderConfirmationException } from "./order-confirmation";
 
 function parseMs(iso: string, fallback: number): number {
   const ms = Date.parse(iso);
@@ -36,7 +37,7 @@ function mapping(event: SourceCommunicationEvent): {
     case "vendor_delivers_artifact":
       return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
     case "vendor_order_confirmation":
-      return /discrepanc|please (?:review|check|confirm|report)/i.test(
+      return hasMaterialOrderConfirmationException(
         event.evidenceExcerpt || event.authorOwnedText,
       )
         ? { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" }

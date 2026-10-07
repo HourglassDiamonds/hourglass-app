@@ -35,6 +35,7 @@
     "agent-os:client-attention": "npx tsx scripts/agent-os-client-attention.ts",
     "agent-os:mark-recommendation": "npx tsx scripts/agent-os-mark-recommendation.ts",
     "continuum:today-replay": "npx tsx scripts/continuum-today-production-replay.ts",
+    "continuum:legacy-concierge-promote": "npx tsx scripts/continuum-legacy-concierge-promote.ts",
     "continuum:model-eval": "npx tsx scripts/continuum-model-eval.ts",
     "test:continuum:model-eval": "npx tsx --test lib/continuum/model-eval/*.test.ts",
     "test:continuum:sterling": "npx tsx --test lib/continuum/sterling/*.test.ts",

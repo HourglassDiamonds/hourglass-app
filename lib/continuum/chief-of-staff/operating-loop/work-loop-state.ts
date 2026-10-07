@@ -20,6 +20,7 @@ import {
   isCurrentInboundAskText,
   isGenericFallbackObligationText,
 } from "./obligation-currentness";
+import { hasMaterialOrderConfirmationException } from "@/lib/continuum/source-events/order-confirmation";
 
 export type WorkLoopActor = "founder" | "client" | "vendor_shop" | "system";
 
@@ -119,8 +120,6 @@ const WORKSHOP =
   /\b(?:workshop|going to (?:the )?workshop|stone is going|final CAD|final cad)\b/i;
 const ORDER_CONFIRMATION_REVIEW =
   /\border confirmation\b/i;
-const DISCREPANCY_REVIEW =
-  /\b(?:discrepanc|asap|please (?:review|check|confirm|report)|report .{0,40}asap)\b/i;
 const SHOP_REVIEW_COPY =
   /\breview the latest shop (?:turn|update)\b/i;
 const INTERNAL_QA_COPY =
@@ -670,8 +669,10 @@ export function classifyEvent(
 ): { eventType: WorkLoopEventType; opens: WorkLoopDependency | null; satisfies: WorkLoopDependency | null } {
   const own = authorOwnedText(text) || text;
   if (actor === "vendor_shop" || actor === "system") {
-    if (/\bSP\d{4,}\b/.test(own) || (ORDER_CONFIRMATION_REVIEW.test(own) && DISCREPANCY_REVIEW.test(own))) {
-      return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
+    if (/\bSP\d{4,}\b/.test(own) || ORDER_CONFIRMATION_REVIEW.test(own)) {
+      return hasMaterialOrderConfirmationException(own)
+        ? { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" }
+        : { eventType: "vendor_promises_delivery", opens: "vendor_shop", satisfies: "founder" };
     }
     if (RN_JOB.test(own) || (WORKSHOP.test(own) && !CAD_FILE.test(own) && !STL_FILE.test(own))) {
       return { eventType: "vendor_promises_delivery", opens: "vendor_shop", satisfies: "founder" };

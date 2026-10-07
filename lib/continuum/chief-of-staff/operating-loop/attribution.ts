@@ -32,6 +32,7 @@ export const THREAD_ASSOCIATION_VIAS = [
   "thread",
   "person",
   "identifier",
+  "participant",
 ] as const;
 
 export type ThreadAssociationVia = (typeof THREAD_ASSOCIATION_VIAS)[number];
@@ -197,6 +198,25 @@ function setUnique(
   map.set(threadId, { projectId: projectIds[0]!, via });
 }
 
+function externalParticipantHashes(
+  thread: TodayGmailThreadContext | null | undefined,
+): string[] {
+  const hashes = new Set<string>();
+  for (const message of thread?.messages ?? []) {
+    if (message.direction === "inbound") {
+      const from = message.fromEmailHash?.trim().toLowerCase() ?? "";
+      if (from) hashes.add(from);
+    }
+    if (message.direction === "outbound") {
+      for (const value of message.toEmailHashes ?? []) {
+        const to = value.trim().toLowerCase();
+        if (to) hashes.add(to);
+      }
+    }
+  }
+  return [...hashes];
+}
+
 const NO_THREAD_CONTEXT = new Map<string, TodayGmailThreadContext>();
 const associationCache = new WeakMap<
   object,
@@ -295,6 +315,36 @@ function computeProjectBySupportedAssociation(
       projects,
     );
     if (projectId) map.set(threadId, { projectId, via: "identifier" });
+  }
+
+  // An outbound-only side thread has no sender identity to resolve. Reuse its
+  // hashed recipient only when that participant maps to exactly one already
+  // supported Project. This preserves provenance across subject/thread changes
+  // without using names or merging ambiguous multi-project participants.
+  const projectsByParticipant = new Map<string, Set<string>>();
+  const addParticipantProject = (hash: string, projectId: string) => {
+    const set = projectsByParticipant.get(hash) ?? new Set<string>();
+    set.add(projectId);
+    projectsByParticipant.set(hash, set);
+  };
+  for (const [threadId, supported] of map) {
+    for (const hash of externalParticipantHashes(threadContext?.get(threadId))) {
+      addParticipantProject(hash, supported.projectId);
+    }
+  }
+  for (const project of projects.values()) {
+    const threadId = project.gmailThreadId?.trim() ?? "";
+    if (!threadId) continue;
+    for (const hash of externalParticipantHashes(threadContext?.get(threadId))) {
+      addParticipantProject(hash, project.projectId);
+    }
+  }
+  for (const threadId of threadIds) {
+    if (map.has(threadId)) continue;
+    const participants = externalParticipantHashes(threadContext?.get(threadId));
+    if (participants.length !== 1) continue;
+    const projectIds = [...(projectsByParticipant.get(participants[0]!) ?? [])];
+    setUnique(map, threadId, projectIds, "participant");
   }
 
   return map;

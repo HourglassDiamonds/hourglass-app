@@ -468,7 +468,7 @@ describe("Phase 2 current truth through reducer and final docket", () => {
   });
   it("same-CAD founder fulfillment attachment closes an older shop wait and a later request reopens it", () => {
     const request = event("request", "Please revise the CAD.", 16, "founder");
-    const fulfillment = event("client-update", "Updated client attachment.", 22, "founder", {
+    const fulfillment = event("client-update", "Sent the updated CAD to the client.", 22, "founder", {
       threadId: "client-thread",
       sourceRef: "gc1|client-thread|client-update",
       semanticClass: "founder_fulfills_commitment",
@@ -542,7 +542,7 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     const request = event("request", "Please send the CAD.", 10, "founder");
     const deliveredToClient = event(
       "client-delivery",
-      "I'll send those. Attached.",
+      "I sent the updated CAD to the client. Attached.",
       11,
       "founder",
       {
@@ -563,6 +563,25 @@ describe("Phase 2 current truth through reducer and final docket", () => {
       }),
     ]);
     assert.equal(unrelatedTextOnlyFulfillment.activeObligations.length, 1);
+  });
+  it("an attachment alone cannot close a newer CAD review without explicit fulfillment evidence", () => {
+    const projection = project([
+      event("mod2", "Updated CAD Mod 2 attached.", 20, "vendor_shop", {
+        cadIds: ["C026137"],
+        semanticClass: "vendor_delivers_artifact",
+        hasAttachments: true,
+        attachmentFilenames: ["C026137-Mod2.jpg"],
+      }),
+      event("outbound-attachment", "", 21, "founder", {
+        cadIds: ["C026137"],
+        semanticClass: "founder_fulfills_commitment",
+        hasAttachments: true,
+        attachmentFilenames: ["C026137-Mod2.jpg"],
+      }),
+    ]);
+    assert.equal(projection.stage, "cad_review");
+    assert.equal(projection.ballHolder, "founder");
+    assert.equal(projection.dependency, "CAD review");
   });
   it("I replay, equal timestamps and missing timestamps remain deterministic", () => {
     const rows = [

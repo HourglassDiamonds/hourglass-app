@@ -8,6 +8,7 @@ import {
   isOperationalSourceEvent,
   type SourceCommunicationEvent,
 } from "@/lib/continuum/source-events/types";
+import { hasMaterialOrderConfirmationException } from "@/lib/continuum/source-events/order-confirmation";
 import {
   isPostCompletionObligationText,
   isProductionExceptionText,
@@ -280,9 +281,7 @@ function transitionAfterFounderDirective(
     if (event.semanticClass === "workshop_started") return "reinforce";
     if (
       event.semanticClass === "vendor_order_confirmation" &&
-      !/\b(?:discrepanc|please (?:review|check|confirm|report)|report .{0,40}asap)\b/i.test(
-        text,
-      )
+      !hasMaterialOrderConfirmationException(text)
     ) {
       return "reinforce";
     }
@@ -338,6 +337,11 @@ function substantiallySameDeliverable(left: string, right: string): boolean {
   return overlap / Math.min(a.size, b.size) >= 0.75;
 }
 
+function explicitFounderFulfillment(event: SourceCommunicationEvent): boolean {
+  const text = event.evidenceExcerpt || event.authorOwnedText;
+  return /\b(?:headed to you|sent|shared|forwarded|showed|shipped|mailed|delivered)\b/i.test(text);
+}
+
 function materialClosureEvent(event: SourceCommunicationEvent | undefined): boolean {
   if (!event) return false;
   if (
@@ -352,7 +356,7 @@ function materialClosureEvent(event: SourceCommunicationEvent | undefined): bool
   ) {
     return true;
   }
-  return event.semanticClass === "founder_fulfills_commitment" && event.hasAttachments;
+  return event.semanticClass === "founder_fulfills_commitment" && explicitFounderFulfillment(event);
 }
 
 function materiallyClosedFounderCommitment(
@@ -751,7 +755,7 @@ export function projectCurrentWork(
       founderAuthority = e;
     } else if (cls === "vendor_order_confirmation") {
       close(e, "superseded", cad);
-      if (/discrepanc|please (?:review|check|confirm|report)/i.test(text)) {
+      if (hasMaterialOrderConfirmationException(text)) {
         stage = "order_confirmed";
         actor = "founder";
         dependency = "confirmation discrepancy review";
@@ -941,12 +945,13 @@ export function projectCurrentWork(
         (o) =>
           /headed to you|\b(?:shipped|mailed)\b/i.test(text) ||
           (sameScope(o, e) &&
-            (o.actor === "founder" || (e.hasAttachments && o.kind === "cad"))),
+            (o.actor === "founder" || o.kind === "cad") &&
+            explicitFounderFulfillment(e)),
       );
       // An attachment-bearing fulfillment can carry quoted promise text;
       // that text cannot reopen the same obligation it just satisfied.
       // Text-only messages may still establish a genuine new commitment.
-      dependency = e.hasAttachments ? null : founderCommitmentDependency(text);
+      dependency = e.hasAttachments && !text.trim() ? null : founderCommitmentDependency(text);
       if (
         dependency &&
         materiallyClosedFounderCommitment(result, dependency, e.sourceRef, admitted) &&

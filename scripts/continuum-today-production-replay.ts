@@ -25,6 +25,7 @@ import { loadFounderCorrectionEvents } from "../lib/continuum/chief-of-staff/ope
 import { candidateDispositionCorrectionEvents } from "../lib/continuum/concierge-sol/founder-command";
 import { composeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/docket";
 import { finalizeTodayDocket } from "../lib/continuum/chief-of-staff/operating-loop/today-docket-boundary";
+import { reduceWorkLoop } from "../lib/continuum/chief-of-staff/operating-loop/work-loop-state";
 import { parseGmailWebHref } from "../lib/continuum/chief-of-staff/operating-loop/evidence";
 import type { CosProjectContext } from "../lib/continuum/chief-of-staff/operating-loop/types";
 import { generatedOperatingMailHashesFromEnv } from "../lib/continuum/gmail/candidates/generated-source";
@@ -47,7 +48,7 @@ import { watermarkToken } from "../lib/continuum/today-snapshot";
 const CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
 const INDEX_SELECT =
-  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, has_attachments";
+  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
 const EMAIL_HASH_RE = /^[a-f0-9]{64}$/;
 
 function unassignedLiveIdentityThreadIds(
@@ -368,6 +369,9 @@ async function loadIndexedThreadContext(
             ? row.label_ids.map((item) => String(item)).filter(Boolean)
             : undefined,
           fromEmailHash,
+          toEmailHashes: Array.isArray(row.to_email_hashes)
+            ? row.to_email_hashes.map((item) => String(item).trim().toLowerCase()).filter(Boolean)
+            : undefined,
           subject: row.subject == null ? null : String(row.subject),
           hasAttachments: Boolean(row.has_attachments),
         });
@@ -686,7 +690,7 @@ async function main() {
     "sarah-vendor-shop",
   );
   expect(!/price|timeline|next steps/i.test(proofs.sarah.copy ?? ""), "sarah-no-generic-copy");
-  expect(proofs.nathan.lane === "watching" && proofs.nathan.ball === "vendor_shop", "nathan-vendor-shop");
+  expect(proofs.nathan.lane === "absent", "nathan-old-pendant-promise-absent");
   expect(
     proofs.tim.lane === "watching" &&
       proofs.tim.ball === "vendor_shop" &&
@@ -695,8 +699,8 @@ async function main() {
   );
   expect(proofs.madi.lane === "watching" && proofs.madi.ball === "client", "madi-client-wait");
   expect(
-    proofs.abbey.lane === "watching" && proofs.abbey.ball === "vendor_shop",
-    "abbey-vendor-shop",
+    proofs.abbey.lane === "up_next" && proofs.abbey.ball === "founder",
+    "abbey-current-cad-review",
   );
   expect(!/send .*render/i.test(proofs.abbey.copy ?? ""), "abbey-no-stale-rendering-action");
   expect(proofs.shannon.lane === "absent", "shannon-old-package-action-absent");
@@ -740,6 +744,200 @@ async function main() {
     ),
     traces,
   };
+  if (process.argv.includes("--precedence-trace")) {
+    const [{ data: snapshotRows }, { data: histories }, { data: lifecycleRows }] = await Promise.all([
+      client
+        .from("continuum_today_snapshots")
+        .select("read_model_version, source_watermark, composed_at, updated_at, payload")
+        .eq("snapshot_key", "founder_today_v1")
+        .limit(1),
+      client
+        .from("continuum_project_history")
+        .select("project_id, cad_job_number, gmail_thread_id")
+        .in("cad_job_number", ["C026350", "C026176", "C026137", "C026510"]),
+      client
+        .from("continuum_project_lifecycle_states")
+        .select("project_id, stage, updated_at"),
+    ]);
+    const lifecycleByProject = new Map(
+      (lifecycleRows ?? []).map((row) => [String(row.project_id), {
+        stage: String(row.stage ?? ""),
+        updatedAt: String(row.updated_at ?? ""),
+      }]),
+    );
+    const historyByCad = new Map(
+      (histories ?? []).map((row) => [String(row.cad_job_number ?? "").toUpperCase(), {
+        projectId: String(row.project_id ?? ""),
+        threadId: row.gmail_thread_id == null ? null : String(row.gmail_thread_id),
+      }]),
+    );
+    const normalizedScope = (event: SourceCommunicationEvent) => {
+      if (event.cadIds.length) return `cad:${[...event.cadIds].sort().join(",")}`;
+      if (event.orderIds.length) return `order:${[...event.orderIds].sort().join(",")}`;
+      if (event.productionJobIds.length) return `production:${[...event.productionJobIds].sort().join(",")}`;
+      if (event.projectId) return `project:${event.projectId}`;
+      if (event.threadId) return `thread:${event.threadId}`;
+      return event.workLoopId ?? "unscoped";
+    };
+    const snapshot = (snapshotRows?.[0] ?? null) as Record<string, unknown> | null;
+    const payload = snapshot?.payload as { docket?: { items?: unknown[]; watching?: unknown[] } } | undefined;
+    const snapshotItems = [
+      ...(payload?.docket?.items ?? []),
+      ...(payload?.docket?.watching ?? []),
+    ];
+    const requestedTarget = process.argv
+      .find((arg) => arg.startsWith("--trace-target="))
+      ?.split("=", 2)[1]
+      ?.trim()
+      .toLowerCase();
+    const traceTarget = (
+      label: string,
+      cad: string,
+      pattern: RegExp,
+      extraThreadIds: readonly string[] = [],
+    ) => {
+      const project = [...projects.values()].find((row) =>
+        pattern.test(`${row.title ?? ""} ${row.personName ?? ""}`),
+      );
+      const history = historyByCad.get(cad) ?? (project ? {
+        projectId: project.projectId,
+        threadId: project.gmailThreadId ?? null,
+      } : null);
+      const lifecycle = history ? lifecycleByProject.get(history.projectId) ?? null : null;
+      const events = sourceEvents
+        .filter((event) =>
+          event.cadIds.includes(cad) ||
+          Boolean(event.threadId && extraThreadIds.includes(event.threadId)),
+        )
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+      const reduced = reduceWorkLoop({
+        evidence: [],
+        sourceEvents: events,
+        lifecycle: lifecycle?.stage ?? null,
+        projectId: history?.projectId ?? null,
+      });
+      const targetThreadIds = new Set(
+        events.map((event) => event.threadId).filter((value): value is string => Boolean(value)),
+      );
+      return {
+        label,
+        cad,
+        canonical: { projectId: history?.projectId ?? null, lifecycle },
+        threadMetadata: [...new Set(events.map((event) => event.threadId).filter(Boolean))]
+          .map((threadId) => {
+            const context = threadContext.get(threadId!);
+            const externalHashes = [...new Set(
+              (context?.messages ?? [])
+                .filter((message) => message.direction === "inbound")
+                .map((message) => message.fromEmailHash?.trim() ?? "")
+                .filter(Boolean),
+            )];
+            return {
+              threadId,
+              subject: clip(context?.subject),
+              messageCount: context?.messages?.length ?? 0,
+              externalIdentityKeys: externalHashes.map((hash) => hash.slice(0, 12)),
+              knownPeople: knownPeople
+                .filter((person) => externalHashes.includes(person.emailHash))
+                .map((person) => ({ personId: person.personId, displayName: person.displayName })),
+            };
+          }),
+        sourceCandidates: candidates
+          .filter((row) => {
+            const ref = parseGmailCandidateSourceRef(row.sourceRef);
+            const identity = `${row.sourceRef} ${JSON.stringify(row.proposedTarget)} ${JSON.stringify(row.payload)}`;
+            return Boolean(
+              (ref?.threadId && targetThreadIds.has(ref.threadId)) ||
+              identity.includes(cad),
+            );
+          })
+          .sort((a, b) => a.sourceTimestamp.localeCompare(b.sourceTimestamp))
+          .map((row) => ({
+            candidateId: row.candidateId,
+            timestamp: row.sourceTimestamp,
+            sourceRef: row.sourceRef,
+            candidateType: row.candidateType,
+            targetKind: row.proposedTarget.kind,
+            payloadKind: row.payload.kind,
+            ruleIds: row.evidenceBasis.ruleIds,
+            matchedText: clip(row.evidenceBasis.matchedText, 180),
+          })),
+        chronology: events.map((event) => ({
+          timestamp: event.timestamp,
+          type: event.semanticClass,
+          scope: normalizedScope(event),
+          actor: event.actor,
+          hasAttachments: event.hasAttachments,
+          attachmentFilenames: event.attachmentFilenames,
+          evidence: clip(event.evidenceExcerpt, 180),
+          sourceRef: event.sourceRef,
+          provenance: event.provenance,
+          applied: reduced.projection?.provenance.find((row) => row.sourceRef === event.sourceRef)?.applied ?? null,
+          reason: reduced.projection?.provenance.find((row) => row.sourceRef === event.sourceRef)?.reason ?? null,
+        })),
+        closures: reduced.projection?.historicalObligations.map((obligation) => ({
+          scope: obligation.scope,
+          kind: obligation.kind,
+          actor: obligation.actor,
+          status: obligation.status,
+          openedBy: obligation.openedBy,
+          closedBy: obligation.closedBy,
+        })) ?? [],
+        winner: reduced.projection ? {
+          stage: reduced.projection.stage,
+          holder: reduced.projection.ballHolder,
+          actionability: reduced.semanticClass,
+          dependency: reduced.projection.dependency,
+          controllingSourceRefs: reduced.projection.controllingSourceRefs,
+        } : null,
+        localReplay: named(pattern),
+        persistedSnapshot: snapshotItems
+          .filter((row) => pattern.test(JSON.stringify(row)))
+          .map((row) => {
+            const item = row as Record<string, unknown>;
+            const packet = item.briefingPacket as Record<string, unknown> | undefined;
+            const projection = packet?.projection as Record<string, unknown> | undefined;
+            return {
+              id: item.id ?? null,
+              subject: item.subject ?? item.title ?? null,
+              headline: item.headline ?? item.detail ?? null,
+              stage: projection?.stage ?? null,
+              holder: packet?.ballHolder ?? null,
+              actionability: packet?.semanticNextActionClass ?? null,
+              controllingSourceRefs: projection?.controllingSourceRefs ?? [],
+            };
+          }),
+      };
+    };
+    process.stdout.write(`${JSON.stringify({
+      productionReadOnly: true,
+      snapshot: snapshot ? {
+        readModelVersion: snapshot.read_model_version,
+        composedAt: snapshot.composed_at,
+        updatedAt: snapshot.updated_at,
+        sourceWatermark: watermarkToken(snapshot.source_watermark),
+      } : null,
+      targets: [
+        ["duane", () => traceTarget("Duane", "C026350", /Duane|C026350/i)],
+        ["nate", () => traceTarget(
+          "Nate",
+          "C026176",
+          /Nate|Nathan|C026176|pendant/i,
+          ["1a0da4cf26ea3394"],
+        )],
+        ["abbey", () => traceTarget("Abbey", "C026137", /Abbey|C026137/i)],
+        ["alex", () => traceTarget(
+          "Alex Miller",
+          "C026510",
+          /Alex Miller|A\.Miller|C026510/i,
+          ["1a0edb761b3adac7"],
+        )],
+      ]
+        .filter(([key]) => !requestedTarget || key === requestedTarget)
+        .map(([, build]) => (build as () => unknown)()),
+    }, null, 2)}\n`);
+    return;
+  }
   if (process.argv.includes("--current-truth-audit")) {
     const targetThreads = new Set(["19fdca0abe1a7e3e", "19ffcce49298efeb"]);
     const eventTrace = (event: SourceCommunicationEvent) => ({
