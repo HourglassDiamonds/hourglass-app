@@ -27,6 +27,8 @@ function mapping(semanticClass: SourceCommunicationEventClass): {
       return { eventType: "client_turn", opens: "founder", satisfies: "client" };
     case "client_approves":
       return { eventType: "client_turn", opens: "founder", satisfies: "client" };
+    case "client_promises":
+      return { eventType: "client_turn", opens: "client", satisfies: "founder" };
     case "client_replies_nonblocking":
       return { eventType: "client_turn", opens: null, satisfies: "client" };
     case "vendor_promises":

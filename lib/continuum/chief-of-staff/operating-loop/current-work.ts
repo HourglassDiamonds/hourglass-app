@@ -349,6 +349,13 @@ function founderCommitmentDependency(text: string): string | null {
   return promise ? `${promise[1].trim().replace(/\.$/, "")}.` : null;
 }
 
+function externalPromiseDependency(text: string): string | null {
+  const promise = text.match(
+    /\bi(?:['’]ll| will| am going to)\s+((?:send|get|show|check|look(?:\s+into)?|follow up|call|email|let you know)\b[^.!?]{0,180})/i,
+  );
+  return promise ? promise[1].trim().replace(/\.$/, "") : null;
+}
+
 /** Source-event branch of reduceWorkLoop. Association is established before reduction. */
 export function projectCurrentWork(
   sourceEvents: readonly SourceCommunicationEvent[],
@@ -673,6 +680,15 @@ export function projectCurrentWork(
           o.actor === "client" &&
           o.identity === obligationIdentity(e, dependency!, revision),
       );
+    } else if (cls === "client_promises") {
+      stage = "waiting_external";
+      dependency = externalPromiseDependency(text) ?? "client response";
+      actor = "client";
+      close(
+        e,
+        "superseded",
+        (o) => sameScope(o, e) && o.actor === "founder",
+      );
     } else if (cls === "founder_fulfills_commitment") {
       close(
         e,
@@ -730,7 +746,7 @@ export function projectCurrentWork(
       : dependency
         ? actor
         : (result.activeObligations[0]?.actor ?? "unknown");
-    if (cls === "vendor_promises" || cls === "workshop_started")
+    if (cls === "vendor_promises" || cls === "workshop_started" || cls === "client_promises")
       result.commitment = normalizeCommitment(e, dependency ?? "deliverable");
     result.controllingSourceRefs = [
       ...new Set([

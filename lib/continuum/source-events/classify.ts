@@ -23,6 +23,8 @@ const VENDOR_ACK =
   /^(?:thank you(?: so much)?!?|thanks!?|got it!?|perfect!?|sounds good!?)[\s.]*$/i;
 const CLIENT_APPROVES =
   /\b(?:love(?:s|d)? (?:it|the|option)|looks (?:great|perfect|amazing)|approved|let(?:'s| us) move forward|move(?:ing)? forward)\b/i;
+const CLIENT_PROMISE =
+  /\bi(?:['’]ll| will| am going to)\s+(?:send|get|show|check|look(?:\s+into)?|follow up|call|email|let you know)\b/i;
 const REQUEST =
   /\b(?:can you|could you|please)\s+(?:send|make|revise|update|price|quote|confirm|change)\b|\bneed you to\b|\?/i;
 const SHIPPING =
@@ -142,6 +144,7 @@ export function classifySourceCommunication(
   if (actor === "client") {
     if (CLIENT_APPROVES.test(hay)) return "client_approves";
     if (SHIPPING.test(hay) || SERVICE_REQUEST.test(hay) || REQUEST.test(hay)) return "client_requests";
+    if (CLIENT_PROMISE.test(hay)) return "client_promises";
     return "client_replies_nonblocking";
   }
 

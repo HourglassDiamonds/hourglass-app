@@ -33,6 +33,7 @@ export const SOURCE_COMMUNICATION_EVENT_CLASSES = [
   "founder_fulfills_commitment",
   "client_requests",
   "client_approves",
+  "client_promises",
   "client_replies_nonblocking",
   "vendor_promises",
   "vendor_delivers_artifact",

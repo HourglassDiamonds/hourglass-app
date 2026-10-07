@@ -923,6 +923,8 @@ function sourceBeatsFor(events: readonly SourceCommunicationEvent[]): InternalBe
         ? "client_approval"
         : event.semanticClass === "client_requests"
           ? "client_request"
+          : event.semanticClass === "client_promises"
+            ? "commitment"
           : event.semanticClass === "client_replies_nonblocking"
             ? "client_reply"
             : event.semanticClass === "founder_fulfills_commitment" ||

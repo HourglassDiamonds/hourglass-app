@@ -17,6 +17,18 @@ export function isDeferredQuiet(job: ProjectJob, nowMs: number): boolean {
   return until > nowMs;
 }
 
+/** Website intake owns the initial inquiry presentation. The durable shell Job
+ * remains canonical history, but it is not a second founder action by itself. */
+export function isWebsiteIntakeShellJob(job: ProjectJob): boolean {
+  return (
+    job.projectId === null &&
+    job.kind === "required_action" &&
+    job.sourceSystem === "continuum" &&
+    job.createdBy === "website-intake" &&
+    /^website-intake:[0-9a-f-]{36}$/i.test(job.sourceRef ?? "")
+  );
+}
+
 export function collectCanonicalActionables(input: {
   jobs: readonly ProjectJob[] | null | undefined;
   projects: ReadonlyMap<string, CosProjectContext>;
@@ -30,6 +42,7 @@ export function collectCanonicalActionables(input: {
   const seen = new Set<string>();
 
   for (const job of input.jobs) {
+    if (isWebsiteIntakeShellJob(job)) continue;
     if (input.heldJobIds?.has(job.jobId)) continue;
     if (!isUnresolvedOpenJobState(job.state)) continue;
     if (isDeferredQuiet(job, clock)) continue;

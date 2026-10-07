@@ -31,6 +31,7 @@ import type {
   TodayDocketVersion,
 } from "./types";
 import { TODAY_DOCKET_VERSION } from "./types";
+import { civilDateInZone, FOUNDER_BUSINESS_TIME_ZONE } from "@/lib/continuum/date-only";
 
 export const COS_DOCKET_TITLE = "Up next";
 export const COS_DOCKET_VISIBLE_LIMIT = 3;
@@ -90,6 +91,17 @@ export type CosTodaySectionView = {
   items: readonly CosTodaySectionItem[];
 };
 
+export function isExternalPromiseFollowUpDue(
+  packet: CosDocketItemView["briefingPacket"],
+  asOfIso: string | null | undefined,
+): boolean {
+  const commitment = packet?.projection?.commitment;
+  if (!commitment || commitment.actor !== "client" || !asOfIso) return false;
+  const asOf = civilDateInZone(asOfIso, FOUNDER_BUSINESS_TIME_ZONE);
+  const due = commitment.window?.end ?? commitment.date;
+  return Boolean(asOf && due && asOf > due);
+}
+
 const SECTION_TITLES: Record<CosTodaySectionId, string> = {
   founder: "Founder / Your Turn",
   ready: "Ready / Delivery",
@@ -124,6 +136,7 @@ export function composeTodaySections(input: {
   active: readonly CosDocketItemView[];
   watching: readonly CosWatchingItem[];
   masterSprint?: readonly CosDocketItemView[];
+  asOfIso?: string | null;
 }): CosTodaySectionView[] {
   const active = [...input.active, ...(input.masterSprint ?? [])]
     .filter((item) => item.semanticPresentation?.likelyNoise !== true)
@@ -152,19 +165,25 @@ export function composeTodaySections(input: {
     packet: item.briefingPacket,
     cosBriefing: item.cosBriefing,
     }));
-  const resting = input.watching.map((item): CosTodaySectionItem => ({
-    id: item.id,
-    title: item.title,
-    summary: item.briefing?.nextBody || item.detail,
-    stateLabel: item.briefing?.stateChip || "WATCHING",
-    origin: "watching",
-    ballHolder: item.briefingPacket?.ballHolder ?? null,
-    lifecycle: item.briefingPacket?.lifecycle ?? null,
-    projectId: item.projectId,
-    jobId: null,
-    packet: item.briefingPacket,
-    cosBriefing: item.cosBriefing,
-  }));
+  const resting = input.watching.map((item): CosTodaySectionItem => {
+    const followUpDue = isExternalPromiseFollowUpDue(item.briefingPacket, input.asOfIso);
+    const deliverable = item.briefingPacket?.projection?.commitment?.deliverable;
+    return {
+      id: item.id,
+      title: item.title,
+      summary: followUpDue && deliverable
+        ? `Follow up for ${deliverable.replace(/[.!?]+$/, "")}.`
+        : item.briefing?.nextBody || item.detail,
+      stateLabel: followUpDue ? "FOUNDER ACTION" : item.briefing?.stateChip || "WATCHING",
+      origin: "watching",
+      ballHolder: followUpDue ? "founder" : item.briefingPacket?.ballHolder ?? null,
+      lifecycle: item.briefingPacket?.lifecycle ?? null,
+      projectId: item.projectId,
+      jobId: null,
+      packet: item.briefingPacket,
+      cosBriefing: item.cosBriefing,
+    };
+  });
   const seen = new Set<string>();
   const buckets = new Map<CosTodaySectionId, CosTodaySectionItem[]>();
   for (const item of [...active, ...resting]) {
@@ -422,6 +441,7 @@ export function composeTodayDocket(loop: CosOperatingLoopView): CosTodayDocketVi
       active: actionableLive,
       watching,
       masterSprint: allSprint,
+      asOfIso: loop.asOfIso,
     }),
     showCaughtUp,
     showDisconnected,
