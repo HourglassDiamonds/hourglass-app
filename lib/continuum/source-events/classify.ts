@@ -115,6 +115,7 @@ export function classifySourceCommunication(
   }
   if (actor === "vendor_shop" || (actor === "unknown" && vendorShopThread(input.subject) && !outbound)) {
     const ownOnly = folded(authorOwnedText(input.authorOwnedText) || input.authorOwnedText);
+    const orderConfirmationHay = [input.subject ?? "", hay, files].filter(Boolean).join("\n");
     if (ownOnly && VENDOR_ACK.test(ownOnly) && !REQUEST.test(ownOnly)) {
       return "vendor_acknowledges";
     }
@@ -127,7 +128,10 @@ export function classifySourceCommunication(
     ) {
       return "vendor_promises";
     }
-    if (/\border confirmation\b/i.test(hay) && (/\bSP\d{4,}\b/i.test(hay) || DISCREPANCY.test(hay))) {
+    if (
+      /\bSP\d{4,}\b/i.test(orderConfirmationHay) &&
+      (/\border confirmation\b/i.test(orderConfirmationHay) || /-SP\d{4,}\b/i.test(input.subject ?? ""))
+    ) {
       return "vendor_order_confirmation";
     }
     if ((WORKSHOP_STARTED.test(hay) || /\b(?:is|are|now) in (?:production|manufacturing)\b/i.test(hay)) && !/\b(?:not|will|once|if)\b[^.!?]{0,50}\b(?:production|manufacturing)\b/i.test(hay)) {

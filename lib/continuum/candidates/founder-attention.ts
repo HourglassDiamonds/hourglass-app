@@ -699,7 +699,7 @@ const PLATFORM_CONTENT =
   /\b(unsubscribe|manage preferences|view in browser|security alert|password reset|sign[- ]in alert|magic link|product (?:update|news)|changelog|release notes|weekly digest|what's new)\b/i;
 
 export const FOOTER_TEMPLATE_NOISE =
-  /\b(unsubscribe|manage (?:email )?preferences|view (?:in browser|as (?:a )?webpage)|privacy policy|email subscriptions?|update your (?:email )?subscriptions?|opt[- ]out|manage (?:your )?subscription|please do not hesitate to get in touch by emailing)\b/i;
+  /\b(unsubscribe|manage (?:email )?preferences|view (?:in browser|as (?:a )?webpage)|privacy policy|email subscriptions?|update your (?:email )?subscriptions?|opt[- ]out|manage (?:your )?subscription|please do not hesitate to (?:contact(?: us| me)?|reach out|get in touch)(?:\s+(?:with us|with me|by emailing))?|if you have any (?:questions|concerns),? (?:please )?(?:contact(?: us| me)?|reach out|get in touch))\b/i;
 
 const OPERATIONAL_SYSTEM_ACTION =
   /\b(?:check[- ]?in(?:\s+for(?:\s+your)?\s+flight)?|boarding (?:pass|time)|gate change|appointment reminder|pickup (?:by|window|reminder)|reservation reminder)\b/i;

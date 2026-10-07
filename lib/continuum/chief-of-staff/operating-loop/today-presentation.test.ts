@@ -164,6 +164,16 @@ describe("Sterling-curated Today presentation", () => {
     assert.doesNotMatch(`${presented.title} ${presented.summary}`, /do not hesitate|invoicing@/i);
   });
 
+  it("strips generic vendor contact encouragement before it can become founder work", () => {
+    for (const footer of [
+      "Please do not hesitate to contact us.",
+      "Please do not hesitate to reach out with any questions.",
+      "If you have any questions, please get in touch.",
+    ]) {
+      assert.equal(normalizeFounderFacingSource(footer), "");
+    }
+  });
+
   it("presents Abbey as one concise sale-blocking founder action", () => {
     const rawAsk = "Can you send me a rendering?";
     const abbey = item({

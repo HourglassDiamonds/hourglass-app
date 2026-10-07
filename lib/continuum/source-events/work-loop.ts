@@ -4,19 +4,19 @@
  */
 
 import type { WorkLoopActor, WorkLoopDependency, WorkLoopEvent, WorkLoopEventType } from "@/lib/continuum/chief-of-staff/operating-loop/work-loop-state";
-import type { SourceCommunicationEvent, SourceCommunicationEventClass } from "./types";
+import type { SourceCommunicationEvent } from "./types";
 
 function parseMs(iso: string, fallback: number): number {
   const ms = Date.parse(iso);
   return Number.isFinite(ms) ? ms : fallback;
 }
 
-function mapping(semanticClass: SourceCommunicationEventClass): {
+function mapping(event: SourceCommunicationEvent): {
   eventType: WorkLoopEventType;
   opens: WorkLoopDependency | null;
   satisfies: WorkLoopDependency | null;
 } {
-  switch (semanticClass) {
+  switch (event.semanticClass) {
     case "founder_requests_vendor":
       return { eventType: "founder_asks_vendor", opens: "vendor_shop", satisfies: "client" };
     case "founder_updates_client":
@@ -36,7 +36,11 @@ function mapping(semanticClass: SourceCommunicationEventClass): {
     case "vendor_delivers_artifact":
       return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
     case "vendor_order_confirmation":
-      return { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" };
+      return /discrepanc|please (?:review|check|confirm|report)/i.test(
+        event.evidenceExcerpt || event.authorOwnedText,
+      )
+        ? { eventType: "vendor_delivers", opens: "founder", satisfies: "vendor_shop" }
+        : { eventType: "vendor_promises_delivery", opens: "vendor_shop", satisfies: "founder" };
     case "vendor_acknowledges":
       return { eventType: "other", opens: null, satisfies: null };
     case "workshop_started":
@@ -95,7 +99,7 @@ export function workLoopEventsFromSource(
   startIndex = 0,
 ): WorkLoopEvent[] {
   return events.map((event, index) => {
-    const mapped = mapping(event.semanticClass);
+    const mapped = mapping(event);
     const text = summaryOf(event);
     return {
       timestamp: event.timestamp,

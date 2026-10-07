@@ -8,6 +8,7 @@
 
 import type { TodayBriefingPacket } from "./briefing-packet";
 import type { CosDocketItemView, CosWatchingItem } from "./types";
+import { stripFooterTemplateNoise } from "@/lib/continuum/candidates/founder-attention";
 
 export const TODAY_SEMANTIC_STATES = [
   "FOUNDER ACTION",
@@ -47,11 +48,11 @@ const WAITING_SHOP = /\b(?:waiting|wait|pending|awaiting)\b[^.!?]{0,80}\b(?:shop
 
 export function normalizeFounderFacingSource(value: string | null | undefined): string {
   const raw = value ?? "";
-  const withoutQuoted = raw
+  const withoutQuoted = stripFooterTemplateNoise(raw
     .split(/\n(?:On .+ wrote:|From:\s|Sent:\s|-{2,}\s*Original Message\s*-{2,})/i)[0]
     .replace(/\b(?:best regards|kind regards|sincerely|thanks,)[\s\S]*$/i, "")
     .replace(/\b(?:unsubscribe|view in browser|privacy policy)\b[\s\S]*$/i, "")
-    .replace(/^(?:re|fwd?):\s*/i, "")
+    .replace(/^(?:re|fwd?):\s*/i, ""))
     .replace(/[\r\n\t]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();

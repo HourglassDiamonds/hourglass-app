@@ -488,7 +488,7 @@ describe("source-event production-shaped compose", () => {
     );
   });
 
-  it("F. Grant order confirmation is founder_review not client_wait", () => {
+  it("F. Grant clean order confirmation is production / waiting on shop, not founder or client", () => {
     const docket = todayOf(
       [
         specRow({
@@ -519,12 +519,13 @@ describe("source-event production-shaped compose", () => {
       ]),
     );
     const found = card(docket, /Grant|C025885|SP13477/i);
-    assert.ok(found.item);
-    assert.equal(found.item?.briefingPacket?.ballHolder, "founder");
-    assert.equal(found.item?.briefingPacket?.semanticNextActionClass, "founder_review");
+    assert.equal(found.item, undefined);
+    assert.ok(found.watching);
+    assert.equal(found.watching?.briefingPacket?.ballHolder, "vendor_shop");
+    assert.equal(found.watching?.briefingPacket?.projection?.stage, "in_production");
     assert.doesNotMatch(
-      `${found.item?.headline} ${found.item?.context} ${found.item?.briefingPacket?.briefingKind}`,
-      /client_wait|WAITING ON CLIENT/i,
+      `${found.watching?.title} ${found.watching?.detail} ${found.watching?.briefingPacket?.briefingKind}`,
+      /client_wait|WAITING ON CLIENT|founder_review|YOUR MOVE/i,
     );
   });
 

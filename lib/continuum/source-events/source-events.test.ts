@@ -89,6 +89,19 @@ describe("source communication classification", () => {
     );
   });
 
+  it("order-confirmation subject with an SP number is material lifecycle evidence even when the body is empty", () => {
+    assert.equal(
+      classifySourceCommunication({
+        actor: "vendor_shop",
+        direction: "inbound",
+        subject: "RE: HGD x Duane-C026350-SP13530",
+        authorOwnedText: "",
+        hasAttachments: true,
+      }),
+      "vendor_order_confirmation",
+    );
+  });
+
   it("does not infer a vendor request from subject alone without chronology", () => {
     assert.equal(
       classifySourceCommunication({

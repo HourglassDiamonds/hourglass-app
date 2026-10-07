@@ -192,14 +192,15 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     assert.equal(projection.provenance.at(-1)?.origin, "founder_correction");
   });
 
-  it("A Duane order confirmed until explicit production; stale CAD review closes", () => {
+  it("A clean Duane special-order confirmation advances directly to production; stale CAD review closes", () => {
     const events = [
       event("request", "Please send the CAD.", 10, "founder"),
       event("cad", "CAD attached.", 11),
       event("approve", "Approved.", 12, "client"),
       event("order", "Order confirmation SP13530 attached.", 13),
     ];
-    both(events, "order_confirmed");
+    const confirmed = both(events, "in_production", "production completion");
+    assert.equal(confirmed.ballHolder, "vendor_shop");
     const p = both(
       [...events, event("production", "Production has started.", 14)],
       "in_production",
@@ -207,6 +208,153 @@ describe("Phase 2 current truth through reducer and final docket", () => {
     );
     assert.ok(p.historicalObligations.some((o) => /CAD/.test(o.deliverable)));
     assert.equal(p.activeObligations.length, 1);
+  });
+
+  it("Nate: later send and client acknowledgement permanently close the older founder promise", () => {
+    const projection = project([
+      event("promise", "I'll send over the pic of the pendant size tomorrow.", 25, "founder", {
+        personLabel: "Nate",
+        cadIds: ["C026176"],
+        semanticClass: "founder_fulfills_commitment",
+      }),
+      event("sent", "Here are the pendant-size visuals.", 29, "founder", {
+        personLabel: "Nate",
+        cadIds: ["C026176"],
+        semanticClass: "founder_fulfills_commitment",
+        hasAttachments: true,
+        attachmentFilenames: ["pendant-size.jpg"],
+      }),
+      event("ack", "Sounds great. Thanks!", 30, "client", {
+        timestamp: "2026-10-05T21:37:08Z",
+        personLabel: "Nate",
+        cadIds: ["C026176"],
+        semanticClass: "client_replies_nonblocking",
+      }),
+    ]);
+    assert.equal(projection.ballHolder, "unknown");
+    assert.equal(projection.dependency, null);
+    assert.equal(projection.activeObligations.length, 0);
+    assert.ok(projection.historicalObligations.some((row) => /pendant/i.test(row.deliverable)));
+  });
+
+  it("a later client acknowledgement alone can close a same-scope founder promise when the send event was not indexed", () => {
+    const projection = project([
+      event("promise", "I'll send the pendant-size picture tomorrow.", 25, "founder", {
+        cadIds: ["C026176"],
+        semanticClass: "founder_fulfills_commitment",
+      }),
+      event("ack", "Sounds great. Thanks!", 30, "client", {
+        timestamp: "2026-10-05T21:37:08Z",
+        cadIds: ["C026176"],
+        semanticClass: "client_replies_nonblocking",
+      }),
+    ]);
+    assert.equal(projection.ballHolder, "unknown");
+    assert.equal(projection.activeObligations.length, 0);
+  });
+
+  it("acceptance lifecycle and ownership records resolve from newest material evidence", () => {
+    const abbey = project([
+      event("old-client-ask", "Can you send me a rendering?", 20, "client", {
+        cadIds: ["C026137"], semanticClass: "client_requests",
+      }),
+      event("mod2", "Updated CAD Mod 2 attached.", 21, "vendor_shop", {
+        timestamp: "2026-10-06T19:20:02Z", cadIds: ["C026137"],
+        semanticClass: "vendor_delivers_artifact", attachmentFilenames: ["Abbey-C026137-Mod2.jpg"], hasAttachments: true,
+      }),
+    ]);
+    assert.equal(abbey.stage, "cad_review");
+    assert.equal(abbey.ballHolder, "founder");
+    assert.equal(abbey.dependency, "CAD review");
+
+    const audrey = project([
+      event("revisions", "Please make these revisions.", 22, "founder", {
+        timestamp: "2026-10-07T12:16:43Z", cadIds: ["C026401"], semanticClass: "founder_requests_vendor",
+      }),
+    ]);
+    assert.equal(audrey.ballHolder, "vendor_shop");
+    assert.equal(audrey.stage, "revision_requested");
+
+    for (const [cad, order] of [["C025610", "SP13591"], ["C025885", "SP13477"], ["C026350", "SP13530"]]) {
+      const production = project([
+        event("cad", "CAD attached.", 20, "vendor_shop", { cadIds: [cad], semanticClass: "vendor_delivers_artifact" }),
+        event("order", `Order confirmation ${order} attached.`, 21, "vendor_shop", {
+          cadIds: [cad], orderIds: [order], semanticClass: "vendor_order_confirmation",
+        }),
+      ]);
+      assert.equal(production.stage, "in_production");
+      assert.equal(production.ballHolder, "vendor_shop");
+      assert.equal(production.dependency, "production completion");
+    }
+
+    for (const cad of ["C025519", "C025964"]) {
+      const production = project([
+        event("shop", "Production has started; delivery is expected by end of next week.", 22, "vendor_shop", {
+          cadIds: [cad], semanticClass: "workshop_started",
+        }),
+      ]);
+      assert.equal(production.stage, "in_production");
+      assert.equal(production.ballHolder, "vendor_shop");
+    }
+
+    const madi = project([
+      event("follow-up", "Here's the latest CAD — let me know what you think.", 22, "founder", {
+        timestamp: "2026-10-02T16:00:00Z", cadIds: ["C026000"], semanticClass: "founder_updates_client",
+      }),
+    ]);
+    assert.equal(madi.ballHolder, "client");
+    assert.equal(madi.dependency, "client reply");
+
+    const sarah = project([
+      event("request", "Please revise the STL.", 20, "founder", {
+        cadIds: ["C026143"], semanticClass: "founder_requests_vendor",
+      }),
+      event("mod7", "STL Mod 7 attached.", 21, "vendor_shop", {
+        timestamp: "2026-10-05T15:45:22Z", cadIds: ["C026143"], semanticClass: "vendor_delivers_artifact",
+        attachmentFilenames: ["Sarah-C026143-Mod7.stl"], hasAttachments: true,
+      }),
+      event("receipt", "Thanks, received.", 22, "founder", {
+        timestamp: "2026-10-05T16:57:44Z", cadIds: ["C026143"], semanticClass: "unknown_communication",
+      }),
+    ]);
+    assert.equal(sarah.stage, "cad_review");
+    assert.equal(sarah.ballHolder, "founder");
+    assert.equal(sarah.dependency, "STL review");
+
+    const sarahReceiptRecovery = project([
+      event("request", "Please send the revised STL.", 20, "founder", {
+        cadIds: ["C026143"], semanticClass: "founder_requests_vendor",
+      }),
+      event("vendor-ack", "I sent it over.", 21, "vendor_shop", {
+        cadIds: ["C026143"], semanticClass: "vendor_acknowledges",
+      }),
+      event("receipt", "Thanks, received.", 22, "founder", {
+        cadIds: ["C026143"], semanticClass: "unknown_communication",
+      }),
+    ]);
+    assert.equal(sarahReceiptRecovery.stage, "cad_review");
+    assert.equal(sarahReceiptRecovery.ballHolder, "founder");
+    assert.equal(sarahReceiptRecovery.dependency, "STL review");
+
+    const ben = project([
+      event("cad", "CAD attached for your review.", 14, "vendor_shop", {
+        cadIds: ["C026156"], semanticClass: "vendor_delivers_artifact",
+      }),
+      event("hold", "Hold until I release it.", 15, "founder", {
+        timestamp: "2026-10-05T11:34:22Z", cadIds: ["C026156"], semanticClass: "founder_correction",
+        provenance: "founder_correction", correction: { stage: "cad_review", ballHolder: "unknown", dependency: "held until the founder releases the hold" },
+      }),
+    ]);
+    assert.equal(ben.ballHolder, "unknown");
+    assert.match(ben.dependency ?? "", /held/i);
+
+    const overdueCad = project([
+      event("cad", "CAD attached for founder review.", 14, "vendor_shop", {
+        cadIds: ["C026999"], semanticClass: "vendor_delivers_artifact",
+      }),
+    ]);
+    assert.equal(overdueCad.ballHolder, "founder");
+    assert.equal(overdueCad.dependency, "CAD review");
   });
   it("B Sarah flooding tomorrow is anchored to source, independent of viewing date", () => {
     const events = [

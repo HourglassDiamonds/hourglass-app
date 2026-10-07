@@ -428,7 +428,7 @@ describe("Project Book representative sequences", () => {
     assert.equal(result.milestones[0]?.semanticClass, "vendor_delivers_artifact");
   });
 
-  it("F. Grant order confirmation is founder review", () => {
+  it("F. Grant clean order confirmation advances to production / waiting on shop", () => {
     const result = gmailBook("F. Grant", "grant", {
       subject: "RE: HGD x F.Grant-C025885-SP13477",
       messages: [
@@ -444,7 +444,8 @@ describe("Project Book representative sequences", () => {
       ],
     });
     assert.equal(result.milestones[0]?.semanticClass, "vendor_order_confirmation");
-    assert.equal(result.currentState.headline, "Founder review");
+    assert.equal(result.currentState.headline, "Waiting on shop");
+    assert.equal(result.unresolved[0]?.holder, "vendor_shop");
   });
 
   it("Duane CAD delivery is founder review", () => {

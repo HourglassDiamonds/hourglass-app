@@ -199,6 +199,15 @@ function obligationIdentity(
 function sameScope(obligation: CurrentObligation, event: SourceCommunicationEvent): boolean {
   return obligation.scope === eventScope(event);
 }
+
+function isFounderReceiptAcknowledgement(event: SourceCommunicationEvent): boolean {
+  if (event.actor !== "founder" || event.semanticClass !== "unknown_communication") return false;
+  const own = collapseRepeatedWording(event.evidenceExcerpt || event.authorOwnedText)
+    .replace(/\s+/g, " ")
+    .trim();
+  return /^(?:thank you|thanks|got it|received|perfect|sounds good)\b[^?]{0,120}$/i.test(own) &&
+    /\b(?:received|got it)\b/i.test(own);
+}
 export function mergeCurrentSourceEvents(
   ...sets: (readonly SourceCommunicationEvent[] | undefined)[]
 ): SourceCommunicationEvent[] {
@@ -410,7 +419,11 @@ export function projectCurrentWork(
   )
     return null;
   const admitted = withVendorFollowups.filter(
-    isOperationalSourceEvent,
+    (event) =>
+      isOperationalSourceEvent(event) ||
+      (event.workIdentityBasis !== null &&
+        (event.semanticClass === "client_replies_nonblocking" ||
+          isFounderReceiptAcknowledgement(event))),
   );
   if (!admitted.length) return null;
   const projects = new Set(admitted.map((e) => e.projectId).filter(Boolean));
@@ -540,14 +553,15 @@ export function projectCurrentWork(
       dependency = correction.dependency;
       close(e, "superseded");
     } else if (cls === "vendor_order_confirmation") {
-      stage = "order_confirmed";
       close(e, "superseded", cad);
       if (/discrepanc|please (?:review|check|confirm|report)/i.test(text)) {
+        stage = "order_confirmed";
         actor = "founder";
         dependency = "confirmation discrepancy review";
       } else {
-        actor = "founder";
-        dependency = "order confirmation review";
+        stage = "in_production";
+        actor = "vendor_shop";
+        dependency = "production completion";
       }
     } else if (cls === "workshop_started") {
       stage =
@@ -689,6 +703,40 @@ export function projectCurrentWork(
         "superseded",
         (o) => sameScope(o, e) && o.actor === "founder",
       );
+    } else if (cls === "client_replies_nonblocking") {
+      const supersededFounderWork = result.activeObligations.some(
+        (o) => sameScope(o, e) && o.actor === "founder",
+      );
+      if (!supersededFounderWork) {
+        record.reason = "Nonblocking reply does not create work";
+        continue;
+      }
+      close(
+        e,
+        "satisfied",
+        (o) => sameScope(o, e) && o.actor === "founder",
+      );
+      dependency = null;
+      actor = "unknown";
+    } else if (isFounderReceiptAcknowledgement(e)) {
+      const received = result.activeObligations.find(
+        (o) =>
+          sameScope(o, e) &&
+          o.actor === "vendor_shop" &&
+          /CAD|STL/i.test(o.deliverable),
+      );
+      if (!received) {
+        record.reason = "Receipt acknowledgement has no active CAD/STL delivery to satisfy";
+        continue;
+      }
+      close(
+        e,
+        "satisfied",
+        (o) => sameScope(o, e) && o.actor === "vendor_shop" && /CAD|STL/i.test(o.deliverable),
+      );
+      stage = "cad_review";
+      dependency = /STL/i.test(received.deliverable) ? "STL review" : "CAD review";
+      actor = "founder";
     } else if (cls === "founder_fulfills_commitment") {
       close(
         e,
