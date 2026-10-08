@@ -92,6 +92,8 @@ For a one-process local acceptance run, set `OPENAI_API_KEY` in the current Powe
 
 The model request timeout defaults to 180 seconds. Set `CONTINUUM_STERLING_TODAY_TIMEOUT_MS` in the server process to a positive integer millisecond override when needed.
 
+The strict portfolio response reserves 24,000 output tokens, including hidden reasoning tokens, and explicitly retains medium reasoning effort. An incomplete response reports only privacy-safe diagnostics: `incomplete_details.reason`, input/output/reasoning/total token counts, elapsed time, output limit, and request ID. It never reports partial model output or request evidence.
+
 ## Provisional work contract
 
 When exact evidence supports active work but no canonical Project exists, Sterling must assess the provisional work unit and may return a presentation-only recommendation with `projectId: null`. It can classify workflow responsibility without resolving canonical identity. It must cite exact evidence and describe the canonical ambiguity. It may not propose a canonical mutation. The deterministic validator rejects an unlinked `create_open_job` proposal with `canonical-project-required`.

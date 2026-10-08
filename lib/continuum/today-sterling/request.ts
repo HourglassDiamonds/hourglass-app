@@ -5,6 +5,8 @@ import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal, type Sterl
 export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v2" as const;
 export const STERLING_TODAY_TIMEOUT_MS = 180_000;
 export const STERLING_TODAY_TIMEOUT_ENV = "CONTINUUM_STERLING_TODAY_TIMEOUT_MS" as const;
+export const STERLING_TODAY_MAX_OUTPUT_TOKENS = 24_000;
+export const STERLING_TODAY_REASONING_EFFORT = "medium" as const;
 
 const INSTRUCTIONS = [
   "You are Sterling, the primary intelligence layer for Continuum Today.",
@@ -29,7 +31,9 @@ const INSTRUCTIONS = [
 
 type ResponsesError = { code?: unknown; message?: unknown; param?: unknown; type?: unknown };
 type ResponsesBody = { status?: string; error?: ResponsesError | null; output_text?: string;
-  usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number };
+  incomplete_details?: { reason?: unknown } | null;
+  usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number;
+    output_tokens_details?: { reasoning_tokens?: number } };
   output?: Array<{ type?: string; status?: string; content?: Array<{ type?: string; text?: string; refusal?: string }> }> };
 
 export class SterlingTodayRequestError extends Error {
@@ -40,6 +44,12 @@ export class SterlingTodayRequestError extends Error {
   readonly param: string | null;
   readonly requestId: string | null;
   readonly elapsedMs: number;
+  readonly incompleteReason: string | null;
+  readonly inputTokens: number | null;
+  readonly outputTokens: number | null;
+  readonly reasoningTokens: number | null;
+  readonly totalTokens: number | null;
+  readonly maxOutputTokens: number | null;
 
   constructor(input: {
     kind: SterlingTodayRequestError["kind"];
@@ -49,6 +59,12 @@ export class SterlingTodayRequestError extends Error {
     apiType?: string | null;
     param?: string | null;
     requestId?: string | null;
+    incompleteReason?: string | null;
+    inputTokens?: number | null;
+    outputTokens?: number | null;
+    reasoningTokens?: number | null;
+    totalTokens?: number | null;
+    maxOutputTokens?: number | null;
     timeoutMs?: number;
     cause?: unknown;
   }) {
@@ -60,6 +76,12 @@ export class SterlingTodayRequestError extends Error {
       input.apiType ? `type=${input.apiType}` : null,
       input.param ? `param=${input.param}` : null,
       input.requestId ? `requestId=${input.requestId}` : null,
+      input.incompleteReason ? `incompleteReason=${input.incompleteReason}` : null,
+      input.inputTokens == null ? null : `inputTokens=${input.inputTokens}`,
+      input.outputTokens == null ? null : `outputTokens=${input.outputTokens}`,
+      input.reasoningTokens == null ? null : `reasoningTokens=${input.reasoningTokens}`,
+      input.totalTokens == null ? null : `totalTokens=${input.totalTokens}`,
+      input.maxOutputTokens == null ? null : `maxOutputTokens=${input.maxOutputTokens}`,
       `elapsedMs=${input.elapsedMs}`,
     ].filter((value): value is string => value !== null);
     super(`sterling-today-request-failed:${diagnostics.join(":")}`, { cause: input.cause });
@@ -71,6 +93,12 @@ export class SterlingTodayRequestError extends Error {
     this.param = input.param ?? null;
     this.requestId = input.requestId ?? null;
     this.elapsedMs = input.elapsedMs;
+    this.incompleteReason = input.incompleteReason ?? null;
+    this.inputTokens = input.inputTokens ?? null;
+    this.outputTokens = input.outputTokens ?? null;
+    this.reasoningTokens = input.reasoningTokens ?? null;
+    this.totalTokens = input.totalTokens ?? null;
+    this.maxOutputTokens = input.maxOutputTokens ?? null;
   }
 }
 
@@ -83,7 +111,7 @@ export function resolveSterlingTodayTimeoutMs(override?: number): number {
 export async function requestSterlingTodayProposal(input: {
   apiKey: string; model: string; workingSet: SterlingTodayWorkingSet; fetchImpl?: typeof fetch; timeoutMs?: number;
 }): Promise<{ proposal: SterlingTodayProposal; latencyMs: number; inputBytes: number; outputBytes: number;
-  usage: { inputTokens: number | null; outputTokens: number | null; totalTokens: number | null } }> {
+  usage: { inputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null } }> {
   const started = Date.now();
   const serialized = JSON.stringify(input.workingSet);
   const timeoutMs = resolveSterlingTodayTimeoutMs(input.timeoutMs);
@@ -97,7 +125,8 @@ export async function requestSterlingTodayProposal(input: {
     const response = await (input.fetchImpl ?? fetch)(CONCIERGE_SOL_RESPONSES_ENDPOINT, {
       method: "POST", signal: controller.signal,
       headers: { authorization: `Bearer ${input.apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({ model: input.model, store: false, max_output_tokens: 12_000,
+      body: JSON.stringify({ model: input.model, store: false, max_output_tokens: STERLING_TODAY_MAX_OUTPUT_TOKENS,
+        reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
         instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
         text: { format: { type: "json_schema", name: "sterling_today_proposal_v2", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
     });
@@ -112,9 +141,12 @@ export async function requestSterlingTodayProposal(input: {
     if (!json) throw new SyntaxError("sterling-today-malformed");
     if (json.error || json.status === "failed" || json.status === "incomplete") {
       const details = responsesErrorDetails(json.error);
+      const usage = responsesUsage(json.usage);
       throw new SterlingTodayRequestError({ kind: "response", status: response.status, requestId,
         elapsedMs: Date.now() - started, code: details.code ?? json.status ?? null,
-        apiType: details.apiType, param: details.param });
+        apiType: details.apiType, param: details.param,
+        incompleteReason: diagnosticToken(json.incomplete_details?.reason),
+        maxOutputTokens: STERLING_TODAY_MAX_OUTPUT_TOKENS, ...usage });
     }
     const text = structuredText(json);
     if (!text) throw new SyntaxError("sterling-today-malformed");
@@ -124,6 +156,7 @@ export async function requestSterlingTodayProposal(input: {
     if (!proposal) throw new SyntaxError("sterling-today-invalid-contract");
     return { proposal, latencyMs: Date.now() - started, inputBytes: Buffer.byteLength(serialized), outputBytes: Buffer.byteLength(text),
       usage: { inputTokens: json.usage?.input_tokens ?? null, outputTokens: json.usage?.output_tokens ?? null,
+        reasoningTokens: json.usage?.output_tokens_details?.reasoning_tokens ?? null,
         totalTokens: json.usage?.total_tokens ?? null } };
   } catch (error) {
     if (error instanceof SterlingTodayRequestError || error instanceof SyntaxError) throw error;
@@ -160,9 +193,24 @@ function responsesErrorDetails(error: ResponsesError | null | undefined): {
   };
 }
 
+function responsesUsage(usage: ResponsesBody["usage"]): {
+  inputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null;
+} {
+  return {
+    inputTokens: diagnosticInteger(usage?.input_tokens),
+    outputTokens: diagnosticInteger(usage?.output_tokens),
+    reasoningTokens: diagnosticInteger(usage?.output_tokens_details?.reasoning_tokens),
+    totalTokens: diagnosticInteger(usage?.total_tokens),
+  };
+}
+
 function diagnosticToken(value: unknown): string | null {
   if (typeof value !== "string" || value.length === 0) return null;
   return /^[a-zA-Z0-9_.[\]-]{1,160}$/.test(value) ? value : null;
+}
+
+function diagnosticInteger(value: unknown): number | null {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : null;
 }
 
 function isPositiveFiniteInteger(value: unknown): value is number {

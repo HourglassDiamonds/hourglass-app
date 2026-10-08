@@ -5,7 +5,8 @@ import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-d
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { buildSterlingTodayWorkingSet } from "./working-set";
 import { requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_TODAY_TIMEOUT_ENV,
-  STERLING_TODAY_TIMEOUT_MS, SterlingTodayRequestError } from "./request";
+  STERLING_TODAY_MAX_OUTPUT_TOKENS, STERLING_TODAY_REASONING_EFFORT, STERLING_TODAY_TIMEOUT_MS,
+  SterlingTodayRequestError } from "./request";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
 import { validateSterlingTodayProposal } from "./validate";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal } from "./types";
@@ -184,11 +185,17 @@ describe("Sterling-native Today", () => {
   it("sends one strict no-tools Structured Output request", async () => {
     const expected = proposal(); const bodies: Record<string, unknown>[] = [];
     const result = await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-6-sol", workingSet: workingSet(),
-      fetchImpl: async (_url, init) => { bodies.push(JSON.parse(String(init?.body))); return new Response(JSON.stringify({ output_text: JSON.stringify(expected) }), { status: 200 }); } });
+      fetchImpl: async (_url, init) => { bodies.push(JSON.parse(String(init?.body))); return new Response(JSON.stringify({
+        output_text: JSON.stringify(expected), usage: { input_tokens: 100, output_tokens: 200,
+          output_tokens_details: { reasoning_tokens: 80 }, total_tokens: 300 },
+      }), { status: 200 }); } });
     const body = bodies[0]!;
     assert.equal(result.proposal.contractVersion, STERLING_TODAY_PROPOSAL_VERSION);
+    assert.equal(result.usage.reasoningTokens, 80);
     assert.equal((body.text as { format?: { strict?: boolean } })?.format?.strict, true);
     assert.equal(body.store, false);
+    assert.equal(body.max_output_tokens, STERLING_TODAY_MAX_OUTPUT_TOKENS);
+    assert.equal((body.reasoning as { effort?: string })?.effort, STERLING_TODAY_REASONING_EFFORT);
     assert.ok(((body.text as { format?: { schema?: { required?: string[] } } })?.format?.schema?.required ?? []).includes("portfolioAssessments"));
     assert.equal("tools" in body, false);
   });
@@ -245,6 +252,48 @@ describe("Sterling-native Today", () => {
         assert.doesNotMatch(error.message, /Private evidence|C026137|secret-key/);
         return true;
       },
+    );
+  });
+
+  it("reports incomplete reason and token usage without exposing partial model output", async () => {
+    const fetchImpl: typeof fetch = async () => new Response(JSON.stringify({
+      status: "incomplete",
+      incomplete_details: { reason: "max_output_tokens" },
+      output_text: "Private Gmail evidence must never enter diagnostics.",
+      usage: { input_tokens: 48_000, output_tokens: 24_000,
+        output_tokens_details: { reasoning_tokens: 17_250 }, total_tokens: 72_000 },
+    }), { status: 200, headers: { "x-request-id": "req_incomplete123" } });
+    await assert.rejects(
+      requestSterlingTodayProposal({ apiKey: "secret-key", model: "gpt-5.6-sol", workingSet: workingSet(), fetchImpl }),
+      (error: unknown) => {
+        assert.ok(error instanceof SterlingTodayRequestError);
+        assert.equal(error.kind, "response");
+        assert.equal(error.code, "incomplete");
+        assert.equal(error.incompleteReason, "max_output_tokens");
+        assert.equal(error.inputTokens, 48_000);
+        assert.equal(error.outputTokens, 24_000);
+        assert.equal(error.reasoningTokens, 17_250);
+        assert.equal(error.totalTokens, 72_000);
+        assert.equal(error.maxOutputTokens, 24_000);
+        assert.equal(error.requestId, "req_incomplete123");
+        assert.match(error.message, /incompleteReason=max_output_tokens/);
+        assert.match(error.message, /reasoningTokens=17250/);
+        assert.match(error.message, /elapsedMs=\d+/);
+        assert.doesNotMatch(error.message, /Private Gmail|secret-key/);
+        return true;
+      },
+    );
+  });
+
+  it("distinguishes a non-token incomplete response", async () => {
+    const fetchImpl: typeof fetch = async () => new Response(JSON.stringify({
+      status: "incomplete", incomplete_details: { reason: "content_filter" },
+      usage: { input_tokens: 200, output_tokens: 40, output_tokens_details: { reasoning_tokens: 20 }, total_tokens: 240 },
+    }), { status: 200, headers: { "x-request-id": "req_filtered123" } });
+    await assert.rejects(
+      requestSterlingTodayProposal({ apiKey: "test", model: "gpt-5.6-sol", workingSet: workingSet(), fetchImpl }),
+      (error: unknown) => error instanceof SterlingTodayRequestError &&
+        error.incompleteReason === "content_filter" && error.outputTokens === 40,
     );
   });
 });
