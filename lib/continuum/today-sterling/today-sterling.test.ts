@@ -6,6 +6,7 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import { buildSterlingTodayWorkingSet } from "./working-set";
 import { requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_TODAY_TIMEOUT_ENV,
   STERLING_TODAY_TIMEOUT_MS, SterlingTodayRequestError } from "./request";
+import { evaluateSterlingTodayAcceptance } from "./acceptance";
 import { validateSterlingTodayProposal } from "./validate";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal } from "./types";
 
@@ -45,9 +46,18 @@ function workingSet() {
       direction: "outbound", fromEmailHash: "a".repeat(64), operationalText: "Attached is the updated CAD for you to review.", attachmentFilenames: ["C026137.pdf"] }] }]]) });
 }
 function proposal(): SterlingTodayProposal {
-  const set = workingSet(); const evidenceId = set.evidence[0]!.evidenceId; const project = set.projects[0]!; const openJob = set.jobs[0]!;
+  const set = workingSet(); const workUnit = set.workUnits[0]!; const evidenceId = workUnit.evidenceRefs[0]!;
+  const project = set.projects[0]!; const openJob = set.jobs[0]!;
   return { contractVersion: STERLING_TODAY_PROPOSAL_VERSION, runId: set.runId, evidenceSnapshotId: set.evidenceSnapshotId,
-    generatedAt: set.generatedAt, portfolioAmbiguities: [], recommendations: [{ itemId: "abbey", category: "waiting_on_client",
+    generatedAt: set.generatedAt, portfolioAmbiguities: [], portfolioAssessments: [{ workUnitId: workUnit.workUnitId,
+      projectId, identityStatus: "canonical_project", todayDisposition: "presented", recommendationItemId: "abbey",
+      currentStage: { stage: "client_approval", responsibleParty: "client", confidence: "high",
+        explanation: "Client review follows delivery.", evidenceRefs: [evidenceId] },
+      obligations: [{ obligationId: "send-cad", description: "Founder sends CAD", status: "fulfilled",
+        responsibleParty: "founder", confidence: "high", evidenceRefs: [evidenceId] }],
+      nextStepOwner: "client", confidence: "high", evidenceRefs: [evidenceId], ambiguities: [],
+      explanation: "CAD delivered; the client owns the next step.", omissionReason: null }],
+    recommendations: [{ itemId: "abbey", workUnitId: workUnit.workUnitId, category: "waiting_on_client",
       projectId, personId, relationshipRole: "client", title: "Abbey CAD", summary: "CAD delivered; Abbey has the next step.",
       responsibleParty: "client", confidence: "high", explanation: "The newer outbound delivery fulfills the founder obligation.",
       evidenceRefs: [evidenceId], ambiguities: [], projectStage: { stage: "client_approval", confidence: "high", explanation: "Client review follows delivery.", evidenceRefs: [evidenceId] },
@@ -63,9 +73,43 @@ describe("Sterling-native Today", () => {
     assert.equal(set.mutationMode, "shadow_read_only");
     assert.equal(set.calendarAvailability.status, "unavailable");
     assert.ok(set.evidence.length >= 1);
+    assert.equal(set.workUnits.length, 1);
+    assert.equal(set.workUnits[0]?.kind, "canonical_project");
     assert.equal(set.evidence.find(row => row.sourceType === "gmail")?.excerpt, "Attached is the updated CAD for you to review.");
     assert.deepEqual(set.projects[0]?.gmailThreadIds, ["thread-1"]);
     assert.equal(set.projects[0]?.people[0]?.relationshipRole, "client");
+  });
+
+  it("creates deduplicated provisional work only from exact identifiers or exact source identity", () => {
+    const thread = (messageId: string) => ({ subject: "C026137 production", messages: [{ messageId,
+      sentAt: "2026-10-07T13:00:00.000Z", direction: "inbound" as const, fromEmailHash: null,
+      operationalText: "Production update for C026137.", attachmentFilenames: [] }] });
+    const set = buildSterlingTodayWorkingSet({ runId: "run-provisional", sourceWatermark: "wm", generatedAt: "2026-10-08T12:00:00.000Z",
+      projects: [], jobs: [], candidates: [], knownPeople: [],
+      threadContext: new Map([["thread-a", thread("m-a")], ["thread-b", thread("m-b")]]) });
+    assert.equal(set.workUnits.length, 1);
+    assert.equal(set.workUnits[0]?.kind, "provisional_evidence");
+    assert.equal(set.workUnits[0]?.identityBasis, "exact_identifier");
+    assert.equal(set.workUnits[0]?.projectId, null);
+    assert.deepEqual(set.workUnits[0]?.threadIds, ["thread-a", "thread-b"]);
+    assert.equal(set.workUnits[0]?.evidenceRefs.length, 2);
+  });
+
+  it("keeps a thread with conflicting exact identifiers provisional instead of cross-linking projects", () => {
+    const first = { ...summary(), gmailThreadId: null };
+    const secondId = "66666666-6666-4666-8666-666666666666";
+    const second = { ...summary(), projectId: secondId, title: "Other / C017756", gmailThreadId: null,
+      specs: [{ fieldName: "cad_job_number" as const, label: "CAD", value: "C017756" }] };
+    const set = buildSterlingTodayWorkingSet({ runId: "run-conflict", sourceWatermark: "wm", generatedAt: "2026-10-08T12:00:00.000Z",
+      projects: [first, second], jobs: [], candidates: [], knownPeople: [], threadContext: new Map([["thread-conflict", {
+        subject: "Project references", messages: [{ messageId: "m-conflict-1", sentAt: "2026-10-07T13:00:00.000Z",
+          direction: "inbound", fromEmailHash: null, operationalText: "References C026137.", attachmentFilenames: [] },
+        { messageId: "m-conflict-2", sentAt: "2026-10-07T14:00:00.000Z",
+          direction: "inbound", fromEmailHash: null, operationalText: "References C017756.", attachmentFilenames: [] }],
+      }]]) });
+    const gmailEvidence = set.evidence.find(row => row.threadId === "thread-conflict");
+    assert.deepEqual(gmailEvidence?.projectIds, []);
+    assert.equal(set.workUnits.filter(row => row.kind === "provisional_evidence").length, 1);
   });
 
   it("accepts grounded presentation and approves a version-matched mutation only for founder review", () => {
@@ -88,6 +132,12 @@ describe("Sterling-native Today", () => {
 
   it("allows provisional presentation but rejects an unlinked canonical Job proposal", () => {
     const set = workingSet(); const raw = structuredClone(proposal());
+    const unit = set.workUnits[0]!;
+    (unit as { kind: string }).kind = "provisional_evidence";
+    (unit as { identityBasis: string }).identityBasis = "source_thread";
+    (unit as { projectId: string | null }).projectId = null;
+    raw.portfolioAssessments[0]!.projectId = null;
+    raw.portfolioAssessments[0]!.identityStatus = "provisional_evidence";
     raw.recommendations[0]!.projectId = null;
     raw.recommendations[0]!.personId = null;
     const mutation = raw.proposedCanonicalMutations[0]!;
@@ -105,6 +155,32 @@ describe("Sterling-native Today", () => {
     assert.ok(result.mutationValidations[0]?.reasons.includes("canonical-project-required"));
   });
 
+  it("rejects silent portfolio disappearance and assessment/presentation drift", () => {
+    const set = workingSet();
+    const missing = structuredClone(proposal());
+    missing.portfolioAssessments = [];
+    assert.ok(validateSterlingTodayProposal(set, missing).errors.some(row => row.startsWith("missing-work-unit-assessment:")));
+    assert.equal(evaluateSterlingTodayAcceptance(set, missing).cases.find(row => row.id === "ABBEY/C026137")?.outcome, "missing_output");
+
+    const drifted = structuredClone(proposal());
+    drifted.recommendations[0]!.projectStage.stage = "production";
+    drifted.recommendations[0]!.obligations = [];
+    const result = validateSterlingTodayProposal(set, drifted);
+    assert.ok(result.errors.includes("project-stage-reconciliation-mismatch:abbey"));
+    assert.ok(result.errors.includes("obligation-count-mismatch:abbey"));
+  });
+
+  it("reports a present item in the wrong lane instead of calling it absent", () => {
+    const set = workingSet(); const raw = structuredClone(proposal());
+    raw.recommendations[0]!.title = "Client decision";
+    raw.recommendations[0]!.summary = "The next step remains external.";
+    raw.recommendations[0]!.explanation = "Current evidence assigns the next step externally.";
+    raw.recommendations[0]!.category = "held_watching";
+    const abbey = evaluateSterlingTodayAcceptance(set, raw).cases.find(row => row.id === "ABBEY/C026137");
+    assert.equal(abbey?.outcome, "wrong_category");
+    assert.notEqual(abbey?.actual, "absent");
+  });
+
   it("sends one strict no-tools Structured Output request", async () => {
     const expected = proposal(); const bodies: Record<string, unknown>[] = [];
     const result = await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-6-sol", workingSet: workingSet(),
@@ -112,6 +188,8 @@ describe("Sterling-native Today", () => {
     const body = bodies[0]!;
     assert.equal(result.proposal.contractVersion, STERLING_TODAY_PROPOSAL_VERSION);
     assert.equal((body.text as { format?: { strict?: boolean } })?.format?.strict, true);
+    assert.equal(body.store, false);
+    assert.ok(((body.text as { format?: { schema?: { required?: string[] } } })?.format?.schema?.required ?? []).includes("portfolioAssessments"));
     assert.equal("tools" in body, false);
   });
 

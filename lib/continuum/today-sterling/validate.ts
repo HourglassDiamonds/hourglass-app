@@ -22,10 +22,73 @@ export function validateSterlingTodayProposal(
   const people = new Set(workingSet.people.map(row => row.personId));
   const evidence = new Set(workingSet.evidence.map(row => row.evidenceId));
   const jobs = new Map(workingSet.jobs.map(row => [row.jobId, row]));
+  const workUnits = new Map(workingSet.workUnits.map(row => [row.workUnitId, row]));
+  const assessments = new Map<string, SterlingTodayProposal["portfolioAssessments"][number]>();
+  for (const assessment of proposal.portfolioAssessments) {
+    const workUnit = workUnits.get(assessment.workUnitId);
+    if (!assessment.workUnitId.trim() || assessments.has(assessment.workUnitId)) {
+      errors.push(`duplicate-or-empty-assessment:${assessment.workUnitId}`);
+    }
+    assessments.set(assessment.workUnitId, assessment);
+    if (!workUnit) {
+      errors.push(`unknown-work-unit:${assessment.workUnitId}`);
+      continue;
+    }
+    if (assessment.projectId !== workUnit.projectId) errors.push(`work-unit-project-mismatch:${assessment.workUnitId}`);
+    if (workUnit.kind === "canonical_project" && assessment.identityStatus !== "canonical_project") {
+      errors.push(`canonical-identity-mismatch:${assessment.workUnitId}`);
+    }
+    if (workUnit.kind === "provisional_evidence" && assessment.identityStatus === "canonical_project") {
+      errors.push(`fabricated-canonical-identity:${assessment.workUnitId}`);
+    }
+    if (assessment.todayDisposition === "presented") {
+      if (!assessment.recommendationItemId) errors.push(`presented-without-recommendation:${assessment.workUnitId}`);
+      if (assessment.omissionReason !== null) errors.push(`presented-with-omission-reason:${assessment.workUnitId}`);
+    } else {
+      if (assessment.recommendationItemId !== null) errors.push(`omitted-with-recommendation:${assessment.workUnitId}`);
+      if (!assessment.omissionReason?.trim()) errors.push(`missing-omission-reason:${assessment.workUnitId}`);
+    }
+    const refs = [...assessment.evidenceRefs, ...assessment.currentStage.evidenceRefs,
+      ...assessment.obligations.flatMap(row => row.evidenceRefs)];
+    if (assessment.evidenceRefs.length === 0) errors.push(`missing-assessment-provenance:${assessment.workUnitId}`);
+    for (const ref of refs) {
+      if (!evidence.has(ref)) errors.push(`unknown-evidence:${assessment.workUnitId}:${ref}`);
+      else if (!workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-evidence:${assessment.workUnitId}:${ref}`);
+    }
+    const project = assessment.projectId ? projects.get(assessment.projectId) : null;
+    if (assessment.currentStage.stage && project && isLifecycleKind(project.projectKind) &&
+        !isStageAllowedForKind(project.projectKind, assessment.currentStage.stage)) {
+      errors.push(`invalid-assessment-stage:${assessment.workUnitId}`);
+    }
+  }
+  for (const workUnitId of workUnits.keys()) {
+    if (!assessments.has(workUnitId)) errors.push(`missing-work-unit-assessment:${workUnitId}`);
+  }
+
   const itemIds = new Set<string>();
+  const recommendations = new Map<string, SterlingTodayProposal["recommendations"][number]>();
   for (const item of proposal.recommendations) {
     if (!item.itemId.trim() || itemIds.has(item.itemId)) errors.push(`duplicate-or-empty-item:${item.itemId}`);
     itemIds.add(item.itemId);
+    recommendations.set(item.itemId, item);
+    const workUnit = workUnits.get(item.workUnitId);
+    const assessment = assessments.get(item.workUnitId);
+    if (!workUnit) errors.push(`unknown-work-unit:${item.itemId}`);
+    if (workUnit && item.projectId !== workUnit.projectId) errors.push(`recommendation-project-mismatch:${item.itemId}`);
+    if (!assessment || assessment.recommendationItemId !== item.itemId || assessment.todayDisposition !== "presented") {
+      errors.push(`recommendation-assessment-mismatch:${item.itemId}`);
+    } else {
+      if (item.responsibleParty !== assessment.nextStepOwner) errors.push(`next-step-owner-mismatch:${item.itemId}`);
+      if (item.projectStage.stage !== assessment.currentStage.stage) errors.push(`project-stage-reconciliation-mismatch:${item.itemId}`);
+      const assessedObligations = new Map(assessment.obligations.map(row => [row.obligationId, row]));
+      for (const obligation of item.obligations) {
+        const assessed = assessedObligations.get(obligation.obligationId);
+        if (!assessed || assessed.status !== obligation.status || assessed.responsibleParty !== obligation.responsibleParty) {
+          errors.push(`obligation-reconciliation-mismatch:${item.itemId}:${obligation.obligationId}`);
+        }
+      }
+      if (item.obligations.length !== assessment.obligations.length) errors.push(`obligation-count-mismatch:${item.itemId}`);
+    }
     if (item.projectId && !projects.has(item.projectId)) errors.push(`unknown-project:${item.itemId}`);
     if (item.personId && !people.has(item.personId)) errors.push(`unknown-person:${item.itemId}`);
     if (item.projectId && item.personId && !projects.get(item.projectId)?.people.some(row => row.personId === item.personId)) {
@@ -33,12 +96,18 @@ export function validateSterlingTodayProposal(
     }
     for (const ref of [...item.evidenceRefs, ...item.projectStage.evidenceRefs, ...item.obligations.flatMap(row => row.evidenceRefs)]) {
       if (!evidence.has(ref)) errors.push(`unknown-evidence:${item.itemId}:${ref}`);
+      else if (workUnit && !workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-evidence:${item.itemId}:${ref}`);
     }
     if (item.evidenceRefs.length === 0) errors.push(`missing-provenance:${item.itemId}`);
     const project = item.projectId ? projects.get(item.projectId) : null;
     if (item.projectStage.stage && project && isLifecycleKind(project.projectKind) &&
         !isStageAllowedForKind(project.projectKind, item.projectStage.stage)) {
       errors.push(`invalid-project-stage:${item.itemId}`);
+    }
+  }
+  for (const assessment of assessments.values()) {
+    if (assessment.recommendationItemId && !recommendations.has(assessment.recommendationItemId)) {
+      errors.push(`missing-linked-recommendation:${assessment.workUnitId}`);
     }
   }
 

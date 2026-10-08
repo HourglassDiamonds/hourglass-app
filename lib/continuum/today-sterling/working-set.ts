@@ -110,9 +110,9 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     const haystack = [thread.subject, ...(thread.attachmentFilenames ?? []), ...(thread.messages ?? []).flatMap(message => [
       message.subject, message.operationalText, ...(message.attachmentFilenames ?? []),
     ])].filter(Boolean).join(" ");
-    for (const token of strictProjectNumbers(haystack)) for (const projectId of projectsByIdentifier.get(token) ?? []) {
-      addThreadProject(threadId, projectId);
-    }
+    const identifierProjectIds = new Set(strictProjectNumbers(haystack)
+      .flatMap(token => [...(projectsByIdentifier.get(token) ?? [])]));
+    if (identifierProjectIds.size === 1) addThreadProject(threadId, [...identifierProjectIds][0]);
   }
 
   const candidatesByMessage = new Map<string, ContinuumCandidate[]>();
@@ -159,6 +159,22 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
       timestamp: item.observedAt ?? input.generatedAt, direction: "unknown", subject: item.title, excerpt: item.location,
       attachmentFilenames: [], messageId: null, threadId: null, projectIds: [], personIds: [], provenance: "calendar_read_only" });
   }
+  for (const project of input.projects) {
+    evidence.push({ evidenceId: `canonical:project:${project.projectId}`, sourceType: "canonical",
+      sourceRef: `continuum:project:${project.projectId}`, timestamp: project.latestNoteAt ?? project.recordCreatedAt ?? input.generatedAt,
+      direction: "unknown", subject: project.title,
+      excerpt: `Canonical project; lifecycle=${project.lifecycleStage ?? "unknown"}; kind=${project.projectKind ?? "unknown"}.`,
+      attachmentFilenames: [], messageId: null, threadId: null, projectIds: [project.projectId],
+      personIds: project.people.map(person => person.personId), provenance: "canonical_project_read_only" });
+  }
+  for (const job of input.jobs) {
+    evidence.push({ evidenceId: `canonical:job:${job.jobId}`, sourceType: "canonical",
+      sourceRef: `continuum:job:${job.jobId}`, timestamp: job.updatedAt,
+      direction: "unknown", subject: job.subject,
+      excerpt: `Canonical job; state=${job.state}; waitingOn=${job.waitingOnActor ?? "unknown"}.`,
+      attachmentFilenames: [], messageId: null, threadId: null, projectIds: unique([job.projectId]),
+      personIds: unique([job.associatedPersonId]), provenance: "canonical_job_read_only" });
+  }
   evidence.sort((a, b) => a.timestamp.localeCompare(b.timestamp) || a.evidenceId.localeCompare(b.evidenceId));
 
   const jobsByProject = new Map<string, ProjectJob[]>();
@@ -186,8 +202,72 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     status: "unavailable" as const,
     reason: "calendar-availability-not-supplied",
   };
-  const snapshotMaterial = { sourceWatermark: input.sourceWatermark, projects, jobs, evidence, calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
+  const workUnits = buildWorkUnits(projects, evidence);
+  const snapshotMaterial = { sourceWatermark: input.sourceWatermark, projects, jobs, evidence, workUnits,
+    calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
   return { contractVersion: STERLING_TODAY_WORKING_SET_VERSION, runId: input.runId ?? randomUUID(),
     evidenceSnapshotId: digest(snapshotMaterial), sourceWatermark: input.sourceWatermark, generatedAt: input.generatedAt,
-    mutationMode: "shadow_read_only", people, projects, jobs, evidence, calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
+    mutationMode: "shadow_read_only", people, projects, jobs, evidence, workUnits,
+    calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
+}
+
+function buildWorkUnits(
+  projects: SterlingTodayWorkingSet["projects"],
+  evidence: readonly SterlingEvidence[],
+): SterlingTodayWorkingSet["workUnits"] {
+  const canonical = projects.map(project => {
+    const rows = evidence.filter(row => row.projectIds.includes(project.projectId));
+    return {
+      workUnitId: `project:${project.projectId}`,
+      kind: "canonical_project" as const,
+      identityBasis: "canonical_project" as const,
+      projectId: project.projectId,
+      label: project.title,
+      observedIdentifiers: strictProjectNumbers([project.title, ...project.specs.map(spec => spec.value)].join(" ")),
+      threadIds: unique([...(project.gmailThreadIds ?? []), ...rows.map(row => row.threadId)]),
+      sourceRefs: unique(rows.map(row => row.sourceRef)),
+      evidenceRefs: unique(rows.map(row => row.evidenceId)),
+    };
+  });
+
+  type ProvisionalGroup = {
+    key: string; identityBasis: "exact_identifier" | "source_thread" | "source_record"; label: string;
+    identifiers: string[]; threadIds: string[]; sourceRefs: string[]; evidenceRefs: string[];
+  };
+  const evidenceBySource = new Map<string, SterlingEvidence[]>();
+  for (const row of evidence) {
+    if (row.projectIds.length > 0 || row.sourceType === "canonical" || row.sourceType === "calendar") continue;
+    const key = row.threadId ? `thread:${row.threadId}` : `source:${row.sourceRef}`;
+    evidenceBySource.set(key, [...(evidenceBySource.get(key) ?? []), row]);
+  }
+  const provisional = new Map<string, ProvisionalGroup>();
+  for (const [sourceKey, rows] of evidenceBySource) {
+    const identifiers = unique(rows.flatMap(row => strictProjectNumbers(
+      [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "))));
+    const first = rows[0]!;
+    const identityBasis = identifiers.length === 1 ? "exact_identifier" as const
+      : first.threadId ? "source_thread" as const : "source_record" as const;
+    const sourceIdentity = identifiers.length === 1 ? identifiers[0]! : sourceKey;
+    const key = `${identityBasis}:${sourceIdentity}`;
+    const current = provisional.get(key) ?? { key, identityBasis,
+      label: identifiers[0] ?? first.subject ?? "Provisional evidence-backed work",
+      identifiers: [], threadIds: [], sourceRefs: [], evidenceRefs: [] };
+    current.identifiers = unique([...current.identifiers, ...identifiers]);
+    current.threadIds = unique([...current.threadIds, ...rows.map(row => row.threadId)]);
+    current.sourceRefs = unique([...current.sourceRefs, ...rows.map(row => row.sourceRef)]);
+    current.evidenceRefs = unique([...current.evidenceRefs, ...rows.map(row => row.evidenceId)]);
+    provisional.set(key, current);
+  }
+  const provisionalUnits = [...provisional.values()].map(group => ({
+    workUnitId: `provisional:${digest(group.key).slice(0, 24)}`,
+    kind: "provisional_evidence" as const,
+    identityBasis: group.identityBasis,
+    projectId: null,
+    label: group.label,
+    observedIdentifiers: group.identifiers,
+    threadIds: group.threadIds,
+    sourceRefs: group.sourceRefs,
+    evidenceRefs: group.evidenceRefs,
+  }));
+  return [...canonical, ...provisionalUnits].sort((a, b) => a.workUnitId.localeCompare(b.workUnitId));
 }

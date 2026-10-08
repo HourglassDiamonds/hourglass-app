@@ -1,7 +1,7 @@
 /** Sterling-native Today V1 contracts. Sterling judges; Continuum validates. */
 
-export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v1" as const;
-export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v1" as const;
+export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v2" as const;
+export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v2" as const;
 
 export const STERLING_TODAY_CATEGORIES = [
   "up_next", "founder_actions", "waiting_on_client", "waiting_on_shop",
@@ -53,12 +53,24 @@ export type SterlingPreviousTodayItem = {
   itemId: string; category: string; projectId: string | null; summary: string;
 };
 
+export type SterlingWorkingUnit = {
+  workUnitId: string;
+  kind: "canonical_project" | "provisional_evidence";
+  identityBasis: "canonical_project" | "exact_identifier" | "source_thread" | "source_record";
+  projectId: string | null;
+  label: string;
+  observedIdentifiers: readonly string[];
+  threadIds: readonly string[];
+  sourceRefs: readonly string[];
+  evidenceRefs: readonly string[];
+};
+
 export type SterlingTodayWorkingSet = {
   contractVersion: typeof STERLING_TODAY_WORKING_SET_VERSION;
   runId: string; evidenceSnapshotId: string; sourceWatermark: string; generatedAt: string;
   mutationMode: "shadow_read_only";
   people: readonly SterlingWorkingPerson[]; projects: readonly SterlingWorkingProject[];
-  jobs: readonly SterlingWorkingJob[]; evidence: readonly SterlingEvidence[];
+  jobs: readonly SterlingWorkingJob[]; evidence: readonly SterlingEvidence[]; workUnits: readonly SterlingWorkingUnit[];
   calendarAvailability: { status: "available" | "unavailable" | "disabled"; reason: string | null };
   calendar: readonly { evidenceId: string; sourceRef: string; timeLabel: string; title: string; location: string | null; allDay: boolean; disclosure: "full" | "minimal" }[];
   previousToday: readonly SterlingPreviousTodayItem[];
@@ -69,8 +81,25 @@ export type SterlingObligationAssessment = {
   responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence; evidenceRefs: readonly string[];
 };
 
+export type SterlingPortfolioAssessment = {
+  workUnitId: string;
+  projectId: string | null;
+  identityStatus: "canonical_project" | "provisional_evidence" | "unresolved_identity";
+  todayDisposition: "presented" | "suppressed" | "ambiguous";
+  recommendationItemId: string | null;
+  currentStage: { stage: string | null; responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence;
+    explanation: string; evidenceRefs: readonly string[] };
+  obligations: readonly SterlingObligationAssessment[];
+  nextStepOwner: SterlingResponsibleParty;
+  confidence: SterlingConfidence;
+  evidenceRefs: readonly string[];
+  ambiguities: readonly string[];
+  explanation: string;
+  omissionReason: string | null;
+};
+
 export type SterlingTodayRecommendation = {
-  itemId: string; category: SterlingTodayCategory; projectId: string | null; personId: string | null;
+  itemId: string; workUnitId: string; category: SterlingTodayCategory; projectId: string | null; personId: string | null;
   relationshipRole: SterlingRelationshipRole; title: string; summary: string;
   responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence; explanation: string;
   evidenceRefs: readonly string[]; ambiguities: readonly string[];
@@ -93,7 +122,8 @@ export type SterlingProposedCanonicalMutation = {
 
 export type SterlingTodayProposal = {
   contractVersion: typeof STERLING_TODAY_PROPOSAL_VERSION; runId: string; evidenceSnapshotId: string;
-  generatedAt: string; recommendations: readonly SterlingTodayRecommendation[];
+  generatedAt: string; portfolioAssessments: readonly SterlingPortfolioAssessment[];
+  recommendations: readonly SterlingTodayRecommendation[];
   proposedCanonicalMutations: readonly SterlingProposedCanonicalMutation[]; portfolioAmbiguities: readonly string[];
 };
 

@@ -14,10 +14,31 @@ const obligation = {
     responsibleParty, confidence, evidenceRefs: stringArray },
   required: ["obligationId", "description", "status", "responsibleParty", "confidence", "evidenceRefs"],
 } as const;
+const stageAssessment = {
+  type: "object", additionalProperties: false,
+  properties: { stage: nullableString, responsibleParty, confidence, explanation: { type: "string" }, evidenceRefs: stringArray },
+  required: ["stage", "responsibleParty", "confidence", "explanation", "evidenceRefs"],
+} as const;
+const portfolioAssessment = {
+  type: "object", additionalProperties: false,
+  properties: {
+    workUnitId: { type: "string" }, projectId: nullableString,
+    identityStatus: { type: "string", enum: ["canonical_project", "provisional_evidence", "unresolved_identity"] },
+    todayDisposition: { type: "string", enum: ["presented", "suppressed", "ambiguous"] },
+    recommendationItemId: nullableString,
+    currentStage: stageAssessment,
+    obligations: { type: "array", items: obligation },
+    nextStepOwner: responsibleParty, confidence, evidenceRefs: stringArray, ambiguities: stringArray,
+    explanation: { type: "string" }, omissionReason: nullableString,
+  },
+  required: ["workUnitId", "projectId", "identityStatus", "todayDisposition", "recommendationItemId",
+    "currentStage", "obligations", "nextStepOwner", "confidence", "evidenceRefs", "ambiguities",
+    "explanation", "omissionReason"],
+} as const;
 const recommendation = {
   type: "object", additionalProperties: false,
   properties: {
-    itemId: { type: "string" }, category: { type: "string", enum: STERLING_TODAY_CATEGORIES },
+    itemId: { type: "string" }, workUnitId: { type: "string" }, category: { type: "string", enum: STERLING_TODAY_CATEGORIES },
     projectId: nullableString, personId: nullableString,
     relationshipRole: { type: "string", enum: STERLING_RELATIONSHIP_ROLES }, title: { type: "string" },
     summary: { type: "string" }, responsibleParty, confidence, explanation: { type: "string" },
@@ -27,7 +48,7 @@ const recommendation = {
       required: ["stage", "confidence", "explanation", "evidenceRefs"] },
     obligations: { type: "array", items: obligation },
   },
-  required: ["itemId", "category", "projectId", "personId", "relationshipRole", "title", "summary",
+  required: ["itemId", "workUnitId", "category", "projectId", "personId", "relationshipRole", "title", "summary",
     "responsibleParty", "confidence", "explanation", "evidenceRefs", "ambiguities", "projectStage", "obligations"],
 } as const;
 const mutation = {
@@ -55,10 +76,11 @@ export const STERLING_TODAY_OUTPUT_SCHEMA = {
   properties: {
     contractVersion: { type: "string", const: STERLING_TODAY_PROPOSAL_VERSION },
     runId: { type: "string" }, evidenceSnapshotId: { type: "string" }, generatedAt: { type: "string" },
+    portfolioAssessments: { type: "array", items: portfolioAssessment },
     recommendations: { type: "array", items: recommendation },
     proposedCanonicalMutations: { type: "array", items: mutation }, portfolioAmbiguities: stringArray,
   },
-  required: ["contractVersion", "runId", "evidenceSnapshotId", "generatedAt", "recommendations",
+  required: ["contractVersion", "runId", "evidenceSnapshotId", "generatedAt", "portfolioAssessments", "recommendations",
     "proposedCanonicalMutations", "portfolioAmbiguities"],
 } as const;
 
@@ -75,9 +97,22 @@ function validObligation(v: unknown): boolean {
     oneOf(v.status, ["open", "fulfilled", "superseded", "ambiguous"] as const) &&
     oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) && oneOf(v.confidence, ["high", "medium", "low"] as const) && strings(v.evidenceRefs);
 }
+function validStageAssessment(v: unknown): boolean {
+  return record(v) && nullable(v.stage) && oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) &&
+    oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" && strings(v.evidenceRefs);
+}
+function validPortfolioAssessment(v: unknown): boolean {
+  return record(v) && typeof v.workUnitId === "string" && nullable(v.projectId) &&
+    oneOf(v.identityStatus, ["canonical_project", "provisional_evidence", "unresolved_identity"] as const) &&
+    oneOf(v.todayDisposition, ["presented", "suppressed", "ambiguous"] as const) && nullable(v.recommendationItemId) &&
+    validStageAssessment(v.currentStage) && Array.isArray(v.obligations) && v.obligations.every(validObligation) &&
+    oneOf(v.nextStepOwner, STERLING_RESPONSIBLE_PARTIES) && oneOf(v.confidence, ["high", "medium", "low"] as const) &&
+    strings(v.evidenceRefs) && strings(v.ambiguities) && typeof v.explanation === "string" && nullable(v.omissionReason);
+}
 function validRecommendation(v: unknown): boolean {
   if (!record(v) || !record(v.projectStage)) return false;
-  return typeof v.itemId === "string" && oneOf(v.category, STERLING_TODAY_CATEGORIES) && nullable(v.projectId) &&
+  return typeof v.itemId === "string" && typeof v.workUnitId === "string" &&
+    oneOf(v.category, STERLING_TODAY_CATEGORIES) && nullable(v.projectId) &&
     nullable(v.personId) && oneOf(v.relationshipRole, STERLING_RELATIONSHIP_ROLES) && typeof v.title === "string" &&
     typeof v.summary === "string" && oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) &&
     oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" &&
@@ -101,6 +136,7 @@ function validMutation(v: unknown): boolean {
 export function parseSterlingTodayProposal(value: unknown): SterlingTodayProposal | null {
   if (!record(value) || value.contractVersion !== STERLING_TODAY_PROPOSAL_VERSION || typeof value.runId !== "string" ||
       typeof value.evidenceSnapshotId !== "string" || typeof value.generatedAt !== "string" ||
+      !Array.isArray(value.portfolioAssessments) || !value.portfolioAssessments.every(validPortfolioAssessment) ||
       !Array.isArray(value.recommendations) || !value.recommendations.every(validRecommendation) ||
       !Array.isArray(value.proposedCanonicalMutations) || !value.proposedCanonicalMutations.every(validMutation) ||
       !strings(value.portfolioAmbiguities)) return null;

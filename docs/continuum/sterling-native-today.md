@@ -40,13 +40,13 @@ indexed + live current-message Gmail evidence
 calendar + founder directives + prior Today
             |
             v
-sterling-today-working-set-v1
+sterling-today-working-set-v2
             |
             v
 one strict Structured Output Sterling call (no tools, no writes)
             |
             v
-sterling-today-proposal-v1
+sterling-today-proposal-v2
             |
             v
 identity / relationship / provenance / version / transition / dedupe validation
@@ -59,7 +59,9 @@ presentation proposal + founder-review-only mutation proposals
 
 `lib/continuum/today-sterling/evidence-load.ts` extends the candidate-oriented Gmail loader with the existing project-evidence resolver. Trusted thread associations are attached to canonical projects. Bounded candidate or ambiguous discoveries are loaded only as unassociated evidence; they acquire a project reference only when the assembler finds an exact canonical project number. This exposes unresolved evidence to Sterling without silently converting an uncertain relationship into canonical truth.
 
-`lib/continuum/today-sterling/request.ts` sends one strict JSON-schema request with no tools. It instructs Sterling to separate project stage from obligations, classify contacts conservatively, honor newer evidence and founder corrections, and preserve state under ambiguity.
+`lib/continuum/today-sterling/request.ts` sends one strict JSON-schema request with no tools. Before presentation, Sterling must return exactly one portfolio assessment for every bounded work unit. Each assessment separately records overall stage, obligations, obligation owners, next-step owner, evidence, ambiguity, and an explicit reason when Today suppresses the unit.
+
+The working set creates one work unit for every canonical project and safely grouped provisional evidence. Provisional evidence is deduplicated only by an exact operational identifier or exact source identity such as a Gmail thread; names never merge work. Conflicting identifiers remain provisional and unresolved.
 
 `lib/continuum/today-sterling/validate.ts` never reinterprets conversation text. It verifies only structural and canonical safety facts. Passing mutations are “approved for founder review,” never approved for execution.
 
@@ -88,9 +90,11 @@ The supported secret is `OPENAI_API_KEY`. It must be supplied through the server
 
 For a one-process local acceptance run, set `OPENAI_API_KEY` in the current PowerShell process without printing it, then run `npm run continuum:today-sterling-shadow:model`. The runner checks the secret before the Responses request, uses Bearer authentication and `store: false`, and never includes the key in its output.
 
+The model request timeout defaults to 180 seconds. Set `CONTINUUM_STERLING_TODAY_TIMEOUT_MS` in the server process to a positive integer millisecond override when needed.
+
 ## Provisional work contract
 
-When exact evidence supports active work but no canonical Project exists, Sterling may return a presentation-only recommendation with `projectId: null`. It must cite exact evidence and describe the canonical ambiguity. It may not propose a canonical mutation. The deterministic validator rejects an unlinked `create_open_job` proposal with `canonical-project-required`.
+When exact evidence supports active work but no canonical Project exists, Sterling must assess the provisional work unit and may return a presentation-only recommendation with `projectId: null`. It can classify workflow responsibility without resolving canonical identity. It must cite exact evidence and describe the canonical ambiguity. It may not propose a canonical mutation. The deterministic validator rejects an unlinked `create_open_job` proposal with `canonical-project-required`.
 
 A future persisted review queue should use a stable key derived from source system plus exact source identity (for Gmail, the canonical thread ID), not a name. It should store evidence references, candidate IDs, proposed display label, observed identifiers, first/latest timestamps, and a `founder_review_required` status. Uniqueness on that stable source key prevents duplicates. Promotion must remain an explicit founder action through the existing Project writer; dismissal or linkage decisions should be audited without deleting evidence.
 

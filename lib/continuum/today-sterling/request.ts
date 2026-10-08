@@ -2,21 +2,26 @@ import { CONCIERGE_SOL_RESPONSES_ENDPOINT } from "@/lib/continuum/concierge-sol/
 import { parseSterlingTodayProposal, STERLING_TODAY_OUTPUT_SCHEMA } from "./schema";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal, type SterlingTodayWorkingSet } from "./types";
 
-export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v1" as const;
+export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v2" as const;
 export const STERLING_TODAY_TIMEOUT_MS = 180_000;
 export const STERLING_TODAY_TIMEOUT_ENV = "CONTINUUM_STERLING_TODAY_TIMEOUT_MS" as const;
 
 const INSTRUCTIONS = [
   "You are Sterling, the primary intelligence layer for Continuum Today.",
   "Reason directly from the complete bounded working set. Work chronologically and semantically.",
+  "First reconcile the complete portfolio. Return exactly one portfolioAssessment for every workUnitId in workingSet.workUnits before choosing Today recommendations.",
+  "For every work unit determine current overall stage, all open and completed or superseded obligations, each obligation's responsible party, current next-step owner, confidence, exact evidence, and ambiguities.",
+  "A canonical project and an evidence-backed provisional work unit are both assessable work. Canonical identity and workflow responsibility are separate questions.",
+  "For every work unit not presented in Today, set an explicit suppressed or ambiguous disposition and explain the omissionReason. Never silently omit a work unit.",
   "Newer material evidence supersedes older evidence. Founder directives supersede inference.",
   "Actual fulfillment closes prior promises. Production/order evidence supersedes design-stage assumptions.",
   "Separate project stage from individual obligations. A production project may still have a founder obligation.",
+  "The overall project-stage holder must not erase a separate individual obligation or change that obligation's responsible party.",
   "Never assume an external email contact is a client. Classify the relationship role from canonical evidence.",
   "Newsletter, editorial, footer, quoted history, shipping boilerplate, schema fragments, technician notices, generic please language, naked place-order language, and cold solicitations are not Today actions.",
   "If evidence is ambiguous, preserve current canonical state, record the ambiguity, and propose no mutation.",
   "An unavailable or disabled calendar means unknown calendar context, not confirmation that no events exist.",
-  "Evidence-backed active work without a canonical project may be surfaced provisionally with projectId null. Explain that it is provisional, cite exact evidence, and propose no canonical mutation for it.",
+  "Evidence-backed active work without a canonical project may receive a responsible-party and next-step classification with projectId null. Explain that it is provisional, cite exact evidence, and propose no canonical mutation for it.",
   "Every conclusion must cite evidenceId values from the working set. Do not invent identifiers.",
   "Presentation recommendations and canonical mutations are separate. Mutations are proposals only and always require founder approval.",
   "Use the exact runId and evidenceSnapshotId supplied. Return only the strict structured object.",
@@ -94,7 +99,7 @@ export async function requestSterlingTodayProposal(input: {
       headers: { authorization: `Bearer ${input.apiKey}`, "content-type": "application/json" },
       body: JSON.stringify({ model: input.model, store: false, max_output_tokens: 12_000,
         instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
-        text: { format: { type: "json_schema", name: "sterling_today_proposal_v1", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
+        text: { format: { type: "json_schema", name: "sterling_today_proposal_v2", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
     });
     const requestId = response.headers.get("x-request-id");
     if (!response.ok) {

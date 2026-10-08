@@ -199,8 +199,15 @@ async function main() {
       : trustedProjectThreads === 0 ? "project_without_trusted_thread"
       : "canonical_project_and_thread_resolved";
     const associationDiagnostics = projectIds.map((id) => projectEvidenceThreads.diagnosticsByProject.get(id)).filter(Boolean);
+    const workUnitIds = workingSet.workUnits.filter(unit => pattern.test([
+      unit.label, ...unit.observedIdentifiers,
+      ...unit.evidenceRefs.flatMap(ref => {
+        const row = workingSet.evidence.find(evidence => evidence.evidenceId === ref);
+        return [row?.subject ?? "", row?.excerpt ?? "", ...(row?.attachmentFilenames ?? [])];
+      }),
+    ].join(" "))).map(unit => unit.workUnitId);
     return [name, { projects: projectIds.length, canonicalIdentifierProjects, canonicalPeople, relationships,
-      trustedProjectThreads, evidence, linkage, candidates: caseCandidates.length,
+      trustedProjectThreads, evidence, workUnitIds, linkage, candidates: caseCandidates.length,
       candidateReview: { pending: caseCandidates.filter((row) => row.reviewStatus === "pending").length,
         approved: caseCandidates.filter((row) => row.reviewStatus === "approved").length,
         discarded: caseCandidates.filter((row) => row.reviewStatus === "discarded").length,
@@ -210,7 +217,8 @@ async function main() {
   if (!withModel) {
     process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "ASSEMBLY_ONLY",
       counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
-        evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
+        evidence: workingSet.evidence.length, workUnits: workingSet.workUnits.length,
+        gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
       performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
       calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
       caseCoverage }, null, 2)}\n`);
@@ -220,7 +228,8 @@ async function main() {
   if (!apiKey) {
     process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "MODEL_BLOCKED", reason: "missing-OPENAI_API_KEY",
       counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
-        evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
+        evidence: workingSet.evidence.length, workUnits: workingSet.workUnits.length,
+        gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
       performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
       calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
       caseCoverage }, null, 2)}\n`);
@@ -229,18 +238,27 @@ async function main() {
   const completion = await requestSterlingTodayProposal({ apiKey,
     model: conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL), workingSet });
   const validation = validateSterlingTodayProposal(workingSet, completion.proposal);
-  const acceptance = validation.proposal ? evaluateSterlingTodayAcceptance(validation.proposal) : null;
+  const acceptance = evaluateSterlingTodayAcceptance(workingSet, completion.proposal);
   const result = {
-    mode: workingSet.mutationMode, verdict: validation.accepted && acceptance?.passed ? "PASS" : "BLOCK",
+    mode: workingSet.mutationMode, verdict: validation.accepted && acceptance.passed ? "PASS" : "BLOCK",
     counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
       evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length,
+      workUnits: workingSet.workUnits.length, assessments: completion.proposal.portfolioAssessments.length,
       recommendations: completion.proposal.recommendations.length, mutations: completion.proposal.proposedCanonicalMutations.length },
     performance: { assemblyLatencyMs, modelLatencyMs: completion.latencyMs, inputBytes: completion.inputBytes,
       outputBytes: completion.outputBytes, tokenUsage: completion.usage, totalLatencyMs: Date.now() - runStarted },
     validation: { accepted: validation.accepted, errors: validation.errors, mutations: validation.mutationValidations },
     calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
     acceptance,
-    presentation: completion.proposal.recommendations.map(item => ({ itemId: item.itemId, category: item.category,
+    portfolio: completion.proposal.portfolioAssessments.map(item => ({ workUnitId: item.workUnitId,
+      projectId: item.projectId, identityStatus: item.identityStatus, todayDisposition: item.todayDisposition,
+      recommendationItemId: item.recommendationItemId, stage: item.currentStage.stage,
+      stageResponsibleParty: item.currentStage.responsibleParty, nextStepOwner: item.nextStepOwner,
+      confidence: item.confidence, evidenceRefs: item.evidenceRefs,
+      obligations: item.obligations.map(obligation => ({ obligationId: obligation.obligationId, status: obligation.status,
+        responsibleParty: obligation.responsibleParty, confidence: obligation.confidence, evidenceRefs: obligation.evidenceRefs })),
+      ambiguityCount: item.ambiguities.length, omissionReasonPresent: Boolean(item.omissionReason) })),
+    presentation: completion.proposal.recommendations.map(item => ({ itemId: item.itemId, workUnitId: item.workUnitId, category: item.category,
       title: item.title, responsibleParty: item.responsibleParty, confidence: item.confidence,
       projectId: item.projectId, evidenceRefs: item.evidenceRefs })),
     portfolioAmbiguities: completion.proposal.portfolioAmbiguities,
