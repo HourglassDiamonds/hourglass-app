@@ -81,3 +81,19 @@ Execution remains limited to existing canonical writers after founder approval a
 Run `npm run continuum:today-sterling-shadow` for an assembly-only live read. It refuses a non-production Supabase project, performs no database writes, never calls the model, and does not update `continuum_today_snapshots`. `npm run continuum:today-sterling-shadow:model` is the explicit model-enabled shadow command; it still performs no writes and exits nonzero on contract, validation, or acceptance failure. Production rendering remains on the existing path until founder approval.
 
 The acceptance runner scopes the model package to the ten authorized regression cases before Gmail enrichment. It retains complete chronology only for threads selected by exact canonical project association or case-specific identifier/name evidence. People, Jobs, founder corrections, prior Today entries, and calendar items are filtered through the same scope. Full email bodies and credentials are never logged; shadow output contains only counts, canonical-linkage metadata, recommendation summaries, evidence references, and validation results.
+
+## Server-side API configuration
+
+The supported secret is `OPENAI_API_KEY`. It must be supplied through the server process environment or deployment secret manager, never through a `NEXT_PUBLIC_*` variable. The shadow loader also supports the repository's standard gitignored Next.js environment files, but the file and credential are operator-owned and must never be committed. Restart the server process after changing a persisted environment. `CONTINUUM_STERLING_TODAY_MODEL` is optional and allowlisted; absence selects the repository default `gpt-5.6-sol`.
+
+For a one-process local acceptance run, set `OPENAI_API_KEY` in the current PowerShell process without printing it, then run `npm run continuum:today-sterling-shadow:model`. The runner checks the secret before the Responses request, uses Bearer authentication and `store: false`, and never includes the key in its output.
+
+## Provisional work contract
+
+When exact evidence supports active work but no canonical Project exists, Sterling may return a presentation-only recommendation with `projectId: null`. It must cite exact evidence and describe the canonical ambiguity. It may not propose a canonical mutation. The deterministic validator rejects an unlinked `create_open_job` proposal with `canonical-project-required`.
+
+A future persisted review queue should use a stable key derived from source system plus exact source identity (for Gmail, the canonical thread ID), not a name. It should store evidence references, candidate IDs, proposed display label, observed identifiers, first/latest timestamps, and a `founder_review_required` status. Uniqueness on that stable source key prevents duplicates. Promotion must remain an explicit founder action through the existing Project writer; dismissal or linkage decisions should be audited without deleting evidence.
+
+## Calendar availability
+
+The working set carries `calendarAvailability` separately from the calendar item list. Disabled or unavailable Calendar is unknown context, not evidence that the day has no events. The standalone audit reports activation, OAuth, token-custody, connection, scope, and last-read readiness without exposing tokens or mailbox identity.

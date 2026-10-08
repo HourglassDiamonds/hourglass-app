@@ -28,6 +28,7 @@ export type BuildSterlingTodayWorkingSetInput = {
   knownPeople: readonly TodayKnownPerson[];
   founderCorrections?: readonly SourceCommunicationEvent[];
   calendar?: readonly TodayUpcomingItem[];
+  calendarAvailability?: SterlingTodayWorkingSet["calendarAvailability"];
   previousToday?: readonly SterlingPreviousTodayItem[];
 };
 
@@ -181,8 +182,12 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
   const calendar = (input.calendar ?? []).map(item => ({ evidenceId: `calendar:${item.sourceRef}`,
     sourceRef: item.sourceRef, timeLabel: item.timeLabel, title: item.title, location: item.location,
     allDay: item.allDay, disclosure: item.disclosure }));
-  const snapshotMaterial = { sourceWatermark: input.sourceWatermark, projects, jobs, evidence, calendar, previousToday: input.previousToday ?? [] };
+  const calendarAvailability = input.calendarAvailability ?? {
+    status: "unavailable" as const,
+    reason: "calendar-availability-not-supplied",
+  };
+  const snapshotMaterial = { sourceWatermark: input.sourceWatermark, projects, jobs, evidence, calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
   return { contractVersion: STERLING_TODAY_WORKING_SET_VERSION, runId: input.runId ?? randomUUID(),
     evidenceSnapshotId: digest(snapshotMaterial), sourceWatermark: input.sourceWatermark, generatedAt: input.generatedAt,
-    mutationMode: "shadow_read_only", people, projects, jobs, evidence, calendar, previousToday: input.previousToday ?? [] };
+    mutationMode: "shadow_read_only", people, projects, jobs, evidence, calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
 }

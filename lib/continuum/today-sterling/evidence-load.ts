@@ -20,6 +20,14 @@ function spec(project: ProjectDeskSummary, fieldName: "cad_job_number" | "order_
 export type SterlingProjectEvidenceThreads = {
   trustedByProject: Map<string, string[]>;
   discoveryThreadIds: string[];
+  diagnosticsByProject: Map<string, {
+    storedWithheld: boolean;
+    trusted: number;
+    candidate: number;
+    ambiguous: number;
+    rejected: number;
+    basisFlags: string[];
+  }>;
 };
 
 export async function loadSterlingProjectThreadIds(
@@ -28,6 +36,9 @@ export async function loadSterlingProjectThreadIds(
 ): Promise<SterlingProjectEvidenceThreads> {
   const out = new Map<string, string[]>();
   const discoveryThreadIds = new Set<string>();
+  const diagnosticsByProject = new Map<string, {
+    storedWithheld: boolean; trusted: number; candidate: number; ambiguous: number; rejected: number; basisFlags: string[];
+  }>();
   let cursor = 0;
   const worker = async () => {
     while (cursor < projects.length) {
@@ -47,6 +58,14 @@ export async function loadSterlingProjectThreadIds(
       if (evidence.trustedThreadIds.length > 0) {
         out.set(project.projectId, [...new Set(evidence.trustedThreadIds)]);
       }
+      diagnosticsByProject.set(project.projectId, {
+        storedWithheld: evidence.storedWithheld,
+        trusted: evidence.discovered.filter((row) => row.status === "trusted").length,
+        candidate: evidence.discovered.filter((row) => row.status === "candidate").length,
+        ambiguous: evidence.discovered.filter((row) => row.status === "ambiguous").length,
+        rejected: evidence.discovered.filter((row) => row.status === "rejected").length,
+        basisFlags: [...new Set(evidence.discovered.flatMap((row) => [...row.basis.flags]))],
+      });
       for (const row of evidence.discovered) {
         if (row.status !== "rejected") discoveryThreadIds.add(row.sourceIdentity);
       }
@@ -55,7 +74,7 @@ export async function loadSterlingProjectThreadIds(
   await Promise.all(
     Array.from({ length: Math.min(PROJECT_CONCURRENCY, projects.length) }, () => worker()),
   );
-  return { trustedByProject: out, discoveryThreadIds: [...discoveryThreadIds] };
+  return { trustedByProject: out, discoveryThreadIds: [...discoveryThreadIds], diagnosticsByProject };
 }
 
 function direction(value: unknown): "inbound" | "outbound" | "unknown" {

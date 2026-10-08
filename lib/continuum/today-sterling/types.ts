@@ -59,6 +59,7 @@ export type SterlingTodayWorkingSet = {
   mutationMode: "shadow_read_only";
   people: readonly SterlingWorkingPerson[]; projects: readonly SterlingWorkingProject[];
   jobs: readonly SterlingWorkingJob[]; evidence: readonly SterlingEvidence[];
+  calendarAvailability: { status: "available" | "unavailable" | "disabled"; reason: string | null };
   calendar: readonly { evidenceId: string; sourceRef: string; timeLabel: string; title: string; location: string | null; allDay: boolean; disclosure: "full" | "minimal" }[];
   previousToday: readonly SterlingPreviousTodayItem[];
 };

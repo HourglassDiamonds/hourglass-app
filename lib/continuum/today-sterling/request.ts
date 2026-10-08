@@ -14,6 +14,8 @@ const INSTRUCTIONS = [
   "Never assume an external email contact is a client. Classify the relationship role from canonical evidence.",
   "Newsletter, editorial, footer, quoted history, shipping boilerplate, schema fragments, technician notices, generic please language, naked place-order language, and cold solicitations are not Today actions.",
   "If evidence is ambiguous, preserve current canonical state, record the ambiguity, and propose no mutation.",
+  "An unavailable or disabled calendar means unknown calendar context, not confirmation that no events exist.",
+  "Evidence-backed active work without a canonical project may be surfaced provisionally with projectId null. Explain that it is provisional, cite exact evidence, and propose no canonical mutation for it.",
   "Every conclusion must cite evidenceId values from the working set. Do not invent identifiers.",
   "Presentation recommendations and canonical mutations are separate. Mutations are proposals only and always require founder approval.",
   "Use the exact runId and evidenceSnapshotId supplied. Return only the strict structured object.",

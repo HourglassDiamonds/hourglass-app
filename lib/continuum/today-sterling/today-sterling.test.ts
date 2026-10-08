@@ -60,6 +60,7 @@ describe("Sterling-native Today", () => {
   it("assembles full associated chronology without treating unknown contacts as clients", () => {
     const set = workingSet();
     assert.equal(set.mutationMode, "shadow_read_only");
+    assert.equal(set.calendarAvailability.status, "unavailable");
     assert.ok(set.evidence.length >= 1);
     assert.equal(set.evidence.find(row => row.sourceType === "gmail")?.excerpt, "Attached is the updated CAD for you to review.");
     assert.deepEqual(set.projects[0]?.gmailThreadIds, ["thread-1"]);
@@ -82,6 +83,25 @@ describe("Sterling-native Today", () => {
     assert.ok(result.errors.some(row => row.includes("cross-client-collision")));
     assert.ok(result.errors.some(row => row.includes("unknown-evidence")));
     assert.ok(result.mutationValidations[0]?.reasons.includes("stale-job-version"));
+  });
+
+  it("allows provisional presentation but rejects an unlinked canonical Job proposal", () => {
+    const set = workingSet(); const raw = structuredClone(proposal());
+    raw.recommendations[0]!.projectId = null;
+    raw.recommendations[0]!.personId = null;
+    const mutation = raw.proposedCanonicalMutations[0]!;
+    mutation.kind = "create_open_job";
+    mutation.projectId = null;
+    mutation.personId = null;
+    mutation.jobId = null;
+    mutation.expectedRecordVersion = null;
+    mutation.targetJobState = null;
+    mutation.newJob = { kind: "follow_up", subject: "Review provisional work", detail: null,
+      responsibleParty: "founder", dueAt: null };
+    const result = validateSterlingTodayProposal(set, raw);
+    assert.equal(result.accepted, true);
+    assert.equal(result.mutationValidations[0]?.status, "rejected");
+    assert.ok(result.mutationValidations[0]?.reasons.includes("canonical-project-required"));
   });
 
   it("sends one strict no-tools Structured Output request", async () => {

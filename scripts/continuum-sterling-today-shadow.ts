@@ -12,6 +12,8 @@ import { loadTodayKnownEmailPeople } from "../lib/continuum/client-memory/today-
 import { loadFounderCorrectionEvents } from "../lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
 import { loadIndexedTodayThreadContext, loadLiveTodayOperationalFacts } from "../lib/continuum/gmail/today-thread-context";
 import { loadTodayUpcoming } from "../lib/continuum/calendar/today-upcoming-load";
+import { isCalendarReadEnabled, isContinuumCalendarOAuthConfigured,
+  getContinuumCalendarTokenKek, getContinuumCalendarFounderEmail } from "../lib/continuum/calendar/env";
 import { readTodaySourceWatermark } from "../lib/continuum/today-source-watermark";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "../lib/continuum/runtime-env";
 import { conciergeForegroundModel } from "../lib/continuum/concierge-sol/models";
@@ -45,6 +47,42 @@ function projectText(project: { title: string; specs?: readonly { value: string 
 
 function candidateText(candidate: ContinuumCandidate) {
   return `${candidate.sourceRef} ${candidate.evidenceBasis.matchedText ?? ""} ${JSON.stringify(candidate.payload)} ${JSON.stringify(candidate.founderEditedPayload ?? {})}`;
+}
+
+function candidateProjectId(candidate: ContinuumCandidate): string | null {
+  const target = candidate.founderEditedTarget ?? candidate.proposedTarget;
+  return "projectId" in target ? target.projectId : null;
+}
+
+async function calendarDiagnostic(client: any) {
+  const result = await client.from("continuum_calendar_connections")
+    .select("status, refresh_token_ciphertext, granted_scope, last_read_at, status_error_code")
+    .eq("calendar_slot", "founder-v1").maybeSingle();
+  const row = result.data as Record<string, unknown> | null;
+  const enabled = isCalendarReadEnabled();
+  const connectionStatus = row?.status == null ? null : String(row.status);
+  const diagnosis = !enabled ? "read_disabled"
+    : result.error ? "connection_store_unavailable"
+    : !row ? "consent_required"
+    : connectionStatus !== "connected" ? `connection_${connectionStatus ?? "invalid"}`
+    : !row.refresh_token_ciphertext ? "refresh_token_missing"
+    : !getContinuumCalendarTokenKek() ? "token_kek_missing"
+    : !isContinuumCalendarOAuthConfigured() ? "oauth_configuration_missing"
+    : "live_read_eligible";
+  return {
+    diagnosis,
+    readEnabled: enabled,
+    oauthConfigured: isContinuumCalendarOAuthConfigured(),
+    tokenKekConfigured: Boolean(getContinuumCalendarTokenKek()),
+    founderMailboxConfigured: Boolean(getContinuumCalendarFounderEmail()),
+    connectionStoreReadable: !result.error,
+    connectionPresent: Boolean(row),
+    connectionStatus,
+    refreshTokenPresent: Boolean(row?.refresh_token_ciphertext),
+    grantedReadonlyScope: String(row?.granted_scope ?? "").includes("calendar.readonly"),
+    lastReadPresent: Boolean(row?.last_read_at),
+    connectionErrorPresent: Boolean(row?.status_error_code),
+  };
 }
 
 function loadEnvFile(path: string) {
@@ -98,10 +136,10 @@ async function main() {
   if (!url.includes(CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF)) throw new Error("shadow-refuses-non-production-supabase");
   const client = createClient(url, required("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
   const now = new Date();
-  const [candidates, projects, jobs, people, corrections, calendar, watermark, previousToday] = await Promise.all([
+  const [candidates, projects, jobs, people, corrections, calendar, watermark, previousToday, calendarStatus] = await Promise.all([
     loadCandidates(client), new SupabaseProjectDeskReader(client as never).listProjects(), loadProjectJobs(client as never),
     loadTodayKnownEmailPeople(), loadFounderCorrectionEvents(client as never), loadTodayUpcoming(now),
-    readTodaySourceWatermark(client as never, now), loadPreviousToday(client),
+    readTodaySourceWatermark(client as never, now), loadPreviousToday(client), calendarDiagnostic(client),
   ]);
   const scopedProjects = projects.filter((project) => acceptancePattern.test(projectText(project)));
   const scopedProjectIds = new Set(scopedProjects.map((project) => project.projectId));
@@ -127,7 +165,10 @@ async function main() {
   const threadContext = await loadLiveTodayOperationalFacts(indexed);
   const workingSet = buildSterlingTodayWorkingSet({ sourceWatermark: watermark, generatedAt: now.toISOString(),
     projects: scopedProjects, jobs: scopedJobs, candidates: scopedCandidates, threadContext, knownPeople: scopedPeople,
-    founderCorrections: scopedCorrections, calendar: scopedCalendar, previousToday: scopedPreviousToday, projectThreadIds });
+    founderCorrections: scopedCorrections, calendar: scopedCalendar,
+    calendarAvailability: { status: calendarStatus.diagnosis === "live_read_eligible" ? "available"
+      : calendarStatus.diagnosis === "read_disabled" ? "disabled" : "unavailable", reason: calendarStatus.diagnosis },
+    previousToday: scopedPreviousToday, projectThreadIds });
   const assemblyLatencyMs = Date.now() - runStarted;
   const serializedInputBytes = Buffer.byteLength(JSON.stringify(workingSet));
   const allIdentifiers = [...new Set(Object.values(ACCEPTANCE_CASES).flatMap((row) => [...row.identifiers]))];
@@ -145,25 +186,44 @@ async function main() {
       definition.identifiers.includes(String(row.order_number ?? "") as never)).map((row) => String(row.project_id))).size;
     const canonicalPeople = workingSet.people.filter((person) => pattern.test(person.displayName)).length;
     const relationships = workingSet.projects.filter((project) => projectIds.includes(project.projectId)).reduce((count, project) => count + project.people.length, 0);
+    const caseCandidates = scopedCandidates.filter((candidate) => pattern.test(candidateText(candidate)) ||
+      (candidateProjectId(candidate) != null && projectIds.includes(candidateProjectId(candidate)!)));
+    const newProjectCandidates = caseCandidates.filter((candidate) => candidate.payload.kind === "project_context" && candidate.payload.topic === "new_project");
+    const promotionDiagnosis = projectIds.length > 0 ? "canonical_project_present"
+      : newProjectCandidates.some((candidate) => candidate.reviewStatus === "approved") ? "approved_candidate_not_applied"
+      : newProjectCandidates.some((candidate) => candidate.reviewStatus === "pending") ? "awaiting_founder_promotion"
+      : caseCandidates.length > 0 ? "evidence_ingested_without_project_proposal"
+      : "candidate_ingestion_missing";
     const linkage = projectIds.length === 0 ? (canonicalIdentifierProjects > 0 ? "history_without_project_profile" : canonicalPeople > 0 ? "person_only_no_project" : "canonical_project_absent")
       : relationships === 0 ? "project_missing_client_relationship"
       : trustedProjectThreads === 0 ? "project_without_trusted_thread"
       : "canonical_project_and_thread_resolved";
+    const associationDiagnostics = projectIds.map((id) => projectEvidenceThreads.diagnosticsByProject.get(id)).filter(Boolean);
     return [name, { projects: projectIds.length, canonicalIdentifierProjects, canonicalPeople, relationships,
-      trustedProjectThreads, evidence, linkage }];
+      trustedProjectThreads, evidence, linkage, candidates: caseCandidates.length,
+      candidateReview: { pending: caseCandidates.filter((row) => row.reviewStatus === "pending").length,
+        approved: caseCandidates.filter((row) => row.reviewStatus === "approved").length,
+        discarded: caseCandidates.filter((row) => row.reviewStatus === "discarded").length,
+        deferred: caseCandidates.filter((row) => row.reviewStatus === "deferred").length },
+      newProjectCandidates: newProjectCandidates.length, promotionDiagnosis, associationDiagnostics }];
   }));
   if (!withModel) {
     process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "ASSEMBLY_ONLY",
       counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
         evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
-      performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted }, caseCoverage }, null, 2)}\n`);
+      performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
+      calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
+      caseCoverage }, null, 2)}\n`);
     return;
   }
   const apiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
   if (!apiKey) {
     process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "MODEL_BLOCKED", reason: "missing-OPENAI_API_KEY",
       counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
-        evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length }, caseCoverage }, null, 2)}\n`);
+        evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
+      performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
+      calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
+      caseCoverage }, null, 2)}\n`);
     process.exitCode = 3; return;
   }
   const completion = await requestSterlingTodayProposal({ apiKey,
@@ -178,6 +238,7 @@ async function main() {
     performance: { assemblyLatencyMs, modelLatencyMs: completion.latencyMs, inputBytes: completion.inputBytes,
       outputBytes: completion.outputBytes, tokenUsage: completion.usage, totalLatencyMs: Date.now() - runStarted },
     validation: { accepted: validation.accepted, errors: validation.errors, mutations: validation.mutationValidations },
+    calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
     acceptance,
     presentation: completion.proposal.recommendations.map(item => ({ itemId: item.itemId, category: item.category,
       title: item.title, responsibleParty: item.responsibleParty, confidence: item.confidence,

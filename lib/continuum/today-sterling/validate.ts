@@ -82,6 +82,7 @@ function validateMutation(
     if (!project || !isLifecycleKind(project.projectKind) || !isStageAllowedForKind(project.projectKind, mutation.targetLifecycleStage)) reasons.push("invalid-lifecycle-transition");
   } else if (mutation.kind === "create_open_job") {
     if (mutation.jobId || !mutation.newJob) reasons.push("invalid-create-job-target");
+    if (!project) reasons.push("canonical-project-required");
     if (project && mutation.expectedRecordVersion !== project.recordVersion) reasons.push("stale-project-version");
     const duplicate = context.workingSet.jobs.some(row => (row.state === "open" || row.state === "snoozed") &&
       row.projectId === mutation.projectId && normalize(row.subject) === normalize(mutation.newJob?.subject ?? ""));
