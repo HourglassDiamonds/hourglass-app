@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false
+  },
+  "include": [
+    "next-env.d.ts",
+    "lib/continuum/today-sterling/**/*.ts",
+    "scripts/continuum-sterling-today-shadow.ts"
+  ],
+  "exclude": ["node_modules"]
+}
