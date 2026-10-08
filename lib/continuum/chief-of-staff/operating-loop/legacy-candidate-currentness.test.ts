@@ -1026,7 +1026,7 @@ describe("current-action eligibility is a hard current-copy boundary", () => {
     assert.doesNotMatch(hay, /WAITING ON CLIENT|Nate has the next turn/i);
   });
 
-  it("E vendor order confirmation changes vendor wait to founder review", () => {
+  it("E a clean vendor order confirmation advances to production without inventing a discrepancy review", () => {
     const threadId = "grant-confirm-thread";
     const { docket } = todayOf(
       [
@@ -1087,8 +1087,8 @@ describe("current-action eligibility is a hard current-copy boundary", () => {
       ]),
     );
     const hay = cardHay(docket, /Grant|C025885|SP13477/i);
-    assert.match(hay, /founder_review|YOUR MOVE|Order confirmation/i);
-    assert.doesNotMatch(hay, /WAITING ON CLIENT/i);
+    assert.match(hay, /IN PRODUCTION|production completion|vendor_shop_wait/i);
+    assert.doesNotMatch(hay, /WAITING ON CLIENT|founder_review|YOUR MOVE|confirmation discrepancy/i);
   });
 
   it("F delivered CAD changes vendor wait to founder review", () => {

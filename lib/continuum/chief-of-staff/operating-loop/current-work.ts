@@ -539,7 +539,12 @@ function externalPromiseDependency(text: string): string | null {
   const promise = text.match(
     /\bi(?:['’]ll| will| am going to)\s+((?:send|get|show|check|look(?:\s+into)?|follow up|call|email|let you know)\b[^.!?]{0,180})/i,
   );
-  return promise ? promise[1].trim().replace(/\.$/, "") : null;
+  const dependency = promise ? promise[1].trim().replace(/\.$/, "") : "";
+  if (!dependency) return null;
+  if (/^(?:send|get|show|check|look(?:\s+into)?|follow up|call|email|let you know)$/i.test(dependency)) {
+    return null;
+  }
+  return dependency;
 }
 
 /** Source-event branch of reduceWorkLoop. Association is established before reduction. */
@@ -896,8 +901,13 @@ export function projectCurrentWork(
           o.identity === obligationIdentity(e, dependency!, revision),
       );
     } else if (cls === "client_promises") {
+      const promisedDependency = externalPromiseDependency(text);
+      if (!promisedDependency) {
+        record.reason = "Incomplete external promise does not create work";
+        continue;
+      }
       stage = "waiting_external";
-      dependency = externalPromiseDependency(text) ?? "client response";
+      dependency = promisedDependency;
       actor = "client";
       close(
         e,

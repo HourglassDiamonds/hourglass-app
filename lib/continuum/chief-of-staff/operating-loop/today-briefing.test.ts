@@ -117,6 +117,35 @@ function sarahPacket() {
 }
 
 describe("Today Chief of Staff briefing layer", () => {
+  it("keeps a canonical client relationship ahead of a conflicting subject display label", () => {
+    const packet = composeTodayBriefingPacket({
+      itemId: "brief:c025610",
+      displayNameHint: "Dylan Doerner",
+      organizationLabel: null,
+      vendorContactName: null,
+      communication: "client",
+      identityKind: "person",
+      projectName: "C025610",
+      projectId: "project-dylan",
+      personId: "person-dylan",
+      threadSubject: "RE: HGD x A.Miller-C025610",
+      lifecycle: "production",
+      remainingFounderCommitment: null,
+      waitingState: "production",
+      noFounderAction: true,
+      staleInboundSatisfied: false,
+      openJobProven: false,
+      evidence: [],
+      founderOwnTexts: [],
+      vendorOwnTexts: [],
+      quotedTexts: [],
+      sourceRefs: [],
+    });
+    assert.equal(packet?.personId, "person-dylan");
+    assert.equal(packet?.displayName, "Dylan Doerner");
+    assert.equal(packet?.projectName, "C025610");
+  });
+
   it("A: founder-owned action renders a YOUR MOVE briefing", () => {
     const packet = abbeyPacket();
     assert.ok(packet);

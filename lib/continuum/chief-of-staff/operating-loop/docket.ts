@@ -113,13 +113,28 @@ const SECTION_TITLES: Record<CosTodaySectionId, string> = {
 };
 
 function sectionIdFor(item: CosTodaySectionItem): CosTodaySectionId {
-  const hay = `${item.title} ${item.summary} ${item.stateLabel} ${item.lifecycle ?? ""}`.toLowerCase();
-  if (item.origin === "master_sprint" || item.ballHolder === "founder") return "founder";
-  if (/ready[_ ]for[_ ](?:delivery|return)|final qc|ready for (?:pickup|shipping|presentation|delivery)/.test(hay)) return "ready";
+  const lifecycle = item.lifecycle?.trim().toLowerCase().replaceAll(" ", "_") ?? "";
+  const projectionStage = item.packet?.projection?.stage ?? "";
+  const state = item.stateLabel.trim().toLowerCase().replaceAll(" ", "_");
+  const hay = `${item.title} ${item.summary} ${item.stateLabel}`.toLowerCase();
+  const resolvedStage = [state, projectionStage, lifecycle].find((value) =>
+    /^(?:ready|ready_for_delivery|ready_for_return|ready_for_pickup|delivery|final_qc|in_production|production|manufacturing|bench|order_confirmed|repair|repairs|resize|sizing|restoration|cad|design|design_requested|revision_requested|cad_review|approved)$/.test(value),
+  ) ?? "";
+  if (item.origin === "master_sprint") return "founder";
+  if (/\b(?:held|hold|deferred|snoozed)\b/.test(`${lifecycle} ${projectionStage} ${state} ${hay}`)) return "watching";
+  if (item.ballHolder === "founder") return "founder";
+  if (/^(?:ready|ready_for_delivery|ready_for_return|ready_for_pickup|delivery|final_qc)$/.test(resolvedStage)) return "ready";
   if (item.ballHolder === "client") return "waiting_client";
-  if (/\b(?:cad|design|stl|render)\b/.test(hay) && item.ballHolder === "vendor_shop") return "cad_design";
-  if (/\b(?:repair|resize|sizing|restoration)\b/.test(hay)) return "repairs";
+  if (/^(?:in_production|production|manufacturing|bench|order_confirmed)$/.test(resolvedStage)) return "production";
+  if (/^(?:repair|repairs|resize|sizing|restoration)$/.test(resolvedStage)) return "repairs";
+  if (
+    item.ballHolder === "vendor_shop" &&
+    /^(?:cad|design|design_requested|revision_requested|cad_review|approved)$/.test(resolvedStage)
+  ) return "cad_design";
+  if (/ready[_ ]for[_ ](?:delivery|return)|final qc|ready for (?:pickup|shipping|presentation|delivery)/.test(hay)) return "ready";
   if (/\b(?:in[_ ]production|production|manufacturing|bench)\b/.test(hay)) return "production";
+  if (/\b(?:repair|resize|sizing|restoration)\b/.test(hay)) return "repairs";
+  if (/\b(?:cad|design|stl|render)\b/.test(hay) && item.ballHolder === "vendor_shop") return "cad_design";
   return "watching";
 }
 
@@ -155,7 +170,10 @@ export function composeTodaySections(input: {
     .map((item): CosTodaySectionItem => ({
     id: item.id,
     title: item.subject,
-    summary: item.semanticPresentation?.founderCheckpoint || item.headline,
+    summary:
+      item.briefingPacket?.ballHolder === "founder"
+        ? item.briefing?.nextBody || item.semanticPresentation?.suggestedAction || item.headline
+        : item.semanticPresentation?.founderCheckpoint || item.headline,
     stateLabel: item.semanticPresentation?.stateLabel || item.briefing?.stateChip || (item.origin === "master_sprint" ? "MASTER SPRINT" : "ACTIVE"),
     origin: item.origin,
     ballHolder: item.briefingPacket?.ballHolder ?? (item.origin === "master_sprint" ? "founder" : null),

@@ -205,13 +205,46 @@ describe("Sterling-curated Today presentation", () => {
     assert.doesNotMatch(`${presented.title} ${presented.summary} ${presented.founderCheckpoint} ${presented.reason}`, /Can you send me a rendering/i);
   });
 
+  it("does not let an older rendering request override the winning CAD-review obligation", () => {
+    const abbey = item({
+      id: "brief:abbey-current",
+      subject: "Abbey / C026137",
+      headline: "CAD is in.",
+      context: "Older evidence asked for a rendering with more movement in the marquise.",
+      briefingPacket: packet({
+        itemId: "brief:abbey-current",
+        displayName: "Abbey",
+        projectName: "C026137",
+        candidateNextAction: "CAD review",
+        unresolvedFounderObligation: "CAD review",
+      }),
+      briefing: {
+        ...item().briefing!,
+        displayName: "Abbey",
+        projectName: "C026137",
+        headline: "CAD is in.",
+        stand: "The updated CAD Mod 2 is ready for review.",
+        nextBody: "CAD review",
+      },
+    });
+    const presented = presentTodayItem(abbey);
+    assert.equal(presented.title, "CAD review");
+    assert.doesNotMatch(`${presented.title} ${presented.summary}`, /send .*revised rendering/i);
+  });
+
   it("reclassifies receipt noise and stale founder ownership before rendering or feedback", () => {
     const abbey = item({
       id: "brief:abbey",
       subject: "Abbey / C026137",
       headline: "Can you send me a rendering?",
       context: "Option #2 is good. A little more movement in the marquise.",
-      briefingPacket: packet({ itemId: "brief:abbey", displayName: "Abbey", projectName: "C026137" }),
+      briefingPacket: packet({
+        itemId: "brief:abbey",
+        displayName: "Abbey",
+        projectName: "C026137",
+        candidateNextAction: "Can you send me a rendering?",
+        unresolvedFounderObligation: "Can you send me a rendering?",
+      }),
     });
     const jennifer = item({
       id: "brief:jennifer",

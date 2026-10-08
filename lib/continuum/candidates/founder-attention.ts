@@ -1175,6 +1175,9 @@ export function isMeaningfulTodayActionText(text: string | null | undefined): bo
   const trimmed = foldTodayActionText(text);
   if (!trimmed) return false;
   if (isNoiseOnlyCandidateText(trimmed)) return false;
+  if (/^(?:send|share|review|check|confirm|update|reply|respond|call|email|deliver|ship|order)$/i.test(trimmed)) {
+    return false;
+  }
   if (TODAY_ACTION_VERB.test(trimmed) || /\?/.test(trimmed)) return true;
   const words = trimmed.split(/\s+/).filter((word) => /[a-zA-Z]{3,}/.test(word));
   return words.length >= 4;

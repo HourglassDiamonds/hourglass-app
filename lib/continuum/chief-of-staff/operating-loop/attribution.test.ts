@@ -28,6 +28,53 @@ function context(projectThread: string, sideThread: string) {
 }
 
 describe("thread-to-project participant provenance", () => {
+  it("keeps Alex C026510 and Dylan C025610 bound to their exact identifiers", () => {
+    const alexProject = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaa0510";
+    const dylanProject = "dddddddd-dddd-4ddd-8ddd-dddddddd0610";
+    const alexThread = "alex-thread";
+    const dylanThread = "dylan-thread";
+    const projects = new Map<string, CosProjectContext>([
+      [alexProject, {
+        projectId: alexProject,
+        title: "Alex Miller — Engagement Ring",
+        personName: "Alex Miller",
+        people: [{ personId: "person-alex", displayName: "Alex Miller", role: "client" }],
+        specs: [{ fieldName: "cad_job_number", value: "C026510" }],
+        isCurrent: true,
+      }],
+      [dylanProject, {
+        projectId: dylanProject,
+        title: "D. Doerner",
+        personName: "Dylan Doerner",
+        people: [{ personId: "person-dylan", displayName: "Dylan Doerner", role: "client" }],
+        specs: [{ fieldName: "cad_job_number", value: "C025610" }],
+        isCurrent: true,
+        lifecycleStage: "production",
+      }],
+    ]);
+    const rows = [
+      fixtureCandidate({
+        candidateId: "alex-cad",
+        sourceRef: `gc1|${alexThread}|alex-message`,
+        proposedTarget: { kind: "none" },
+        evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "C026510" },
+      }),
+      fixtureCandidate({
+        candidateId: "dylan-cad",
+        sourceRef: `gc1|${dylanThread}|dylan-message`,
+        proposedTarget: { kind: "none" },
+        evidenceBasis: { ruleIds: ["exact_cad_job"], matchedText: "C025610" },
+      }),
+    ];
+    const threads = new Map<string, TodayGmailThreadContext>([
+      [alexThread, { subject: "HGD x A.Miller-C026510", messages: [] }],
+      [dylanThread, { subject: "HGD x A.Miller-C025610", messages: [] }],
+    ]);
+    const association = projectBySupportedAssociation(rows, projects, threads);
+    assert.deepEqual(association.get(alexThread), { projectId: alexProject, via: "identifier" });
+    assert.deepEqual(association.get(dylanThread), { projectId: dylanProject, via: "identifier" });
+  });
+
   it("links an outbound-only side thread through one exact recipient and one supported project", () => {
     const projectThread = "project-thread";
     const sideThread = "side-thread";

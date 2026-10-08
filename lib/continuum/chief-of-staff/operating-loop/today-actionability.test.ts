@@ -85,6 +85,8 @@ describe("Today actionability text boundary", () => {
       assert.equal(isNoiseOnlyCandidateText(text), true, text);
       assert.equal(isMeaningfulTodayActionText(text), false, text);
     }
+    assert.equal(isNoiseOnlyCandidateText("send"), false);
+    assert.equal(isMeaningfulTodayActionText("send"), false);
   });
 
   it("passes current founder obligations", () => {

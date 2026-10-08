@@ -110,7 +110,15 @@ export function presentTodayItem(item: CosDocketItemView): TodaySemanticPresenta
   if (conflict) stateLabel = "REVIEW";
   if (likelyNoise) stateLabel = "CLEANUP";
 
-  const renderingDecision = /\brendering\b/i.test(sourceHay) && /\bmarquise\b/i.test(sourceHay);
+  const currentActionHay = [
+    briefing?.nextBody,
+    packet?.candidateNextAction,
+    packet?.unresolvedFounderObligation,
+  ].filter((value): value is string => Boolean(value)).join(" ");
+  const renderingDecision =
+    /\brendering\b/i.test(currentActionHay) &&
+    /\b(?:send|share|revise|updated?)\b/i.test(currentActionHay) &&
+    /\bmarquise\b/i.test(sourceHay);
   const displayName = packet?.displayName?.trim().split(/\s+/)[0] || item.subject.trim().split(/[\/\s]+/)[0] || "Client";
   let title = likelyNoise
     ? RECEIPT_REQUEST.test(sourceHay)

@@ -559,6 +559,10 @@ function displayNameOf(
   input: ComposeTodayBriefingPacketInput,
   fromSubject: { name: string; cadId: string | null } | null,
 ): string | null {
+  const canonicalHint = input.personId ? input.displayNameHint?.trim() || null : null;
+  if (canonicalHint && !VENDOR_ORG_NAME.test(canonicalHint) && !/^unassigned$/i.test(canonicalHint)) {
+    return canonicalHint;
+  }
   if (fromSubject && !/^\d/.test(fromSubject.name) && !VENDOR_ORG_NAME.test(fromSubject.name)) {
     return firstName(fromSubject.name);
   }

@@ -92,6 +92,15 @@ function both(
   return p;
 }
 describe("Phase 2 current truth through reducer and final docket", () => {
+  it("does not create an external dependency from a bare promise verb", () => {
+    const result = reduceWorkLoop({ evidence: [], sourceEvents: [
+      event("bare-promise", "I will send", 29, "client", {
+        semanticClass: "client_promises",
+      }),
+    ] });
+    assert.equal(result.projection, undefined);
+  });
+
   it("Shannon: a newer package arrival supersedes the prior founder send obligation", () => {
     const projection = project([
       event("promise", "I'll send chain video, options, and pricing.", 10, "founder", {

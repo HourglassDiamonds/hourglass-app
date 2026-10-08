@@ -1262,7 +1262,9 @@ function classifySituation(input: {
     (uniqueRecoveredExternalLabels.length === 1 || Boolean(exactThreadSenderLabel))
       ? uniqueRecoveredExternalLabels[0] ?? exactThreadSenderLabel
       : null;
+  const client = pickClientPerson(project);
   const person =
+    client?.displayName?.trim() ||
     (identityLabel && !isVendorOrganizationLabel(identityLabel.name)
       ? identityLabel.name
       : null) ||
@@ -1290,7 +1292,6 @@ function classifySituation(input: {
     attribution.projectTitle,
     organizationLabel,
   );
-  const client = pickClientPerson(project);
   const clientConfirmed = Boolean(
     client &&
       input.rows.some((row) => confirmedPersonId(row) === client.personId),
@@ -2001,8 +2002,8 @@ function classifySituation(input: {
     waitingState: group.waitingState,
     sourceClass: group.sourceClass,
     threadSubject: identityThreadSubject,
-    personId: group.personId,
-    identityKind: group.identityKind,
+    personId: client?.personId ?? group.personId,
+    identityKind: client ? "person" : group.identityKind,
     lifecycleStage: project?.lifecycleStage ?? null,
     remainingFounderCommitment: remaining,
     declinedCurrentBeat: group.declinedCurrentBeat,
@@ -2358,7 +2359,13 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
     primary.lifecycleStage,
     secondary.lifecycleStage,
   );
+  const canonicalPeople = new Map(
+    [primary, secondary]
+      .filter((item) => item.personId && item.personName)
+      .map((item) => [item.personId!, item.personName!]),
+  );
   const client =
+    (canonicalPeople.size === 1 ? [...canonicalPeople.values()][0]! : null) ||
     clientLabelFromIdentityHay([
       primary.threadSubject,
       secondary.threadSubject,
@@ -2395,6 +2402,10 @@ function mergeSituationPair(a: RankedSituation, b: RankedSituation): RankedSitua
   return {
     ...primary,
     personName: client && !isVendorOrganizationLabel(client) ? client : primary.personName,
+    personId:
+      canonicalPeople.size === 1
+        ? [...canonicalPeople.keys()][0]!
+        : primary.personId ?? secondary.personId,
     projectId: primary.projectId || secondary.projectId,
     projectTitle: primary.projectTitle || secondary.projectTitle,
     candidateIds: [...new Set([...primary.candidateIds, ...secondary.candidateIds])].sort(),
