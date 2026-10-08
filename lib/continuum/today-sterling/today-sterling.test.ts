@@ -4,7 +4,8 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { buildSterlingTodayWorkingSet } from "./working-set";
-import { requestSterlingTodayProposal } from "./request";
+import { requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_TODAY_TIMEOUT_ENV,
+  STERLING_TODAY_TIMEOUT_MS, SterlingTodayRequestError } from "./request";
 import { validateSterlingTodayProposal } from "./validate";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal } from "./types";
 
@@ -112,5 +113,60 @@ describe("Sterling-native Today", () => {
     assert.equal(result.proposal.contractVersion, STERLING_TODAY_PROPOSAL_VERSION);
     assert.equal((body.text as { format?: { strict?: boolean } })?.format?.strict, true);
     assert.equal("tools" in body, false);
+  });
+
+  it("uses a 180-second default timeout and accepts a server-side environment override", () => {
+    const previous = process.env[STERLING_TODAY_TIMEOUT_ENV];
+    try {
+      delete process.env[STERLING_TODAY_TIMEOUT_ENV];
+      assert.equal(STERLING_TODAY_TIMEOUT_MS, 180_000);
+      assert.equal(resolveSterlingTodayTimeoutMs(), 180_000);
+      process.env[STERLING_TODAY_TIMEOUT_ENV] = "240000";
+      assert.equal(resolveSterlingTodayTimeoutMs(), 240_000);
+      process.env[STERLING_TODAY_TIMEOUT_ENV] = "not-a-timeout";
+      assert.equal(resolveSterlingTodayTimeoutMs(), 180_000);
+      assert.equal(resolveSterlingTodayTimeoutMs(25), 25);
+    } finally {
+      if (previous === undefined) delete process.env[STERLING_TODAY_TIMEOUT_ENV];
+      else process.env[STERLING_TODAY_TIMEOUT_ENV] = previous;
+    }
+  });
+
+  it("reports a local abort as an explicit timeout without exposing request data", async () => {
+    const fetchImpl: typeof fetch = async (_url, init) => await new Promise((_resolve, reject) => {
+      init?.signal?.addEventListener("abort", () => reject(new DOMException("This operation was aborted", "AbortError")), { once: true });
+    });
+    await assert.rejects(
+      requestSterlingTodayProposal({ apiKey: "secret-key", model: "gpt-5.6-sol", workingSet: workingSet(), fetchImpl, timeoutMs: 5 }),
+      (error: unknown) => {
+        assert.ok(error instanceof SterlingTodayRequestError);
+        assert.equal(error.kind, "timeout");
+        assert.match(error.message, /kind=timeout:timeoutMs=5/);
+        assert.doesNotMatch(error.message, /secret-key|C026137/);
+        return true;
+      },
+    );
+  });
+
+  it("preserves safe API diagnostics without copying the response body or private text", async () => {
+    const fetchImpl: typeof fetch = async () => new Response(JSON.stringify({ error: {
+      code: "rate_limit_exceeded", type: "requests", param: "model",
+      message: "Private evidence from C026137 must never enter diagnostics.",
+    } }), { status: 429, headers: { "x-request-id": "req_safe123" } });
+    await assert.rejects(
+      requestSterlingTodayProposal({ apiKey: "secret-key", model: "gpt-5.6-sol", workingSet: workingSet(), fetchImpl }),
+      (error: unknown) => {
+        assert.ok(error instanceof SterlingTodayRequestError);
+        assert.equal(error.kind, "api");
+        assert.equal(error.status, 429);
+        assert.equal(error.code, "rate_limit_exceeded");
+        assert.equal(error.apiType, "requests");
+        assert.equal(error.param, "model");
+        assert.equal(error.requestId, "req_safe123");
+        assert.match(error.message, /status=429:code=rate_limit_exceeded:type=requests:param=model:requestId=req_safe123/);
+        assert.doesNotMatch(error.message, /Private evidence|C026137|secret-key/);
+        return true;
+      },
+    );
   });
 });
