@@ -14,6 +14,7 @@ import {
 } from "@/lib/continuum/candidates/today-lifecycle";
 import {
   isActionableSystemAlert,
+  isNonActionableTemplateOrEditorialText,
   isNonActionableSystemMail,
   isPromotionalSenderInfrastructure,
   isRecoverableExternalHumanSender,
@@ -213,6 +214,22 @@ export function isCurrentTodayDocketItem(
   const spec = specOf(item);
   const chronology = recoveredChronology(item, ctx);
   const recapLike = isRecapOrDesignReply(item, hay);
+  const projectId = projectIdOf(item);
+  const actionText =
+    item.briefingPacket?.unresolvedFounderObligation ??
+    item.briefingPacket?.candidateNextAction ??
+    item.headline;
+  const hasBoundWork = Boolean(
+    projectId || item.briefingPacket?.identifiers.some((identifier) => identifier.current),
+  );
+
+  if (isNonActionableTemplateOrEditorialText(`${actionText} ${item.context ?? ""}`)) {
+    return false;
+  }
+  if (/^place (?:the )?order[.!]?$/i.test(actionText.trim()) && !hasBoundWork) {
+    return false;
+  }
+  if (spec && !hasBoundWork) return false;
 
   if (promotionalIdentityFailsClosed(item, ctx)) return false;
 

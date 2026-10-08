@@ -375,6 +375,8 @@ export type CosOperatingLoopView = {
     soleProjectJob: boolean;
     reason: "deferred" | "terminal";
   }[];
+  /** Read-model guard for canonical action Jobs overtaken by newer project evidence. */
+  supersededActionJobIds?: readonly string[];
   /**
    * current: this loop matches the source watermark.
    * refreshing: last successful composition, shown while a rebuild runs.

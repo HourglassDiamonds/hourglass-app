@@ -101,6 +101,27 @@ function persistedYourTurn(input: {
 }
 
 describe("Today live boundary truth", () => {
+  it("fails closed on unassigned editorial/spec and transactional template actions", () => {
+    const item = (headline: string) => ({
+      origin: "brief" as const,
+      headline,
+      context: null,
+      brief: null,
+      job: null,
+      decision: null,
+      anomaly: null,
+    });
+    for (const headline of [
+      "Lab Grown? Live at CIBJO",
+      "diamond_supply_notes lab-grown rubies, sapphire, emeralds",
+      "Please make sure someone over the age of 18 is home and secure any pets before the technician arrives",
+      "Please make sure you pack the item and hand it over to the courier under CCTV",
+      "place order",
+    ]) {
+      assert.equal(isCurrentTodayDocketItem(item(headline)), false, headline);
+    }
+  });
+
   it("SARAH: persisted old yourTurn + later founder outbound is not Up next", () => {
     const { docket, loop } = todayOf(
       [

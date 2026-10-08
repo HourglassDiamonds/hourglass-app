@@ -868,6 +868,7 @@ function collectSeeds(loop: CosOperatingLoopView): TodayDocketSeed[] {
 
 function keepSeed(seed: TodayDocketSeed, loop: CosOperatingLoopView): boolean {
   if (INTERNAL_ACCEPTANCE_SOURCE.test(seed.job?.sourceRef ?? "")) return false;
+  if (seed.job && loop.supersededActionJobIds?.includes(seed.job.id)) return false;
   const clock = Date.parse(loop.asOfIso ?? "");
   if (loop.quietJobs?.some(j => {
     const exact =

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { test } from "node:test";
-import { assessAttentionTarget } from "./attention-evidence";
+import { actionJobAdvancedByCurrentTruth, assessAttentionTarget } from "./attention-evidence";
 import { applyAttentionDisposition } from "./attention-application";
 import { createInMemoryProjectJobStore } from "./store";
 import { createInMemoryProjectJobWriter } from "./writer";
@@ -40,6 +40,73 @@ test("authoritative target matching never converts missing evidence into non-res
   assert.deepEqual(assessAttentionTarget(job(), [projection("superseded")]), { status: "superseded", authoritative: true });
   assert.deepEqual(assessAttentionTarget(job({ attentionMetadata: metadata({ obligationIdentity: "different" }) }),
     [projection("satisfied")]), { status: "unknown", authoritative: false });
+});
+
+test("newer project advancement retires only the matching phase action", () => {
+  const projectId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const advanced: CurrentWorkProjection = {
+    ...projection("active"),
+    ballHolder: "vendor_shop",
+    asOf: "2026-10-07T20:44:54Z",
+    provenance: [{
+      sourceRef: "gc1|vendor-thread|handoff",
+      timestamp: "2026-10-07T20:44:54Z",
+      wording: "center sent to vendor",
+      origin: "founder_requests_vendor",
+      applied: true,
+      reason: "Current operational evidence",
+    }],
+  };
+  const stoneReview = job({
+    projectId,
+    subject: "In-person stone review",
+    updatedAt: "2026-10-07T17:59:51Z",
+  });
+  assert.equal(
+    actionJobAdvancedByCurrentTruth(stoneReview, [{
+      projectId,
+      projection: advanced,
+      sourceEvents: [{
+        sourceType: "gmail",
+        sourceRef: "gc1|vendor-thread|handoff",
+        messageId: "handoff",
+        threadId: "vendor-thread",
+        timestamp: "2026-10-07T20:44:54Z",
+        direction: "outbound",
+        actor: "founder",
+        subject: "HGD project",
+        authorOwnedText: "center sent to vendor",
+        quotedText: "",
+        attachmentFilenames: [],
+        hasAttachments: false,
+        cadIds: [],
+        orderIds: [],
+        productionJobIds: [],
+        personLabel: null,
+        projectId,
+        workLoopId: `project:${projectId}`,
+        semanticClass: "founder_requests_vendor",
+        evidenceExcerpt: "center sent to vendor",
+        workIdentityBasis: "project",
+        provenance: "indexed_gmail",
+      }],
+    }]),
+    true,
+  );
+  assert.equal(
+    actionJobAdvancedByCurrentTruth(
+      { ...stoneReview, subject: "Confirm engraving choice" },
+      [{ projectId, projection: advanced, sourceEvents: [] }],
+    ),
+    false,
+  );
+  assert.equal(
+    actionJobAdvancedByCurrentTruth(
+      { ...stoneReview, updatedAt: "2026-10-07T21:00:00Z" },
+      [{ projectId, projection: advanced, sourceEvents: [] }],
+    ),
+    false,
+  );
 });
 
 test("typed Watching dispositions preserve ball-holder and append explicit operation history", async () => {

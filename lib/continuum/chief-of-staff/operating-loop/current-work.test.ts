@@ -92,6 +92,33 @@ function both(
   return p;
 }
 describe("Phase 2 current truth through reducer and final docket", () => {
+  it("newer vendor handoff removes the older phase-review Job but preserves a distinct client dependency", () => {
+    const phaseJob = fixtureJob({
+      jobId: "phase-review",
+      subject: "In-person stone review",
+      updatedAt: "2026-09-19T16:00:00Z",
+    });
+    const loop = composeCosOperatingLoop({
+      jobs: [phaseJob],
+      projects: fixtureProjects(),
+      candidates: [],
+      founderCorrections: [
+        event("vendor-handoff", "This center is headed to you.", 20, "founder", {
+          semanticClass: "founder_requests_vendor",
+        }),
+        event("engraving", "I'll get the engraving idea finalized and over tonight.", 21, "client", {
+          semanticClass: "client_promises",
+        }),
+      ],
+      nowIso: "2026-09-22T16:00:00Z",
+    });
+    const today = finalizeTodayDocket(loop);
+    const hay = JSON.stringify(today);
+    assert.doesNotMatch(hay, /in-person stone review/i);
+    assert.match(hay, /engraving idea/i);
+    assert.deepEqual(loop.supersededActionJobIds, [phaseJob.jobId]);
+  });
+
   it("does not create an external dependency from a bare promise verb", () => {
     const result = reduceWorkLoop({ evidence: [], sourceEvents: [
       event("bare-promise", "I will send", 29, "client", {

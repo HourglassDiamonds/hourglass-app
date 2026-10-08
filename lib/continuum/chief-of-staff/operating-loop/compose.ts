@@ -36,6 +36,7 @@ import {
 import type { ActionableRanker, CosOperatingLoopView, CosProjectContext } from "./types";
 import { COS_OPERATING_LOOP_CONTRACT_VERSION, COS_TOP_5_LIMIT } from "./types";
 import { presentAttentionJobs } from "./attention-presentation";
+import { actionJobAdvancedByCurrentTruth } from "@/lib/continuum/client-memory/project-jobs/attention-evidence";
 
 function lifecycleByProjectFrom(
   projects: ReadonlyMap<string, CosProjectContext>,
@@ -306,9 +307,26 @@ export function composeCosOperatingLoop(
     evidenceTexts: input.evidenceTexts,
     knownPeople: input.knownPeople,
   });
-  const projections = [...moderated.brief, ...moderated.watching]
-    .map((item) => item.briefingPacket?.projection)
-    .filter((projection): projection is NonNullable<typeof projection> => Boolean(projection));
+  const projectionRows = [...moderated.brief, ...moderated.watching]
+    .map((item) => ({
+      projectId: item.projectId,
+      projection: item.briefingPacket?.projection,
+      sourceEvents: item.briefingPacket?.sourceEvents,
+    }))
+    .filter((row): row is {
+      projectId: string | null;
+      projection: NonNullable<typeof row.projection>;
+      sourceEvents: typeof row.sourceEvents;
+    } => Boolean(row.projection));
+  const projections = projectionRows.map((row) => row.projection);
+  const supersededActionJobIds = input.jobs
+    .filter((job) => actionJobAdvancedByCurrentTruth(job, projectionRows))
+    .map((job) => job.jobId);
+  const supersededActionJobIdSet = new Set(supersededActionJobIds);
+  const visibleCanonicalQueue = ranked
+    .filter((item) => !supersededActionJobIdSet.has(item.id))
+    .map((item) => presentTop5Item(item, input.nowIso, newMutationId()));
+  const visibleTop5 = visibleCanonicalQueue.slice(0, COS_TOP_5_LIMIT);
   const attentionItems = presentAttentionJobs({
     jobs: input.jobs,
     projects,
@@ -317,7 +335,7 @@ export function composeCosOperatingLoop(
     newMutationId,
   });
 
-  if (top.length === 0) {
+  if (visibleTop5.length === 0) {
     return {
       contractVersion: COS_OPERATING_LOOP_CONTRACT_VERSION,
       status: "caught-up",
@@ -325,7 +343,7 @@ export function composeCosOperatingLoop(
       quietDetail: COS_CAUGHT_UP_DETAIL,
       top5: [],
       remainingCount: 0,
-      canonicalQueue: ranked.map(item => presentTop5Item(item, input.nowIso, newMutationId())),
+      canonicalQueue: visibleCanonicalQueue,
       brief: moderated.brief,
       watching: moderated.watching,
       needsYourDecision: attention.needsYourDecision,
@@ -337,6 +355,7 @@ export function composeCosOperatingLoop(
       lifecycleByProject,
       ...liveTruth,
       attentionItems,
+      supersededActionJobIds,
     };
   }
 
@@ -345,9 +364,9 @@ export function composeCosOperatingLoop(
     status: "active",
     heading: COS_ACTIVE_HEADING,
     quietDetail: null,
-    top5,
-    remainingCount: Math.max(0, ranked.length - top.length),
-    canonicalQueue: ranked.map(item => presentTop5Item(item, input.nowIso, newMutationId())),
+    top5: visibleTop5,
+    remainingCount: Math.max(0, visibleCanonicalQueue.length - visibleTop5.length),
+    canonicalQueue: visibleCanonicalQueue,
     brief: moderated.brief,
     watching: moderated.watching,
     needsYourDecision: attention.needsYourDecision,
@@ -359,6 +378,7 @@ export function composeCosOperatingLoop(
     lifecycleByProject,
     ...liveTruth,
     attentionItems,
+    supersededActionJobIds,
   };
 }
 

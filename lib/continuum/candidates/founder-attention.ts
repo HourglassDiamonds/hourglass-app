@@ -1150,6 +1150,20 @@ const PHONE_OR_ADDRESS_ONLY =
 const TODAY_ACTION_VERB =
   /\b(?:send|review|reply|respond|confirm|approve|check(?:-?in)?|pick up|call|email|follow up|schedule|pay|book|verify|update|share|ask|handle|create|finish|deliver|ship|order|choose|look(?:\s+at)?|let .+ know|identify who|do this now)\b/i;
 
+const OPERATIONAL_TEMPLATE_INSTRUCTION =
+  /\b(?:make sure (?:someone|you) (?:over (?:the age of )?18 is home|pack the item)|secure (?:any|all) pets|hand (?:it|the item|the package) over to (?:the )?courier|under CCTV|technician (?:arrives|is on the way)|package is enclosed securely)\b/i;
+
+const EDITORIAL_OR_SCHEMA_FRAGMENT =
+  /\b(?:diamond_supply_notes|cad_job_number|finger_size)\b|\b(?:live at CIBJO|lessons for independent jewelers|this week on CiviGem)\b/i;
+
+export function isNonActionableTemplateOrEditorialText(
+  text: string | null | undefined,
+): boolean {
+  const folded = foldTodayActionText(text);
+  if (!folded) return false;
+  return OPERATIONAL_TEMPLATE_INSTRUCTION.test(folded) || EDITORIAL_OR_SCHEMA_FRAGMENT.test(folded);
+}
+
 function foldTodayActionText(text: string | null | undefined): string {
   return text?.replace(/\s+/g, " ").trim().replace(/[.:]+$/, "") ?? "";
 }
@@ -1157,6 +1171,7 @@ function foldTodayActionText(text: string | null | undefined): string {
 export function isNoiseOnlyCandidateText(text: string | null | undefined): boolean {
   const trimmed = foldTodayActionText(text);
   if (!trimmed) return true;
+  if (isNonActionableTemplateOrEditorialText(trimmed)) return true;
   const withoutTopic = trimmed.replace(/^(?:attachment_filename|date|note|project_context)\s+/i, "").trim();
   const candidate = withoutTopic || trimmed;
   if (isNakedDateText(candidate) || isNakedDateText(trimmed)) return true;
