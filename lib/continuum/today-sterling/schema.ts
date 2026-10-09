@@ -45,16 +45,12 @@ const recommendation = {
     itemId: { type: "string" }, workUnitId: { type: "string" }, category: { type: "string", enum: STERLING_TODAY_CATEGORIES },
     projectId: nullableString, personId: nullableString,
     relationshipRole: { type: "string", enum: STERLING_RELATIONSHIP_ROLES }, title: { type: "string" },
-    summary: { type: "string" }, responsibleParty, confidence, explanation: { type: "string" },
+    summary: { type: "string" }, confidence, explanation: { type: "string" },
     evidenceRefs: stringArray, ambiguities: stringArray,
-    projectStage: { type: "object", additionalProperties: false,
-      properties: { canonicalLifecycleStage: nullableLifecycleStage, operationalSubstage: nullableString,
-        confidence, explanation: { type: "string" }, evidenceRefs: stringArray },
-      required: ["canonicalLifecycleStage", "operationalSubstage", "confidence", "explanation", "evidenceRefs"] },
     obligations: { type: "array", items: obligation },
   },
   required: ["itemId", "workUnitId", "category", "projectId", "personId", "relationshipRole", "title", "summary",
-    "responsibleParty", "confidence", "explanation", "evidenceRefs", "ambiguities", "projectStage", "obligations"],
+    "confidence", "explanation", "evidenceRefs", "ambiguities", "obligations"],
 } as const;
 const mutation = {
   type: "object", additionalProperties: false,
@@ -116,17 +112,13 @@ function validPortfolioAssessment(v: unknown): boolean {
     strings(v.evidenceRefs) && strings(v.ambiguities) && typeof v.explanation === "string" && nullable(v.omissionReason);
 }
 function validRecommendation(v: unknown): boolean {
-  if (!record(v) || !record(v.projectStage)) return false;
-  return typeof v.itemId === "string" && typeof v.workUnitId === "string" &&
+  if (!record(v)) return false;
+  return !("projectStage" in v) && !("responsibleParty" in v) &&
+    typeof v.itemId === "string" && typeof v.workUnitId === "string" &&
     oneOf(v.category, STERLING_TODAY_CATEGORIES) && nullable(v.projectId) &&
     nullable(v.personId) && oneOf(v.relationshipRole, STERLING_RELATIONSHIP_ROLES) && typeof v.title === "string" &&
-    typeof v.summary === "string" && oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) &&
-    oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" &&
+    typeof v.summary === "string" && oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" &&
     strings(v.evidenceRefs) && strings(v.ambiguities) &&
-    (v.projectStage.canonicalLifecycleStage === null || oneOf(v.projectStage.canonicalLifecycleStage, lifecycleStages)) &&
-    nullable(v.projectStage.operationalSubstage) &&
-    oneOf(v.projectStage.confidence, ["high", "medium", "low"] as const) &&
-    typeof v.projectStage.explanation === "string" && strings(v.projectStage.evidenceRefs) &&
     Array.isArray(v.obligations) && v.obligations.every(validObligation);
 }
 function validMutation(v: unknown): boolean {

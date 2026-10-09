@@ -45,8 +45,7 @@ const CASES: readonly CaseDefinition[] = [
 ] as const;
 
 const recommendationText = (item: SterlingTodayProposal["recommendations"][number]) =>
-  [item.title, item.summary, item.explanation, item.projectStage.canonicalLifecycleStage,
-    item.projectStage.operationalSubstage, ...item.obligations.map(row => row.description)].filter(Boolean).join(" ");
+  [item.title, item.summary, item.explanation, ...item.obligations.map(row => row.description)].filter(Boolean).join(" ");
 
 export function evaluateSterlingTodayAcceptance(
   workingSet: SterlingTodayWorkingSet,

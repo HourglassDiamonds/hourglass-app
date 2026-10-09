@@ -78,11 +78,6 @@ export function validateSterlingTodayProposal(
     if (!assessment || assessment.recommendationItemId !== item.itemId || assessment.todayDisposition !== "presented") {
       errors.push(`recommendation-assessment-mismatch:${item.itemId}`);
     } else {
-      if (item.responsibleParty !== assessment.nextStepOwner) errors.push(`next-step-owner-mismatch:${item.itemId}`);
-      if (item.projectStage.canonicalLifecycleStage !== assessment.currentStage.canonicalLifecycleStage ||
-          item.projectStage.operationalSubstage !== assessment.currentStage.operationalSubstage) {
-        errors.push(`project-stage-reconciliation-mismatch:${item.itemId}`);
-      }
       const assessedObligations = new Map(assessment.obligations.map(row => [row.obligationId, row]));
       const recommendationObligationIds = new Set<string>();
       for (const obligation of item.obligations) {
@@ -104,16 +99,11 @@ export function validateSterlingTodayProposal(
     if (item.projectId && item.personId && !projects.get(item.projectId)?.people.some(row => row.personId === item.personId)) {
       errors.push(`cross-client-collision:${item.itemId}`);
     }
-    for (const ref of [...item.evidenceRefs, ...item.projectStage.evidenceRefs, ...item.obligations.flatMap(row => row.evidenceRefs)]) {
+    for (const ref of [...item.evidenceRefs, ...item.obligations.flatMap(row => row.evidenceRefs)]) {
       if (!evidence.has(ref)) errors.push(`unknown-evidence:${item.itemId}:${ref}`);
       else if (workUnit && !workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-evidence:${item.itemId}:${ref}`);
     }
     if (item.evidenceRefs.length === 0) errors.push(`missing-provenance:${item.itemId}`);
-    const project = item.projectId ? projects.get(item.projectId) : null;
-    if (item.projectStage.canonicalLifecycleStage && project && isLifecycleKind(project.projectKind) &&
-        !isStageAllowedForKind(project.projectKind, item.projectStage.canonicalLifecycleStage)) {
-      errors.push(`invalid-project-stage:${item.itemId}`);
-    }
   }
   for (const assessment of assessments.values()) {
     if (assessment.recommendationItemId && !recommendations.has(assessment.recommendationItemId)) {

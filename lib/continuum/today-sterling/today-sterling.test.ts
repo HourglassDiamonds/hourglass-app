@@ -8,6 +8,7 @@ import { requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_T
   STERLING_TODAY_MAX_OUTPUT_TOKENS, STERLING_TODAY_REASONING_EFFORT, STERLING_TODAY_TIMEOUT_MS,
   SterlingTodayRequestError } from "./request";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
+import { createSterlingEvidenceHandleMap } from "./evidence-handles";
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
 import { validateSterlingTodayProposal } from "./validate";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal } from "./types";
@@ -62,14 +63,27 @@ function proposal(): SterlingTodayProposal {
       explanation: "CAD delivered; the client owns the next step.", omissionReason: null }],
     recommendations: [{ itemId: "abbey", workUnitId: workUnit.workUnitId, category: "waiting_on_client",
       projectId, personId, relationshipRole: "client", title: "Abbey CAD", summary: "CAD delivered; Abbey has the next step.",
-      responsibleParty: "client", confidence: "high", explanation: "The newer outbound delivery fulfills the founder obligation.",
-      evidenceRefs: [evidenceId], ambiguities: [], projectStage: {
-        canonicalLifecycleStage: "client_approval", operationalSubstage: null, confidence: "high",
-        explanation: "Client review follows delivery.", evidenceRefs: [evidenceId] },
+      confidence: "high", explanation: "The newer outbound delivery fulfills the founder obligation.",
+      evidenceRefs: [evidenceId], ambiguities: [],
       obligations: [{ obligationId: "send-cad", description: "Founder sends CAD", status: "fulfilled", responsibleParty: "founder", confidence: "high", evidenceRefs: [evidenceId] }] }],
     proposedCanonicalMutations: [{ proposalKey: "resolve-send-cad", kind: "resolve_open_job", projectId, personId,
       jobId, expectedRecordVersion: openJob.recordVersion, targetLifecycleStage: null, targetJobState: "resolved",
       targetResponsibleParty: null, newJob: null, reason: "Delivery fulfilled the obligation.", evidenceRefs: [evidenceId], requiresFounderApproval: true }] };
+}
+
+function proposalWithEvidenceRef(evidenceRef: string): SterlingTodayProposal {
+  const raw = structuredClone(proposal());
+  for (const assessment of raw.portfolioAssessments) {
+    assessment.evidenceRefs = [evidenceRef];
+    assessment.currentStage.evidenceRefs = [evidenceRef];
+    for (const obligation of assessment.obligations) obligation.evidenceRefs = [evidenceRef];
+  }
+  for (const recommendation of raw.recommendations) {
+    recommendation.evidenceRefs = [evidenceRef];
+    for (const obligation of recommendation.obligations) obligation.evidenceRefs = [evidenceRef];
+  }
+  for (const mutation of raw.proposedCanonicalMutations) mutation.evidenceRefs = [evidenceRef];
+  return raw;
 }
 
 describe("Sterling-native Today", () => {
@@ -163,7 +177,7 @@ describe("Sterling-native Today", () => {
     assert.ok(result.mutationValidations[0]?.reasons.includes("stale-job-version"));
   });
 
-  it("allows provisional presentation but rejects an unlinked canonical Job proposal", () => {
+  it("allows evidence-supported responsibility for provisional work but rejects an unlinked canonical Job proposal", () => {
     const set = workingSet(); const raw = structuredClone(proposal());
     const unit = set.workUnits[0]!;
     (unit as { kind: string }).kind = "provisional_evidence";
@@ -171,8 +185,11 @@ describe("Sterling-native Today", () => {
     (unit as { projectId: string | null }).projectId = null;
     raw.portfolioAssessments[0]!.projectId = null;
     raw.portfolioAssessments[0]!.identityStatus = "provisional_evidence";
+    raw.portfolioAssessments[0]!.currentStage.responsibleParty = "client";
+    raw.portfolioAssessments[0]!.nextStepOwner = "client";
     raw.recommendations[0]!.projectId = null;
     raw.recommendations[0]!.personId = null;
+    raw.recommendations[0]!.relationshipRole = "unknown";
     const mutation = raw.proposedCanonicalMutations[0]!;
     mutation.kind = "create_open_job";
     mutation.projectId = null;
@@ -184,23 +201,25 @@ describe("Sterling-native Today", () => {
       responsibleParty: "founder", dueAt: null };
     const result = validateSterlingTodayProposal(set, raw);
     assert.equal(result.accepted, true);
+    assert.equal(raw.portfolioAssessments[0]!.nextStepOwner, "client");
     assert.equal(result.mutationValidations[0]?.status, "rejected");
     assert.ok(result.mutationValidations[0]?.reasons.includes("canonical-project-required"));
   });
 
-  it("rejects silent portfolio disappearance and assessment/presentation drift", () => {
+  it("rejects silent portfolio disappearance", () => {
     const set = workingSet();
     const missing = structuredClone(proposal());
     missing.portfolioAssessments = [];
     assert.ok(validateSterlingTodayProposal(set, missing).errors.some(row => row.startsWith("missing-work-unit-assessment:")));
     assert.equal(evaluateSterlingTodayAcceptance(set, missing).cases.find(row => row.id === "ABBEY/C026137")?.outcome, "missing_output");
 
-    const drifted = structuredClone(proposal());
-    drifted.recommendations[0]!.projectStage.canonicalLifecycleStage = "production";
-    drifted.recommendations[0]!.obligations = [];
-    const result = validateSterlingTodayProposal(set, drifted);
-    assert.ok(result.errors.includes("project-stage-reconciliation-mismatch:abbey"));
-    assert.ok(!result.errors.some(row => row.startsWith("obligation-")));
+  });
+
+  it("keeps portfolio stage and ownership authoritative by rejecting duplicate recommendation state", () => {
+    const duplicate = structuredClone(proposal()) as unknown as { recommendations: Array<Record<string, unknown>> };
+    duplicate.recommendations[0]!.projectStage = { canonicalLifecycleStage: "production" };
+    duplicate.recommendations[0]!.responsibleParty = "vendor_shop";
+    assert.deepEqual(validateSterlingTodayProposal(workingSet(), duplicate).errors, ["invalid-structured-contract"]);
   });
 
   it("allows Today to omit closed obligations but rejects loss of an actionable obligation", () => {
@@ -220,8 +239,6 @@ describe("Sterling-native Today", () => {
     const valid = structuredClone(proposal());
     valid.portfolioAssessments[0]!.currentStage.canonicalLifecycleStage = "production";
     valid.portfolioAssessments[0]!.currentStage.operationalSubstage = "paid_preproduction";
-    valid.recommendations[0]!.projectStage.canonicalLifecycleStage = "production";
-    valid.recommendations[0]!.projectStage.operationalSubstage = "paid_preproduction";
     assert.equal(validateSterlingTodayProposal(set, valid).accepted, true);
 
     const invalid = structuredClone(valid) as unknown as { portfolioAssessments: Array<{
@@ -242,14 +259,21 @@ describe("Sterling-native Today", () => {
   });
 
   it("sends one strict no-tools Structured Output request", async () => {
-    const expected = proposal(); const bodies: Record<string, unknown>[] = [];
-    const result = await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-6-sol", workingSet: workingSet(),
+    const set = workingSet();
+    const sourceEvidenceId = set.workUnits[0]!.evidenceRefs[0]!;
+    const evidenceHandle = createSterlingEvidenceHandleMap(set).evidenceIdToHandle.get(sourceEvidenceId)!;
+    const expected = proposalWithEvidenceRef(evidenceHandle); const bodies: Record<string, unknown>[] = [];
+    const result = await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-6-sol", workingSet: set,
       fetchImpl: async (_url, init) => { bodies.push(JSON.parse(String(init?.body))); return new Response(JSON.stringify({
         output_text: JSON.stringify(expected), usage: { input_tokens: 100, output_tokens: 200,
           output_tokens_details: { reasoning_tokens: 80 }, total_tokens: 300 },
       }), { status: 200 }); } });
     const body = bodies[0]!;
+    const requestWorkingSet = JSON.parse(String(body.input)) as ReturnType<typeof workingSet>;
     assert.equal(result.proposal.contractVersion, STERLING_TODAY_PROPOSAL_VERSION);
+    assert.equal(result.proposal.portfolioAssessments[0]!.evidenceRefs[0], sourceEvidenceId);
+    assert.equal(requestWorkingSet.workUnits[0]!.evidenceRefs[0], evidenceHandle);
+    assert.ok(requestWorkingSet.evidence.every(row => /^E\d{4}$/.test(row.evidenceId)));
     assert.equal(result.usage.reasoningTokens, 80);
     assert.equal((body.text as { format?: { strict?: boolean } })?.format?.strict, true);
     assert.equal(body.store, false);
@@ -258,6 +282,20 @@ describe("Sterling-native Today", () => {
     assert.match(String(body.instructions), /may omit fulfilled or superseded obligations/i);
     assert.ok(((body.text as { format?: { schema?: { required?: string[] } } })?.format?.schema?.required ?? []).includes("portfolioAssessments"));
     assert.equal("tools" in body, false);
+  });
+
+  it("rejects unknown handles and model-authored source IDs without echoing them", async () => {
+    const set = workingSet();
+    const rawSourceId = set.evidence.find(row => row.sourceType === "gmail")!.evidenceId;
+    for (const invalidRef of ["E9999", rawSourceId]) {
+      const result = await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-6-sol", workingSet: set,
+        fetchImpl: async () => new Response(JSON.stringify({ output_text: JSON.stringify(proposalWithEvidenceRef(invalidRef)) }),
+          { status: 200 }) });
+      const validation = validateSterlingTodayProposal(set, result.proposal);
+      assert.equal(validation.accepted, false);
+      assert.ok(validation.errors.some(error => error.includes("unknown-evidence") && error.includes("invalid-evidence-handle:")));
+      assert.ok(validation.errors.every(error => !error.includes(invalidRef)));
+    }
   });
 
   it("uses a 180-second default timeout and accepts a server-side environment override", () => {

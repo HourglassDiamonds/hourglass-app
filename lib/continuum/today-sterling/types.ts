@@ -2,7 +2,7 @@
 import type { ProjectLifecycleStage } from "@/lib/continuum/client-memory/project-lifecycle";
 
 export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v2" as const;
-export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v3" as const;
+export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v4" as const;
 
 export const STERLING_TODAY_CATEGORIES = [
   "up_next", "founder_actions", "waiting_on_client", "waiting_on_shop",
@@ -103,10 +103,8 @@ export type SterlingPortfolioAssessment = {
 export type SterlingTodayRecommendation = {
   itemId: string; workUnitId: string; category: SterlingTodayCategory; projectId: string | null; personId: string | null;
   relationshipRole: SterlingRelationshipRole; title: string; summary: string;
-  responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence; explanation: string;
+  confidence: SterlingConfidence; explanation: string;
   evidenceRefs: readonly string[]; ambiguities: readonly string[];
-  projectStage: { canonicalLifecycleStage: ProjectLifecycleStage | null; operationalSubstage: string | null;
-    confidence: SterlingConfidence; explanation: string; evidenceRefs: readonly string[] };
   obligations: readonly SterlingObligationAssessment[];
 };
 

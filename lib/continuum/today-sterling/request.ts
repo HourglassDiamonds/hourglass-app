@@ -1,8 +1,9 @@
 import { CONCIERGE_SOL_RESPONSES_ENDPOINT } from "@/lib/continuum/concierge-sol/models";
+import { createSterlingEvidenceHandleMap, resolveSterlingEvidenceHandles } from "./evidence-handles";
 import { parseSterlingTodayProposal, STERLING_TODAY_OUTPUT_SCHEMA } from "./schema";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal, type SterlingTodayWorkingSet } from "./types";
 
-export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v4" as const;
+export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v5" as const;
 export const STERLING_TODAY_TIMEOUT_MS = 180_000;
 export const STERLING_TODAY_TIMEOUT_ENV = "CONTINUUM_STERLING_TODAY_TIMEOUT_MS" as const;
 export const STERLING_TODAY_MAX_OUTPUT_TOKENS = 24_000;
@@ -16,6 +17,8 @@ const INSTRUCTIONS = [
   "Represent stage in two fields: canonicalLifecycleStage must be null or one of the schema-permitted canonical lifecycle values; operationalSubstage may describe evidence such as paid preproduction without inventing a canonical state.",
   "Keep the portfolio assessment comprehensive. A Today recommendation may omit fulfilled or superseded obligations, but it must retain every open or ambiguous obligation for that work unit.",
   "A canonical project and an evidence-backed provisional work unit are both assessable work. Canonical identity and workflow responsibility are separate questions.",
+  "A missing canonical Person ID does not make responsibility unknown. Assign stage responsibility and next-step ownership from evidence when it supports a party; use unknown only when responsibility itself is genuinely ambiguous.",
+  "The portfolio assessment is authoritative for canonical lifecycle stage, operational substage, stage responsible party, and next-step owner. A Today recommendation references its assessment by workUnitId and recommendationItemId and must not restate those fields.",
   "For every work unit not presented in Today, set an explicit suppressed or ambiguous disposition and explain the omissionReason. Never silently omit a work unit.",
   "Newer material evidence supersedes older evidence. Founder directives supersede inference.",
   "Actual fulfillment closes prior promises. Production/order evidence supersedes design-stage assumptions.",
@@ -26,7 +29,7 @@ const INSTRUCTIONS = [
   "If evidence is ambiguous, preserve current canonical state, record the ambiguity, and propose no mutation.",
   "An unavailable or disabled calendar means unknown calendar context, not confirmation that no events exist.",
   "Evidence-backed active work without a canonical project may receive a responsible-party and next-step classification with projectId null. Explain that it is provisional, cite exact evidence, and propose no canonical mutation for it.",
-  "Every conclusion must cite evidenceId values from the working set. Do not invent identifiers.",
+  "Every conclusion must cite exact request-local evidenceId handles such as E0001 from the working set. Never cite sourceRef, messageId, threadId, or any invented identifier as evidenceRefs.",
   "Presentation recommendations and canonical mutations are separate. Mutations are proposals only and always require founder approval.",
   "Use the exact runId and evidenceSnapshotId supplied. Return only the strict structured object.",
 ].join(" ");
@@ -115,7 +118,8 @@ export async function requestSterlingTodayProposal(input: {
 }): Promise<{ proposal: SterlingTodayProposal; latencyMs: number; inputBytes: number; outputBytes: number;
   usage: { inputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null } }> {
   const started = Date.now();
-  const serialized = JSON.stringify(input.workingSet);
+  const evidenceHandles = createSterlingEvidenceHandleMap(input.workingSet);
+  const serialized = JSON.stringify(evidenceHandles.requestWorkingSet);
   const timeoutMs = resolveSterlingTodayTimeoutMs(input.timeoutMs);
   const controller = new AbortController();
   let timedOut = false;
@@ -130,7 +134,7 @@ export async function requestSterlingTodayProposal(input: {
       body: JSON.stringify({ model: input.model, store: false, max_output_tokens: STERLING_TODAY_MAX_OUTPUT_TOKENS,
         reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
         instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
-        text: { format: { type: "json_schema", name: "sterling_today_proposal_v3", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
+        text: { format: { type: "json_schema", name: "sterling_today_proposal_v4", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
     });
     const requestId = response.headers.get("x-request-id");
     if (!response.ok) {
@@ -154,8 +158,9 @@ export async function requestSterlingTodayProposal(input: {
     if (!text) throw new SyntaxError("sterling-today-malformed");
     let raw: unknown;
     try { raw = JSON.parse(text); } catch { throw new SyntaxError("sterling-today-malformed"); }
-    const proposal = parseSterlingTodayProposal(raw);
-    if (!proposal) throw new SyntaxError("sterling-today-invalid-contract");
+    const requestProposal = parseSterlingTodayProposal(raw);
+    if (!requestProposal) throw new SyntaxError("sterling-today-invalid-contract");
+    const proposal = resolveSterlingEvidenceHandles(requestProposal, evidenceHandles.handleToEvidenceId);
     return { proposal, latencyMs: Date.now() - started, inputBytes: Buffer.byteLength(serialized), outputBytes: Buffer.byteLength(text),
       usage: { inputTokens: json.usage?.input_tokens ?? null, outputTokens: json.usage?.output_tokens ?? null,
         reasoningTokens: json.usage?.output_tokens_details?.reasoning_tokens ?? null,

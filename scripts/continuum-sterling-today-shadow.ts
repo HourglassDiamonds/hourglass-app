@@ -302,9 +302,12 @@ async function main() {
       obligations: item.obligations.map(obligation => ({ obligationId: obligation.obligationId, status: obligation.status,
         responsibleParty: obligation.responsibleParty, confidence: obligation.confidence, evidenceRefs: obligation.evidenceRefs })),
       ambiguityCount: item.ambiguities.length, omissionReasonPresent: Boolean(item.omissionReason) })),
-    presentation: completion.proposal.recommendations.map(item => ({ itemId: item.itemId, workUnitId: item.workUnitId, category: item.category,
-      title: item.title, responsibleParty: item.responsibleParty, confidence: item.confidence,
-      projectId: item.projectId, evidenceRefs: item.evidenceRefs })),
+    presentation: completion.proposal.recommendations.map(item => {
+      const assessment = completion.proposal.portfolioAssessments.find(row => row.workUnitId === item.workUnitId);
+      return { itemId: item.itemId, workUnitId: item.workUnitId, category: item.category,
+        title: item.title, responsibleParty: assessment?.nextStepOwner ?? "unknown", confidence: item.confidence,
+        projectId: item.projectId, evidenceRefs: item.evidenceRefs };
+    }),
     portfolioAmbiguities: completion.proposal.portfolioAmbiguities,
   };
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
