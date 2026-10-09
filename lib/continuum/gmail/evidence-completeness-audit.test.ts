@@ -214,4 +214,53 @@ describe("private Gmail evidence completeness audit", () => {
       /runPrivateGmailEvidenceAuditAction\(\)/,
     );
   });
+
+  it("exposes one explicit zero-argument founder invocation with a page-load repeat guard", () => {
+    const action = readFileSync(ACTION, "utf8");
+    const component = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/components/private-gmail-evidence-audit.tsx",
+      ),
+      "utf8",
+    );
+    const page = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/page.tsx"),
+      "utf8",
+    );
+
+    assert.match(
+      action,
+      /export async function runPrivateGmailEvidenceAuditAction\(\)/,
+    );
+    assert.match(action, /await getAuthenticatedGmailHistoryStores\(\)/);
+    assert.match(component, /await runPrivateGmailEvidenceAuditAction\(\)/);
+    assert.match(component, /submitted\.current = true/);
+    assert.match(component, /disabled=\{pending \|\| attempted\}/);
+    assert.match(component, /one attempt per page load/i);
+    assert.doesNotMatch(component, /useEffect|FormData|threadId|messageId/);
+    assert.match(page, /<PrivateGmailEvidenceAudit \/>/);
+  });
+
+  it("keeps the temporary client surface aggregate-only and free of private evidence fields", () => {
+    const component = readFileSync(
+      join(
+        ROOT,
+        "app/executive-dashboard/concierge/components/private-gmail-evidence-audit.tsx",
+      ),
+      "utf8",
+    );
+
+    assert.doesNotMatch(
+      component,
+      /plainText|snippet|subject|fromEmail|toEmail|filename|attachmentContents|raw Gmail|console\.|dangerouslySetInnerHTML/i,
+    );
+    assert.match(component, /scopedMessageCount/);
+    assert.match(component, /indexedMessageCount/);
+    assert.match(component, /successfullyLiveRetrievedMessageCount/);
+    assert.match(component, /unavailableMessageCount/);
+    assert.match(component, /substantiveAuthorOwnedContentCount/);
+    assert.match(component, /attachmentPresenceMessageCount/);
+    assert.match(component, /safeErrorCategories/);
+  });
 });
