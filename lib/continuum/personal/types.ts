@@ -2,6 +2,22 @@ export type TrainingMode = "tonal" | "peloton" | "bodyweight" | "ruck" | "run" |
 export type TrainingDomain = "strength" | "engine" | "recovery";
 export type WorkoutStatus = "planned" | "unresolved" | "in_progress" | "completed" | "deferred" | "skipped" | "replaced";
 export type Provenance = "program" | "user" | "sterling" | "manual_recovery" | "ai_meal_estimate" | "user_confirmed";
+export type PerformanceSourceType = "text" | "meal_photo" | "nutrition_label" | "activity_screenshot";
+export type ProposalConfidence = "low" | "medium" | "high";
+export type EvidenceKind = "observed" | "estimated" | "user_supplied";
+
+export type SourceReference = {
+  name: string;
+  type: string;
+  size: number;
+  storagePath?: string;
+};
+
+export type AuditFact = {
+  field: string;
+  from: unknown;
+  to: unknown;
+};
 
 export type ExercisePrescription = {
   id: string;
@@ -110,7 +126,7 @@ export type MealItem = {
   protein: number;
   carbs: number;
   fat: number;
-  confidence: "low" | "medium" | "high";
+  confidence: ProposalConfidence;
 };
 
 export type MealEstimate = {
@@ -121,26 +137,95 @@ export type MealEstimate = {
   protein: number;
   carbs: number;
   fat: number;
-  confidence: "low" | "medium" | "high";
+  confidence: ProposalConfidence;
   clarification?: string;
   caveat: string;
+  assumptions?: string[];
   model: string;
 };
 
 export type MealLog = {
   id: string;
   timestamp: string;
+  occurredOn?: string;
   mealType?: "breakfast" | "lunch" | "dinner" | "snack";
   items: MealItem[];
   calories: number;
   protein: number;
   carbs: number;
   fat: number;
-  photo?: { name: string; type: string; size: number };
+  photo?: SourceReference;
+  sourceType?: PerformanceSourceType;
+  rawInput?: string;
   aiEstimate?: MealEstimate;
+  sterlingProposal?: NaturalIngestionProposal;
+  assumptions?: string[];
+  corrections?: AuditFact[];
+  idempotencyKey?: string;
   frequentMealId?: string;
   provenance: Provenance[];
 };
+
+export type ActivityMetric<T> = {
+  value: T;
+  evidence: EvidenceKind;
+};
+
+export type ActivityFacts = {
+  activityType: string;
+  durationMinutes?: ActivityMetric<number>;
+  distanceMiles?: ActivityMetric<number>;
+  pace?: ActivityMetric<string>;
+  averageSpeedMph?: ActivityMetric<number>;
+  averageHeartRate?: ActivityMetric<number>;
+  maxHeartRate?: ActivityMetric<number>;
+  elevationFeet?: ActivityMetric<number>;
+  reportedCalories?: ActivityMetric<number>;
+  whoopStrain?: ActivityMetric<number>;
+  steps?: ActivityMetric<number>;
+  ruckWeightLb?: ActivityMetric<number>;
+  notes?: string;
+};
+
+export type ActivityLog = {
+  id: string;
+  timestamp: string;
+  occurredOn: string;
+  facts: ActivityFacts;
+  rawInput?: string;
+  sourceType: PerformanceSourceType;
+  source?: SourceReference;
+  sterlingProposal?: NaturalIngestionProposal;
+  assumptions: string[];
+  corrections: AuditFact[];
+  guidance: string;
+  idempotencyKey: string;
+  provenance: Provenance[];
+};
+
+type ProposalBase = {
+  id: string;
+  proposedAt: string;
+  sourceType: PerformanceSourceType;
+  rawInput?: string;
+  confidence: ProposalConfidence;
+  assumptions: string[];
+  summary: string;
+  model: string;
+};
+
+export type MealIngestionProposal = ProposalBase & {
+  kind: "meal";
+  meal: MealEstimate;
+};
+
+export type ActivityIngestionProposal = ProposalBase & {
+  kind: "activity";
+  activity: ActivityFacts;
+  guidance: string;
+};
+
+export type NaturalIngestionProposal = MealIngestionProposal | ActivityIngestionProposal;
 
 export type FrequentMeal = {
   id: string;
@@ -179,12 +264,13 @@ export type SterlingProposal = {
 };
 
 export type PersonalState = {
-  version: 2;
-  appliedReconciliations: string[];
+  version: 3;
+  program: { anchorDate: string; anchorVersion: 1 };
   schedule: ScheduledWorkout[];
   sessions: WorkoutSession[];
   recoveryEntries: RecoveryEntry[];
   meals: MealLog[];
+  activities: ActivityLog[];
   frequentMeals: FrequentMeal[];
   progressionProposals: ProgressionProposal[];
   nutritionTargets: { calories: number; protein: number; carbs: number; fat: number };

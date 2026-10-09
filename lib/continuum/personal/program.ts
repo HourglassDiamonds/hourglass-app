@@ -1,6 +1,8 @@
 import type { PersonalState, ScheduledWorkout, WorkoutPrescription } from "./types";
 
 const DAY_MS = 86_400_000;
+export const PROGRAM_RESTART_DATE = "2026-10-12";
+export const PROGRAM_TIME_ZONE = "America/New_York";
 
 export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
   {
@@ -11,11 +13,6 @@ export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
       { id: "bench", name: "Tonal bench press", equipment: "Tonal + bench", sets: 3, targetReps: [8, 12], targetLoad: 35, notes: "Stop before form changes.", progressionContext: "Build reps before load." },
       { id: "pulldown", name: "Tonal lat pulldown", equipment: "Tonal bar", sets: 3, targetReps: [8, 12], targetLoad: 40, notes: "Pull elbows down without leaning back.", progressionContext: "Build clean reps before load." },
     ],
-  },
-  {
-    id: "easy-run", name: "Easy 5K development", domain: "engine", mode: "run", intent: "aerobic", durationMinutes: 32,
-    notes: "Conversational run/walk. Finish wanting one more interval.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [],
-    alternative: { name: "Peloton Zone 2 + movement", domain: "engine", mode: "combination", intent: "aerobic", durationMinutes: 42, notes: "Conversation-pace ride followed by unhurried beginner movement practice.", lowerBodyLoad: "low", exercises: [] },
   },
   {
     id: "foundation-b", name: "Foundation B · hinge + pull", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 45,
@@ -40,13 +37,22 @@ export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
     ],
   },
   {
-    id: "ruck-foundation", name: "Outdoor 20 lb ruck", domain: "engine", mode: "ruck", intent: "aerobic", durationMinutes: 35,
-    notes: "Use the 20 lb ruck only. Add time or terrain before load.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [],
-    alternative: { name: "Peloton aerobic base", domain: "engine", mode: "peloton", intent: "aerobic", durationMinutes: 35, notes: "Conversational effort with no hard intervals.", lowerBodyLoad: "low", exercises: [] },
+    id: "easy-run", name: "Easy 5K development", domain: "engine", mode: "run", intent: "moderate", durationMinutes: 32,
+    notes: "Conversational run/walk with a controlled finish. Do not chase exercise calories.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "moderate", exercises: [],
+    alternative: { name: "Peloton aerobic build", domain: "engine", mode: "peloton", intent: "moderate", durationMinutes: 38, notes: "Steady aerobic work with a controlled finish; no all-out intervals.", lowerBodyLoad: "moderate", exercises: [] },
   },
   {
-    id: "rest-day", name: "REST DAY", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 0,
-    notes: "No planned training. Recovery check-in, mobility, or a light walk only when explicitly chosen.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "none", exercises: [],
+    id: "ruck-foundation", name: "Light ruck + 5 / 10 / 15", domain: "engine", mode: "combination", intent: "easy", durationMinutes: 35,
+    notes: "Gradual ruck re-entry, then unhurried bodyweight practice. Add time before load and stop well short of failure.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [
+      { id: "benchmark-pull", name: "Pull-up progression", equipment: "Pull-up bar", sets: 3, targetReps: [5, 5], notes: "Use the easiest version that stays controlled.", progressionContext: "Build rounds before advancing the movement." },
+      { id: "benchmark-push", name: "Push-up progression", equipment: "Floor or incline", sets: 3, targetReps: [10, 10], notes: "Choose an incline that keeps every rep strict.", progressionContext: "Lower the incline only after repeatable rounds." },
+      { id: "benchmark-squat", name: "Squat progression", equipment: "Floor or support", sets: 3, targetReps: [15, 15], notes: "Controlled reps to a repeatable depth.", progressionContext: "Reduce support only after clean repeatable rounds." },
+    ],
+    alternative: { name: "Peloton recovery ride + movement", domain: "recovery", mode: "combination", intent: "easy", durationMinutes: 35, notes: "Easy spin followed by controlled bodyweight movement.", lowerBodyLoad: "low", exercises: [] },
+  },
+  {
+    id: "hard-rest", name: "Hard rest", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 0,
+    notes: "No catch-up workout. Easy daily living is enough; begin Monday recovered.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "none", exercises: [],
   },
 ] as const;
 
@@ -64,22 +70,10 @@ export function weekdayIndex(key: string): number {
   return day === 0 ? 6 : day - 1;
 }
 
-export function isSunday(key: string): boolean {
-  return new Date(`${key}T12:00:00Z`).getUTCDay() === 0;
-}
-
-export function nextTrainingDate(key: string): string {
-  let candidate = key;
-  while (isSunday(candidate)) candidate = shiftDate(candidate, 1);
-  return candidate;
-}
-
-export function isRestDayWorkout(workout: ScheduledWorkout): boolean {
-  return workout.prescription.id === "rest-day";
-}
-
 export function plannedWorkout(key: string): ScheduledWorkout {
-  const prescription = structuredClone(WEEKLY_PROGRAM[weekdayIndex(key)]!);
+  const prescription = key < PROGRAM_RESTART_DATE
+    ? prepPrescription(key)
+    : programPrescription(key);
   return {
     id: `program-${key}-${prescription.id}`,
     date: key,
@@ -91,16 +85,53 @@ export function plannedWorkout(key: string): ScheduledWorkout {
   };
 }
 
+export function programWeek(key: string): number {
+  if (key < PROGRAM_RESTART_DATE) return 0;
+  const elapsed = Math.floor((Date.parse(`${key}T12:00:00Z`) - Date.parse(`${PROGRAM_RESTART_DATE}T12:00:00Z`)) / DAY_MS);
+  return Math.floor(elapsed / 7) + 1;
+}
+
+function programPrescription(key: string): WorkoutPrescription {
+  const week = programWeek(key);
+  const prescription = structuredClone(WEEKLY_PROGRAM[weekdayIndex(key)]!);
+  prescription.trainingBlock = `Week ${week} · sustainable strength + 5K`;
+  if (week >= 11 && prescription.id === "easy-run") {
+    prescription.name = "Continuous 5K objective";
+    prescription.durationMinutes = 40;
+    prescription.notes = "Run the continuous 5K only if the prior ten weeks support it. A controlled run/walk remains a valid completion.";
+  }
+  return prescription;
+}
+
+function prepPrescription(key: string): WorkoutPrescription {
+  const sunday = weekdayIndex(key) === 6;
+  return {
+    id: sunday ? "prestart-rest" : "prestart-ramp",
+    name: sunday ? "Hard rest · restart eve" : "Prep / ramp-in activity",
+    domain: "recovery",
+    mode: "recovery",
+    intent: "easy",
+    durationMinutes: sunday ? 0 : 25,
+    notes: sunday
+      ? "Sunday remains hard rest. No catch-up work before the Week 1 restart."
+      : "Optional easy movement only. This does not advance training or create a missed-session penalty.",
+    trainingBlock: `Prep · Week 1 begins ${PROGRAM_RESTART_DATE}`,
+    lowerBodyLoad: "none",
+    exercises: [],
+  };
+}
+
 export function createInitialPersonalState(today = dateKey()): PersonalState {
   return {
-    version: 2,
-    appliedReconciliations: [],
+    version: 3,
+    program: { anchorDate: PROGRAM_RESTART_DATE, anchorVersion: 1 },
     schedule: Array.from({ length: 14 }, (_, offset) => plannedWorkout(shiftDate(today, offset))),
     sessions: [],
     recoveryEntries: [],
     meals: [],
+    activities: [],
     frequentMeals: [],
     progressionProposals: [],
-    nutritionTargets: { calories: 2200, protein: 180, carbs: 215, fat: 70 },
+    nutritionTargets: { calories: 2400, protein: 190, carbs: 240, fat: 80 },
   };
 }

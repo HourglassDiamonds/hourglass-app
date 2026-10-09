@@ -1,10 +1,4 @@
-import { createInitialPersonalState, isRestDayWorkout, isSunday, nextTrainingDate, plannedWorkout, shiftDate } from "./program";
-import {
-  carryYesterdayUnresolvedToToday,
-  deferAndReflow,
-  FOUNDER_RUCK_ROLLOVER_RECONCILIATION,
-  reconcileFounderRuckRollover,
-} from "./adaptation";
+import { createInitialPersonalState, plannedWorkout, PROGRAM_RESTART_DATE, shiftDate } from "./program";
 import type { PersonalState, ScheduledWorkout } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -23,16 +17,17 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
   if (!raw) return fallback;
   try {
     const value: unknown = JSON.parse(raw);
-    if (!isRecord(value) || value.version !== 2) return fallback;
+    if (!isRecord(value) || (value.version !== 2 && value.version !== 3)) return fallback;
+    const hasRestartAnchor = value.version === 3 && isRecord(value.program) && value.program.anchorDate === PROGRAM_RESTART_DATE;
+    const schedule = Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120) : [];
     return ensureSchedule({
-      version: 2,
-      appliedReconciliations: Array.isArray(value.appliedReconciliations)
-        ? value.appliedReconciliations.filter((item): item is string => typeof item === "string").slice(0, 40)
-        : [],
-      schedule: Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120) : [],
+      version: 3,
+      program: { anchorDate: PROGRAM_RESTART_DATE, anchorVersion: 1 },
+      schedule: hasRestartAnchor ? schedule : resetProgramFromAnchor(schedule),
       sessions: Array.isArray(value.sessions) ? value.sessions as PersonalState["sessions"] : [],
       recoveryEntries: Array.isArray(value.recoveryEntries) ? value.recoveryEntries as PersonalState["recoveryEntries"] : [],
       meals: Array.isArray(value.meals) ? value.meals as PersonalState["meals"] : [],
+      activities: Array.isArray(value.activities) ? value.activities as PersonalState["activities"] : [],
       frequentMeals: Array.isArray(value.frequentMeals) ? value.frequentMeals as PersonalState["frequentMeals"] : [],
       progressionProposals: Array.isArray(value.progressionProposals) ? value.progressionProposals as PersonalState["progressionProposals"] : [],
       nutritionTargets: isRecord(value.nutritionTargets)
@@ -47,6 +42,10 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
   } catch {
     return fallback;
   }
+}
+
+function resetProgramFromAnchor(schedule: ScheduledWorkout[]): ScheduledWorkout[] {
+  return schedule.filter((workout) => workout.originalDate < PROGRAM_RESTART_DATE);
 }
 
 export function migrateLegacyPersonalState(raw: string | null, today: string): PersonalState | null {
@@ -133,35 +132,13 @@ export function ensureSchedule(state: PersonalState, today: string): PersonalSta
     const key = shiftDate(today, offset);
     if (!schedule.some((workout) => workout.originalDate === key)) schedule.push(plannedWorkout(key));
   }
-  const sundaySafe = enforceSundayRest(schedule, new Date().toISOString());
-  const rolled = rolloverUnresolved(
-    { ...state, schedule: sundaySafe.sort((a, b) => a.date.localeCompare(b.date)) },
-    today,
-  );
-  let reconciled = rolled;
-  if (!rolled.appliedReconciliations.includes(FOUNDER_RUCK_ROLLOVER_RECONCILIATION)) {
-    const schedule = reconcileFounderRuckRollover(rolled.schedule, today);
-    if (schedule) {
-      reconciled = {
-        ...rolled,
-        schedule,
-        appliedReconciliations: [
-          ...rolled.appliedReconciliations,
-          FOUNDER_RUCK_ROLLOVER_RECONCILIATION,
-        ],
-      };
-    }
-  }
-  return {
-    ...reconciled,
-    schedule: carryYesterdayUnresolvedToToday(reconciled.schedule, today),
-  };
+  return rolloverUnresolved({ ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) }, today);
 }
 
 export function rolloverUnresolved(state: PersonalState, today: string, now = new Date().toISOString()): PersonalState {
   return {
     ...state,
-    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned" && !isSunday(workout.date) && !isRestDayWorkout(workout)
+    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned" && workout.originalDate >= PROGRAM_RESTART_DATE
       ? {
           ...workout,
           status: "unresolved" as const,
@@ -170,43 +147,4 @@ export function rolloverUnresolved(state: PersonalState, today: string, now = ne
         }
       : workout),
   };
-}
-
-function isSupersededSundayProgramWorkout(workout: ScheduledWorkout): boolean {
-  return isSunday(workout.date) &&
-    workout.originalDate === workout.date &&
-    workout.provenance.includes("program") &&
-    !workout.replacesWorkoutId &&
-    workout.history.every((event) => event.action === "planned" || event.action === "rolled_unresolved");
-}
-
-function isExplicitSundayRecovery(workout: ScheduledWorkout): boolean {
-  return workout.prescription.domain === "recovery" &&
-    workout.prescription.mode === "recovery" &&
-    (workout.provenance.includes("user") || workout.provenance.includes("user_confirmed"));
-}
-
-export function enforceSundayRest(
-  schedule: readonly ScheduledWorkout[],
-  now = new Date().toISOString(),
-): ScheduledWorkout[] {
-  let next = schedule.map((workout) => structuredClone(workout));
-  const activeSundayTraining = next.filter(
-    (workout) =>
-      isSunday(workout.date) &&
-      !isRestDayWorkout(workout) &&
-      !isExplicitSundayRecovery(workout) &&
-      (workout.status === "planned" || workout.status === "unresolved"),
-  );
-  for (const workout of activeSundayTraining) {
-    if (isSupersededSundayProgramWorkout(workout)) {
-      next = next.filter((item) => item.id !== workout.id);
-      if (!next.some((item) => item.date === workout.date && isRestDayWorkout(item))) {
-        next.push(plannedWorkout(workout.date));
-      }
-      continue;
-    }
-    next = deferAndReflow(next, workout.id, nextTrainingDate(workout.date), now, "sterling");
-  }
-  return next.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id));
 }
