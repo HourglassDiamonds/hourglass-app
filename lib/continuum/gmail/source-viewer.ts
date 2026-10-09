@@ -30,6 +30,11 @@ export const SOURCE_VIEWER_ERROR_CODES = [
   "not-indexed",
   "thread-not-found",
   "thread-inaccessible",
+  "insufficient_permissions",
+  "domain_policy",
+  "quota_exceeded",
+  "rate_limited",
+  "unknown_forbidden",
   "thread-fetch-failed",
 ] as const;
 
@@ -90,7 +95,9 @@ function failed(code: SourceViewerErrorCode): SourceViewerFetchFailure {
 function threadFetchErrorCode(error: unknown): SourceViewerErrorCode {
   if (error instanceof GmailHttpError) {
     if (error.status === 404) return "thread-not-found";
-    if (error.status === 403) return "thread-inaccessible";
+    if (error.status === 403) {
+      return error.forbiddenCategory ?? "unknown_forbidden";
+    }
   }
   if (error instanceof Error && error.message === "gmail-thread-missing") {
     return "thread-not-found";

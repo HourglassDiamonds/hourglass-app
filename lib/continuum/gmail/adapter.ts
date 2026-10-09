@@ -181,13 +181,95 @@ export class GmailHttpError extends Error {
   readonly status: number;
   readonly reason: string;
   readonly retryAfter: string | null;
+  readonly forbiddenCategory: GmailForbiddenSafeCategory | null;
 
-  constructor(status: number, reason: string, retryAfter?: string) {
+  constructor(
+    status: number,
+    reason: string,
+    retryAfter?: string,
+    forbiddenCategory?: GmailForbiddenSafeCategory,
+  ) {
     super(`gmail-http-${status}`);
     this.name = "GmailHttpError";
     this.status = status;
     this.reason = reason;
     this.retryAfter = retryAfter ?? null;
+    this.forbiddenCategory =
+      status === 403
+        ? (forbiddenCategory ?? classifyGmailForbiddenReasons([reason]))
+        : null;
+  }
+}
+
+export const GMAIL_FORBIDDEN_SAFE_CATEGORIES = [
+  "insufficient_permissions",
+  "domain_policy",
+  "quota_exceeded",
+  "rate_limited",
+  "unknown_forbidden",
+] as const;
+
+export type GmailForbiddenSafeCategory =
+  (typeof GMAIL_FORBIDDEN_SAFE_CATEGORIES)[number];
+
+function classifyGmailForbiddenReasons(
+  reasons: readonly string[],
+): GmailForbiddenSafeCategory {
+  if (
+    reasons.some((reason) =>
+      [
+        "insufficientPermissions",
+        "ACCESS_TOKEN_SCOPE_INSUFFICIENT",
+        "INSUFFICIENT_AUTHENTICATION_SCOPES",
+      ].includes(reason),
+    )
+  ) {
+    return "insufficient_permissions";
+  }
+  if (reasons.includes("domainPolicy")) return "domain_policy";
+  if (
+    reasons.some((reason) =>
+      ["dailyLimitExceeded", "dailyLimitExceededUnreg", "quotaExceeded"].includes(
+        reason,
+      ),
+    )
+  ) {
+    return "quota_exceeded";
+  }
+  if (
+    reasons.some((reason) =>
+      ["rateLimitExceeded", "userRateLimitExceeded"].includes(reason),
+    )
+  ) {
+    return "rate_limited";
+  }
+  return "unknown_forbidden";
+}
+
+/**
+ * Extracts only documented machine-readable reason tokens from a Google error.
+ * Raw bodies, messages, metadata, and identifiers are discarded immediately.
+ */
+export function classifyGmailForbiddenErrorBody(
+  text: string,
+): GmailForbiddenSafeCategory {
+  try {
+    const parsed = JSON.parse(text) as unknown;
+    if (!parsed || typeof parsed !== "object") return "unknown_forbidden";
+    const error = "error" in parsed ? parsed.error : null;
+    if (!error || typeof error !== "object") return "unknown_forbidden";
+    const candidates = [
+      ...("errors" in error && Array.isArray(error.errors) ? error.errors : []),
+      ...("details" in error && Array.isArray(error.details) ? error.details : []),
+    ];
+    const reasons = candidates.flatMap((candidate) => {
+      if (!candidate || typeof candidate !== "object") return [];
+      const reason = "reason" in candidate ? candidate.reason : null;
+      return typeof reason === "string" ? [reason] : [];
+    });
+    return classifyGmailForbiddenReasons(reasons);
+  } catch {
+    return "unknown_forbidden";
   }
 }
 
@@ -265,7 +347,16 @@ export function createLiveGmailApi(accessToken: string): GmailApi {
     if (!response.ok) {
       const retryAfter = response.headers.get("Retry-After") ?? undefined;
       const reason = response.status === 404 ? "notFound" : "http";
-      throw new GmailHttpError(response.status, reason, retryAfter);
+      const forbiddenCategory =
+        response.status === 403
+          ? classifyGmailForbiddenErrorBody(text)
+          : undefined;
+      throw new GmailHttpError(
+        response.status,
+        reason,
+        retryAfter,
+        forbiddenCategory,
+      );
     }
     return parseGmailJson(text) as T;
   }

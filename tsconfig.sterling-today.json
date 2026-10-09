@@ -7,6 +7,7 @@
     "next-env.d.ts",
     "app/executive-dashboard/concierge/gmail-evidence-audit-actions.ts",
     "app/executive-dashboard/concierge/gmail/page.tsx",
+    "lib/continuum/gmail/adapter-forbidden.test.ts",
     "lib/continuum/gmail/evidence-completeness-audit.ts",
     "lib/continuum/gmail/evidence-completeness-audit.test.ts",
     "lib/continuum/today-sterling/**/*.ts",

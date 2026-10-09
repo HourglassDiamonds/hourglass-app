@@ -300,6 +300,34 @@ describe("read-only source viewer fetch", () => {
     assert.equal(result.safeErrorCode, "thread-not-found");
   });
 
+  it("returns only the allowlisted safe category for a Gmail 403", async () => {
+    const { index, connections } = await connectedIndex();
+    const api = new MockGmailApi();
+    api.errors.set(
+      `getThread:${THREAD}`,
+      new GmailHttpError(
+        403,
+        "http",
+        undefined,
+        "insufficient_permissions",
+      ),
+    );
+    const result = await runSourceViewerFetch({
+      founderSessionOk: true,
+      threadId: THREAD,
+      index,
+      connections,
+      decryptRefreshToken: () => "refresh-keep",
+      refreshAccessToken: async () => ({ ok: true, accessToken: "access" }),
+      createApi: () => api,
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      safeErrorCode: "insufficient_permissions",
+    });
+  });
+
   it("does not persist bodies, change checkpoints, or gain write scopes", () => {
     const source = readFileSync(join(DIR, "source-viewer.ts"), "utf8");
     const run = readFileSync(join(DIR, "source-viewer-run.ts"), "utf8");
