@@ -81,13 +81,20 @@ export function validateSterlingTodayProposal(
       if (item.responsibleParty !== assessment.nextStepOwner) errors.push(`next-step-owner-mismatch:${item.itemId}`);
       if (item.projectStage.stage !== assessment.currentStage.stage) errors.push(`project-stage-reconciliation-mismatch:${item.itemId}`);
       const assessedObligations = new Map(assessment.obligations.map(row => [row.obligationId, row]));
+      const recommendationObligationIds = new Set<string>();
       for (const obligation of item.obligations) {
+        recommendationObligationIds.add(obligation.obligationId);
         const assessed = assessedObligations.get(obligation.obligationId);
         if (!assessed || assessed.status !== obligation.status || assessed.responsibleParty !== obligation.responsibleParty) {
           errors.push(`obligation-reconciliation-mismatch:${item.itemId}:${obligation.obligationId}`);
         }
       }
-      if (item.obligations.length !== assessment.obligations.length) errors.push(`obligation-count-mismatch:${item.itemId}`);
+      for (const obligation of assessment.obligations) {
+        if ((obligation.status === "open" || obligation.status === "ambiguous") &&
+            !recommendationObligationIds.has(obligation.obligationId)) {
+          errors.push(`missing-actionable-obligation:${item.itemId}:${obligation.obligationId}`);
+        }
+      }
     }
     if (item.projectId && !projects.has(item.projectId)) errors.push(`unknown-project:${item.itemId}`);
     if (item.personId && !people.has(item.personId)) errors.push(`unknown-person:${item.itemId}`);

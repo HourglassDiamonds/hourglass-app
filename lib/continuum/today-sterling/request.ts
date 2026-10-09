@@ -2,7 +2,7 @@ import { CONCIERGE_SOL_RESPONSES_ENDPOINT } from "@/lib/continuum/concierge-sol/
 import { parseSterlingTodayProposal, STERLING_TODAY_OUTPUT_SCHEMA } from "./schema";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal, type SterlingTodayWorkingSet } from "./types";
 
-export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v2" as const;
+export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v3" as const;
 export const STERLING_TODAY_TIMEOUT_MS = 180_000;
 export const STERLING_TODAY_TIMEOUT_ENV = "CONTINUUM_STERLING_TODAY_TIMEOUT_MS" as const;
 export const STERLING_TODAY_MAX_OUTPUT_TOKENS = 24_000;
@@ -13,6 +13,7 @@ const INSTRUCTIONS = [
   "Reason directly from the complete bounded working set. Work chronologically and semantically.",
   "First reconcile the complete portfolio. Return exactly one portfolioAssessment for every workUnitId in workingSet.workUnits before choosing Today recommendations.",
   "For every work unit determine current overall stage, all open and completed or superseded obligations, each obligation's responsible party, current next-step owner, confidence, exact evidence, and ambiguities.",
+  "Keep the portfolio assessment comprehensive. A Today recommendation may omit fulfilled or superseded obligations, but it must retain every open or ambiguous obligation for that work unit.",
   "A canonical project and an evidence-backed provisional work unit are both assessable work. Canonical identity and workflow responsibility are separate questions.",
   "For every work unit not presented in Today, set an explicit suppressed or ambiguous disposition and explain the omissionReason. Never silently omit a work unit.",
   "Newer material evidence supersedes older evidence. Founder directives supersede inference.",

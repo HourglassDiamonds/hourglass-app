@@ -64,36 +64,37 @@ export function evaluateSterlingTodayAcceptance(
     const exact = matching.filter(unit => unit.observedIdentifiers.some(id => definition.identifiers.includes(id)));
     const canonical = matching.filter(unit => unit.kind === "canonical_project");
     const selected = exact.length === 1 ? exact[0] : canonical.length === 1 ? canonical[0] : matching.length === 1 ? matching[0] : null;
+    const matchingWorkUnitIds = matching.map(row => row.workUnitId);
     if (matching.length === 0) return result(definition, false, "input_missing", "no scoped work unit", []);
     if (!selected) return result(definition, false, "identity_ambiguous", `${matching.length} matching work units`, matching.map(row => row.workUnitId));
     const assessment = assessments.get(selected.workUnitId);
-    if (!assessment) return result(definition, false, "missing_output", "work unit present; assessment absent", [selected.workUnitId]);
+    if (!assessment) return result(definition, false, "missing_output", "work unit present; assessment absent", matchingWorkUnitIds);
     const actual = assessmentActual(assessment, recommendations.get(assessment.recommendationItemId ?? ""));
-    if (assessment.evidenceRefs.length === 0) return result(definition, false, "insufficient_evidence", actual, [selected.workUnitId]);
+    if (assessment.evidenceRefs.length === 0) return result(definition, false, "insufficient_evidence", actual, matchingWorkUnitIds);
     if (assessment.identityStatus === "unresolved_identity") {
-      return result(definition, false, "identity_ambiguous", actual, [selected.workUnitId]);
+      return result(definition, false, "identity_ambiguous", actual, matchingWorkUnitIds);
     }
     if (assessment.todayDisposition === "ambiguous") {
-      return result(definition, false, "legitimate_ambiguity", actual, [selected.workUnitId]);
+      return result(definition, false, "legitimate_ambiguity", actual, matchingWorkUnitIds);
     }
     const recommendation = assessment.recommendationItemId ? recommendations.get(assessment.recommendationItemId) : null;
     const obligationFailure = obligationMismatch(definition, selected, assessment, workingSet);
     if (definition.allowSuppressed && assessment.todayDisposition === "suppressed" && !obligationFailure) {
-      return result(definition, true, "pass", actual, [selected.workUnitId]);
+      return result(definition, true, "pass", actual, matchingWorkUnitIds);
     }
     if (assessment.todayDisposition !== "presented" || !recommendation) {
-      return result(definition, false, "omitted_from_today", actual, [selected.workUnitId]);
+      return result(definition, false, "omitted_from_today", actual, matchingWorkUnitIds);
     }
     if (definition.categories && !definition.categories.includes(recommendation.category)) {
       const stageCorrect = definition.productionStage && /(^|_)production$/i.test(assessment.currentStage.stage ?? "");
       return result(definition, false, stageCorrect ? "wrong_category" : definition.productionStage ? "project_stage_mismatch" : "wrong_category",
-        actual, [selected.workUnitId]);
+        actual, matchingWorkUnitIds);
     }
     if (definition.parties && !definition.parties.includes(assessment.nextStepOwner)) {
-      return result(definition, false, "wrong_responsible_party", actual, [selected.workUnitId]);
+      return result(definition, false, "wrong_responsible_party", actual, matchingWorkUnitIds);
     }
-    if (obligationFailure) return result(definition, false, "obligation_mismatch", actual, [selected.workUnitId]);
-    return result(definition, true, "pass", actual, [selected.workUnitId]);
+    if (obligationFailure) return result(definition, false, "obligation_mismatch", actual, matchingWorkUnitIds);
+    return result(definition, true, "pass", actual, matchingWorkUnitIds);
   });
 
   const noise = /newsletter|editorial|schema fragment|technician notice|shipping boilerplate|cold solicitation/i;

@@ -96,6 +96,22 @@ describe("Sterling-native Today", () => {
     assert.equal(set.workUnits[0]?.evidenceRefs.length, 2);
   });
 
+  it("joins a multi-identifier source to one repeated exact identifier without using a name", () => {
+    const thread = (messageId: string, text: string) => ({ subject: text, messages: [{ messageId,
+      sentAt: "2026-10-07T13:00:00.000Z", direction: "inbound" as const, fromEmailHash: null,
+      operationalText: text, attachmentFilenames: [] }] });
+    const set = buildSterlingTodayWorkingSet({ runId: "run-shared-identifier", sourceWatermark: "wm",
+      generatedAt: "2026-10-08T12:00:00.000Z", projects: [], jobs: [], candidates: [], knownPeople: [],
+      threadContext: new Map([
+        ["thread-a", thread("m-a", "C025885 SP13477 production")],
+        ["thread-b", thread("m-b", "C025885 status")],
+      ]) });
+    assert.equal(set.workUnits.length, 1);
+    assert.equal(set.workUnits[0]?.identityBasis, "exact_identifier");
+    assert.deepEqual(set.workUnits[0]?.observedIdentifiers, ["C025885", "SP13477"]);
+    assert.deepEqual(set.workUnits[0]?.threadIds, ["thread-a", "thread-b"]);
+  });
+
   it("keeps a thread with conflicting exact identifiers provisional instead of cross-linking projects", () => {
     const first = { ...summary(), gmailThreadId: null };
     const secondId = "66666666-6666-4666-8666-666666666666";
@@ -168,7 +184,19 @@ describe("Sterling-native Today", () => {
     drifted.recommendations[0]!.obligations = [];
     const result = validateSterlingTodayProposal(set, drifted);
     assert.ok(result.errors.includes("project-stage-reconciliation-mismatch:abbey"));
-    assert.ok(result.errors.includes("obligation-count-mismatch:abbey"));
+    assert.ok(!result.errors.some(row => row.startsWith("obligation-")));
+  });
+
+  it("allows Today to omit closed obligations but rejects loss of an actionable obligation", () => {
+    const set = workingSet();
+    const summarized = structuredClone(proposal());
+    summarized.recommendations[0]!.obligations = [];
+    assert.equal(validateSterlingTodayProposal(set, summarized).accepted, true);
+
+    const missingAction = structuredClone(summarized);
+    missingAction.portfolioAssessments[0]!.obligations[0]!.status = "open";
+    const result = validateSterlingTodayProposal(set, missingAction);
+    assert.ok(result.errors.includes("missing-actionable-obligation:abbey:send-cad"));
   });
 
   it("reports a present item in the wrong lane instead of calling it absent", () => {
@@ -196,6 +224,7 @@ describe("Sterling-native Today", () => {
     assert.equal(body.store, false);
     assert.equal(body.max_output_tokens, STERLING_TODAY_MAX_OUTPUT_TOKENS);
     assert.equal((body.reasoning as { effort?: string })?.effort, STERLING_TODAY_REASONING_EFFORT);
+    assert.match(String(body.instructions), /may omit fulfilled or superseded obligations/i);
     assert.ok(((body.text as { format?: { schema?: { required?: string[] } } })?.format?.schema?.required ?? []).includes("portfolioAssessments"));
     assert.equal("tools" in body, false);
   });

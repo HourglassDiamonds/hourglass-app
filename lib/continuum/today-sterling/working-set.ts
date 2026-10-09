@@ -240,14 +240,24 @@ function buildWorkUnits(
     const key = row.threadId ? `thread:${row.threadId}` : `source:${row.sourceRef}`;
     evidenceBySource.set(key, [...(evidenceBySource.get(key) ?? []), row]);
   }
+  const identifiersBySource = new Map([...evidenceBySource].map(([sourceKey, rows]) => [sourceKey,
+    unique(rows.flatMap(row => strictProjectNumbers(
+      [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" ")))),
+  ]));
+  const identifierSourceCounts = new Map<string, number>();
+  for (const identifiers of identifiersBySource.values()) for (const identifier of identifiers) {
+    identifierSourceCounts.set(identifier, (identifierSourceCounts.get(identifier) ?? 0) + 1);
+  }
   const provisional = new Map<string, ProvisionalGroup>();
   for (const [sourceKey, rows] of evidenceBySource) {
-    const identifiers = unique(rows.flatMap(row => strictProjectNumbers(
-      [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "))));
+    const identifiers = identifiersBySource.get(sourceKey) ?? [];
+    const repeatedIdentifiers = identifiers.filter(identifier => (identifierSourceCounts.get(identifier) ?? 0) > 1);
+    const exactAnchor = identifiers.length === 1 ? identifiers[0]!
+      : repeatedIdentifiers.length === 1 ? repeatedIdentifiers[0]! : null;
     const first = rows[0]!;
-    const identityBasis = identifiers.length === 1 ? "exact_identifier" as const
+    const identityBasis = exactAnchor ? "exact_identifier" as const
       : first.threadId ? "source_thread" as const : "source_record" as const;
-    const sourceIdentity = identifiers.length === 1 ? identifiers[0]! : sourceKey;
+    const sourceIdentity = exactAnchor ?? sourceKey;
     const key = `${identityBasis}:${sourceIdentity}`;
     const current = provisional.get(key) ?? { key, identityBasis,
       label: identifiers[0] ?? first.subject ?? "Provisional evidence-backed work",
