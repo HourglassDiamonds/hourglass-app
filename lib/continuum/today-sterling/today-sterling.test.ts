@@ -8,6 +8,7 @@ import { requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_T
   STERLING_TODAY_MAX_OUTPUT_TOKENS, STERLING_TODAY_REASONING_EFFORT, STERLING_TODAY_TIMEOUT_MS,
   SterlingTodayRequestError } from "./request";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
+import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
 import { validateSterlingTodayProposal } from "./validate";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal } from "./types";
 
@@ -52,7 +53,8 @@ function proposal(): SterlingTodayProposal {
   return { contractVersion: STERLING_TODAY_PROPOSAL_VERSION, runId: set.runId, evidenceSnapshotId: set.evidenceSnapshotId,
     generatedAt: set.generatedAt, portfolioAmbiguities: [], portfolioAssessments: [{ workUnitId: workUnit.workUnitId,
       projectId, identityStatus: "canonical_project", todayDisposition: "presented", recommendationItemId: "abbey",
-      currentStage: { stage: "client_approval", responsibleParty: "client", confidence: "high",
+      currentStage: { canonicalLifecycleStage: "client_approval", operationalSubstage: null,
+        responsibleParty: "client", confidence: "high",
         explanation: "Client review follows delivery.", evidenceRefs: [evidenceId] },
       obligations: [{ obligationId: "send-cad", description: "Founder sends CAD", status: "fulfilled",
         responsibleParty: "founder", confidence: "high", evidenceRefs: [evidenceId] }],
@@ -61,7 +63,9 @@ function proposal(): SterlingTodayProposal {
     recommendations: [{ itemId: "abbey", workUnitId: workUnit.workUnitId, category: "waiting_on_client",
       projectId, personId, relationshipRole: "client", title: "Abbey CAD", summary: "CAD delivered; Abbey has the next step.",
       responsibleParty: "client", confidence: "high", explanation: "The newer outbound delivery fulfills the founder obligation.",
-      evidenceRefs: [evidenceId], ambiguities: [], projectStage: { stage: "client_approval", confidence: "high", explanation: "Client review follows delivery.", evidenceRefs: [evidenceId] },
+      evidenceRefs: [evidenceId], ambiguities: [], projectStage: {
+        canonicalLifecycleStage: "client_approval", operationalSubstage: null, confidence: "high",
+        explanation: "Client review follows delivery.", evidenceRefs: [evidenceId] },
       obligations: [{ obligationId: "send-cad", description: "Founder sends CAD", status: "fulfilled", responsibleParty: "founder", confidence: "high", evidenceRefs: [evidenceId] }] }],
     proposedCanonicalMutations: [{ proposalKey: "resolve-send-cad", kind: "resolve_open_job", projectId, personId,
       jobId, expectedRecordVersion: openJob.recordVersion, targetLifecycleStage: null, targetJobState: "resolved",
@@ -129,6 +133,18 @@ describe("Sterling-native Today", () => {
     assert.equal(set.workUnits.filter(row => row.kind === "provisional_evidence").length, 1);
   });
 
+  it("builds a one-work-unit target package without logging evidence text", () => {
+    const set = workingSet();
+    const target = buildSterlingTodayTargetWorkingSet(set, set.workUnits[0]!.workUnitId);
+    const manifest = summarizeSterlingTodayTargetPackage(target);
+    assert.equal(target.workUnits.length, 1);
+    assert.deepEqual(target.evidence.map(row => row.evidenceId), target.workUnits[0]!.evidenceRefs);
+    assert.notEqual(target.evidenceSnapshotId, set.evidenceSnapshotId);
+    assert.equal(manifest.chronology.length, target.evidence.length);
+    assert.doesNotMatch(JSON.stringify(manifest), /Attached is the updated CAD/);
+    assert.ok(manifest.chronology.every(row => !("excerpt" in row) && !("subject" in row)));
+  });
+
   it("accepts grounded presentation and approves a version-matched mutation only for founder review", () => {
     const set = workingSet(); const result = validateSterlingTodayProposal(set, proposal());
     assert.equal(result.accepted, true); assert.equal(result.mutationValidations[0]?.status, "approved_for_founder_review");
@@ -180,7 +196,7 @@ describe("Sterling-native Today", () => {
     assert.equal(evaluateSterlingTodayAcceptance(set, missing).cases.find(row => row.id === "ABBEY/C026137")?.outcome, "missing_output");
 
     const drifted = structuredClone(proposal());
-    drifted.recommendations[0]!.projectStage.stage = "production";
+    drifted.recommendations[0]!.projectStage.canonicalLifecycleStage = "production";
     drifted.recommendations[0]!.obligations = [];
     const result = validateSterlingTodayProposal(set, drifted);
     assert.ok(result.errors.includes("project-stage-reconciliation-mismatch:abbey"));
@@ -197,6 +213,21 @@ describe("Sterling-native Today", () => {
     missingAction.portfolioAssessments[0]!.obligations[0]!.status = "open";
     const result = validateSterlingTodayProposal(set, missingAction);
     assert.ok(result.errors.includes("missing-actionable-obligation:abbey:send-cad"));
+  });
+
+  it("separates canonical lifecycle stage from descriptive operational substage", () => {
+    const set = workingSet();
+    const valid = structuredClone(proposal());
+    valid.portfolioAssessments[0]!.currentStage.canonicalLifecycleStage = "production";
+    valid.portfolioAssessments[0]!.currentStage.operationalSubstage = "paid_preproduction";
+    valid.recommendations[0]!.projectStage.canonicalLifecycleStage = "production";
+    valid.recommendations[0]!.projectStage.operationalSubstage = "paid_preproduction";
+    assert.equal(validateSterlingTodayProposal(set, valid).accepted, true);
+
+    const invalid = structuredClone(valid) as unknown as { portfolioAssessments: Array<{
+      currentStage: { canonicalLifecycleStage: string } }> };
+    invalid.portfolioAssessments[0]!.currentStage.canonicalLifecycleStage = "paid_preproduction";
+    assert.deepEqual(validateSterlingTodayProposal(set, invalid).errors, ["invalid-structured-contract"]);
   });
 
   it("reports a present item in the wrong lane instead of calling it absent", () => {

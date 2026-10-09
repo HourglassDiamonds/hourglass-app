@@ -5,3 +5,4 @@ export * from "./evidence-load";
 export * from "./request";
 export * from "./validate";
 export * from "./acceptance";
+export * from "./target";

@@ -2,8 +2,11 @@ import {
   STERLING_MUTATION_KINDS, STERLING_RELATIONSHIP_ROLES, STERLING_RESPONSIBLE_PARTIES,
   STERLING_TODAY_CATEGORIES, STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal,
 } from "./types";
+import { CUSTOM_LIFECYCLE_STAGES, REPAIR_LIFECYCLE_STAGES } from "@/lib/continuum/client-memory/project-lifecycle";
 
 const nullableString = { type: ["string", "null"] } as const;
+const lifecycleStages = [...new Set([...CUSTOM_LIFECYCLE_STAGES, ...REPAIR_LIFECYCLE_STAGES])];
+const nullableLifecycleStage = { type: ["string", "null"], enum: [...lifecycleStages, null] } as const;
 const stringArray = { type: "array", items: { type: "string" } } as const;
 const confidence = { type: "string", enum: ["high", "medium", "low"] } as const;
 const responsibleParty = { type: "string", enum: STERLING_RESPONSIBLE_PARTIES } as const;
@@ -16,8 +19,9 @@ const obligation = {
 } as const;
 const stageAssessment = {
   type: "object", additionalProperties: false,
-  properties: { stage: nullableString, responsibleParty, confidence, explanation: { type: "string" }, evidenceRefs: stringArray },
-  required: ["stage", "responsibleParty", "confidence", "explanation", "evidenceRefs"],
+  properties: { canonicalLifecycleStage: nullableLifecycleStage, operationalSubstage: nullableString,
+    responsibleParty, confidence, explanation: { type: "string" }, evidenceRefs: stringArray },
+  required: ["canonicalLifecycleStage", "operationalSubstage", "responsibleParty", "confidence", "explanation", "evidenceRefs"],
 } as const;
 const portfolioAssessment = {
   type: "object", additionalProperties: false,
@@ -44,8 +48,9 @@ const recommendation = {
     summary: { type: "string" }, responsibleParty, confidence, explanation: { type: "string" },
     evidenceRefs: stringArray, ambiguities: stringArray,
     projectStage: { type: "object", additionalProperties: false,
-      properties: { stage: nullableString, confidence, explanation: { type: "string" }, evidenceRefs: stringArray },
-      required: ["stage", "confidence", "explanation", "evidenceRefs"] },
+      properties: { canonicalLifecycleStage: nullableLifecycleStage, operationalSubstage: nullableString,
+        confidence, explanation: { type: "string" }, evidenceRefs: stringArray },
+      required: ["canonicalLifecycleStage", "operationalSubstage", "confidence", "explanation", "evidenceRefs"] },
     obligations: { type: "array", items: obligation },
   },
   required: ["itemId", "workUnitId", "category", "projectId", "personId", "relationshipRole", "title", "summary",
@@ -56,7 +61,7 @@ const mutation = {
   properties: {
     proposalKey: { type: "string" }, kind: { type: "string", enum: STERLING_MUTATION_KINDS },
     projectId: nullableString, personId: nullableString, jobId: nullableString,
-    expectedRecordVersion: nullableString, targetLifecycleStage: nullableString,
+    expectedRecordVersion: nullableString, targetLifecycleStage: nullableLifecycleStage,
     targetJobState: { type: ["string", "null"], enum: ["resolved", "cancelled", null] },
     targetResponsibleParty: { type: ["string", "null"], enum: [...STERLING_RESPONSIBLE_PARTIES, null] },
     newJob: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false,
@@ -98,7 +103,8 @@ function validObligation(v: unknown): boolean {
     oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) && oneOf(v.confidence, ["high", "medium", "low"] as const) && strings(v.evidenceRefs);
 }
 function validStageAssessment(v: unknown): boolean {
-  return record(v) && nullable(v.stage) && oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) &&
+  return record(v) && (v.canonicalLifecycleStage === null || oneOf(v.canonicalLifecycleStage, lifecycleStages)) &&
+    nullable(v.operationalSubstage) && oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) &&
     oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" && strings(v.evidenceRefs);
 }
 function validPortfolioAssessment(v: unknown): boolean {
@@ -116,7 +122,9 @@ function validRecommendation(v: unknown): boolean {
     nullable(v.personId) && oneOf(v.relationshipRole, STERLING_RELATIONSHIP_ROLES) && typeof v.title === "string" &&
     typeof v.summary === "string" && oneOf(v.responsibleParty, STERLING_RESPONSIBLE_PARTIES) &&
     oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" &&
-    strings(v.evidenceRefs) && strings(v.ambiguities) && nullable(v.projectStage.stage) &&
+    strings(v.evidenceRefs) && strings(v.ambiguities) &&
+    (v.projectStage.canonicalLifecycleStage === null || oneOf(v.projectStage.canonicalLifecycleStage, lifecycleStages)) &&
+    nullable(v.projectStage.operationalSubstage) &&
     oneOf(v.projectStage.confidence, ["high", "medium", "low"] as const) &&
     typeof v.projectStage.explanation === "string" && strings(v.projectStage.evidenceRefs) &&
     Array.isArray(v.obligations) && v.obligations.every(validObligation);
@@ -127,7 +135,8 @@ function validMutation(v: unknown): boolean {
   const validNew = n === null || (record(n) && typeof n.kind === "string" && typeof n.subject === "string" &&
     nullable(n.detail) && oneOf(n.responsibleParty, STERLING_RESPONSIBLE_PARTIES) && nullable(n.dueAt));
   return typeof v.proposalKey === "string" && oneOf(v.kind, STERLING_MUTATION_KINDS) && nullable(v.projectId) &&
-    nullable(v.personId) && nullable(v.jobId) && nullable(v.expectedRecordVersion) && nullable(v.targetLifecycleStage) &&
+    nullable(v.personId) && nullable(v.jobId) && nullable(v.expectedRecordVersion) &&
+    (v.targetLifecycleStage === null || oneOf(v.targetLifecycleStage, lifecycleStages)) &&
     (v.targetJobState === null || v.targetJobState === "resolved" || v.targetJobState === "cancelled") &&
     (v.targetResponsibleParty === null || oneOf(v.targetResponsibleParty, STERLING_RESPONSIBLE_PARTIES)) && validNew &&
     typeof v.reason === "string" && strings(v.evidenceRefs) && v.requiresFounderApproval === true;

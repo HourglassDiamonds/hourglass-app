@@ -56,8 +56,8 @@ export function validateSterlingTodayProposal(
       else if (!workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-evidence:${assessment.workUnitId}:${ref}`);
     }
     const project = assessment.projectId ? projects.get(assessment.projectId) : null;
-    if (assessment.currentStage.stage && project && isLifecycleKind(project.projectKind) &&
-        !isStageAllowedForKind(project.projectKind, assessment.currentStage.stage)) {
+    if (assessment.currentStage.canonicalLifecycleStage && project && isLifecycleKind(project.projectKind) &&
+        !isStageAllowedForKind(project.projectKind, assessment.currentStage.canonicalLifecycleStage)) {
       errors.push(`invalid-assessment-stage:${assessment.workUnitId}`);
     }
   }
@@ -79,7 +79,10 @@ export function validateSterlingTodayProposal(
       errors.push(`recommendation-assessment-mismatch:${item.itemId}`);
     } else {
       if (item.responsibleParty !== assessment.nextStepOwner) errors.push(`next-step-owner-mismatch:${item.itemId}`);
-      if (item.projectStage.stage !== assessment.currentStage.stage) errors.push(`project-stage-reconciliation-mismatch:${item.itemId}`);
+      if (item.projectStage.canonicalLifecycleStage !== assessment.currentStage.canonicalLifecycleStage ||
+          item.projectStage.operationalSubstage !== assessment.currentStage.operationalSubstage) {
+        errors.push(`project-stage-reconciliation-mismatch:${item.itemId}`);
+      }
       const assessedObligations = new Map(assessment.obligations.map(row => [row.obligationId, row]));
       const recommendationObligationIds = new Set<string>();
       for (const obligation of item.obligations) {
@@ -107,8 +110,8 @@ export function validateSterlingTodayProposal(
     }
     if (item.evidenceRefs.length === 0) errors.push(`missing-provenance:${item.itemId}`);
     const project = item.projectId ? projects.get(item.projectId) : null;
-    if (item.projectStage.stage && project && isLifecycleKind(project.projectKind) &&
-        !isStageAllowedForKind(project.projectKind, item.projectStage.stage)) {
+    if (item.projectStage.canonicalLifecycleStage && project && isLifecycleKind(project.projectKind) &&
+        !isStageAllowedForKind(project.projectKind, item.projectStage.canonicalLifecycleStage)) {
       errors.push(`invalid-project-stage:${item.itemId}`);
     }
   }

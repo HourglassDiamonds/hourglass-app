@@ -46,7 +46,7 @@ sterling-today-working-set-v2
 one strict Structured Output Sterling call (no tools, no writes)
             |
             v
-sterling-today-proposal-v2
+sterling-today-proposal-v3
             |
             v
 identity / relationship / provenance / version / transition / dedupe validation
@@ -60,6 +60,8 @@ presentation proposal + founder-review-only mutation proposals
 `lib/continuum/today-sterling/evidence-load.ts` extends the candidate-oriented Gmail loader with the existing project-evidence resolver. Trusted thread associations are attached to canonical projects. Bounded candidate or ambiguous discoveries are loaded only as unassociated evidence; they acquire a project reference only when the assembler finds an exact canonical project number. This exposes unresolved evidence to Sterling without silently converting an uncertain relationship into canonical truth.
 
 `lib/continuum/today-sterling/request.ts` sends one strict JSON-schema request with no tools. Before presentation, Sterling must return exactly one portfolio assessment for every bounded work unit. Each assessment separately records overall stage, obligations, obligation owners, next-step owner, evidence, ambiguity, and an explicit reason when Today suppresses the unit. The portfolio ledger remains comprehensive, while a Today recommendation may omit fulfilled or superseded obligations; every open or ambiguous obligation must still be retained on the recommendation.
+
+Stage reasoning has two explicit fields. `canonicalLifecycleStage` is restricted by the Structured Output schema to the existing canonical lifecycle vocabulary, while `operationalSubstage` may preserve evidence-grounded descriptive wording such as `paid_preproduction`. Descriptive wording can never become a lifecycle transition target.
 
 The working set creates one work unit for every canonical project and safely grouped provisional evidence. Provisional evidence is deduplicated only by an exact operational identifier or exact source identity such as a Gmail thread; names never merge work. A multi-identifier source may join another source only when exactly one identifier is repeated across them. Conflicting or multiply repeated identifiers remain provisional and unresolved.
 
@@ -81,6 +83,8 @@ Execution remains limited to existing canonical writers after founder approval a
 ## Production boundary
 
 Run `npm run continuum:today-sterling-shadow` for an assembly-only live read. It refuses a non-production Supabase project, performs no database writes, never calls the model, and does not update `continuum_today_snapshots`. `npm run continuum:today-sterling-shadow:model` is the explicit model-enabled shadow command; it still performs no writes and exits nonzero on contract, validation, or acceptance failure. Production rendering remains on the existing path until founder approval.
+
+For isolated diagnosis, run `npm run continuum:today-sterling-target -- --target-case=<case>` where `<case>` is an existing acceptance case key such as `abbey` or `alex`. This assembles one exact work unit with its full chronology and prints only a privacy-safe manifest containing source references, timestamps, directions, provenance, canonical metadata, and missing-link diagnostics. It never calls OpenAI. The separately explicit `npm run continuum:today-sterling-target:model -- --target-case=<case>` uses the same strict schema and validators for that one unit; it must not be run until the operator authorizes sending that targeted package.
 
 The acceptance runner scopes the model package to the ten authorized regression cases before Gmail enrichment. It retains complete chronology only for threads selected by exact canonical project association or case-specific identifier/name evidence. People, Jobs, founder corrections, prior Today entries, and calendar items are filtered through the same scope. Full email bodies and credentials are never logged; shadow output contains only counts, canonical-linkage metadata, recommendation summaries, evidence references, and validation results.
 

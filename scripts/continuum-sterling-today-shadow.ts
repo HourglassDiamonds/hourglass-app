@@ -22,6 +22,7 @@ import { requestSterlingTodayProposal } from "../lib/continuum/today-sterling/re
 import { validateSterlingTodayProposal } from "../lib/continuum/today-sterling/validate";
 import { evaluateSterlingTodayAcceptance } from "../lib/continuum/today-sterling/acceptance";
 import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from "../lib/continuum/today-sterling/evidence-load";
+import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "../lib/continuum/today-sterling/target";
 import type { SterlingPreviousTodayItem } from "../lib/continuum/today-sterling/types";
 
 const ACCEPTANCE_CASES = {
@@ -132,6 +133,7 @@ async function loadPreviousToday(client: any): Promise<SterlingPreviousTodayItem
 async function main() {
   const runStarted = Date.now();
   const withModel = process.argv.includes("--with-model");
+  const targetCase = process.argv.find(argument => argument.startsWith("--target-case="))?.slice("--target-case=".length) ?? null;
   const url = required("SUPABASE_URL");
   if (!url.includes(CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF)) throw new Error("shadow-refuses-non-production-supabase");
   const client = createClient(url, required("SUPABASE_SERVICE_ROLE_KEY"), { auth: { persistSession: false } });
@@ -214,6 +216,41 @@ async function main() {
         deferred: caseCandidates.filter((row) => row.reviewStatus === "deferred").length },
       newProjectCandidates: newProjectCandidates.length, promotionDiagnosis, associationDiagnostics }];
   }));
+  let requestWorkingSet = workingSet;
+  let targetDiagnostics: { caseId: string; selectedWorkUnitId: string; relatedWorkUnitIds: string[] } | null = null;
+  if (targetCase) {
+    if (!(targetCase in ACCEPTANCE_CASES)) throw new Error(`sterling-target-unknown-case:${targetCase}`);
+    const definition = ACCEPTANCE_CASES[targetCase as keyof typeof ACCEPTANCE_CASES];
+    const evidenceById = new Map(workingSet.evidence.map(row => [row.evidenceId, row]));
+    const matching = workingSet.workUnits.filter(unit => definition.pattern.test([
+      unit.label, ...unit.observedIdentifiers,
+      ...unit.evidenceRefs.flatMap(ref => {
+        const row = evidenceById.get(ref);
+        return [row?.subject ?? "", row?.excerpt ?? "", ...(row?.attachmentFilenames ?? [])];
+      }),
+    ].join(" ")));
+    const exact = matching.filter(unit => unit.observedIdentifiers.some(id => definition.identifiers.includes(id as never)));
+    const canonical = matching.filter(unit => unit.kind === "canonical_project");
+    const selected = exact.length === 1 ? exact[0] : canonical.length === 1 ? canonical[0]
+      : matching.length === 1 ? matching[0] : null;
+    if (!selected) {
+      process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "TARGET_BLOCKED",
+        targetCase, reason: matching.length === 0 ? "no-matching-work-unit" : "ambiguous-work-unit",
+        relatedWorkUnitIds: matching.map(row => row.workUnitId) }, null, 2)}\n`);
+      process.exitCode = 4;
+      return;
+    }
+    requestWorkingSet = buildSterlingTodayTargetWorkingSet(workingSet, selected.workUnitId);
+    targetDiagnostics = { caseId: targetCase, selectedWorkUnitId: selected.workUnitId,
+      relatedWorkUnitIds: matching.map(row => row.workUnitId) };
+    if (!withModel) {
+      process.stdout.write(`${JSON.stringify({ mode: requestWorkingSet.mutationMode, verdict: "TARGET_ASSEMBLY_ONLY",
+        target: targetDiagnostics, package: summarizeSterlingTodayTargetPackage(requestWorkingSet),
+        performance: { assemblyLatencyMs, serializedInputBytes: Buffer.byteLength(JSON.stringify(requestWorkingSet)),
+          totalLatencyMs: Date.now() - runStarted } }, null, 2)}\n`);
+      return;
+    }
+  }
   if (!withModel) {
     process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "ASSEMBLY_ONLY",
       counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
@@ -226,24 +263,29 @@ async function main() {
   }
   const apiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
   if (!apiKey) {
-    process.stdout.write(`${JSON.stringify({ mode: workingSet.mutationMode, verdict: "MODEL_BLOCKED", reason: "missing-OPENAI_API_KEY",
-      counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
-        evidence: workingSet.evidence.length, workUnits: workingSet.workUnits.length,
-        gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
+    process.stdout.write(`${JSON.stringify({ mode: requestWorkingSet.mutationMode, verdict: "MODEL_BLOCKED", reason: "missing-OPENAI_API_KEY",
+      target: targetDiagnostics,
+      counts: { people: requestWorkingSet.people.length, projects: requestWorkingSet.projects.length, jobs: requestWorkingSet.jobs.length,
+        evidence: requestWorkingSet.evidence.length, workUnits: requestWorkingSet.workUnits.length,
+        gmailThreads: threadContext.size, calendar: requestWorkingSet.calendar.length },
       performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
       calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
       caseCoverage }, null, 2)}\n`);
     process.exitCode = 3; return;
   }
   const completion = await requestSterlingTodayProposal({ apiKey,
-    model: conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL), workingSet });
-  const validation = validateSterlingTodayProposal(workingSet, completion.proposal);
-  const acceptance = evaluateSterlingTodayAcceptance(workingSet, completion.proposal);
+    model: conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL), workingSet: requestWorkingSet });
+  const validation = validateSterlingTodayProposal(requestWorkingSet, completion.proposal);
+  const acceptance = targetDiagnostics ? null : evaluateSterlingTodayAcceptance(requestWorkingSet, completion.proposal);
   const result = {
-    mode: workingSet.mutationMode, verdict: validation.accepted && acceptance.passed ? "PASS" : "BLOCK",
-    counts: { people: workingSet.people.length, projects: workingSet.projects.length, jobs: workingSet.jobs.length,
-      evidence: workingSet.evidence.length, gmailThreads: threadContext.size, calendar: workingSet.calendar.length,
-      workUnits: workingSet.workUnits.length, assessments: completion.proposal.portfolioAssessments.length,
+    mode: requestWorkingSet.mutationMode,
+    verdict: targetDiagnostics
+      ? validation.accepted ? "TARGET_VALID" : "BLOCK"
+      : validation.accepted && acceptance?.passed ? "PASS" : "BLOCK",
+    target: targetDiagnostics,
+    counts: { people: requestWorkingSet.people.length, projects: requestWorkingSet.projects.length, jobs: requestWorkingSet.jobs.length,
+      evidence: requestWorkingSet.evidence.length, gmailThreads: threadContext.size, calendar: requestWorkingSet.calendar.length,
+      workUnits: requestWorkingSet.workUnits.length, assessments: completion.proposal.portfolioAssessments.length,
       recommendations: completion.proposal.recommendations.length, mutations: completion.proposal.proposedCanonicalMutations.length },
     performance: { assemblyLatencyMs, modelLatencyMs: completion.latencyMs, inputBytes: completion.inputBytes,
       outputBytes: completion.outputBytes, tokenUsage: completion.usage, totalLatencyMs: Date.now() - runStarted },
@@ -252,7 +294,9 @@ async function main() {
     acceptance,
     portfolio: completion.proposal.portfolioAssessments.map(item => ({ workUnitId: item.workUnitId,
       projectId: item.projectId, identityStatus: item.identityStatus, todayDisposition: item.todayDisposition,
-      recommendationItemId: item.recommendationItemId, stage: item.currentStage.stage,
+      recommendationItemId: item.recommendationItemId,
+      canonicalLifecycleStage: item.currentStage.canonicalLifecycleStage,
+      operationalSubstage: item.currentStage.operationalSubstage,
       stageResponsibleParty: item.currentStage.responsibleParty, nextStepOwner: item.nextStepOwner,
       confidence: item.confidence, evidenceRefs: item.evidenceRefs,
       obligations: item.obligations.map(obligation => ({ obligationId: obligation.obligationId, status: obligation.status,

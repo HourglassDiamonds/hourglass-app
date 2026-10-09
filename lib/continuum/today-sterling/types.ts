@@ -1,7 +1,8 @@
 /** Sterling-native Today V1 contracts. Sterling judges; Continuum validates. */
+import type { ProjectLifecycleStage } from "@/lib/continuum/client-memory/project-lifecycle";
 
 export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v2" as const;
-export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v2" as const;
+export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v3" as const;
 
 export const STERLING_TODAY_CATEGORIES = [
   "up_next", "founder_actions", "waiting_on_client", "waiting_on_shop",
@@ -87,7 +88,8 @@ export type SterlingPortfolioAssessment = {
   identityStatus: "canonical_project" | "provisional_evidence" | "unresolved_identity";
   todayDisposition: "presented" | "suppressed" | "ambiguous";
   recommendationItemId: string | null;
-  currentStage: { stage: string | null; responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence;
+  currentStage: { canonicalLifecycleStage: ProjectLifecycleStage | null; operationalSubstage: string | null;
+    responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence;
     explanation: string; evidenceRefs: readonly string[] };
   obligations: readonly SterlingObligationAssessment[];
   nextStepOwner: SterlingResponsibleParty;
@@ -103,7 +105,8 @@ export type SterlingTodayRecommendation = {
   relationshipRole: SterlingRelationshipRole; title: string; summary: string;
   responsibleParty: SterlingResponsibleParty; confidence: SterlingConfidence; explanation: string;
   evidenceRefs: readonly string[]; ambiguities: readonly string[];
-  projectStage: { stage: string | null; confidence: SterlingConfidence; explanation: string; evidenceRefs: readonly string[] };
+  projectStage: { canonicalLifecycleStage: ProjectLifecycleStage | null; operationalSubstage: string | null;
+    confidence: SterlingConfidence; explanation: string; evidenceRefs: readonly string[] };
   obligations: readonly SterlingObligationAssessment[];
 };
 
@@ -114,7 +117,7 @@ export type SterlingMutationKind = (typeof STERLING_MUTATION_KINDS)[number];
 
 export type SterlingProposedCanonicalMutation = {
   proposalKey: string; kind: SterlingMutationKind; projectId: string | null; personId: string | null;
-  jobId: string | null; expectedRecordVersion: string | null; targetLifecycleStage: string | null;
+  jobId: string | null; expectedRecordVersion: string | null; targetLifecycleStage: ProjectLifecycleStage | null;
   targetJobState: "resolved" | "cancelled" | null; targetResponsibleParty: SterlingResponsibleParty | null;
   newJob: { kind: string; subject: string; detail: string | null; responsibleParty: SterlingResponsibleParty; dueAt: string | null } | null;
   reason: string; evidenceRefs: readonly string[]; requiresFounderApproval: true;

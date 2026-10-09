@@ -45,7 +45,8 @@ const CASES: readonly CaseDefinition[] = [
 ] as const;
 
 const recommendationText = (item: SterlingTodayProposal["recommendations"][number]) =>
-  [item.title, item.summary, item.explanation, item.projectStage.stage, ...item.obligations.map(row => row.description)].filter(Boolean).join(" ");
+  [item.title, item.summary, item.explanation, item.projectStage.canonicalLifecycleStage,
+    item.projectStage.operationalSubstage, ...item.obligations.map(row => row.description)].filter(Boolean).join(" ");
 
 export function evaluateSterlingTodayAcceptance(
   workingSet: SterlingTodayWorkingSet,
@@ -86,7 +87,7 @@ export function evaluateSterlingTodayAcceptance(
       return result(definition, false, "omitted_from_today", actual, matchingWorkUnitIds);
     }
     if (definition.categories && !definition.categories.includes(recommendation.category)) {
-      const stageCorrect = definition.productionStage && /(^|_)production$/i.test(assessment.currentStage.stage ?? "");
+      const stageCorrect = definition.productionStage && assessment.currentStage.canonicalLifecycleStage === "production";
       return result(definition, false, stageCorrect ? "wrong_category" : definition.productionStage ? "project_stage_mismatch" : "wrong_category",
         actual, matchingWorkUnitIds);
     }
@@ -134,7 +135,7 @@ function assessmentActual(
   recommendation: SterlingTodayProposal["recommendations"][number] | undefined,
 ): string {
   const obligations = assessment.obligations.map(row => `${row.status}:${row.responsibleParty}`).join(",") || "none";
-  return `disposition=${assessment.todayDisposition};category=${recommendation?.category ?? "none"};owner=${assessment.nextStepOwner};stage=${assessment.currentStage.stage ?? "none"};obligations=${obligations}`;
+  return `disposition=${assessment.todayDisposition};category=${recommendation?.category ?? "none"};owner=${assessment.nextStepOwner};stage=${assessment.currentStage.canonicalLifecycleStage ?? "none"};substage=${assessment.currentStage.operationalSubstage ?? "none"};obligations=${obligations}`;
 }
 
 function result(
