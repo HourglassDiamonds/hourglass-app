@@ -50,7 +50,7 @@ function workingSet() {
 }
 function proposal(): SterlingTodayProposal {
   const set = workingSet(); const workUnit = set.workUnits[0]!; const evidenceId = workUnit.evidenceRefs[0]!;
-  const project = set.projects[0]!; const openJob = set.jobs[0]!;
+  const openJob = set.jobs[0]!;
   return { contractVersion: STERLING_TODAY_PROPOSAL_VERSION, runId: set.runId, evidenceSnapshotId: set.evidenceSnapshotId,
     generatedAt: set.generatedAt, portfolioAmbiguities: [], portfolioAssessments: [{ workUnitId: workUnit.workUnitId,
       projectId, identityStatus: "canonical_project", todayDisposition: "presented", recommendationItemId: "abbey",

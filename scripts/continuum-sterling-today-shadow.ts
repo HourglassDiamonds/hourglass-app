@@ -1,7 +1,7 @@
 /** READ-ONLY live Sterling-native Today replay. No canonical or snapshot writes. */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { collectPagedRows } from "../lib/continuum/candidates/page";
 import { rowToCandidate } from "../lib/continuum/candidates/rows";
 import { CONTINUUM_CANDIDATES_TABLE } from "../lib/continuum/candidates/activation";
@@ -55,7 +55,7 @@ function candidateProjectId(candidate: ContinuumCandidate): string | null {
   return "projectId" in target ? target.projectId : null;
 }
 
-async function calendarDiagnostic(client: any) {
+async function calendarDiagnostic(client: SupabaseClient) {
   const result = await client.from("continuum_calendar_connections")
     .select("status, refresh_token_ciphertext, granted_scope, last_read_at, status_error_code")
     .eq("calendar_slot", "founder-v1").maybeSingle();
@@ -108,7 +108,7 @@ function required(name: string): string {
   const value = process.env[name]?.trim() ?? ""; if (!value) throw new Error(`missing-${name}`); return value;
 }
 
-async function loadCandidates(client: any): Promise<ContinuumCandidate[]> {
+async function loadCandidates(client: SupabaseClient): Promise<ContinuumCandidate[]> {
   const rows = await collectPagedRows(async (from, to) => {
     const result = await client.from(CONTINUUM_CANDIDATES_TABLE).select("*").order("source_timestamp", { ascending: false }).range(from, to);
     if (result.error) throw result.error; return result.data ?? [];
@@ -116,7 +116,7 @@ async function loadCandidates(client: any): Promise<ContinuumCandidate[]> {
   return rows.flatMap(row => { try { return [rowToCandidate(row as Record<string, unknown>)]; } catch { return []; } });
 }
 
-async function loadPreviousToday(client: any): Promise<SterlingPreviousTodayItem[]> {
+async function loadPreviousToday(client: SupabaseClient): Promise<SterlingPreviousTodayItem[]> {
   const { data } = await client.from("continuum_today_snapshots").select("payload").eq("snapshot_key", "founder_today_v1").limit(1);
   const raw = data as unknown as Array<{ payload?: unknown }> | null;
   const payload = raw?.[0]?.payload as { docket?: { items?: unknown[]; watching?: unknown[] } } | undefined;
