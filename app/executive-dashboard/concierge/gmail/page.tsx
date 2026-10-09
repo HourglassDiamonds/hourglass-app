@@ -13,7 +13,6 @@ import {
 import { GmailConnectionTestForm } from "../components/gmail-connection-test";
 import { GmailHistoryForm } from "../components/gmail-history";
 import { GmailIncrementalForm } from "../components/gmail-incremental";
-import { PrivateGmailEvidenceAudit } from "../components/private-gmail-evidence-audit";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +62,6 @@ export default async function ConciergeGmailPage() {
         <GmailConnectionTestForm connected={connected} />
         <GmailHistoryForm initial={history} />
         <GmailIncrementalForm initial={incremental} publicState={publicState} />
-        <PrivateGmailEvidenceAudit />
         <Link
           href="/executive-dashboard/concierge/gmail/intake"
           className="mt-8 inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.14em] text-[#8d8073] outline-none hover:text-[#efe8de] focus-visible:text-[#efe8de]"
