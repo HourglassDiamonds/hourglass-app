@@ -9,7 +9,7 @@ import type {
   BufferReserveState,
 } from "@/app/ledger/buffer-health-data";
 
-export const LEDGER_AUTOMATION_MODE = "APPROVAL_ONLY" as const;
+export const LEDGER_AUTOMATION_MODE = "STRICT_SAFE_UPDATE_AUTO" as const;
 
 export type LedgerRunType = "TUESDAY_FULL" | "FRIDAY_DELTA";
 export type LedgerRunClassification = "NO_CHANGE" | "SAFE_UPDATE" | "APPROVAL_REQUIRED";
@@ -22,7 +22,10 @@ export type LedgerRunState =
   | "AWAITING_APPROVAL"
   | "APPROVED"
   | "REJECTED"
+  | "NEEDS_REVISION"
+  | "PUBLISHING"
   | "PUBLISHED"
+  | "PUBLICATION_FAILED"
   | "FAILED";
 
 export type SourceFreshness = "CURRENT" | "STALE" | "UNKNOWN";
@@ -50,6 +53,7 @@ export type LedgerLiveProvider =
 export type NormalizedLedgerObservation = {
   summary: string;
   proposedMonitorState?: string;
+  proposedMonitorDirection?: string;
   proposedBufferState?: BufferReserveState;
   proposedTemperatureChannel?: {
     channelId: TemperatureChannelId;
@@ -130,6 +134,8 @@ export type MonitorProposal = {
   monitorId: Exclude<LedgerIndexId, "buffer-health">;
   previousState: string;
   proposedState: string;
+  previousDirection: string;
+  proposedDirection: string;
   changeExplanation: string;
   confidence: "HIGH" | "MODERATE" | "LOW";
   supportingSourceIds: readonly string[];
@@ -200,13 +206,14 @@ export type LedgerAutomationRunRecord = {
   mode: typeof LEDGER_AUTOMATION_MODE;
   evidencePacket: LedgerEvidencePacket;
   proposedPublication: LedgerPublicationPreview;
-  founderApproval: null;
-  publicationOccurred: false;
-  publicationId: null;
-  publicationDate: null;
+  founderApproval: FounderDecisionRecord | null;
+  publicationOccurred: boolean;
+  publicationId: string | null;
+  publicationDate: string | null;
+  canonicalPublication: import("./publication-types").LedgerPublication | null;
 };
 
-export type FounderDecision = "APPROVE" | "REJECT" | "NEEDS_REVIEW";
+export type FounderDecision = "APPROVE" | "REJECT" | "NEEDS_REVISION";
 export type FounderDecisionRecord = {
   schemaVersion: "ledger-founder-decision-v1";
   decisionId: string;
@@ -215,5 +222,5 @@ export type FounderDecisionRecord = {
   decidedAt: string;
   decidedBy: string;
   note: string | null;
-  resultingState: "APPROVED" | "REJECTED" | "AWAITING_APPROVAL";
+  resultingState: "APPROVED" | "REJECTED" | "NEEDS_REVISION";
 };

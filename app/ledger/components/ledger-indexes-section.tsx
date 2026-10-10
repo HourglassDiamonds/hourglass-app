@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LEDGER_HUB_INDEXES } from "../ledger-data";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 const HUB_METHOD_NOTICE =
   "Individual monitors are qualitative. They use states, direction, documented evidence, and defined change triggers. System Temperature, published on the Ledger hub, is the only composite numerical reading.";
@@ -15,7 +16,7 @@ function hubCardCta(id: string): string {
   return "View monitor →";
 }
 
-export default function LedgerIndexesSection() {
+export default function LedgerIndexesSection({ publication }: { publication: LedgerPublication }) {
   return (
     <section
       className="border-b border-[#e4dbcf] py-16 md:py-20"
@@ -42,7 +43,11 @@ export default function LedgerIndexesSection() {
         </p>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">
-          {LEDGER_HUB_INDEXES.map((index) => (
+          {LEDGER_HUB_INDEXES.map((index) => {
+            const published = index.id === "buffer-health"
+              ? { state: publication.bufferHealth.state, summary: publication.bufferHealth.summary }
+              : publication.monitors.find((monitor) => monitor.id === index.id);
+            return (
             <Link
               key={index.id}
               href={`/ledger/${index.slug}`}
@@ -55,16 +60,16 @@ export default function LedgerIndexesSection() {
                 {index.displayTitle}
               </h3>
               <p className="mt-2 font-sans text-[10px] uppercase tracking-[0.14em] text-[#6d655e]">
-                {index.status}
+                {published?.state ?? index.status}
               </p>
               <p className="mt-3 text-[0.9rem] leading-[1.8] text-[#6f6760]">
-                {index.hubDescription}
+                {published && "summary" in published ? published.summary : index.hubDescription}
               </p>
               <span className="mt-4 inline-block font-sans text-[10px] uppercase tracking-[0.2em] text-[#6d655e] group-hover:text-[#4a4540]">
                 {hubCardCta(index.id)}
               </span>
             </Link>
-          ))}
+          )})}
         </div>
       </div>
     </section>

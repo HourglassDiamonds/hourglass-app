@@ -168,7 +168,7 @@ describe("Ledger Automation V1.1 live adapters", () => {
       registry: [definition],
       adapter: createLiveLedgerAdapter({ env: {}, fetchImpl: async () => jsonResponse({}) }),
     });
-    assert.equal(run.state, "FAILED");
+    assert.equal(run.state, "AWAITING_APPROVAL");
   });
 
   it("does not fail a run for an optional unavailable source", async () => {
@@ -207,7 +207,7 @@ describe("Ledger Automation V1.1 live adapters", () => {
       registry: [source("BLS_EMPLOYMENT")],
       adapter: createLiveLedgerAdapter({ fetchImpl: async () => jsonResponse(blsPayload()) }),
     });
-    assert.equal(run.mode, "APPROVAL_ONLY");
+    assert.equal(run.mode, "STRICT_SAFE_UPDATE_AUTO");
     assert.equal(run.publicationOccurred, false);
     assert.equal(run.publicationId, null);
   });

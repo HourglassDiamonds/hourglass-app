@@ -4,22 +4,36 @@
  */
 
 import Link from "next/link";
-import { SYSTEMS_FUNCTIONING_BUFFER_QUALIFIER } from "../buffer-health-data";
 import {
-  SYSTEM_TEMPERATURE_LEDGER_NOTE,
   SYSTEM_TEMPERATURE_METHODOLOGY_POINTS,
   SYSTEM_TEMPERATURE_METHODOLOGY_SHORT,
   SYSTEM_TEMPERATURE_READING,
   SYSTEM_TEMPERATURE_SCALE_INTRO,
   TEMPERATURE_BANDS,
+  bandForDegrees,
 } from "../system-temperature";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 function confidenceLabel(value: string): string {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-export default function SystemTemperature() {
-  const reading = SYSTEM_TEMPERATURE_READING;
+export default function SystemTemperature({ publication }: { publication: LedgerPublication }) {
+  const band = bandForDegrees(publication.overall.temperature);
+  const reading = {
+    ...SYSTEM_TEMPERATURE_READING,
+    degrees: publication.overall.temperature,
+    band: band.id,
+    bandLabel: publication.overall.qualitativeState,
+    functioningLabel: publication.overall.systemicDirection,
+    confidence: publication.overall.confidence,
+    explanation: publication.overall.temperatureSnapshot.explanation,
+    evidenceCutoff: publication.evidenceReviewedThrough,
+    previousDegrees: publication.historicalComparison.temperatureDelta === null
+      ? null
+      : publication.overall.temperature - publication.historicalComparison.temperatureDelta,
+    weeklyDelta: publication.historicalComparison.temperatureDelta,
+  };
   const markerPercent = Math.min(100, Math.max(0, reading.degrees));
 
   return (
@@ -107,7 +121,7 @@ export default function SystemTemperature() {
             className="mt-3 max-w-[44rem] text-[0.92rem] leading-[1.75] text-[#5c554d]"
             data-systems-functioning-qualifier="true"
           >
-            {SYSTEMS_FUNCTIONING_BUFFER_QUALIFIER}
+            {publication.bufferHealth.functioningQualifier}
           </p>
           <p className="mt-3 text-[0.88rem] leading-[1.75] text-[#6f6760]">
             Functioning and remaining slack are reviewed separately. See the{" "}
@@ -125,7 +139,7 @@ export default function SystemTemperature() {
               Ledger Note
             </p>
             <p className="mt-3 max-w-[44rem] text-[0.95rem] leading-[1.85] text-[#5c554d]">
-              {SYSTEM_TEMPERATURE_LEDGER_NOTE}
+              {publication.overall.ledgerNote}
             </p>
           </div>
 

@@ -3,15 +3,11 @@
  * Numerical score UI archived at ./archived/information-signal-map-numerical-view.tsx
  */
 import {
-  ISM_CURRENT_DIRECTION,
-  ISM_CURRENT_STATE,
   ISM_FOOTER_NOTE,
   ISM_NARRATIVE_MAP,
   ISM_NARRATIVE_SHIFT,
   ISM_SIGNAL_GRID,
-  ISM_SNAPSHOT,
   ISM_SOURCE_STACK,
-  ISM_SUMMARY,
   ISM_WHAT_TO_WATCH,
   ISM_WHAT_WOULD_CHANGE,
 } from "../information-signal-map-data";
@@ -24,6 +20,7 @@ import {
   LedgerSourcesReviewed,
 } from "./ledger-monitor-chrome";
 import "../information-signal-map.css";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 function SignalBox({ title, body }: { title: string; body: string }) {
   return (
@@ -34,7 +31,9 @@ function SignalBox({ title, body }: { title: string; body: string }) {
   );
 }
 
-export default function InformationSignalMapView() {
+export default function InformationSignalMapView({ publication }: { publication: LedgerPublication }) {
+  const current = publication.monitors.find((monitor) => monitor.id === "information-signal");
+  if (!current) throw new Error("Canonical publication is missing Information Signal.");
   return (
     <section
       className={`ledger-index-page ledger-im ${LEDGER_INDEX_PAGE_CLASS}`}
@@ -50,21 +49,21 @@ export default function InformationSignalMapView() {
         and institutions — where framing converges, where it diverges, and what
         remains underweighted.
       </p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={current.evidenceReviewedThrough} />
 
       <div className="im-card ledger-index-hero-card">
         <div className="ledger-monitor-status-pair">
           <div>
             <p className="ledger-monitor-pair-label">Current State</p>
-            <p className="ledger-monitor-pair-value">{ISM_CURRENT_STATE}</p>
+            <p className="ledger-monitor-pair-value">{current.state}</p>
           </div>
           <div>
             <p className="ledger-monitor-pair-label">Current Direction</p>
-            <p className="ledger-monitor-pair-value">{ISM_CURRENT_DIRECTION}</p>
+            <p className="ledger-monitor-pair-value">{current.direction}</p>
           </div>
         </div>
 
-        <p className="im-summary ledger-monitor-lead">{ISM_SUMMARY}</p>
+        <p className="im-summary ledger-monitor-lead">{current.summary}</p>
 
         <div className="im-grid-3">
           {ISM_SIGNAL_GRID.map((item) => (
@@ -122,7 +121,7 @@ export default function InformationSignalMapView() {
         </div>
       </div>
 
-      <LedgerSourcesReviewed sources={ISM_SNAPSHOT.sources} />
+      <LedgerSourcesReviewed sources={current.sourceReferences} />
       <LedgerQualitativeStatesBlock />
 
       <p className="im-footer ledger-index-page-note">{ISM_FOOTER_NOTE}</p>

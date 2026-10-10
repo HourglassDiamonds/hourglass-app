@@ -29,13 +29,13 @@ import type {
 } from "./types";
 import { LEDGER_AUTOMATION_MODE } from "./types";
 
-const MONITOR_BASELINES: Readonly<Record<Exclude<LedgerIndexId, "buffer-health">, string>> = {
-  "global-pressure": GPM_SNAPSHOT.currentState,
-  "ai-capability": ACAI_SNAPSHOT.currentState,
-  "precious-materials": PMI_SNAPSHOT.currentState,
-  "infrastructure-strain": ISI_SNAPSHOT.currentState,
-  "global-water-stress": GWS_SNAPSHOT.currentState,
-  "information-signal": ISM_SNAPSHOT.currentState,
+const MONITOR_BASELINES: Readonly<Record<Exclude<LedgerIndexId, "buffer-health">, { state: string; direction: string }>> = {
+  "global-pressure": { state: GPM_SNAPSHOT.currentState, direction: GPM_SNAPSHOT.currentDirection },
+  "ai-capability": { state: ACAI_SNAPSHOT.currentState, direction: ACAI_SNAPSHOT.currentDirection },
+  "precious-materials": { state: PMI_SNAPSHOT.currentState, direction: PMI_SNAPSHOT.currentDirection },
+  "infrastructure-strain": { state: ISI_SNAPSHOT.currentState, direction: ISI_SNAPSHOT.currentDirection },
+  "global-water-stress": { state: GWS_SNAPSHOT.currentState, direction: GWS_SNAPSHOT.currentDirection },
+  "information-signal": { state: ISM_SNAPSHOT.currentState, direction: ISM_SNAPSHOT.currentDirection },
 };
 
 const MONITOR_ORDER = Object.keys(MONITOR_BASELINES) as Exclude<LedgerIndexId, "buffer-health">[];
@@ -64,7 +64,16 @@ function previousMonitorState(
 ): string {
   return previousReview?.evidencePacket.monitorObservations.find(
     (proposal) => proposal.monitorId === monitorId,
-  )?.proposedState ?? MONITOR_BASELINES[monitorId];
+  )?.proposedState ?? MONITOR_BASELINES[monitorId].state;
+}
+
+function previousMonitorDirection(
+  monitorId: Exclude<LedgerIndexId, "buffer-health">,
+  previousReview?: LedgerAutomationRunRecord | null,
+): string {
+  return previousReview?.evidencePacket.monitorObservations.find(
+    (proposal) => proposal.monitorId === monitorId,
+  )?.proposedDirection ?? MONITOR_BASELINES[monitorId].direction;
 }
 
 function checksForFriday(checks: readonly LedgerSourceCheck[]): LedgerSourceCheck[] {
@@ -91,6 +100,7 @@ function buildMonitorProposals(
 ): MonitorProposal[] {
   return MONITOR_ORDER.map((monitorId) => {
     const previousState = previousMonitorState(monitorId, previousReview);
+    const previousDirection = previousMonitorDirection(monitorId, previousReview);
     const relevant = checks.filter((check) => check.monitorId === monitorId);
     const proposals = [...new Set(relevant.flatMap((check) => {
       const state = check.normalizedObservation?.proposedMonitorState;
@@ -98,13 +108,21 @@ function buildMonitorProposals(
     }))];
     const conflict = proposals.length > 1;
     const proposedState = conflict ? previousState : (proposals[0] ?? previousState);
-    const materialChange = proposedState !== previousState || relevant.some(
+    const directions = [...new Set(relevant.flatMap((check) => {
+      const direction = check.normalizedObservation?.proposedMonitorDirection;
+      return direction ? [direction] : [];
+    }))];
+    const directionConflict = directions.length > 1;
+    const proposedDirection = directionConflict ? previousDirection : (directions[0] ?? previousDirection);
+    const materialChange = proposedState !== previousState || proposedDirection !== previousDirection || relevant.some(
       (check) => check.normalizedObservation?.significance === "MATERIAL",
     );
     return {
       monitorId,
       previousState,
       proposedState,
+      previousDirection,
+      proposedDirection,
       changeExplanation: conflict
         ? "Approved sources propose conflicting states; the prior state is retained pending founder review."
         : materialChange
@@ -114,7 +132,7 @@ function buildMonitorProposals(
             : "No material change from the prior formal state.",
       confidence: confidenceFor(relevant),
       supportingSourceIds: relevant.filter((check) => !check.failure).map((check) => check.sourceId),
-      contradictorySourceIds: conflict ? relevant.map((check) => check.sourceId) : [],
+      contradictorySourceIds: conflict || directionConflict ? relevant.map((check) => check.sourceId) : [],
       materialChange,
     };
   });
@@ -266,9 +284,7 @@ export async function runLedgerAutomation(input: RunEngineInput): Promise<Ledger
     reasons: result.reasons,
     publicationRecommendation: result.classification,
   };
-  const terminalState: LedgerRunState = result.failed
-    ? "FAILED"
-    : result.classification === "NO_CHANGE"
+  const terminalState: LedgerRunState = result.classification === "NO_CHANGE"
       ? "NO_CHANGE"
       : "AWAITING_APPROVAL";
   const stateHistory: LedgerRunState[] = ["CREATED", "FETCHING", "ANALYZING", "DRAFTED", terminalState];
@@ -291,5 +307,6 @@ export async function runLedgerAutomation(input: RunEngineInput): Promise<Ledger
     publicationOccurred: false,
     publicationId: null,
     publicationDate: null,
+    canonicalPublication: null,
   };
 }

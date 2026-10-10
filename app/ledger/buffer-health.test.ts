@@ -21,13 +21,14 @@ import {
   SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
   TEMPERATURE_CHANNEL_WEIGHTS,
 } from "./system-temperature";
+import { OCTOBER_10_LEDGER_PUBLICATION } from "@/lib/ledger-automation/baseline-publication";
 
 const ledgerRoot = path.resolve(process.cwd(), "app", "ledger");
 
 describe("Buffer Health", () => {
   it("renders all six domains on the hub visual", () => {
     const html = renderToStaticMarkup(
-      createElement(BufferHealthVisual, { compact: true }),
+      createElement(BufferHealthVisual, { compact: true, publication: OCTOBER_10_LEDGER_PUBLICATION }),
     );
     assert.equal(BUFFER_HEALTH_DOMAINS.length, 6);
     for (const domain of BUFFER_HEALTH_DOMAINS) {
@@ -59,7 +60,7 @@ describe("Buffer Health", () => {
 
     assert.equal(reserveFillPercent("Unassessed"), null);
     const html = renderToStaticMarkup(
-      createElement(BufferHealthVisual, { compact: true }),
+      createElement(BufferHealthVisual, { compact: true, publication: OCTOBER_10_LEDGER_PUBLICATION }),
     );
     assert.match(html, /data-buffer-domain="energy" data-reserve-state="Low" aria-label="Energy buffer health: Low"/);
     assert.match(html, /data-buffer-domain="households" data-reserve-state="Thinning"/);
@@ -94,7 +95,7 @@ describe("Buffer Health", () => {
     const before = computeTemperatureDegrees(
       SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
     );
-    const html = renderToStaticMarkup(createElement(SystemTemperature));
+    const html = renderToStaticMarkup(createElement(SystemTemperature, { publication: OCTOBER_10_LEDGER_PUBLICATION }));
     assert.match(html, /data-systems-functioning-qualifier="true"/);
     assert.match(html, new RegExp(SYSTEMS_FUNCTIONING_BUFFER_QUALIFIER));
     assert.equal(
@@ -125,7 +126,7 @@ describe("Buffer Health", () => {
       }
     }
     assert.equal(BUFFER_HEALTH_SNAPSHOT.evidenceCutoff, "October 10, 2026");
-    const html = renderToStaticMarkup(createElement(BufferHealthView));
+    const html = renderToStaticMarkup(createElement(BufferHealthView, { publication: OCTOBER_10_LEDGER_PUBLICATION }));
     assert.match(html, /October 1 remains the fixed baseline/i);
     for (const label of labels) {
       assert.match(html, new RegExp(label));

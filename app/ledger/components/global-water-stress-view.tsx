@@ -7,8 +7,6 @@ import {
   GWS_FOOTER_NOTE,
   GWS_INTRO,
   GWS_REGIONS,
-  GWS_SNAPSHOT,
-  GWS_SUMMARY,
   GWS_WEEKLY_SIGNAL,
   GWS_WHAT_WATCHING,
 } from "../global-water-stress-data";
@@ -21,10 +19,13 @@ import {
   LedgerSourcesReviewed,
 } from "./ledger-monitor-chrome";
 import "../global-water-stress.css";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 const DISPLAY_TITLE = "Global Water Stress Monitor";
 
-export default function GlobalWaterStressView() {
+export default function GlobalWaterStressView({ publication }: { publication: LedgerPublication }) {
+  const current = publication.monitors.find((monitor) => monitor.id === "global-water-stress");
+  if (!current) throw new Error("Canonical publication is missing Global Water Stress.");
   return (
     <section
       className={`ledger-index-page ledger-gws ${LEDGER_INDEX_PAGE_CLASS}`}
@@ -36,7 +37,7 @@ export default function GlobalWaterStressView() {
       </span>
       <h1 className="gws-title ledger-index-title">{DISPLAY_TITLE}</h1>
       <p className="gws-intro ledger-index-intro">{GWS_INTRO}</p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={current.evidenceReviewedThrough} />
 
       <div className="gws-hero">
         <div className="gws-card ledger-index-hero-card">
@@ -44,18 +45,18 @@ export default function GlobalWaterStressView() {
             <div>
               <p className="ledger-monitor-pair-label">Current State</p>
               <p className="ledger-monitor-pair-value">
-                {GWS_SNAPSHOT.currentState}
+                {current.state}
               </p>
             </div>
             <div>
               <p className="ledger-monitor-pair-label">Current Direction</p>
               <p className="ledger-monitor-pair-value">
-                {GWS_SNAPSHOT.currentDirection}
+                {current.direction}
               </p>
             </div>
           </div>
 
-          <p className="gws-summary ledger-monitor-lead">{GWS_SUMMARY}</p>
+          <p className="gws-summary ledger-monitor-lead">{current.summary}</p>
 
           <div className="ledger-signal-block">
             <p className="ledger-changed-label">This week&apos;s signal</p>
@@ -110,7 +111,7 @@ export default function GlobalWaterStressView() {
         </div>
       </div>
 
-      <LedgerSourcesReviewed sources={GWS_SNAPSHOT.sources} />
+      <LedgerSourcesReviewed sources={current.sourceReferences} />
       <LedgerQualitativeStatesBlock />
 
       <p className="gws-footer-note ledger-index-page-note">{GWS_FOOTER_NOTE}</p>

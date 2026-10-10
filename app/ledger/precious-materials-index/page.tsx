@@ -4,6 +4,10 @@ import LedgerPageJsonLd from "../components/ledger-page-json-ld";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
 import { ledgerMetadata } from "../ledger-seo";
+import { getCurrentLedgerPublication } from "@/lib/ledger-automation/current-publication";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const NAME = "Precious Materials Monitor";
 const PATH = "/ledger/precious-materials-index";
@@ -16,11 +20,12 @@ export const metadata: Metadata = ledgerMetadata({
   description: DESCRIPTION,
 });
 
-export default function PreciousMaterialsIndexPage() {
+export default async function PreciousMaterialsIndexPage() {
+  const publication = await getCurrentLedgerPublication();
   return (
-    <LedgerShell activeIndexId="precious-materials">
+    <LedgerShell activeIndexId="precious-materials" publication={publication}>
       <LedgerPageJsonLd name={NAME} path={PATH} description={DESCRIPTION} />
-      <PreciousMaterialsIndexView />
+      <PreciousMaterialsIndexView publication={publication} />
       <LedgerPageFooter />
     </LedgerShell>
   );

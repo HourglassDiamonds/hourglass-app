@@ -3,19 +3,21 @@ import "../global-pressure-index.css";
 import GlobalPressureMonitor from "./global-pressure-monitor";
 import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 type LedgerIndexPageContentProps = {
   index: LedgerIndexDefinition;
+  publication: LedgerPublication;
 };
 
-export function LedgerIndexPageContent({ index }: LedgerIndexPageContentProps) {
+export function LedgerIndexPageContent({ index, publication }: LedgerIndexPageContentProps) {
   const isGpi = index.id === "global-pressure";
 
   if (isGpi) {
     return (
       <section className={`ledger-index-page ledger-gpi ${LEDGER_INDEX_PAGE_CLASS}`}>
         <LedgerIndexBreadcrumb current={index.displayTitle} />
-        <GlobalPressureMonitor variant="full" />
+        <GlobalPressureMonitor variant="full" publication={publication} />
       </section>
     );
   }

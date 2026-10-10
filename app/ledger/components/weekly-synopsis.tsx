@@ -18,12 +18,19 @@ export const WEEKLY_SYNOPSIS = {
   ],
 } as const;
 
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
+
 type WeeklySynopsisProps = {
   className?: string;
+  publication: LedgerPublication;
 };
 
-export default function WeeklySynopsis({ className = "" }: WeeklySynopsisProps) {
-  const { eyebrow, headline, blocks } = WEEKLY_SYNOPSIS;
+export default function WeeklySynopsis({ className = "", publication }: WeeklySynopsisProps) {
+  const { eyebrow } = WEEKLY_SYNOPSIS;
+  const headline = publication.overall.synopsis;
+  const blocks = WEEKLY_SYNOPSIS.blocks.map((block, index) => index === 0
+    ? { ...block, body: publication.overall.whatChanged.join(" ") }
+    : block);
 
   return (
     <section

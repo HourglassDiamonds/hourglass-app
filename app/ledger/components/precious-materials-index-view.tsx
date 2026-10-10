@@ -6,7 +6,6 @@ import {
   PMI_CROSS_SYSTEM_BRIDGE,
   PMI_CROSS_SYSTEM_PRESSURE,
   PMI_FOOTER_METHOD_NOTE,
-  PMI_SNAPSHOT,
   PMI_SILVER_UPDATE,
   PMI_SOURCES_NOTE,
   PMI_WHAT_MOVED,
@@ -21,6 +20,7 @@ import {
   LedgerSourcesReviewed,
 } from "./ledger-monitor-chrome";
 import "../precious-materials-index.css";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 const DISPLAY_TITLE = "Precious Materials Monitor";
 const INTRO =
@@ -69,7 +69,9 @@ const MATERIAL_STATES = [
   },
 ] as const;
 
-export default function PreciousMaterialsIndexView() {
+export default function PreciousMaterialsIndexView({ publication }: { publication: LedgerPublication }) {
+  const current = publication.monitors.find((monitor) => monitor.id === "precious-materials");
+  if (!current) throw new Error("Canonical publication is missing Precious Materials.");
   return (
     <section
       className={`ledger-index-page ledger-pmi ${LEDGER_INDEX_PAGE_CLASS}`}
@@ -81,7 +83,7 @@ export default function PreciousMaterialsIndexView() {
       </span>
       <h1 className="pmi-title ledger-index-title">{DISPLAY_TITLE}</h1>
       <p className="pmi-intro ledger-index-intro">{INTRO}</p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={current.evidenceReviewedThrough} />
 
       <div className="pmi-hero">
         <div className="pmi-card ledger-index-hero-card">
@@ -89,13 +91,13 @@ export default function PreciousMaterialsIndexView() {
             <div>
               <p className="ledger-monitor-pair-label">Current State</p>
               <p className="ledger-monitor-pair-value">
-                {PMI_SNAPSHOT.currentState}
+                {current.state}
               </p>
             </div>
             <div>
               <p className="ledger-monitor-pair-label">Market Structure</p>
               <p className="ledger-monitor-pair-value">
-                {PMI_SNAPSHOT.currentDirection}
+                {current.direction}
               </p>
             </div>
           </div>
@@ -146,7 +148,7 @@ export default function PreciousMaterialsIndexView() {
         ))}
       </div>
 
-      <LedgerSourcesReviewed sources={PMI_SNAPSHOT.sources} />
+      <LedgerSourcesReviewed sources={current.sourceReferences} />
       <LedgerQualitativeStatesBlock />
 
       <div className="pmi-sources-block">

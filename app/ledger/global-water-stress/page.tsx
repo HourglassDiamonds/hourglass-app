@@ -4,6 +4,10 @@ import LedgerPageJsonLd from "../components/ledger-page-json-ld";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
 import { ledgerMetadata } from "../ledger-seo";
+import { getCurrentLedgerPublication } from "@/lib/ledger-automation/current-publication";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const NAME = "Global Water Stress Monitor";
 const PATH = "/ledger/global-water-stress";
@@ -16,11 +20,12 @@ export const metadata: Metadata = ledgerMetadata({
   description: DESCRIPTION,
 });
 
-export default function GlobalWaterStressPage() {
+export default async function GlobalWaterStressPage() {
+  const publication = await getCurrentLedgerPublication();
   return (
-    <LedgerShell activeIndexId="global-water-stress">
+    <LedgerShell activeIndexId="global-water-stress" publication={publication}>
       <LedgerPageJsonLd name={NAME} path={PATH} description={DESCRIPTION} />
-      <GlobalWaterStressView />
+      <GlobalWaterStressView publication={publication} />
       <LedgerPageFooter />
     </LedgerShell>
   );

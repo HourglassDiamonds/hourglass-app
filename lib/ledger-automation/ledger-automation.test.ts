@@ -158,7 +158,7 @@ describe("Ledger automation V1", () => {
         freshness: "UNKNOWN",
       },
     });
-    assert.equal(run.state, "FAILED");
+    assert.equal(run.state, "AWAITING_APPROVAL");
     assert.equal(run.classification, "APPROVAL_REQUIRED");
     assert.equal(run.evidencePacket.sourceFailures.length, 1);
   });
@@ -233,7 +233,7 @@ describe("Ledger automation V1", () => {
     assert.equal(BUFFER_HEALTH_DOMAINS.find((domain) => domain.id === "energy")?.reserveState, "Low");
   });
 
-  it("never auto-publishes in APPROVAL_ONLY mode", async () => {
+  it("marks a strict SAFE_UPDATE as theoretically auto-publishable", async () => {
     const target = source("global-pressure");
     const run = await directRun("TUESDAY_FULL", {
       [target.sourceId]: {
@@ -246,7 +246,7 @@ describe("Ledger automation V1", () => {
     });
     assert.equal(run.classification, "SAFE_UPDATE");
     assert.equal(run.theoreticalAutoPublishEligible, true);
-    assert.equal(run.mode, "APPROVAL_ONLY");
+    assert.equal(run.mode, "STRICT_SAFE_UPDATE_AUTO");
     assert.equal(run.state, "AWAITING_APPROVAL");
     assert.equal(run.publicationOccurred, false);
   });

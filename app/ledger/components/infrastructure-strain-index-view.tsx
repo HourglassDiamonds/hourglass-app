@@ -5,8 +5,6 @@
 import {
   ISI_CATEGORIES,
   ISI_FOOTER_NOTE,
-  ISI_SNAPSHOT,
-  ISI_SUMMARY,
   ISI_WEEKLY_SIGNAL,
   ISI_WHAT_WATCHING,
   ISI_WHAT_WOULD_EASE,
@@ -20,6 +18,7 @@ import {
   LedgerSourcesReviewed,
 } from "./ledger-monitor-chrome";
 import "../infrastructure-strain-index.css";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 const DISPLAY_TITLE = "Infrastructure Strain Monitor";
 const INTRO =
@@ -44,7 +43,9 @@ function WatchCard({ title, body }: { title: string; body: string }) {
   );
 }
 
-export default function InfrastructureStrainIndexView() {
+export default function InfrastructureStrainIndexView({ publication }: { publication: LedgerPublication }) {
+  const current = publication.monitors.find((monitor) => monitor.id === "infrastructure-strain");
+  if (!current) throw new Error("Canonical publication is missing Infrastructure Strain.");
   return (
     <section
       className={`ledger-index-page ledger-isi ${LEDGER_INDEX_PAGE_CLASS}`}
@@ -56,7 +57,7 @@ export default function InfrastructureStrainIndexView() {
       </span>
       <h1 className="isi-title ledger-index-title">{DISPLAY_TITLE}</h1>
       <p className="isi-intro ledger-index-intro">{INTRO}</p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={current.evidenceReviewedThrough} />
 
       <div className="isi-hero">
         <div className="isi-card ledger-index-hero-card">
@@ -64,18 +65,18 @@ export default function InfrastructureStrainIndexView() {
             <div>
               <p className="ledger-monitor-pair-label">Current State</p>
               <p className="ledger-monitor-pair-value">
-                {ISI_SNAPSHOT.currentState}
+                {current.state}
               </p>
             </div>
             <div>
               <p className="ledger-monitor-pair-label">Operating Condition</p>
               <p className="ledger-monitor-pair-value">
-                {ISI_SNAPSHOT.currentDirection}
+                {current.direction}
               </p>
             </div>
           </div>
 
-          <p className="isi-summary ledger-monitor-lead">{ISI_SUMMARY}</p>
+          <p className="isi-summary ledger-monitor-lead">{current.summary}</p>
 
           <div className="ledger-signal-block">
             <p className="ledger-changed-label">This week&apos;s signal</p>
@@ -120,7 +121,7 @@ export default function InfrastructureStrainIndexView() {
         </div>
       </div>
 
-      <LedgerSourcesReviewed sources={ISI_SNAPSHOT.sources} />
+      <LedgerSourcesReviewed sources={current.sourceReferences} />
       <LedgerQualitativeStatesBlock />
 
       <p className="isi-footer-note ledger-index-page-note">{ISI_FOOTER_NOTE}</p>

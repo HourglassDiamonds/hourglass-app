@@ -9,6 +9,25 @@ import {
 import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
 import { LedgerMonitorStatusLines } from "./ledger-monitor-chrome";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
+
+function publishedDomains(publication: LedgerPublication): readonly BufferDomain[] {
+  return BUFFER_HEALTH_DOMAINS.map((domain) => {
+    const published = publication.bufferHealth.domains.find((item) => item.id === domain.id);
+    if (!published) return domain;
+    return {
+      ...domain,
+      reserveState: published.state,
+      rationale: published.rationale,
+      lastUpdated: published.evidenceReviewedThrough,
+      sources: published.sourceReferences.map((source) => ({
+        ...source,
+        evidenceLabel: source.evidenceLabel ?? "Observed",
+        dataPeriod: source.dataPeriod ?? source.date,
+      })),
+    };
+  });
+}
 
 function ReserveChamber({ domain }: { domain: BufferDomain }) {
   const fill = reserveFillPercent(domain.reserveState);
@@ -40,7 +59,8 @@ function ReserveChamber({ domain }: { domain: BufferDomain }) {
   );
 }
 
-export function BufferHealthVisual({ compact = false }: { compact?: boolean }) {
+export function BufferHealthVisual({ publication, compact = false }: { publication: LedgerPublication; compact?: boolean }) {
+  const domains = publishedDomains(publication);
   return (
     <section
       className={`buffer-health-surface ${compact ? "is-compact" : ""}`}
@@ -73,39 +93,40 @@ export function BufferHealthVisual({ compact = false }: { compact?: boolean }) {
       </div>
 
       <div className="buffer-chambers">
-        {BUFFER_HEALTH_DOMAINS.map((domain) => (
+        {domains.map((domain) => (
           <ReserveChamber key={domain.id} domain={domain} />
         ))}
       </div>
 
       <p className="buffer-guardrail" role="note">
-        {BUFFER_HEALTH_GUARDRAILS.rule} Current status: {BUFFER_HEALTH_SNAPSHOT.status}.
+        {BUFFER_HEALTH_GUARDRAILS.rule} Current status: {publication.bufferHealth.state}.
       </p>
     </section>
   );
 }
 
-export default function BufferHealthView() {
+export default function BufferHealthView({ publication }: { publication: LedgerPublication }) {
+  const domains = publishedDomains(publication);
   return (
     <section className={`ledger-index-page ledger-buffer ${LEDGER_INDEX_PAGE_CLASS}`}>
       <LedgerIndexBreadcrumb current="Buffer Health / Remaining Slack" />
       <span className="ledger-index-kicker">The Ledger Intelligence System</span>
       <h1 className="ledger-index-title">Buffer Health / Remaining Slack</h1>
       <p className="ledger-index-intro">{BUFFER_HEALTH_SNAPSHOT.definition}</p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={publication.evidenceReviewedThrough} />
 
       <div className="ledger-monitor-status-pair">
         <div>
           <p className="ledger-monitor-pair-label">Current State</p>
-          <p className="ledger-monitor-pair-value">{BUFFER_HEALTH_SNAPSHOT.currentState}</p>
+          <p className="ledger-monitor-pair-value">{publication.bufferHealth.state}</p>
         </div>
         <div>
           <p className="ledger-monitor-pair-label">Current Direction</p>
-          <p className="ledger-monitor-pair-value">{BUFFER_HEALTH_SNAPSHOT.currentDirection}</p>
+          <p className="ledger-monitor-pair-value">{publication.bufferHealth.direction}</p>
         </div>
       </div>
 
-      <BufferHealthVisual />
+      <BufferHealthVisual publication={publication} />
 
       <div className="ledger-index-section">
         <h2 className="ledger-index-section-title">Domain evidence framework</h2>
@@ -114,7 +135,7 @@ export default function BufferHealthView() {
           Evidence labels distinguish observed, provisional, forecast, and lagged material.
         </p>
         <div className="buffer-domain-details">
-          {BUFFER_HEALTH_DOMAINS.map((domain) => (
+          {domains.map((domain) => (
             <article key={domain.id} className="buffer-domain-card">
               <div className="buffer-domain-card-heading">
                 <h3>{domain.label}</h3>

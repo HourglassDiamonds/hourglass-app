@@ -9,7 +9,7 @@ import JsonLd from "@/app/shared-components/JsonLd";
 import SystemTemperature from "./components/system-temperature";
 import WeeklySynopsis from "./components/weekly-synopsis";
 import { QUIET_METRICS, TRACK_TOPICS } from "./constants";
-import { buildLedgerHistoricalComparisons } from "./historical-comparison";
+import { buildPublicationHistoricalComparisons } from "./historical-comparison";
 import {
   buildLedgerHubJsonLd,
   LEDGER_HUB_DESCRIPTION,
@@ -17,6 +17,10 @@ import {
   ledgerMetadata,
 } from "./ledger-seo";
 import { LEDGER_INDEXES } from "./ledger-data";
+import { getCurrentLedgerPublication } from "@/lib/ledger-automation/current-publication";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const metadata: Metadata = ledgerMetadata({
   path: LEDGER_HUB_PATH,
@@ -30,11 +34,12 @@ const LEDGER_JSON_LD = buildLedgerHubJsonLd(
   })),
 );
 
-export default function LedgerPage() {
-  const historicalComparisons = buildLedgerHistoricalComparisons();
+export default async function LedgerPage() {
+  const publication = await getCurrentLedgerPublication();
+  const historicalComparisons = buildPublicationHistoricalComparisons(publication);
 
   return (
-    <LedgerShell>
+    <LedgerShell publication={publication}>
       <JsonLd data={LEDGER_JSON_LD} />
 
       {/* Hero */}
@@ -89,22 +94,22 @@ export default function LedgerPage() {
         </div>
       </section>
 
-      <SystemTemperature />
+      <SystemTemperature publication={publication} />
 
       <section className="border-b border-[#e4dbcf] py-16 md:py-20">
         <div className="mx-auto max-w-[920px]">
-          <BufferHealthVisual compact />
+          <BufferHealthVisual compact publication={publication} />
         </div>
       </section>
 
       <LedgerHistoryComparison comparisons={historicalComparisons} />
 
-      <LedgerIndexesSection />
+      <LedgerIndexesSection publication={publication} />
 
       {/* Supporting Global Pressure teaser + weekly synopsis */}
       <section className="border-b border-[#e4dbcf] py-16 md:py-20">
-        <GlobalPressureMeter variant="compact" />
-        <WeeklySynopsis />
+        <GlobalPressureMeter variant="compact" publication={publication} />
+        <WeeklySynopsis publication={publication} />
       </section>
 
       {/* Quiet metrics */}

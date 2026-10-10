@@ -2,6 +2,11 @@ import { approvedSnapshotAdapter } from "./adapters";
 import { buildRunKey, runLedgerAutomation } from "./engine";
 import { LEDGER_SOURCE_REGISTRY } from "./source-registry";
 import type { LedgerAutomationStore } from "./store";
+import { buildCanonicalPublication } from "./publication-factory";
+import type { LedgerPublicationStore } from "./publication-store";
+import { getCurrentLedgerPublicationFromStore, publishLedgerPublication, rollbackLedgerPublicationPointer } from "./publication-writer";
+import { evaluateSafeUpdateAutoPublish } from "./auto-publish-policy";
+import { validatePublishedLedger, type AcceptanceResult } from "./post-publication-acceptance";
 import type {
   FounderDecision,
   FounderDecisionRecord,
@@ -12,12 +17,26 @@ import type {
 
 const LEDGER_TIME_ZONE = "America/New_York";
 
+async function publicationBecameCurrent(
+  store: LedgerPublicationStore,
+  publicationId: string,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    const pointer = await store.getCurrentPointer();
+    if (pointer?.pointer.currentPublicationId === publicationId) return true;
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return false;
+}
+
 export type ExecuteScheduledRunInput = {
   runType: LedgerRunType;
   now?: Date;
   store: LedgerAutomationStore;
   adapter?: LedgerSourceAdapter;
   registry?: readonly LedgerSourceDefinition[];
+  publicationStore?: LedgerPublicationStore;
+  acceptance?: ((publication: import("./publication-types").LedgerPublication) => Promise<AcceptanceResult>) | false;
 };
 
 export function ledgerScheduledDate(now: Date): string {
@@ -55,7 +74,79 @@ export async function executeScheduledLedgerRun(input: ExecuteScheduledRunInput)
     adapter: input.adapter ?? approvedSnapshotAdapter,
     previousReview,
   });
-  const appended = await input.store.appendRun(proposed);
+  let finalRun = proposed;
+  if (proposed.classification !== "NO_CHANGE" && input.publicationStore) {
+    const current = await getCurrentLedgerPublicationFromStore(input.publicationStore);
+    const candidate = buildCanonicalPublication(proposed, current, now);
+    finalRun = { ...proposed, canonicalPublication: candidate };
+    if (proposed.classification === "SAFE_UPDATE") {
+      const policy = evaluateSafeUpdateAutoPublish(current, candidate);
+      if (policy.eligible) {
+        try {
+          const publishResult = await publishLedgerPublication(input.publicationStore, candidate, now);
+          const acceptance = input.acceptance === false
+            ? null
+            : input.acceptance ?? (process.env.VERCEL_ENV === "production" ? (publication: import("./publication-types").LedgerPublication) => validatePublishedLedger(publication) : null);
+          if (acceptance) {
+            const result = await acceptance(candidate);
+            if (!result.ok) {
+              await rollbackLedgerPublicationPointer(input.publicationStore, publishResult, `Post-publication acceptance failed: ${result.failures.join("; ")}`, now);
+              throw new Error("Post-publication acceptance failed; the previous current pointer was restored.");
+            }
+          }
+          finalRun = {
+            ...finalRun,
+            state: "PUBLISHED",
+            stateHistory: [...finalRun.stateHistory, { state: "PUBLISHING", at: timestamp }, { state: "PUBLISHED", at: timestamp }],
+            theoreticalAutoPublishEligible: true,
+            publicationOccurred: true,
+            publicationId: candidate.publicationId,
+            publicationDate: candidate.publicationDate,
+          };
+        } catch (error) {
+          if (await publicationBecameCurrent(input.publicationStore, candidate.publicationId)) {
+            finalRun = {
+              ...finalRun,
+              state: "PUBLISHED",
+              stateHistory: [...finalRun.stateHistory, { state: "PUBLISHING", at: timestamp }, { state: "PUBLISHED", at: timestamp }],
+              theoreticalAutoPublishEligible: true,
+              publicationOccurred: true,
+              publicationId: candidate.publicationId,
+              publicationDate: candidate.publicationDate,
+            };
+            const appended = await input.store.appendRun(finalRun);
+            return { created: appended.created, run: appended.value };
+          }
+          await input.publicationStore.appendPublicationEvent({
+            schemaVersion: "ledger-publication-event-v1",
+            eventId: `${candidate.publicationId}:PUBLICATION_FAILED:${timestamp}`,
+            publicationId: candidate.publicationId,
+            runId: candidate.runId,
+            status: "PUBLICATION_FAILED",
+            occurredAt: timestamp,
+            detail: error instanceof Error ? error.message : "Publication failed safely.",
+          });
+          finalRun = {
+            ...finalRun,
+            state: "PUBLICATION_FAILED",
+            stateHistory: [...finalRun.stateHistory, { state: "PUBLICATION_FAILED", at: timestamp }],
+            theoreticalAutoPublishEligible: true,
+          };
+        }
+      } else {
+        finalRun = {
+          ...finalRun,
+          state: "AWAITING_APPROVAL",
+          theoreticalAutoPublishEligible: false,
+          evidencePacket: {
+            ...finalRun.evidencePacket,
+            reasons: [...finalRun.evidencePacket.reasons, ...policy.reasons],
+          },
+        };
+      }
+    }
+  }
+  const appended = await input.store.appendRun(finalRun);
   return { created: appended.created, run: appended.value };
 }
 
@@ -78,8 +169,8 @@ export async function reviewLedgerRun(input: ReviewRunInput): Promise<FounderDec
     ? "APPROVED"
     : input.decision === "REJECT"
       ? "REJECTED"
-      : "AWAITING_APPROVAL";
-  const decisionId = `${input.runKey}:${input.decision}:${input.decidedAt}`;
+      : "NEEDS_REVISION";
+  const decisionId = `${input.runKey}:founder-decision`;
   const record: FounderDecisionRecord = {
     schemaVersion: "ledger-founder-decision-v1",
     decisionId,
@@ -90,5 +181,40 @@ export async function reviewLedgerRun(input: ReviewRunInput): Promise<FounderDec
     note: input.note ?? null,
     resultingState,
   };
-  return (await input.store.appendDecision(record)).value;
+  const appended = await input.store.appendDecision(record);
+  if (!appended.created && appended.value.decision !== input.decision) {
+    throw new Error(`Run ${input.runKey} already has a founder decision.`);
+  }
+  return appended.value;
+}
+
+export type DecideLedgerPublicationInput = ReviewRunInput & {
+  publicationStore: LedgerPublicationStore;
+};
+
+export async function decideLedgerPublication(input: DecideLedgerPublicationInput) {
+  const decision = await reviewLedgerRun(input);
+  const run = await input.store.getRun(input.runKey);
+  if (!run?.canonicalPublication) throw new Error(`Run ${input.runKey} has no canonical publication proposal.`);
+  if (decision.decision !== "APPROVE") {
+    return { decision, publication: null, state: decision.resultingState } as const;
+  }
+
+  const existingPointer = await input.publicationStore.getCurrentPointer();
+  if (existingPointer?.pointer.currentPublicationId === run.canonicalPublication.publicationId) {
+    return { decision, publication: run.canonicalPublication, state: "PUBLISHED" as const };
+  }
+
+  const approved = {
+    ...run.canonicalPublication,
+    approvedAt: decision.decidedAt,
+    publishedAt: decision.decidedAt,
+    audit: {
+      ...run.canonicalPublication.audit,
+      founderDecision: decision,
+      publicationStatus: "APPROVED" as const,
+    },
+  };
+  await publishLedgerPublication(input.publicationStore, approved, new Date(decision.decidedAt));
+  return { decision, publication: approved, state: "PUBLISHED" as const };
 }

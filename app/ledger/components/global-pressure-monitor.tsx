@@ -1,14 +1,10 @@
 import Link from "next/link";
 import {
-  GPM_CURRENT_DIRECTION,
   GPM_CURRENT_DIRECTION_LABEL,
-  GPM_CURRENT_STATE,
   GPM_CURRENT_STATE_LABEL,
   GPM_DISPLAY_TITLE,
   GPM_INTRO,
   GPM_KICKER,
-  GPM_LEAD,
-  GPM_SNAPSHOT,
   GPM_THREAT_PANEL,
   GPM_TRANSMISSION_PANEL,
   GPM_WATCHING_BLOCKS,
@@ -22,10 +18,12 @@ import {
   LedgerSourcesReviewed,
 } from "./ledger-monitor-chrome";
 import "../global-pressure-index.css";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 type GlobalPressureMonitorProps = {
   variant?: "compact" | "full";
   className?: string;
+  publication: LedgerPublication;
 };
 
 function StatusPanel({
@@ -56,9 +54,12 @@ function StatusPanel({
 export default function GlobalPressureMonitor({
   variant = "full",
   className = "",
+  publication,
 }: GlobalPressureMonitorProps) {
   const compact = variant === "compact";
   const headingId = "global-pressure-monitor-title";
+  const current = publication.monitors.find((monitor) => monitor.id === "global-pressure");
+  if (!current) throw new Error("Canonical publication is missing Global Pressure.");
 
   if (compact) {
     return (
@@ -88,18 +89,18 @@ export default function GlobalPressureMonitor({
           <div className="gpm-status-pair">
             <div>
               <p className="gpm-pair-label">{GPM_CURRENT_STATE_LABEL}</p>
-              <p className="gpm-pair-value">{GPM_CURRENT_STATE}</p>
+              <p className="gpm-pair-value">{current.state}</p>
             </div>
             <div>
               <p className="gpm-pair-label">{GPM_CURRENT_DIRECTION_LABEL}</p>
-              <p className="gpm-pair-value">{GPM_CURRENT_DIRECTION}</p>
+              <p className="gpm-pair-value">{current.direction}</p>
             </div>
           </div>
-          <p className="gpm-lead gpm-lead-compact">{GPM_LEAD}</p>
+          <p className="gpm-lead gpm-lead-compact">{current.summary}</p>
           <LedgerMonitorMethodNotice className="gpm-methodology-notice" />
         </article>
 
-        <LedgerMonitorStatusLines className="mt-5" />
+        <LedgerMonitorStatusLines className="mt-5" evidenceReviewedThrough={current.evidenceReviewedThrough} />
       </section>
     );
   }
@@ -114,28 +115,28 @@ export default function GlobalPressureMonitor({
         {GPM_DISPLAY_TITLE}
       </h1>
       <p className="ledger-index-intro">{GPM_INTRO}</p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={current.evidenceReviewedThrough} />
 
       <div className="gpi-meter-hero-wrap">
         <article className="gpm-meter-card">
           <div className="gpm-status-pair">
             <div>
               <p className="gpm-pair-label">{GPM_CURRENT_STATE_LABEL}</p>
-              <p className="gpm-pair-value">{GPM_CURRENT_STATE}</p>
+              <p className="gpm-pair-value">{current.state}</p>
             </div>
             <div>
               <p className="gpm-pair-label">{GPM_CURRENT_DIRECTION_LABEL}</p>
-              <p className="gpm-pair-value">{GPM_CURRENT_DIRECTION}</p>
+              <p className="gpm-pair-value">{current.direction}</p>
             </div>
           </div>
 
-          <p className="gpm-lead">{GPM_LEAD}</p>
+          <p className="gpm-lead">{current.summary}</p>
 
           <div className="ledger-changed-section">
             <p className="ledger-changed-label">
               What changed since the previous review
             </p>
-            <p className="ledger-changed-body">{GPM_WHAT_CHANGED}</p>
+            <p className="ledger-changed-body">{current.watchItems[0] ?? GPM_WHAT_CHANGED}</p>
           </div>
 
           <div className="gpm-panel-grid">
@@ -159,7 +160,7 @@ export default function GlobalPressureMonitor({
         </div>
       </div>
 
-      <LedgerSourcesReviewed sources={GPM_SNAPSHOT.sources} />
+      <LedgerSourcesReviewed sources={current.sourceReferences} />
       <LedgerQualitativeStatesBlock />
     </section>
   );

@@ -4,8 +4,12 @@ import LedgerHistoryComparison from "../components/ledger-history-comparison";
 import LedgerPageJsonLd from "../components/ledger-page-json-ld";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
-import { buildLedgerHistoricalComparisons } from "../historical-comparison";
+import { buildPublicationHistoricalComparisons } from "../historical-comparison";
 import { ledgerMetadata } from "../ledger-seo";
+import { getCurrentLedgerPublication } from "@/lib/ledger-automation/current-publication";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const NAME = "Buffer Health / Remaining Slack";
 const PATH = "/ledger/buffer-health";
@@ -18,13 +22,14 @@ export const metadata: Metadata = ledgerMetadata({
   description: DESCRIPTION,
 });
 
-export default function BufferHealthPage() {
-  const historicalComparisons = buildLedgerHistoricalComparisons();
+export default async function BufferHealthPage() {
+  const publication = await getCurrentLedgerPublication();
+  const historicalComparisons = buildPublicationHistoricalComparisons(publication);
 
   return (
-    <LedgerShell activeIndexId="buffer-health">
+    <LedgerShell activeIndexId="buffer-health" publication={publication}>
       <LedgerPageJsonLd name={NAME} path={PATH} description={DESCRIPTION} />
-      <BufferHealthView />
+      <BufferHealthView publication={publication} />
       <LedgerHistoryComparison comparisons={historicalComparisons} />
       <LedgerPageFooter />
     </LedgerShell>

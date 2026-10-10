@@ -4,6 +4,10 @@ import LedgerPageJsonLd from "../components/ledger-page-json-ld";
 import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
 import { ledgerMetadata } from "../ledger-seo";
+import { getCurrentLedgerPublication } from "@/lib/ledger-automation/current-publication";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const NAME = "Information Signal Map";
 const PATH = "/ledger/information-signal-map";
@@ -16,11 +20,12 @@ export const metadata: Metadata = ledgerMetadata({
   description: DESCRIPTION,
 });
 
-export default function InformationSignalMapPage() {
+export default async function InformationSignalMapPage() {
+  const publication = await getCurrentLedgerPublication();
   return (
-    <LedgerShell activeIndexId="information-signal">
+    <LedgerShell activeIndexId="information-signal" publication={publication}>
       <LedgerPageJsonLd name={NAME} path={PATH} description={DESCRIPTION} />
-      <InformationSignalMapView />
+      <InformationSignalMapView publication={publication} />
       <LedgerPageFooter />
     </LedgerShell>
   );

@@ -1,5 +1,6 @@
 import {
   BUFFER_HEALTH_FORMAL_SNAPSHOTS,
+  BUFFER_HEALTH_DOMAINS,
   reserveFillPercent,
   type BufferHealthHistoricalSnapshot,
 } from "./buffer-health-data";
@@ -8,6 +9,7 @@ import {
   SYSTEM_TEMPERATURE_SNAPSHOTS,
   type SystemTemperatureSnapshot,
 } from "./system-temperature";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 export const LEDGER_COMPARISON_PERIODS = ["1M", "3M", "6M", "12M"] as const;
 
@@ -159,4 +161,27 @@ export function buildLedgerHistoricalComparisons(
     system: buildSystemComparison(period, systemSnapshots),
     buffer: buildBufferComparison(period, bufferSnapshots),
   }));
+}
+
+export function buildPublicationHistoricalComparisons(
+  publication: LedgerPublication,
+): readonly LedgerHistoricalComparison[] {
+  const systemSnapshots = [
+    ...SYSTEM_TEMPERATURE_SNAPSHOTS.filter((snapshot) => snapshot.reviewDate !== publication.publicationDate),
+    publication.overall.temperatureSnapshot,
+  ];
+  const labels = new Map(BUFFER_HEALTH_DOMAINS.map((domain) => [domain.id, domain.label]));
+  const bufferSnapshots = [
+    ...BUFFER_HEALTH_FORMAL_SNAPSHOTS.filter((snapshot) => snapshot.reviewDate !== publication.publicationDate),
+    {
+      reviewDate: publication.publicationDate,
+      evidenceCutoff: publication.evidenceReviewedThrough,
+      domains: publication.bufferHealth.domains.map((domain) => ({
+        id: domain.id,
+        label: labels.get(domain.id) ?? domain.id,
+        reserveState: domain.state,
+      })),
+    },
+  ];
+  return buildLedgerHistoricalComparisons(systemSnapshots, bufferSnapshots);
 }

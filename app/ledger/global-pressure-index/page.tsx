@@ -5,6 +5,10 @@ import LedgerPageFooter from "../components/ledger-page-footer";
 import LedgerShell from "../components/ledger-shell";
 import { getLedgerIndex } from "../ledger-data";
 import { ledgerMetadata } from "../ledger-seo";
+import { getCurrentLedgerPublication } from "@/lib/ledger-automation/current-publication";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const index = getLedgerIndex("global-pressure");
 
@@ -16,15 +20,16 @@ export const metadata: Metadata = ledgerMetadata({
   description: index.seoDescription,
 });
 
-export default function GlobalPressureIndexPage() {
+export default async function GlobalPressureIndexPage() {
+  const publication = await getCurrentLedgerPublication();
   return (
-    <LedgerShell activeIndexId="global-pressure">
+    <LedgerShell activeIndexId="global-pressure" publication={publication}>
       <LedgerPageJsonLd
         name={index.displayTitle}
         path={PATH}
         description={index.seoDescription}
       />
-      <LedgerIndexPageContent index={index} />
+      <LedgerIndexPageContent index={index} publication={publication} />
       <LedgerPageFooter />
     </LedgerShell>
   );

@@ -19,12 +19,11 @@ import {
   ACAI_LAYERS,
   ACAI_MILESTONES,
   ACAI_SECTION_SUBTITLES,
-  ACAI_SNAPSHOT,
-  ACAI_SUMMARY,
   ACAI_WEEKLY_SIGNAL,
   ACAI_WHAT_MOVED,
 } from "../ai-capability-acceleration-data";
 import "../ai-capability-acceleration-index.css";
+import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
 
 const DISPLAY_TITLE = "AI Capability Monitor";
 const INTRO =
@@ -41,7 +40,9 @@ const QUALITATIVE_STATES: Record<string, string> = {
   "Governance & Risk": "Lagging",
 };
 
-export default function AICapabilityAccelerationIndexView() {
+export default function AICapabilityAccelerationIndexView({ publication }: { publication: LedgerPublication }) {
+  const current = publication.monitors.find((monitor) => monitor.id === "ai-capability");
+  if (!current) throw new Error("Canonical publication is missing AI Capability.");
   const footerBody = ACAI_FOOTER_NOTE.replace(/^Method note:\s*/i, "").replace(
     /AI Capability Acceleration Index/g,
     "AI Capability Monitor",
@@ -58,7 +59,7 @@ export default function AICapabilityAccelerationIndexView() {
       </span>
       <h1 className="acai-title ledger-index-title">{DISPLAY_TITLE}</h1>
       <p className="acai-intro ledger-index-intro">{INTRO}</p>
-      <LedgerMonitorStatusLines />
+      <LedgerMonitorStatusLines evidenceReviewedThrough={current.evidenceReviewedThrough} />
 
       <div className="acai-hero">
         <div className="acai-card ledger-index-hero-card">
@@ -66,18 +67,18 @@ export default function AICapabilityAccelerationIndexView() {
             <div>
               <p className="ledger-monitor-pair-label">Current State</p>
               <p className="ledger-monitor-pair-value">
-                {ACAI_SNAPSHOT.currentState}
+                {current.state}
               </p>
             </div>
             <div>
               <p className="ledger-monitor-pair-label">Deployment Condition</p>
               <p className="ledger-monitor-pair-value">
-                {ACAI_SNAPSHOT.currentDirection}
+                {current.direction}
               </p>
             </div>
           </div>
 
-          <p className="acai-summary ledger-monitor-lead">{ACAI_SUMMARY}</p>
+          <p className="acai-summary ledger-monitor-lead">{current.summary}</p>
           <p className="acai-assessment ledger-monitor-lead">{ACAI_ASSESSMENT}</p>
 
           <div className="ledger-monitor-state-grid">
@@ -174,7 +175,7 @@ export default function AICapabilityAccelerationIndexView() {
         </div>
       </div>
 
-      <LedgerSourcesReviewed sources={ACAI_SNAPSHOT.sources} />
+      <LedgerSourcesReviewed sources={current.sourceReferences} />
       <LedgerQualitativeStatesBlock />
 
       <p className="acai-footer ledger-index-page-note">

@@ -8,16 +8,18 @@ import {
 
 type EvidenceCutoffProps = {
   className?: string;
+  evidenceReviewedThrough?: string;
 };
 
 /** Evidence cutoff under monitor titles. */
 export function LedgerMonitorStatusLines({
   className = "",
+  evidenceReviewedThrough,
 }: EvidenceCutoffProps) {
   return (
     <div className={`ledger-monitor-status-lines ${className}`}>
       <p className="ledger-monitor-evidence-cutoff">
-        {LEDGER_EVIDENCE_CUTOFF_LABEL}
+        {evidenceReviewedThrough ? `Evidence reviewed through ${evidenceReviewedThrough}` : LEDGER_EVIDENCE_CUTOFF_LABEL}
       </p>
     </div>
   );
