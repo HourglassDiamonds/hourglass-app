@@ -193,6 +193,7 @@ describe("Today live Gmail rebuild batch", () => {
     ]);
     let credentialLoads = 0;
     const reads = new Map<string, number>();
+    const outcomes: Array<{ threadId: string; status: string }> = [];
     const createBatch = async (): Promise<LiveSourceViewerBatch> => {
       credentialLoads += 1;
       return {
@@ -227,7 +228,13 @@ describe("Today live Gmail rebuild batch", () => {
       };
     };
 
-    const enriched = await loadLiveTodayOperationalFacts(base, { createBatch });
+    const enriched = await loadLiveTodayOperationalFacts(base, {
+      createBatch,
+      onThreadOutcome: (outcome) => outcomes.push({
+        threadId: outcome.threadId,
+        status: outcome.status,
+      }),
+    });
     assert.equal(credentialLoads, 1);
     assert.deepEqual([...reads.entries()].sort(), [
       ["thread-a", 1],
@@ -237,16 +244,29 @@ describe("Today live Gmail rebuild batch", () => {
       enriched.get("thread-a")?.messages?.[0]?.operationalText ?? "",
       /Production has started/,
     );
+    assert.deepEqual(outcomes.sort((left, right) => left.threadId.localeCompare(right.threadId)), [
+      { threadId: "thread-a", status: "complete_live" },
+      { threadId: "thread-b", status: "complete_live" },
+    ]);
   });
 
   it("keeps indexed local evidence when live enrichment is unavailable", async () => {
     const base = new Map<string, TodayGmailThreadContext>([
       ["thread-a", { subject: "Indexed subject", messages: [] }],
     ]);
+    const outcomes: unknown[] = [];
     const result = await loadLiveTodayOperationalFacts(base, {
       createBatch: async () => null,
+      onThreadOutcome: (outcome) => outcomes.push(outcome),
     });
     assert.equal(result.get("thread-a")?.subject, "Indexed subject");
+    assert.deepEqual(outcomes, [{
+      threadId: "thread-a",
+      status: "unavailable",
+      indexedMessageCount: 0,
+      liveMessageCount: 0,
+      safeErrorCategory: "batch-unavailable",
+    }]);
   });
 
   it("rejects a partial live batch when completeness is required for publication", async () => {

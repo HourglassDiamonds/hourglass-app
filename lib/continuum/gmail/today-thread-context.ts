@@ -51,6 +51,14 @@ export type TodayLiveEnrichmentDiagnostics = {
   nonAttachmentThreads: { completed: number; failed: number };
 };
 
+export type TodayLiveThreadOutcome = {
+  threadId: string;
+  status: "complete_live" | "indexed_excerpt_only" | "unavailable";
+  indexedMessageCount: number;
+  liveMessageCount: number;
+  safeErrorCategory: string | null;
+};
+
 function indexedDirection(
   value: unknown,
   fromEmailHash?: string | null,
@@ -386,6 +394,7 @@ export async function loadLiveTodayOperationalFacts(
     requireComplete?: boolean;
     threadIds?: readonly string[];
     onDiagnostics?: (diagnostics: TodayLiveEnrichmentDiagnostics) => void;
+    onThreadOutcome?: (outcome: TodayLiveThreadOutcome) => void;
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
@@ -443,13 +452,30 @@ export async function loadLiveTodayOperationalFacts(
       // Aggregate observability must never change publication truth.
     }
   };
+  const emitThreadOutcome = (outcome: TodayLiveThreadOutcome) => {
+    try {
+      options.onThreadOutcome?.(outcome);
+    } catch {
+      // Evidence-gate observability must never alter Gmail retrieval behavior.
+    }
+  };
   if (threadIds.length === 0) {
     emitDiagnostics(0);
     return out;
   }
   const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
   if (!batch) {
-    for (const threadId of threadIds) recordOutcome(out.get(threadId), false, "batch-unavailable");
+    for (const threadId of threadIds) {
+      const current = out.get(threadId);
+      recordOutcome(current, false, "batch-unavailable");
+      emitThreadOutcome({
+        threadId,
+        status: "unavailable",
+        indexedMessageCount: current?.messages?.length ?? 0,
+        liveMessageCount: 0,
+        safeErrorCategory: "batch-unavailable",
+      });
+    }
     emitDiagnostics(0);
     if (options.requireComplete) throw new Error("today-live-enrichment-unavailable");
     return out;
@@ -465,6 +491,13 @@ export async function loadLiveTodayOperationalFacts(
         incomplete = true;
         missingIndexedThreadCount += 1;
         recordOutcome(current, false, "missing-indexed-context");
+        emitThreadOutcome({
+          threadId,
+          status: "unavailable",
+          indexedMessageCount: 0,
+          liveMessageCount: 0,
+          safeErrorCategory: "missing-indexed-context",
+        });
         continue;
       }
       out.set(threadId, { ...current, liveEnrichmentAttempted: true });
@@ -480,6 +513,13 @@ export async function loadLiveTodayOperationalFacts(
       if (!fetched.ok) {
         incomplete = true;
         recordOutcome(current, false, fetched.safeErrorCode);
+        emitThreadOutcome({
+          threadId,
+          status: "unavailable",
+          indexedMessageCount: current.messages.length,
+          liveMessageCount: 0,
+          safeErrorCategory: fetched.safeErrorCode,
+        });
         continue;
       }
       const liveById = new Map(fetched.messages.map((message) => [message.messageId, message]));
@@ -543,6 +583,13 @@ export async function loadLiveTodayOperationalFacts(
         ],
       });
       recordOutcome(current, !missingLiveMessage, missingLiveMessage ? "missing-live-message" : undefined);
+      emitThreadOutcome({
+        threadId,
+        status: missingLiveMessage ? "indexed_excerpt_only" : "complete_live",
+        indexedMessageCount: current.messages.length,
+        liveMessageCount: fetched.messages.length,
+        safeErrorCategory: missingLiveMessage ? "missing-live-message" : null,
+      });
     }
   };
   await Promise.all(

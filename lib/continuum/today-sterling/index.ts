@@ -6,3 +6,4 @@ export * from "./request";
 export * from "./validate";
 export * from "./acceptance";
 export * from "./target";
+export * from "./evidence-completeness";

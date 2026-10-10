@@ -10,7 +10,8 @@ import { SupabaseProjectDeskReader } from "../lib/continuum/client-memory/projec
 import { loadProjectJobs } from "../lib/continuum/client-memory/project-jobs/load";
 import { loadTodayKnownEmailPeople } from "../lib/continuum/client-memory/today-known-people";
 import { loadFounderCorrectionEvents } from "../lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
-import { loadIndexedTodayThreadContext, loadLiveTodayOperationalFacts } from "../lib/continuum/gmail/today-thread-context";
+import { loadIndexedTodayThreadContext, loadLiveTodayOperationalFacts,
+  type TodayLiveThreadOutcome } from "../lib/continuum/gmail/today-thread-context";
 import { loadTodayUpcoming } from "../lib/continuum/calendar/today-upcoming-load";
 import { isCalendarReadEnabled, isContinuumCalendarOAuthConfigured,
   getContinuumCalendarTokenKek, getContinuumCalendarFounderEmail } from "../lib/continuum/calendar/env";
@@ -23,6 +24,8 @@ import { validateSterlingTodayProposal } from "../lib/continuum/today-sterling/v
 import { evaluateSterlingTodayAcceptance } from "../lib/continuum/today-sterling/acceptance";
 import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from "../lib/continuum/today-sterling/evidence-load";
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "../lib/continuum/today-sterling/target";
+import { buildSterlingEvidenceReadyWorkingSet, evaluateSterlingEvidenceCompleteness,
+  executeSterlingEvidenceGatedRequest } from "../lib/continuum/today-sterling/evidence-completeness";
 import type { SterlingPreviousTodayItem } from "../lib/continuum/today-sterling/types";
 
 const ACCEPTANCE_CASES = {
@@ -164,13 +167,20 @@ async function main() {
   const indexed = await expandSterlingIndexedThreadContext(client as never,
     await loadIndexedTodayThreadContext(scopedCandidates),
     [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds]);
-  const threadContext = await loadLiveTodayOperationalFacts(indexed);
+  const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
+  const threadContext = await loadLiveTodayOperationalFacts(indexed, {
+    onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
+  });
   const workingSet = buildSterlingTodayWorkingSet({ sourceWatermark: watermark, generatedAt: now.toISOString(),
     projects: scopedProjects, jobs: scopedJobs, candidates: scopedCandidates, threadContext, knownPeople: scopedPeople,
     founderCorrections: scopedCorrections, calendar: scopedCalendar,
     calendarAvailability: { status: calendarStatus.diagnosis === "live_read_eligible" ? "available"
       : calendarStatus.diagnosis === "read_disabled" ? "disabled" : "unavailable", reason: calendarStatus.diagnosis },
     previousToday: scopedPreviousToday, projectThreadIds });
+  const evidenceCompleteness = evaluateSterlingEvidenceCompleteness({
+    workingSet,
+    threadOutcomes: liveThreadOutcomes,
+  });
   const assemblyLatencyMs = Date.now() - runStarted;
   const serializedInputBytes = Buffer.byteLength(JSON.stringify(workingSet));
   const allIdentifiers = [...new Set(Object.values(ACCEPTANCE_CASES).flatMap((row) => [...row.identifiers]))];
@@ -246,6 +256,7 @@ async function main() {
     if (!withModel) {
       process.stdout.write(`${JSON.stringify({ mode: requestWorkingSet.mutationMode, verdict: "TARGET_ASSEMBLY_ONLY",
         target: targetDiagnostics, package: summarizeSterlingTodayTargetPackage(requestWorkingSet),
+        evidenceCompleteness,
         performance: { assemblyLatencyMs, serializedInputBytes: Buffer.byteLength(JSON.stringify(requestWorkingSet)),
           totalLatencyMs: Date.now() - runStarted } }, null, 2)}\n`);
       return;
@@ -258,7 +269,19 @@ async function main() {
         gmailThreads: threadContext.size, calendar: workingSet.calendar.length },
       performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
       calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
-      caseCoverage }, null, 2)}\n`);
+      caseCoverage, evidenceCompleteness }, null, 2)}\n`);
+    return;
+  }
+  const gatePreview = buildSterlingEvidenceReadyWorkingSet({
+    workingSet: requestWorkingSet,
+    completeness: evidenceCompleteness,
+  });
+  if (!gatePreview.workingSet) {
+    process.stdout.write(`${JSON.stringify({ mode: requestWorkingSet.mutationMode, verdict: "EVIDENCE_BLOCKED",
+      reason: "required-live-evidence-incomplete", target: targetDiagnostics,
+      evidenceCompleteness,
+      performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted } }, null, 2)}\n`);
+    process.exitCode = 4;
     return;
   }
   const apiKey = process.env.OPENAI_API_KEY?.trim() ?? "";
@@ -270,18 +293,30 @@ async function main() {
         gmailThreads: threadContext.size, calendar: requestWorkingSet.calendar.length },
       performance: { assemblyLatencyMs, serializedInputBytes, totalLatencyMs: Date.now() - runStarted },
       calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
-      caseCoverage }, null, 2)}\n`);
+      caseCoverage, evidenceCompleteness }, null, 2)}\n`);
     process.exitCode = 3; return;
   }
-  const completion = await requestSterlingTodayProposal({ apiKey,
-    model: conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL), workingSet: requestWorkingSet });
+  const gated = await executeSterlingEvidenceGatedRequest({
+    workingSet: requestWorkingSet,
+    completeness: evidenceCompleteness,
+    request: (readyWorkingSet) => requestSterlingTodayProposal({
+      apiKey,
+      model: conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL),
+      workingSet: readyWorkingSet,
+    }),
+  });
+  if (!gated.called || !gated.workingSet || !gated.result) {
+    throw new Error("sterling-evidence-gate-inconsistent-result");
+  }
+  requestWorkingSet = gated.workingSet;
+  const completion = gated.result;
   const validation = validateSterlingTodayProposal(requestWorkingSet, completion.proposal);
   const acceptance = targetDiagnostics ? null : evaluateSterlingTodayAcceptance(requestWorkingSet, completion.proposal);
   const result = {
     mode: requestWorkingSet.mutationMode,
     verdict: targetDiagnostics
       ? validation.accepted ? "TARGET_VALID" : "BLOCK"
-      : validation.accepted && acceptance?.passed ? "PASS" : "BLOCK",
+      : validation.accepted && acceptance?.passed && gated.blockedWorkUnitIds.length === 0 ? "PASS" : "BLOCK",
     target: targetDiagnostics,
     counts: { people: requestWorkingSet.people.length, projects: requestWorkingSet.projects.length, jobs: requestWorkingSet.jobs.length,
       evidence: requestWorkingSet.evidence.length, gmailThreads: threadContext.size, calendar: requestWorkingSet.calendar.length,
@@ -290,6 +325,7 @@ async function main() {
     performance: { assemblyLatencyMs, modelLatencyMs: completion.latencyMs, inputBytes: completion.inputBytes,
       outputBytes: completion.outputBytes, tokenUsage: completion.usage, totalLatencyMs: Date.now() - runStarted },
     validation: { accepted: validation.accepted, errors: validation.errors, mutations: validation.mutationValidations },
+    evidenceCompleteness,
     calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
     acceptance,
     portfolio: completion.proposal.portfolioAssessments.map(item => ({ workUnitId: item.workUnitId,
