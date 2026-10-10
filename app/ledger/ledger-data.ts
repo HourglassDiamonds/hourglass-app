@@ -129,7 +129,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Pressure Monitor",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "Very high external pressure / Broader energy transmission — energy buffers remain low despite restored East-West Pipeline and Yanbu flows, while credit, funding, and labor continue to function.",
+      "Very high external pressure / Broader energy transmission — partial flow recovery has not rebuilt depleted inventories or refined-product slack; financial transmission remains contained.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of external threat pressure and systemic transmission. This page does not publish a numerical index.",
@@ -146,13 +146,13 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "Energy buffers remain low after large inventory draws, limited effective spare production, weak refined-product inventories, and constrained routing. East-West Pipeline operations and Yanbu loadings resumed, restoring part of the bypass. The Fed hike and elevated 10-year preserve pressure, while contained spreads, below-normal lagged stress, orderly funding, and functional labor prevent escalation.",
+      "Energy buffers remain low despite partial production and routing recovery. Inventory draws, weak distillate stocks, elevated oil prices, and constrained routing keep transmission broad. Long yields remain elevated and labor reserve is thinning, while contained credit and low claims prevent escalation.",
     summaryLead: "Current state:",
     summaryEmphasis: "Very high external pressure / Broader energy transmission",
     summaryCompact:
       "Very high external pressure / Broader energy transmission. Energy slack Low; financial system functioning.",
     weeklyNote:
-      "Threat pressure remains very high. Restored Yanbu flows cool the outage-specific risk, but depleted buffers keep energy transmission broad. Contained financial stress and functional labor limit broader failure.",
+      "Threat pressure remains very high. Partial flow recovery cools outage risk, but depleted buffers keep energy transmission broad. Contained financial stress limits broader failure.",
     weeklyNoteCompact:
       "Very high external pressure; broader energy transmission; systems still functioning.",
     methodPills: [
@@ -163,7 +163,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       },
       {
         label: "Current Direction",
-        value: "Energy buffers low / Restored bypass and contained financial stress limit escalation",
+        value: "Partial flow recovery / Low buffers and elevated prices keep transmission broad",
       },
       {
         label: "Primary Offset",
@@ -176,8 +176,8 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     watchingSectionTitle: "What We're Watching",
     editorialBlocks: [
       {
-        title: "Hormuz transit vs continued restriction",
-        body: "Whether independently trackable transit recovers from the four-vessel Monday print, or whether restriction deepens further.",
+        title: "Hormuz and bypass durability",
+        body: "Whether September's partial increase in shipments persists long enough to rebuild inventories, or reverses under renewed disruption.",
       },
       {
         title: "East-West Pipeline / Yanbu restoration",
@@ -206,7 +206,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Information Signal Map",
     subnavLabel: "Information Map",
     hubDescription:
-      "High-attention / Physical evidence converging — Yanbu restoration and the Fed hike are observed, while low energy slack and elevated long yields coexist with contained financial stress.",
+      "High-attention / Physical evidence converging — official October releases sharpen the evidence while cross-system framing remains uneven.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
@@ -218,17 +218,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
-      "Observed Yanbu / East-West restoration and the realized Fed hike resolve two September uncertainties. Estimated energy depletion, provisional inventories, forecast grid and food balances, lagged stress, and observed market and labor evidence remain explicitly separated. Confidence stays Moderate. Information Signal adds no degrees.",
+      "Official energy, labor, market, grid, food, and AI releases sharpen the distinction between pressure and failure. Partial oil-flow recovery, weaker payroll momentum, contained credit, higher food prices, active grid adaptation, and broader AI access are kept in their own evidence lanes. Confidence stays Moderate; Information Signal adds no degrees.",
     summaryCompact:
       "High-attention / Physical evidence converging — restoration and policy outcome clearer; reserve durability uncertain.",
     weeklyNote:
-      "Coverage now separates observed restoration and policy outcomes from estimated, provisional, lagged, and forecast evidence. Density remains high; reserve durability is not clear enough to raise confidence.",
+      "The evidence stack is more precise, but pressure is not uniformly cooler and reserve durability remains uncertain. Confidence stays Moderate.",
     weeklyNoteCompact:
       "Physical evidence converging; duration and policy path still uncertain.",
     methodPills: [
       { label: "Reading Type", value: "Editorial signal map" },
       { label: "Primary Channels", value: "Institutional, market, event, mainstream" },
-      { label: "Current Direction", value: "Observed restoration and policy outcome clearer / Reserve durability uncertain" },
+      { label: "Current Direction", value: "Official evidence sharper / Cross-system framing still uneven" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Mixed" },
@@ -246,7 +246,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Physical versus intent",
-        body: "Yanbu restoration and the Fed hike are observed; depleted energy buffers and elevated long yields persist; contained spreads, below-normal lagged stress, and functional labor are the principal disconfirmations.",
+        body: "Partial oil-flow recovery and weaker payroll momentum are observed; depleted energy buffers and elevated long yields persist; contained spreads, low claims, and stable unemployment and hours are the principal disconfirmations.",
       },
       {
         title: "Corridor frame conflict",
@@ -267,7 +267,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "AI Capability Monitor",
     subnavLabel: "AI Acceleration",
     hubDescription:
-      "Capability pace: Accelerating / Security-gated, capital- and grid-bound — no new October escalation; forecast load and episodic grid stress keep physical constraints binding while labor remains functional.",
+      "Capability pace: Accelerating — GPT-6 broadened frontier access while safety controls and physical deployment constraints remain binding.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
@@ -279,17 +279,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Acceleration continues, but the live deployment condition remains security-gated, capital-bound, and grid-bound. The October pass establishes no new capability or containment escalation. Forecast record demand and observed episodic grid intervention confirm physical constraints; provisional labor evidence remains functional. Technology / AI holds High / Partial.",
+      "GPT-6 and Claude Haiku 5.5 broaden capability and deployment, while new first-party safety work shows that verification and containment remain operational gates. Electricity, interconnection, capital, cooling, and organizational adaptation remain co-equal limits. Technology / AI holds High / Partial.",
     summaryCompact:
       "Capability pace accelerating — security-gated, capital- and grid-bound.",
     weeklyNote:
-      "No new capability, containment, labor-substitution, or external-transmission step was established. Grid, power, and capital constraints remain binding. Technology / AI System Temperature holds High / Partial.",
+      "The October 7 releases materially update the narrative but stay inside the existing High / Partial channel: capability and access broadened alongside tighter safety evidence and persistent physical constraints.",
     weeklyNoteCompact:
       "Accelerating capability; industrialization capital- and grid-bound.",
     methodPills: [
       { label: "Reading Type", value: "Capability + infrastructure index" },
       { label: "Primary Drivers", value: "Capability, capital, power, deployment" },
-      { label: "Current Direction", value: "Security-gated, capital- and grid-bound" },
+      { label: "Current Direction", value: "Broadening at frontier scale / Security-, capital-, and grid-bound" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Accelerating" },
@@ -307,7 +307,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Model capability",
-        body: "GPT-5.6 remains the deployed baseline; Gemini 3.7 Flash (August 13) adds another frontier-access surface. Agents, coding, and workflow automation continue to broaden.",
+        body: "GPT-6 became the broadly deployed OpenAI baseline on October 7, while Claude Haiku 5.5 expanded the fast, lower-cost frontier. Agents, coding, search, and adaptive interfaces continue to broaden.",
       },
       {
         title: "Deployment",
@@ -328,7 +328,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Precious Materials Monitor",
     subnavLabel: "Precious Materials",
     hubDescription:
-      "Strategically firm / Highly segmented — the Fed hike and elevated yields remain Financial-channel evidence; precious materials stay contained and natural diamonds remain segmented.",
+      "Strategically firm / Highly segmented — gold remains rate-sensitive while September natural-diamond gains broadened selectively.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing realities that shape quality, availability, and long-term value. The purpose is not to chase commodity headlines. It is to clarify when material markets are firm, selective, or shifting beneath the surface.",
@@ -340,19 +340,19 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
     summary:
-      "Precious materials remain strategically firm and highly segmented. The realized Fed hike and elevated 10-year are already captured in Financial; contained spreads and below-normal lagged stress do not create a separate materials increment. The latest approved natural-diamond evidence remains segmented rather than generically scarce.",
+      "Precious materials remain strategically firm and highly segmented. September gold weakened under yields and the dollar despite ETF inflows. Silver, platinum, and palladium show no independent regime break. Natural-diamond gains broadened across key sizes, but lower-quality commercial goods remain pressured.",
     summaryLead: "Precious materials remain in a",
     summaryEmphasis: "strategically firm, highly segmented environment",
     summaryCompact:
       "Strategically firm / Highly segmented — gold cooling on rates; diamond markets remain split.",
     weeklyNote:
-      "No materials-regime change and no System Temperature materials increment. Rates remain a Financial-channel event; natural-diamond conditions stay segmented.",
+      "No materials-regime change and no System Temperature increment. Gold stays rate-sensitive; natural-diamond recovery broadened selectively rather than becoming generic scarcity.",
     weeklyNoteCompact:
       "Strategically firm / Highly segmented — gold cooling, segmented diamonds, lab-grown compression.",
     methodPills: [
       { label: "Reading Type", value: "Materials + sourcing index" },
       { label: "Primary Focus", value: "Gold, platinum, diamonds" },
-      { label: "Current Direction", value: "Rate-sensitive / Diamonds still segmented" },
+      { label: "Current Direction", value: "Gold rate-sensitive / Natural-diamond recovery broadening selectively" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 85, state: "Firm" },
@@ -370,11 +370,11 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     editorialBlocks: [
       {
         title: "Gold & official-sector demand",
-        body: "Gold eased to around $4,266–$4,297 — near the lowest since early August — as yields, the dollar, and hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This rates/dollar event is already scored in Financial.",
+        body: "September gold weakened as yields, the dollar, and futures positioning outweighed continuing ETF inflows. Jewelry demand remains price-sensitive; the rates/dollar event is already scored in Financial.",
       },
       {
         title: "Natural diamonds",
-        body: "Segmented: August RAPI rose 0.5% for 1-carat goods, the first monthly increase in 15 months, with stronger smalls as supply cuts bite. Higher-value goods remain relatively firmer; this is not generic scarcity.",
+        body: "Segmented: September RAPI gains broadened across 0.30-, 0.50-, 1-, and 3-carat benchmarks, while lower-quality small goods remained under lab-grown pressure. This is not generic scarcity.",
       },
       {
         title: "Sourcing posture",
@@ -391,7 +391,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Infrastructure Strain Monitor",
     subnavLabel: "Infrastructure",
     hubDescription:
-      "High infrastructure strain — repeated Carolinas interventions show episodic grid stress, while expired orders and forecast planning adequacy confirm active adaptation without national grid failure.",
+      "High infrastructure strain — strong electricity demand and large computational loads keep reliability pressure structural, while standards and planning show active adaptation.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
@@ -403,17 +403,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "Public infrastructure strain remains high, with active adaptation and thinning grid reserve. Repeated September Carolinas interventions and record regional loads show episodic stress. The observed orders expired without national grid failure, forecast planning adequacy remains intact across much of the system, and provisional labor evidence remains functional.",
+      "Public infrastructure strain remains high. Strong third-quarter electricity use and NERC's large-load focus confirm a structural planning and operations challenge. Standards development and enhanced fuel-assurance analysis show active adaptation without national grid failure.",
     summaryCompact:
       "High strain / Active adaptation — multi-regional physical pressure beneath still-functioning systems.",
     weeklyNote:
-      "Observed Carolinas interventions confirm episodic extreme-weather strain; their expiration and forecast planning adequacy argue against a failing national grid. Physical Infrastructure holds High / Partial.",
+      "Large-load reliability pressure is structural, not merely episodic weather stress. Active standards and planning work prevent escalation beyond High / Partial.",
     weeklyNoteCompact:
       "High strain, active adaptation — multi-regional, systems still functioning.",
     methodPills: [
       { label: "Reading Type", value: "Physical infrastructure index" },
       { label: "Primary Focus", value: "Grid, power, water-to-energy, large-load" },
-      { label: "Current Direction", value: "Episodic grid stress / Active adaptation" },
+      { label: "Current Direction", value: "Large-load reliability pressure / Active standards and planning adaptation" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 87, state: "Elevated" },
@@ -453,7 +453,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Buffer Health / Remaining Slack",
     subnavLabel: "Buffer Health",
     hubDescription:
-      "How much capacity remains to absorb additional pressure. Energy is Low; households, food, and grid are Thinning; labor and the financial system are Healthy.",
+      "How much capacity remains to absorb additional pressure. Energy is Low; households, labor, food, and grid are Thinning; the financial system is Healthy.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative framework for remaining system slack. It can inform a future functioning review but cannot add System Temperature degrees.",
@@ -470,7 +470,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
       "Systems remain functional, but reserve capacity is uneven and thinning; energy buffers are low.",
     summaryCompact: "Uneven and thinning reserve capacity; energy buffers Low.",
     weeklyNote:
-      "October 1 evidence establishes six qualitative domain states. Buffer Health remains independent from the 74° System Temperature reading.",
+      "October 10 evidence moves Labor from Healthy to Thinning; all other reserve states hold. Buffer Health remains independent from the 74° System Temperature reading.",
     weeklyNoteCompact: "Six sourced reserve states; no temperature-degree effect.",
     methodPills: [
       { label: "Monitor Type", value: "Qualitative remaining-slack framework" },
@@ -494,7 +494,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Water Stress Monitor",
     subnavLabel: "Water",
     hubDescription:
-      "High water stress / Multi-system transmission — the hydrologic map remains uneven while food buffers are mixed and thinning and fertilizer/corridor pressure has not produced shortage.",
+      "High water stress / Multi-system transmission — U.S. drought improved while food-price transmission rose, without a verified physical shortage.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of water as a physical evidence layer. Downstream effects appear in power, freight, and security where they are independently visible.",
@@ -506,17 +506,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Watch", "Elevated", "High", "Severe"],
     scaleGradient: SCALE_GRADIENT_WATER,
     summary:
-      "Water stress remains high and uneven. The October pass refreshes the food layer: observed corn stocks rebuilt while wheat weakened; rice and global cereal balances remain forecasts; observed fertilizer and Gulf-corridor pressure adds risk without proving physical shortage. Water is an evidence layer, not a sixth temperature weight.",
+      "Water stress remains high and uneven. U.S. drought coverage improved and Lake Powell edged higher, while September food prices rose on weather and transport disruption. A still-large forecast crop prevents a shortage call. Water is an evidence layer, not a sixth temperature weight.",
     summaryCompact:
       "High water stress / Multi-system transmission — uneven, with improving basins visible.",
     weeklyNote:
-      "Food buffers are mixed and thinning, with explicit observed and forecast evidence. Fertilizer and corridor pressure has not produced verified shortage. Water remains an evidence layer, not a sixth temperature weight.",
+      "U.S. drought improved while food-price transmission rose. The divergence changes the current narrative without creating a separate temperature degree.",
     weeklyNoteCompact:
       "High, uneven water stress — improving basins shown with worsening ones.",
     methodPills: [
       { label: "Monitor Type", value: "Qualitative evidence layer" },
       { label: "Primary Focus", value: "Rivers, storage, municipal, food, energy, security" },
-      { label: "Current Direction", value: "Uneven — structural water stress / Food buffers mixed and thinning" },
+      { label: "Current Direction", value: "Uneven — U.S. drought improves while food-price transmission rises" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 0, state: "High / uneven" },
@@ -568,17 +568,17 @@ export const QUIET_METRICS = [
   {
     label: "Energy Pressure",
     value: "Broader Supply Transmission",
-    note: "Saudi Arabia’s principal Hormuz-bypass route is disrupted and Brent is in a $100+ regime. Partial-to-broader energy transmission continues without a confirmed credit-market seizure. Physical oil continues clearing.",
+    note: "Partial East-West Pipeline and Hormuz-flow recovery has not rebuilt depleted inventories or weak distillate stocks. Broad energy transmission continues without a confirmed credit-market seizure.",
   },
   {
     label: "AI Compute / Capability",
     value: "Security + Infrastructure Binding",
-    note: "Lab safety-coordination and Microsoft’s human-control draft are adaptation around already-scored containment, while electricity, interconnection, and capital remain co-equal limits.",
+    note: "GPT-6 and Claude Haiku 5.5 broaden access while published safeguards and unintended-action research keep security, electricity, interconnection, and capital as co-equal limits.",
   },
   {
     label: "Physical Constraints",
     value: "Multi-System Active Adaptation",
-    note: "EIA record electricity demand, Texas power/water gating of data centers, and Colorado emergency releases remain binding, with operators adapting and normal system function intact.",
+    note: "Strong electricity demand, computational-load standards, Texas power/water gating, and Colorado structural shortage remain binding, with operators adapting and normal system function intact.",
   },
 ] as const;
 

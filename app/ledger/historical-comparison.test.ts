@@ -29,9 +29,9 @@ describe("Ledger historical shadow comparison", () => {
     );
     assert.ok(comparison);
     assert.equal(comparison.system.available, true);
-    assert.equal(comparison.system.currentDate, "October 1, 2026");
+    assert.equal(comparison.system.currentDate, "October 10, 2026");
     assert.equal(comparison.system.currentDegrees, 74);
-    assert.equal(comparison.system.targetDate, "September 1, 2026");
+    assert.equal(comparison.system.targetDate, "September 10, 2026");
     assert.equal(comparison.system.comparisonDate, "August 24, 2026");
     assert.equal(comparison.system.comparisonDegrees, 70);
     assert.equal(comparison.system.delta, 4);
@@ -51,11 +51,15 @@ describe("Ledger historical shadow comparison", () => {
     }
   });
 
-  it("treats October 1 as the first and only formal Buffer Health baseline", () => {
-    assert.equal(BUFFER_HEALTH_FORMAL_SNAPSHOTS.length, 1);
+  it("preserves October 1 as the first formal Buffer Health baseline", () => {
+    assert.equal(BUFFER_HEALTH_FORMAL_SNAPSHOTS.length, 2);
     assert.equal(
       BUFFER_HEALTH_FORMAL_SNAPSHOTS[0]?.reviewDate,
       "October 1, 2026",
+    );
+    assert.equal(
+      BUFFER_HEALTH_FORMAL_SNAPSHOTS[1]?.reviewDate,
+      "October 10, 2026",
     );
     for (const comparison of buildLedgerHistoricalComparisons()) {
       assert.equal(comparison.buffer.available, false);

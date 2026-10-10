@@ -10,7 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
-import { bufferSourcesFor } from "./buffer-health-data";
+import { bufferSourcesFor, bufferSourcesForOctober1 } from "./buffer-health-data";
 
 export const PMI_UPDATED_LABEL = "";
 
@@ -31,11 +31,20 @@ export const PMI_METALS_PRESSURE = [
 ] as const;
 
 export const PMI_SILVER_UPDATE = {
-  status: "Not updated this cycle",
+  status: "Reviewed — no independent regime change",
   lastUpdated: LEDGER_EVIDENCE_CUTOFF,
-  sources: [],
+  sources: [
+    {
+      institution: "LBMA",
+      title: "Precious Metal Prices",
+      date: "Accessed October 9, 2026",
+      url: "https://www.lbma.org.uk/prices-and-data/precious-metal-prices#/",
+      supports:
+        "Current gold, silver, platinum, and palladium reference prices were reviewed on a common primary-market source.",
+    },
+  ],
   rationale:
-    "No dated, source-aware silver print is present in the repository evidence for this review cycle. No price or reserve condition is inferred.",
+    "Silver was reviewed alongside gold, platinum, and palladium. The evidence does not establish a distinct cross-system silver event, so no separate materials escalation is inferred.",
 } as const;
 
 export const PMI_DIAMOND_SPLIT = [
@@ -57,25 +66,25 @@ export const PMI_RECENT_READINGS = [
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader macro and reserve-asset conditions, but jewelry sourcing follows its own segmented logic. The realized Fed hike and elevated 10-year are Financial evidence; contained spreads and below-normal lagged stress prevent that rates event from becoming a separate precious-materials escalation.";
+  "Material markets remain connected to rates, the dollar, and reserve demand, but jewelry sourcing follows its own segmented logic. September gold weakened despite ETF inflows as yields and the dollar pressed higher. Silver, platinum, and palladium were reviewed without a separate regime break; these macro effects remain Financial evidence rather than an added materials increment.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
   "The realized Fed hike and elevated 10-year yield preserve the rate-sensitive precious-materials treatment. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment. Observed contained spreads and lagged below-normal financial stress also argue against recasting the move as a generalized materials crisis.",
-  "World Gold Council Q2 2026 data show official-sector purchases of 289t, supporting the structural reserve-demand read beneath near-term price action.",
-  "Natural-diamond markets remain segmented rather than broadly recovered or collapsed. Rapaport’s August RAPI rose 0.5% for 1-carat goods — the first monthly increase in about 15 months — with 0.30-carat +2% and 0.50-carat +2.5% as supply cuts bite; 3-carat slipped 0.4%. De Beers H1 realized price was $105/ct, down 32%. Larger/higher-quality natural goods remain comparatively resilient; commercial goods stay price-sensitive. This is not a generic diamond shortage.",
+  "World Gold Council's September review shows gold falling as Treasury yields, the dollar, and futures positioning outweighed continuing ETF inflows; reserve demand remains a structural support rather than a one-way price signal.",
+  "Natural-diamond recovery broadened selectively in September: Rapaport reported 0.30-carat +3.2%, 0.50-carat +2.5%, 1-carat +0.3%, and 3-carat +1.5%. Premium rounds improved, while smaller lower-quality goods remained pressured by lab-grown competition. This is not generic scarcity.",
   "Lab-grown continues to track wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change in the October evidence pass — strategically firm and highly segmented remains the posture.",
+  "No materials-regime change in the October 10 evidence pass — strategically firm and highly segmented remains the posture.",
   "The Fed hike and elevated long yields remain a Financial-channel event. Do not double-count them as a precious-materials System Temperature increment.",
-  "Natural diamonds should be read as segmented: August RAPI showed a first 1-carat monthly rise in 15 months and stronger smalls, not generic scarcity.",
+  "Natural diamonds should be read as selectively improving but segmented: September gains broadened across key sizes while lower-quality smalls remained under lab-grown pressure.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
   "Whether precious-material price action separates from the already-counted rates and dollar event.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
-  "Whether the August 1-carat RAPI rise broadens, or whether commercial goods stall again.",
+  "Whether September's broader RAPI gains persist, or whether commercial and lower-quality goods stall again.",
   "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
   "Lab-grown wholesale compression, manufacturing scale, adoption, and retailer margin structure.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
@@ -267,7 +276,7 @@ export const PMI_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "October 1, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "October 1, 2026",
       currentState: "Strategically firm / Highly segmented",
       currentDirection: "Rate-sensitive / Diamonds still segmented",
       previousState: "Strategically firm / Highly segmented",
@@ -275,7 +284,7 @@ export const PMI_SERIES = defineLedgerMonitorSeries({
         "No precious-materials regime change and no new System Temperature materials increment. The realized Fed hike and elevated 10-year remain Financial-channel evidence; observed contained spreads and lagged below-normal stress argue against a generalized seizure. The latest approved diamond evidence remains segmented rather than generically scarce.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
       sources: [
-        ...bufferSourcesFor("financial-system"),
+        ...bufferSourcesForOctober1("financial-system"),
         {
           institution: "Rapaport USA / GlobeNewswire",
           title: "Diamond Price Recovery Broadens Further in August",
@@ -296,6 +305,38 @@ export const PMI_SERIES = defineLedgerMonitorSeries({
           supports:
             "Producer economics and commercial-goods pressure remain segmented rather than a broad materials shortage.",
         },
+      ],
+    },
+    {
+      reviewDate: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Gold rate-sensitive / Natural-diamond recovery broadening selectively",
+      previousState: "Strategically firm / Highly segmented",
+      materialChangeSummary:
+        "September gold weakened under higher yields and a firmer dollar despite continuing ETF inflows. Silver, platinum, and palladium were reviewed without a distinct regime break. September natural-diamond price gains broadened across several benchmark sizes, but premium goods and lower-quality commercial goods remain differentiated. Materials stays Elevated / Contained with no new temperature increment.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "World Gold Council",
+          title: "Gold Market Commentary — September 2026",
+          date: "October 7, 2026",
+          url: "https://www.gold.org/goldhub/research/gold-market-commentary-september-2026",
+          supports:
+            "Gold declined as Treasury yields, the dollar, and futures positioning outweighed continuing ETF inflows.",
+        },
+        ...PMI_SILVER_UPDATE.sources,
+        {
+          institution: "Rapaport",
+          title: "Small Diamonds Lead Price Gains in September",
+          date: "October 6, 2026",
+          dataPeriod: "September 2026",
+          evidenceLabel: "Observed",
+          url: "https://rapaport.com/news/small-diamonds-lead-price-gains-in-september/",
+          supports:
+            "RAPI gains broadened across 0.30-, 0.50-, 1-, and 3-carat benchmarks, while lower-quality small goods remained exposed to lab-grown competition.",
+        },
+        ...bufferSourcesFor("financial-system"),
       ],
     },
   ],

@@ -11,7 +11,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
-import { bufferSourcesFor } from "./buffer-health-data";
+import { bufferSourcesFor, bufferSourcesForOctober1 } from "./buffer-health-data";
 
 export const GWS_DISPLAY_TITLE = "Global Water Stress Monitor";
 
@@ -24,13 +24,13 @@ export const GWS_INTRO =
 export const GWS_CURRENT_STATE = "High water stress / Multi-system transmission";
 
 export const GWS_CURRENT_DIRECTION =
-  "Uneven — structural water stress / Food buffers mixed and thinning";
+  "Uneven — U.S. drought improves while food-price transmission rises";
 
 export const GWS_SUMMARY =
-  "Water stress remains high and highly uneven. The October pass does not establish a new hydrologic regime, but it refreshes the food-transmission layer: observed U.S. corn stocks rebuilt while wheat stocks and production were lower; rice and global cereal balances remain forecasts; observed fertilizer prices, trade delays, and Gulf-corridor exposure add pressure without proving physical food shortage. Previously reviewed Colorado, Texas, Europe, and Tigris–Euphrates conditions remain the water baseline. Water stays qualitative and receives no System Temperature weight.";
+  "Water stress remains high and highly uneven. U.S. drought coverage improved materially through October 7 and Lake Powell edged higher in early October, but neither reverses the Colorado Basin's structural shortage. Meanwhile September food prices rose on weather and transport disruption, especially cereals, even as the 2026 global crop remains forecast to be the second largest on record. Water stays qualitative and receives no System Temperature weight.";
 
 export const GWS_WEEKLY_SIGNAL =
-  "Food buffers are mixed and thinning: observed corn rebuilding offsets weaker wheat, while rice and global cereal balances remain forecast and fertilizer/corridor pressure has not produced verified shortage. The underlying water map remains uneven. Water is an evidence layer, not a sixth temperature weight.";
+  "The map moved in opposite directions: U.S. drought coverage improved, while food-price transmission strengthened through cereals, weather, and transport disruption. A large forecast crop and the absence of verified shortage keep Food at Thinning rather than Low. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_CATEGORIES = [
   {
@@ -51,7 +51,7 @@ export const GWS_CATEGORIES = [
   {
     name: "Agriculture & Food",
     level: "Seasonal / regional",
-    body: "European agricultural water limits remain part of seasonal transmission. FAO’s August Food Price Index rose to 133.3, with weather, Middle East conflict, and Black Sea logistics among pressures — a cross-system food signal, not a standalone water degree. Improving Iraqi marsh and irrigation conditions sit beside that pressure. India remains a forecast-sensitive watch, not a confirmed crop-system failure.",
+    body: "FAO's September Food Price Index rose to 136, with cereal prices up 5.1% month over month on weather and transport disruption. The global crop is still forecast to be the second largest on record, so this is price and logistics transmission rather than a verified shortage. Improving Iraqi and U.S. drought conditions sit beside that pressure.",
   },
   {
     name: "Energy / Industrial Transmission",
@@ -78,7 +78,7 @@ export const GWS_REGIONS = [
     level: "Severe structural stress / Confirmed allocation response",
     direction: "Worsening / policy transmission",
     transmission: "Water / hydropower / allocations",
-    body: "Federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year remain in force. As of the September 8 Reclamation weekly, Lake Powell was about 22% full (elevation about 3,517.6 feet) and Lake Mead about 26% (about 1,038.9 feet), with total system storage near 31%. Upper Basin officials agreed September 15 to continue Flaming Gorge emergency releases to protect Powell. This is confirmed structural shortage plus emergency adaptation, not recovery.",
+    body: "Federal 2027–2028 Lower Basin allocation reductions remain in force. Lake Powell was provisionally about 3,519.0 feet on October 6, slightly above October 1 but still inside severe structural stress. The small rise is not basin recovery.",
   },
   {
     name: "Tigris / Euphrates",
@@ -305,14 +305,51 @@ export const GWS_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "October 1, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "October 1, 2026",
       currentState: GWS_CURRENT_STATE,
       currentDirection: GWS_CURRENT_DIRECTION,
       previousState: "High water stress / Multi-system transmission",
       materialChangeSummary:
         "No new hydrologic regime is established. The food-transmission layer is refreshed: observed corn stocks rebuilt while wheat weakened; rice and global cereal balances remain forecasts; observed fertilizer and Gulf-corridor pressure has not produced a verified physical shortage. Water remains qualitative with no System Temperature weight.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
-      sources: bufferSourcesFor("food"),
+      sources: bufferSourcesForOctober1("food"),
+    },
+    {
+      reviewDate: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GWS_CURRENT_STATE,
+      currentDirection: GWS_CURRENT_DIRECTION,
+      previousState: "High water stress / Multi-system transmission",
+      materialChangeSummary:
+        "U.S. drought coverage improved through October 7 and Lake Powell edged higher in early October, but Colorado Basin structural shortage remains. FAO's September food-price index rose 1.5% month over month, led by a 5.1% cereal increase tied to weather and transport disruption. Forecast 2026 cereal output remains the second largest on record, so Food stays Thinning rather than Low. Water remains qualitative with no temperature weight.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "FAO",
+          title: "FAO Food Price Index rises in September amid weather concerns and transport disruptions",
+          date: "October 2, 2026",
+          url: "https://www.fao.org/newsroom/detail/fao-food-price-index-rises-in-september-amid-weather-concerns-and-transport-disruptions/en",
+          supports:
+            "September food prices rose 1.5% month over month and cereals rose 5.1%, while 2026 cereal production remained forecast as the second largest on record.",
+        },
+        {
+          institution: "U.S. Bureau of Reclamation",
+          title: "Reservoir Storage — 40 Day Data",
+          date: "October 6, 2026",
+          url: "https://www.usbr.gov/rsvrWater/rsv40Day.html?reservoirtype=Reservoir&siteid=919",
+          supports:
+            "Lake Powell's provisional elevation was 3,519.04 feet, a slight early-October improvement inside continuing structural stress.",
+        },
+        {
+          institution: "Drought.gov",
+          title: "Current U.S. Drought Conditions",
+          date: "October 7, 2026",
+          url: "https://www.drought.gov/current-conditions",
+          supports:
+            "Drought coverage declined over the week and month, with improvement in the Southern Plains, Southwest, Rockies, and Southeast but worsening in the Lower Mississippi Valley.",
+        },
+        ...bufferSourcesFor("food"),
+      ],
     },
   ],
 });

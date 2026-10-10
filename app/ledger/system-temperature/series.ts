@@ -790,6 +790,108 @@ export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01: SystemTemperatureSnapshot =
       "October evidence confirms the September channel states without adding heat: energy buffers are low despite the Yanbu / East-West restart; the Fed hike and elevated 10-year preserve financial pressure while spreads, stress, funding, and labor remain functional; Carolinas grid stress was episodic; food buffers are mixed and thinning; Technology / AI remains high / partial. The result holds at 74° with Moderate confidence.",
   };
 
+/**
+ * October 10, 2026 review — append-only confirmation of the October 1
+ * assignments. Current evidence changes several buffer and monitor narratives,
+ * but none crosses a discrete channel threshold.
+ */
+export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_10: SystemTemperatureSnapshot =
+  {
+    reviewDate: "October 10, 2026",
+    evidenceCutoff: "October 10, 2026",
+    methodologyVersion: SYSTEM_TEMPERATURE_METHODOLOGY_VERSION,
+    channels: [
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.channels[0],
+        materialChange: false,
+        transmissionExplanation:
+          "Geopolitics / energy / supply remains severe / broad. September production and bypass flows partially recovered, but oil inventories kept drawing, Brent remained elevated, East Coast distillate stocks stayed well below normal, and Hormuz routing remained constrained. The evidence changes the balance, not the channel assignment.",
+        coolingNotes:
+          "Lower regional shut-ins, restored East-West Pipeline operations, Yanbu loadings, and somewhat higher Hormuz shipments are real cooling evidence. They prevent escalation, but have not rebuilt inventory or routing slack enough to lower the channel.",
+        evidenceRefs: [
+          "EIA Short-Term Energy Outlook Oct 6, 2026",
+          "EIA Global Oil Markets Oct 6, 2026",
+          "global-pressure monitor",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.channels[1],
+        materialChange: false,
+        transmissionExplanation:
+          "Financial & economic remains very-high / partial. The 10-year held at 5.24% on October 9 and high-yield spreads widened from late September, while September payroll growth slowed sharply and July was revised negative. The combination thins labor reserve but does not establish systemic financial dysfunction.",
+        coolingNotes:
+          "High-yield spreads remained contained, initial claims were 197,000, unemployment was 4.2%, participation and hours were stable, and no funding freeze or bank event was verified. These offsets keep transmission partial.",
+        evidenceRefs: [
+          "BLS Employment Situation Sep 2026, released Oct 2",
+          "Department of Labor weekly claims Oct 8, 2026",
+          "U.S. Treasury yield curve Oct 9, 2026",
+          "ICE BofA US High Yield OAS through Oct 8, 2026",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.channels[2],
+        materialChange: false,
+        transmissionExplanation:
+          "Physical infrastructure remains high / partial. Third-quarter electricity use rose strongly and NERC identifies large computational loads as a central planning and operating challenge. Standards development and enhanced reliability analysis show active adaptation rather than national grid failure.",
+        coolingNotes:
+          "Seasonal emergency orders expired, no new national failure was observed, and NERC standards work is moving forward. Structural large-load pressure remains visible, but institutions are adapting.",
+        evidenceRefs: [
+          "EIA Short-Term Energy Outlook Oct 6, 2026",
+          "NERC board meeting release Oct 8, 2026",
+          "NERC computational-load standards Sep 19, 2026",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.channels[3],
+        materialChange: false,
+        transmissionExplanation:
+          "Commodities / materials remains elevated / contained. September food prices rose, led by cereals, while the global crop is still forecast to be the second largest on record. Gold stayed rate-sensitive; silver, platinum, and palladium showed no independent regime break; and natural-diamond gains broadened selectively rather than becoming generic scarcity.",
+        coolingNotes:
+          "The large forecast cereal crop, improving U.S. drought coverage, and selective rather than generalized diamond recovery offset higher food prices. No verified physical food shortage or materials-system dysfunction is present.",
+        evidenceRefs: [
+          "FAO Food Price Index Oct 2, 2026",
+          "World Gold Council September commentary Oct 7, 2026",
+          "LBMA precious-metal prices through Oct 9, 2026",
+          "Rapaport September diamond results Oct 6, 2026",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.channels[4],
+        materialChange: false,
+        transmissionExplanation:
+          "Technology / AI remains high / partial. GPT-6 broadened frontier access on October 7 and Claude Haiku 5.5 expanded the fast-model tier, while first-party safety releases and investigation of unintended actions show that deployment controls remain active. The milestone is material to the monitor narrative but stays within the already-high channel.",
+        coolingNotes:
+          "Published deployment safeguards, tighter internal evaluation controls, capital and grid constraints, and the absence of demonstrated broad labor substitution prevent a move beyond partial transmission.",
+        evidenceRefs: [
+          "OpenAI GPT-6 for everyone Oct 7, 2026",
+          "OpenAI Deployment Safety Hub Oct 7, 2026",
+          "Anthropic Claude Haiku 5.5 Oct 7, 2026",
+          "Anthropic unintended model actions Oct 9, 2026",
+        ],
+      },
+    ],
+    confidence: "moderate",
+    confidenceRationale:
+      "Official October energy, labor, market, grid, food, water, materials, and AI releases provide a broad cross-check. Observed and forecast evidence remains explicitly separated, while corridor durability, lagged household data, and the interpretation of rapidly broadening AI access retain meaningful uncertainty. Information Signal adds no degrees.",
+    activeEvents: SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01.activeEvents,
+    coolingReview: {
+      improved:
+        "Regional oil shut-ins eased, bypass and Hormuz shipments improved, U.S. drought coverage declined, and Lake Powell edged higher.",
+      normalized:
+        "Initial claims, unemployment, participation, hours, credit spreads, and funding conditions remained functional despite weaker payroll momentum and elevated yields.",
+      failedToTransmit:
+        "Higher food prices have not produced verified shortage; broad AI access has not produced demonstrated economy-wide labor substitution; large-load strain has not produced national grid failure.",
+      absorbed:
+        "Pipeline workarounds, grid standards, fuel-assurance planning, a still-large forecast cereal crop, and AI deployment safeguards continue to absorb pressure.",
+      decayed:
+        "The September Carolinas emergency episode is no longer current heat. Partial oil-flow recovery and continuing pressure are not additive events unless a channel crosses a new threshold.",
+    },
+    pressureLabel: "High Pressure",
+    functioningLabel: "Systems Functioning",
+    explanation:
+      "The October 10 review updates the evidence without changing the five channel assignments. Energy pressure remains severe and broad despite partial flow recovery; elevated yields, thinner labor reserve, and contained credit keep financial transmission partial; large-load infrastructure strain remains high with adaptation; food and precious-material pressures remain contained; and AI remains high / partial after a broad GPT-6 release. The reading holds at 74° with Moderate confidence.",
+  };
+
 export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] =
   [
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
@@ -797,18 +899,19 @@ export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] 
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01,
+    SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_10,
   ];
 
 export const SYSTEM_TEMPERATURE_READING: SystemTemperatureReading =
-  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01, {
+  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_10, {
     previousDegrees: computeTemperatureDegrees(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_01,
     ),
   });
 
 /** Public hub interpretation under System Temperature. Not a methodology input. */
 export const SYSTEM_TEMPERATURE_LEDGER_NOTE =
-  "The October 1 review holds every channel assignment. Yanbu and East-West flows resumed, but energy buffers remain low after large inventory draws. The Fed hike and elevated 10-year preserve financial pressure, while contained spreads, below-normal lagged stress, orderly funding, and functional labor prevent escalation. Carolinas grid stress was episodic, food buffers are mixed and thinning, precious materials remain contained, and Technology / AI stays high / partial.";
+  "The October 10 review holds every channel assignment at 74°. Partial oil-flow recovery has not rebuilt depleted inventories; elevated long yields and weaker payroll momentum thin reserve while claims and credit remain orderly; large-load grid pressure is met by active standards work; food prices rose without verified shortage; precious materials remain segmented; and the broad GPT-6 release stays inside Technology / AI's High / Partial assignment.";
 
 if (!SYSTEM_TEMPERATURE_READING.validation.ok) {
   throw new Error(

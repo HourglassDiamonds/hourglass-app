@@ -43,7 +43,7 @@ describe("Buffer Health", () => {
       ),
       {
         households: "Thinning",
-        labor: "Healthy",
+        labor: "Thinning",
         food: "Thinning",
         energy: "Low",
         grid: "Thinning",
@@ -63,7 +63,7 @@ describe("Buffer Health", () => {
     );
     assert.match(html, /data-buffer-domain="energy" data-reserve-state="Low" aria-label="Energy buffer health: Low"/);
     assert.match(html, /data-buffer-domain="households" data-reserve-state="Thinning"/);
-    assert.match(html, /data-buffer-domain="labor" data-reserve-state="Healthy"/);
+    assert.match(html, /data-buffer-domain="labor" data-reserve-state="Thinning"/);
     assert.doesNotMatch(html, /Awaiting sourced baseline/);
   });
 
@@ -119,14 +119,14 @@ describe("Buffer Health", () => {
       assert.ok(domain.rationale.length > 0, `${domain.label} should have a rationale`);
       assert.ok(domain.escalationCriteria.length > 0);
       assert.ok(domain.easingCriteria.length > 0);
-      assert.equal(domain.lastUpdated, "October 1, 2026");
+      assert.equal(domain.lastUpdated, "October 10, 2026");
       for (const source of domain.sources) {
         assert.ok(source.dataPeriod.length > 0);
       }
     }
-    assert.equal(BUFFER_HEALTH_SNAPSHOT.evidenceCutoff, "October 1, 2026");
+    assert.equal(BUFFER_HEALTH_SNAPSHOT.evidenceCutoff, "October 10, 2026");
     const html = renderToStaticMarkup(createElement(BufferHealthView));
-    assert.match(html, /October 1 sourced baselines/i);
+    assert.match(html, /October 1 remains the fixed baseline/i);
     for (const label of labels) {
       assert.match(html, new RegExp(label));
     }

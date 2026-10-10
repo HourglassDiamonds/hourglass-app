@@ -5,15 +5,15 @@ export const WEEKLY_SYNOPSIS = {
   blocks: [
     {
       title: "What changed",
-      body: "Evidence reviewed through October 1, 2026. East-West Pipeline operations and Yanbu loadings resumed, cooling the outage-specific risk, while inventory depletion, limited effective spare production, weak refined-product inventories, and constrained routing keep energy buffers Low. The Fed hike was realized and the 10-year remained elevated. Observed credit spreads stayed contained, lagged financial stress stayed below normal, funding remained orderly, and provisional labor evidence remained functional. System Temperature is 74°, High, Systems Functioning, Confidence Moderate — 0° from the September 16 reading of 74°.",
+      body: "Evidence reviewed through October 10, 2026. Partial oil-flow recovery has not rebuilt depleted inventories or distillate slack, so energy buffers remain Low. Long yields remain elevated and September payroll momentum weakened, moving Labor to Thinning; low claims, stable unemployment and hours, and contained credit prevent a failure call. Large-load grid pressure, higher food prices, selective diamond improvement, and broad GPT-6 access all remain inside existing channel assignments. System Temperature is 74°, High, Systems Functioning, Confidence Moderate — 0° from October 1.",
     },
     {
       title: "Why temperature held",
-      body: "All five assignments hold: Geopolitics / energy / supply Severe / Broad; Financial & economic transmission Very-high / Partial; Physical infrastructure High / Partial; Commodities / materials Elevated / Contained; Technology / AI High / Partial. Low energy slack and elevated yields prevent cooling. Restored Yanbu flows, contained spreads and stress, functional labor, expired Carolinas grid interventions, mixed food buffers, and no new AI transmission prevent escalation.",
+      body: "All five assignments hold: Geopolitics / energy / supply Severe / Broad; Financial & economic Very-high / Partial; Physical infrastructure High / Partial; Commodities / materials Elevated / Contained; Technology / AI High / Partial. Low energy slack and elevated yields prevent cooling. Partial flow recovery, contained credit, low claims, active grid adaptation, a still-large forecast cereal crop, and published AI safeguards prevent escalation.",
     },
     {
       title: "What to watch next",
-      body: "Whether observed East-West Pipeline / Yanbu restoration persists and inventories rebuild; whether contained credit spreads and below-normal stress survive elevated yields; whether Carolinas-style grid interventions recur outside exceptional weather; whether fertilizer or corridor pressure becomes verified food shortage; and whether AI containment or deployment produces a new external-transmission step.",
+      body: "Whether partial oil-flow recovery persists and inventories rebuild; whether contained credit survives elevated yields and weaker payroll momentum; whether large-load standards translate into capacity; whether higher food prices become verified shortage; and whether broader AI deployment produces a new external-transmission step.",
     },
   ],
 } as const;

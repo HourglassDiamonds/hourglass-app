@@ -30,7 +30,7 @@ const MATERIAL_STATES = [
   {
     name: "Gold",
     level: "Rate-sensitive / Contained",
-    body: "The realized Fed hike and elevated 10-year preserve the rate-sensitive gold treatment. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment. Contained spreads and below-normal lagged financial stress argue against a generalized materials crisis.",
+    body: "September gold weakened as Treasury yields, the dollar, and futures positioning outweighed continuing ETF inflows. Jewelry demand remains price-sensitive. The rates/dollar event is already captured in the financial channel rather than counted again here.",
   },
   {
     name: "Silver",
@@ -45,12 +45,12 @@ const MATERIAL_STATES = [
   {
     name: "Premium Natural Diamonds",
     level: "Selectively firm",
-    body: "Higher-value / better goods remain relatively firmer in key sizes and cuts. Rapaport’s August 1-carat RAPI rose 0.5%, the first monthly increase in about 15 months. Supply discipline and producer economics matter; this is not generic natural-diamond scarcity.",
+    body: "September gains broadened across benchmark sizes, including 1- and 3-carat goods. Premium rounds improved, but supply discipline and producer economics still matter; this is not generic natural-diamond scarcity.",
   },
   {
     name: "Commercial Natural Diamonds",
     level: "Price-sensitive",
-    body: "Commercial / lower-value goods remain price-sensitive as buyers discriminate more carefully across grades and sizes. August RAPI showed stronger smalls (0.30-carat +2%, 0.50-carat +2.5%) as supply cuts bite — a segmented rebound, not a shortage.",
+    body: "Commercial and lower-value goods remain price-sensitive. September RAPI rose 3.2% for 0.30-carat and 2.5% for 0.50-carat goods, while lower-quality smalls remained exposed to lab-grown competition — a segmented rebound, not a shortage.",
   },
   {
     name: "Lab-Grown Diamonds",

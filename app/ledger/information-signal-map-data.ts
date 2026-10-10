@@ -11,7 +11,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
-import { bufferSourcesFor } from "./buffer-health-data";
+import { bufferSourcesFor, bufferSourcesForOctober1 } from "./buffer-health-data";
 
 export const ISM_UPDATED_LABEL = "";
 
@@ -23,54 +23,54 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "The October evidence pass separates confirmed developments from remaining uncertainty. Observed East-West Pipeline and Yanbu restoration cools the outage narrative, while estimated inventory depletion and provisional refined-product data keep energy buffers low. The Fed hike is now realized and the 10-year remains elevated, but observed spreads, lagged stress, and orderly funding disconfirm a crisis frame. Forecast grid and food balances remain explicitly labeled. AI remains High / Partial. Confidence stays Moderate; Information Signal adds no degrees.";
+  "The October 10 evidence stack is sharper: official energy data confirms partial flow recovery alongside depleted inventories; labor data confirms slower payroll momentum alongside low claims; market data shows elevated yields and wider but contained spreads; and first-party AI releases show both broad capability diffusion and active safety controls. These cross-checks improve specificity without eliminating uncertainty. Confidence stays Moderate; Information Signal adds no degrees.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Energy buffers are low; East-West Pipeline and Yanbu flows have resumed; the Fed hike and elevated 10-year preserve rates pressure; credit, funding, and labor remain functional.",
+    body: "Energy buffers remain low despite partial flow recovery; long yields remain elevated; credit spreads are wider but contained; payroll momentum weakened while claims stayed low; AI capability and governance both advanced.",
   },
   {
     title: "Divergence",
-    body: "Restored bypass flows are meaningful cooling evidence but do not by themselves rebuild depleted inventories or spare capacity. Forecast food and grid adequacy should not be presented as observed shortage or failure. AI governance evidence does not establish a new deployment escalation.",
+    body: "Partial oil-flow recovery does not rebuild depleted inventories; weaker payrolls do not equal labor collapse; a higher food-price index does not prove shortage; and broad AI access does not remove security or infrastructure gates.",
   },
   {
     title: "Underweighted",
-    body: "Diesel-refining disruption and the disruption of Saudi Arabia’s principal Hormuz-bypass route as a distinct transmission step — and the fact that Information Signal still sets confidence only.",
+    body: "The interaction between thin distillate stocks, large-load grid planning, slower labor momentum, and AI diffusion — and the fact that Information Signal still sets confidence only.",
   },
 ] as const;
 
 export const ISM_SOURCE_STACK = [
   {
     title: "Institutional",
-    body: "Emphasizes observed Yanbu restoration, the realized Fed hike, provisional energy inventories, forecast electricity demand, and the distinction between low reserve capacity and system failure.",
+    body: "Emphasizes partial oil-flow recovery alongside depleted inventories, weaker payroll momentum alongside low claims, rising food prices alongside a still-large forecast crop, and the distinction between low reserve capacity and failure.",
   },
   {
     title: "Market",
-    body: "Emphasizes elevated long yields, contained observed credit spreads, below-normal lagged financial stress, and orderly funding — linking rates pressure more tightly to duration than to seizure.",
+    body: "Emphasizes the 10-year holding at 5.24%, high-yield spreads widening but remaining contained, and orderly funding — linking rates pressure more tightly to duration than to seizure.",
   },
   {
     title: "Infrastructure",
-    body: "Emphasizes forecast record load, observed episodic Carolinas interventions, and operator adaptation rather than national grid collapse.",
+    body: "Emphasizes strong observed electricity use, large computational loads, standards work, and operator adaptation rather than national grid collapse.",
   },
   {
     title: "Mainstream",
-    body: "Emphasizes $100+ oil, bond-market headlines, and AI-safety drama — often compressing energy disruption, rates, and frontier-lab statements into a single crisis frame.",
+    body: "Emphasizes elevated oil, bond-market headlines, weaker jobs, and GPT-6 launch drama — often compressing distinct energy, labor, rates, and AI stories into one direction.",
   },
 ] as const;
 
 export const ISM_NARRATIVE_MAP = [
   {
     title: "Domestic Framing",
-    body: "Emphasizes gasoline, diesel, borrowing costs, and the September Fed meeting. Tends to underweight vessel-tracking evidence and the difference between very-high rates pressure and a credit crisis.",
+    body: "Emphasizes fuel costs, borrowing costs, and weaker payroll growth. Tends to underweight low claims, stable unemployment and hours, and the difference between thinner reserve and system failure.",
   },
   {
     title: "Political Framing",
-    body: "Emphasizes stalled Hormuz talks, Houthi strikes, and blame for the pipeline attack. Tends to underweight still-functioning credit markets and gold’s decline as a disconfirmation.",
+    body: "Emphasizes conflict attribution, sanctions, and control of energy routes. Tends to underweight the partial recovery in production and bypass flows and the time needed to rebuild inventories.",
   },
   {
     title: "Market Framing",
-    body: "Emphasizes $108 oil, the 10-year at 5%, and hike odds. Tends to underweight that pipeline duration and diplomatic path remain less clear than the prints.",
+    body: "Emphasizes September Brent averaging $114 and the 10-year holding at 5.24%. Tends to underweight that high-yield spreads remain contained and oil-flow recovery is partial rather than absent.",
   },
   {
     title: "Infrastructure Framing",
@@ -79,7 +79,7 @@ export const ISM_NARRATIVE_MAP = [
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "The policy outcome and Yanbu restoration are now observed rather than unresolved. That improves clarity without lowering the assessed channel states: low energy slack and elevated long yields persist, while contained spreads, below-normal lagged stress, functional labor, and expired grid interventions disconfirm a generalized failure frame. Confidence remains Moderate; Information Signal adds no degrees.";
+  "Official releases now resolve several October questions with dated evidence: flow recovery is partial, payroll momentum is weaker, credit transmission remains contained, food-price pressure rose without shortage, large-load adaptation is active, and frontier AI access broadened alongside safety controls. The story is more precise, not uniformly cooler. Confidence remains Moderate; Information Signal adds no degrees.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
@@ -87,16 +87,16 @@ export const ISM_WHAT_TO_WATCH = [
     body: "Whether independently trackable Hormuz transits, Brent, diesel, and long yields continue to tell one physical story.",
   },
   {
-    title: "Pipeline duration versus scenario talk",
-    body: "Whether repair timelines converge, or whether $120/$130 oil scenarios are treated as forecasts rather than labeled as scenarios.",
+    title: "Flow recovery versus inventory repair",
+    body: "Whether higher bypass and Hormuz shipments persist long enough to rebuild crude and distillate inventories, rather than being treated as immediate normalization.",
   },
   {
-    title: "Rates-story composition",
-    body: "Whether coverage treats the 10-year’s move through 5% as an interaction among energy, core inflation, fiscal issuance, and AI-capital demand rather than a monocausal oil-to-yields pipeline.",
+    title: "Labor and credit composition",
+    body: "Whether weaker payroll momentum is reported alongside low claims, stable unemployment and hours, and contained spreads instead of as either no problem or confirmed collapse.",
   },
   {
-    title: "AI-governance versus AI-panic",
-    body: "Whether lab safety-coordination and Microsoft’s human-control draft are reported as adaptation, or compressed into unconstrained-capability theater.",
+    title: "AI access versus AI controls",
+    body: "Whether GPT-6 and Claude deployment is reported alongside system cards, unintended-action evidence, evaluation restrictions, and physical infrastructure gates.",
   },
 ] as const;
 
@@ -125,12 +125,12 @@ export const ISM_FOOTER_NOTE =
 export const ISM_CURRENT_STATE = "High-attention / Physical evidence converging";
 
 export const ISM_CURRENT_DIRECTION =
-  "Observed restoration and policy outcome clearer / Reserve durability still uncertain";
+  "Official evidence sharper / Cross-system framing still uneven";
 
 export const ISM_HUB_STATUS = ISM_CURRENT_STATE;
 
 export const ISM_HUB_DESCRIPTION =
-  "High-attention / Physical evidence converging — Yanbu restoration and the Fed hike are observed, while low energy slack and elevated long yields coexist with contained financial stress.";
+  "High-attention / Physical evidence converging — official October releases sharpen the evidence while cross-system framing remains uneven.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
 export const ISM_SERIES = defineLedgerMonitorSeries({
@@ -328,14 +328,43 @@ export const ISM_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "October 1, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "October 1, 2026",
       currentState: ISM_CURRENT_STATE,
       currentDirection: ISM_CURRENT_DIRECTION,
       previousState: "High-attention / Physical evidence converging",
       materialChangeSummary:
         "Observed Yanbu / East-West restoration and the realized Fed hike resolve two September uncertainties. Estimated energy depletion, provisional product inventories, forecast grid and food balances, lagged stress, and observed market and labor evidence remain explicitly separated. Confidence stays Moderate; Information Signal adds no degrees.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
-      sources: bufferSourcesFor("energy", "financial-system", "labor", "grid", "food"),
+      sources: bufferSourcesForOctober1("energy", "financial-system", "labor", "grid", "food"),
+    },
+    {
+      reviewDate: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: ISM_CURRENT_STATE,
+      currentDirection: ISM_CURRENT_DIRECTION,
+      previousState: "High-attention / Physical evidence converging",
+      materialChangeSummary:
+        "Official October releases sharpen the distinction between pressure and failure: energy flows partially recovered while inventories remained depleted; payroll momentum weakened while claims stayed low; yields stayed elevated and spreads contained; food prices rose without verified shortage; large-load standards advanced; and AI access broadened alongside published safeguards. Confidence remains Moderate and Information Signal adds no degrees.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        ...bufferSourcesFor("energy", "financial-system", "labor", "grid", "food"),
+        {
+          institution: "OpenAI",
+          title: "GPT-6 for everyone",
+          date: "October 7, 2026",
+          url: "https://openai.com/index/gpt-6-for-everyone/",
+          supports:
+            "First-party confirmation of broad GPT-6 access and new product surfaces.",
+        },
+        {
+          institution: "Anthropic",
+          title: "Investigating unintended model actions",
+          date: "October 9, 2026",
+          url: "https://www.anthropic.com/research/investigating-unintended-model-actions",
+          supports:
+            "First-party evidence of unintended actions and tighter evaluation controls, counterbalancing simple capability-only framing.",
+        },
+      ],
     },
   ],
 });

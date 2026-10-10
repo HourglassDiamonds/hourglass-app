@@ -4,7 +4,7 @@ import {
   type LedgerMonitorSnapshot,
 } from "./ledger-monitor-framework";
 
-export const BUFFER_HEALTH_EVIDENCE_CUTOFF = "October 1, 2026";
+export const BUFFER_HEALTH_EVIDENCE_CUTOFF = "October 10, 2026";
 
 export const SYSTEMS_FUNCTIONING_BUFFER_QUALIFIER =
   "Systems remain functional, but reserve capacity is uneven and thinning; energy buffers are low.";
@@ -121,11 +121,11 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
     label: "Labor",
     definition:
       "Capacity in employment, hours, hiring, and worker mobility to absorb a further slowdown or sector shock.",
-    reserveState: "Healthy",
+    reserveState: "Thinning",
     confidence: "Moderate-high",
     lastUpdated: BUFFER_HEALTH_EVIDENCE_CUTOFF,
     rationale:
-      "Unemployment remained 4.1%, August payroll growth was positive, and late-September claims stayed low. Participation was softer than in January, while hiring and quits remained restrained rather than collapsing.",
+      "September payrolls rose only 29,000, the 12-month average slowed to 45,000, and July was revised into contraction. Unemployment, participation, hours, and weekly claims remain stable enough to show a slowdown rather than a labor-system break.",
     escalationCriteria: [
       "Unemployment and continuing claims rise together",
       "Payroll growth becomes persistently negative or near zero",
@@ -137,6 +137,16 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
       "Quits and worker mobility strengthen without renewed wage-price pressure",
     ],
     sources: [
+      {
+        institution: "BLS",
+        title: "Employment Situation, September 2026",
+        date: "October 2, 2026",
+        dataPeriod: "September 2026",
+        evidenceLabel: "Provisional",
+        url: "https://www.bls.gov/news.release/archives/empsit_10022026.htm",
+        supports:
+          "Payrolls rose 29,000, unemployment was 4.2%, participation was 61.8%, hours were stable, the 12-month payroll average slowed to 45,000, and July was revised to a 10,000 decline.",
+      },
       {
         institution: "BLS",
         title: "Employment Situation, August 2026",
@@ -160,6 +170,16 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
       {
         institution: "Department of Labor",
         title: "Unemployment Insurance Weekly Claims",
+        date: "October 8, 2026",
+        dataPeriod: "Week ending October 3, 2026",
+        evidenceLabel: "Provisional",
+        url: "https://www.dol.gov/index.php/newsroom/releases?agency=39&state=All&topic=All&year=all",
+        supports:
+          "Initial claims were 197,000 and the four-week average was 198,000, remaining low despite slower payroll growth.",
+      },
+      {
+        institution: "Department of Labor",
+        title: "Unemployment Insurance Weekly Claims",
         date: "October 1, 2026",
         dataPeriod: "Weeks ending September 19 and September 26, 2026",
         evidenceLabel: "Provisional",
@@ -178,7 +198,7 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
     confidence: "Moderate",
     lastUpdated: BUFFER_HEALTH_EVIDENCE_CUTOFF,
     rationale:
-      "Wheat and rice reserves are thinner, while U.S. corn stocks rebuilt and global cereal stocks still provide meaningful reserve. Fertilizer and corridor disruption add pressure but do not establish a physical food shortage.",
+      "September food prices rose as weather and transport disruption lifted cereals, while the 2026 global cereal crop is still forecast to be the second largest on record. The balance shows thinning price and logistics slack without a verified physical shortage.",
     escalationCriteria: [
       "Wheat and rice stocks decline into a second weak harvest cycle",
       "Corn also turns lower or major exporters impose restrictions",
@@ -190,6 +210,16 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
       "Fertilizer supply and major grain corridors normalize",
     ],
     sources: [
+      {
+        institution: "FAO",
+        title: "FAO Food Price Index rises in September amid weather concerns and transport disruptions",
+        date: "October 2, 2026",
+        dataPeriod: "September 2026",
+        evidenceLabel: "Observed",
+        url: "https://www.fao.org/newsroom/detail/fao-food-price-index-rises-in-september-amid-weather-concerns-and-transport-disruptions/en",
+        supports:
+          "The index rose 1.5% month over month and 5.8% year over year; cereal prices rose 5.1%, while projected 2026 cereal output remained the second largest on record.",
+      },
       {
         institution: "USDA NASS",
         title: "Grain Stocks and Small Grains Annual Summary",
@@ -241,7 +271,7 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
     confidence: "High",
     lastUpdated: BUFFER_HEALTH_EVIDENCE_CUTOFF,
     rationale:
-      "Large oil inventory draws, limited effective spare production, weak refined-product inventories, and constrained routing leave little additional slack. Strong U.S. crude production, improving U.S. natural-gas storage, and the East-West Pipeline/Yanbu restart remain meaningful counterbuffers, keeping the state above Critical.",
+      "Large oil inventory draws, limited effective spare production, weak refined-product inventories, and constrained routing leave little additional slack. September brought partial pipeline, Yanbu, and Hormuz-flow recovery, but prices and inventory draws remain elevated; those counterbuffers keep the state above Critical without restoring normal reserve.",
     escalationCriteria: [
       "Restored bypass flows fail again while Hormuz traffic deteriorates",
       "Crude and refined-product inventories continue drawing materially",
@@ -253,6 +283,16 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
       "Usable spare production capacity is restored",
     ],
     sources: [
+      {
+        institution: "EIA",
+        title: "Short-Term Energy Outlook — October 2026",
+        date: "October 6, 2026",
+        dataPeriod: "September 2026 and fourth-quarter outlook",
+        evidenceLabel: "Estimated",
+        url: "https://www.eia.gov/outlooks/steo/report/",
+        supports:
+          "September Brent averaged $114, regional shut-ins eased and bypass shipments improved, but third-quarter inventories drew sharply and East Coast distillate stocks remained well below normal.",
+      },
       {
         institution: "IEA",
         title: "Oil Market Report — September 2026",
@@ -305,7 +345,7 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
     confidence: "Moderate",
     lastUpdated: BUFFER_HEALTH_EVIDENCE_CUTOFF,
     rationale:
-      "Repeated September Carolinas interventions and record regional loads show thinner extreme-weather margin. The orders expired, no national grid failure occurred, and planning adequacy remains intact across much of the system.",
+      "Seasonal emergency orders expired without national grid failure, but large computational loads remain a formal planning and operating challenge. Standards work and enhanced fuel-assurance analysis show active adaptation inside still-thinning structural margin.",
     escalationCriteria: [
       "Emergency interventions recur outside exceptional weather",
       "Firm capacity and transmission persistently lag load growth",
@@ -317,6 +357,16 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
       "Flexible large loads provide verified demand response",
     ],
     sources: [
+      {
+        institution: "NERC",
+        title: "North American Collaboration, Large Loads, Standards Key Topics at Board Meeting",
+        date: "October 8, 2026",
+        dataPeriod: "October 2026 reliability planning",
+        evidenceLabel: "Observed",
+        url: "https://www.nerc.com/newsroom/north-american-collaboration-large-loads-standards-key-topics-at-board-meeting",
+        supports:
+          "Large loads remain a grid planning and operations challenge while reliability assessments add fuel and pipeline analysis.",
+      },
       {
         institution: "NERC",
         title: "2026 Summer Reliability Assessment",
@@ -358,7 +408,7 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
     confidence: "Moderate",
     lastUpdated: BUFFER_HEALTH_EVIDENCE_CUTOFF,
     rationale:
-      "Long and real yields are elevated, and household and commercial-real-estate vulnerabilities remain. Corporate spreads are contained, financial stress remains below normal, and funding markets remain orderly.",
+      "Long yields remain elevated, and household and commercial-real-estate vulnerabilities persist. High-yield spreads widened from late September but remained contained, with no verified funding or credit seizure.",
     escalationCriteria: [
       "Corporate spreads widen persistently and financial-stress indexes rise above normal",
       "Bank funding or money markets show confirmed dysfunction",
@@ -370,6 +420,26 @@ export const BUFFER_HEALTH_DOMAINS: readonly BufferDomain[] = [
       "Household and commercial-real-estate loss absorption stays orderly",
     ],
     sources: [
+      {
+        institution: "U.S. Treasury",
+        title: "Daily Treasury Par Yield Curve Rates",
+        date: "October 9, 2026",
+        dataPeriod: "October 9, 2026",
+        evidenceLabel: "Observed",
+        url: "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value=2026&field_tdr_date_value_month=202610&type=daily_treasury_yield_curve",
+        supports:
+          "The 10-year yield remained elevated at 5.24%, preserving financing and duration pressure.",
+      },
+      {
+        institution: "St. Louis Fed / ICE",
+        title: "ICE BofA US High Yield Index Option-Adjusted Spread",
+        date: "October 8, 2026",
+        dataPeriod: "Daily through October 8, 2026",
+        evidenceLabel: "Observed",
+        url: "https://fred.stlouisfed.org/data/BAMLH0A0HYM2",
+        supports:
+          "The spread was 3.15 percentage points, wider than late September but still contained rather than seizure-level.",
+      },
       {
         institution: "U.S. Treasury",
         title: "Daily Treasury Par Yield Curve Rates",
@@ -422,19 +492,50 @@ export function bufferSourcesFor(
   ).flatMap((domain) => [...domain.sources]);
 }
 
+const OCTOBER_10_SOURCE_TITLES = new Set([
+  "Employment Situation, September 2026",
+  "FAO Food Price Index rises in September amid weather concerns and transport disruptions",
+  "Short-Term Energy Outlook — October 2026",
+  "North American Collaboration, Large Loads, Standards Key Topics at Board Meeting",
+]);
+
+/** Fixed source view used only by the preserved October 1 snapshots. */
+export function bufferSourcesForOctober1(
+  ...domainIds: readonly BufferDomainId[]
+): readonly BufferEvidenceSource[] {
+  return BUFFER_HEALTH_DOMAINS.filter((domain) =>
+    domainIds.includes(domain.id),
+  ).flatMap((domain) =>
+    domain.sources.filter(
+      (source) =>
+        !OCTOBER_10_SOURCE_TITLES.has(source.title) &&
+        source.date !== "October 8, 2026" &&
+        source.date !== "October 9, 2026",
+    ),
+  );
+}
+
 /**
  * Formal Buffer Health history is append-only. October 1 is the first
  * baseline; do not backfill earlier states from narrative evidence.
  */
 export const BUFFER_HEALTH_FORMAL_SNAPSHOTS: readonly BufferHealthHistoricalSnapshot[] = [
   {
+    reviewDate: "October 1, 2026",
+    evidenceCutoff: "October 1, 2026",
+    domains: [
+      { id: "households", label: "Households", reserveState: "Thinning" },
+      { id: "labor", label: "Labor", reserveState: "Healthy" },
+      { id: "food", label: "Food", reserveState: "Thinning" },
+      { id: "energy", label: "Energy", reserveState: "Low" },
+      { id: "grid", label: "Grid", reserveState: "Thinning" },
+      { id: "financial-system", label: "Financial system", reserveState: "Healthy" },
+    ],
+  },
+  {
     reviewDate: BUFFER_HEALTH_EVIDENCE_CUTOFF,
     evidenceCutoff: BUFFER_HEALTH_EVIDENCE_CUTOFF,
-    domains: BUFFER_HEALTH_DOMAINS.map(({ id, label, reserveState }) => ({
-      id,
-      label,
-      reserveState,
-    })),
+    domains: BUFFER_HEALTH_DOMAINS.map(({ id, label, reserveState }) => ({ id, label, reserveState })),
   },
 ];
 
@@ -451,10 +552,10 @@ export const BUFFER_HEALTH_SNAPSHOT: LedgerMonitorSnapshot = {
   reviewDate: BUFFER_HEALTH_EVIDENCE_CUTOFF,
   evidenceCutoff: BUFFER_HEALTH_EVIDENCE_CUTOFF,
   currentState: "Systems functioning with uneven and thinning reserve capacity",
-  currentDirection: "Energy low; household, food, and grid buffers thinning",
-  previousState: "Awaiting sourced baselines",
+  currentDirection: "Energy low; household, labor, food, and grid buffers thinning",
+  previousState: "Systems functioning with uneven and thinning reserve capacity",
   materialChangeSummary:
-    "The October 1 evidence pass establishes sourced states for all six reserve domains without changing System Temperature.",
+    "The October 10 evidence pass moves Labor from Healthy to Thinning as payroll momentum weakens, while low claims and stable unemployment and hours prevent a lower state. Energy remains Low; the other domain states hold. Buffer Health does not change System Temperature degrees.",
   sources: BUFFER_HEALTH_DOMAINS.flatMap((domain) => domain.sources),
   methodologyVersion: LEDGER_METHODOLOGY_VERSION,
 };

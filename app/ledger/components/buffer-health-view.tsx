@@ -8,6 +8,7 @@ import {
 } from "../buffer-health-data";
 import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
+import { LedgerMonitorStatusLines } from "./ledger-monitor-chrome";
 
 function ReserveChamber({ domain }: { domain: BufferDomain }) {
   const fill = reserveFillPercent(domain.reserveState);
@@ -91,13 +92,25 @@ export default function BufferHealthView() {
       <span className="ledger-index-kicker">The Ledger Intelligence System</span>
       <h1 className="ledger-index-title">Buffer Health / Remaining Slack</h1>
       <p className="ledger-index-intro">{BUFFER_HEALTH_SNAPSHOT.definition}</p>
+      <LedgerMonitorStatusLines />
+
+      <div className="ledger-monitor-status-pair">
+        <div>
+          <p className="ledger-monitor-pair-label">Current State</p>
+          <p className="ledger-monitor-pair-value">{BUFFER_HEALTH_SNAPSHOT.currentState}</p>
+        </div>
+        <div>
+          <p className="ledger-monitor-pair-label">Current Direction</p>
+          <p className="ledger-monitor-pair-value">{BUFFER_HEALTH_SNAPSHOT.currentDirection}</p>
+        </div>
+      </div>
 
       <BufferHealthVisual />
 
       <div className="ledger-index-section">
         <h2 className="ledger-index-section-title">Domain evidence framework</h2>
         <p className="ledger-index-section-sub">
-          October 1 sourced baselines establish a reserve state for every domain.
+          October 1 remains the fixed baseline; October 10 updates every domain and moves Labor to Thinning.
           Evidence labels distinguish observed, provisional, forecast, and lagged material.
         </p>
         <div className="buffer-domain-details">

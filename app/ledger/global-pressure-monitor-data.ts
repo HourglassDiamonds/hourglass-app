@@ -10,7 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
-import { bufferSourcesFor } from "./buffer-health-data";
+import { bufferSourcesFor, bufferSourcesForOctober1 } from "./buffer-health-data";
 
 export const GPM_DISPLAY_TITLE = "Global Pressure Monitor";
 
@@ -20,7 +20,7 @@ export const GPM_SEO_DESCRIPTION =
   "Hourglass Ledger Global Pressure Monitor — qualitative status of external threat pressure and systemic transmission.";
 
 export const GPM_HUB_DESCRIPTION =
-  "Very high external pressure / Broader energy transmission — energy buffers remain low despite restored East-West Pipeline and Yanbu flows, while credit, funding, and labor continue to function.";
+  "Very high external pressure / Broader energy transmission — partial flow recovery has not rebuilt depleted inventories or refined-product slack; financial transmission remains contained.";
 
 export const GPM_KICKER = "The Ledger Intelligence System";
 
@@ -35,13 +35,13 @@ export const GPM_CURRENT_STATE =
 export const GPM_CURRENT_DIRECTION_LABEL = "Current Direction";
 
 export const GPM_CURRENT_DIRECTION =
-  "Energy buffers low / Restored bypass and contained financial stress limit escalation";
+  "Partial flow recovery / Low buffers and elevated prices keep transmission broad";
 
 export const GPM_LEAD =
-  "Energy buffers remain low after large oil-inventory draws, limited effective spare production, weak refined-product inventories, and constrained routing. Observed East-West Pipeline operations and Yanbu loadings resumed by late September, restoring part of the principal Hormuz bypass and cooling the outage-specific risk. The September Fed hike and elevated 10-year yield preserve financial pressure, but observed credit spreads remain contained, lagged financial stress remains below normal, funding is orderly, and labor is still functional. External pressure remains very high with broad energy transmission, not a confirmed financial-system seizure.";
+  "September brought partial East-West Pipeline, Yanbu, and Hormuz-flow recovery, but oil inventories continued to draw, distillate stocks remained weak, and Brent stayed elevated. Long yields also remain high. Credit spreads widened modestly without signaling a funding seizure, while slower payroll growth shows thinner labor reserve rather than system failure. External pressure remains very high with broad energy transmission.";
 
 export const GPM_WHAT_CHANGED =
-  "Since September 16, East-West Pipeline operations and Yanbu loadings resumed, restoring part of the routing buffer. That is real cooling evidence, but energy remains Low-buffer because inventories, effective spare production, refined products, and routing still have little slack. The Fed hike was realized and the 10-year remained elevated; contained spreads, below-normal lagged stress, orderly funding, and functional labor kept financial transmission partial. The channel states therefore hold. Analyst price paths remain scenarios, not forecasts.";
+  "EIA's October review confirms partial production and routing recovery, including East-West Pipeline and somewhat higher Hormuz shipments, while third-quarter inventory draws, weak East Coast distillate stocks, and elevated prices show that reserve has not normalized. The 10-year remains elevated and high-yield spreads widened but stayed contained. All five temperature-channel assignments therefore hold.";
 
 export const GPM_THREAT_PANEL = {
   title: "Threat Pressure",
@@ -62,8 +62,8 @@ export const GPM_TRANSMISSION_PANEL = {
   items: [
     "The Fed hike and elevated 10-year yield preserve very-high financial pressure",
     "Observed corporate spreads remain contained; lagged financial stress remains below normal",
-    "Funding markets remain orderly and labor remains functional",
-    "Carolinas grid interventions were episodic and expired without national grid failure",
+    "Funding markets remain orderly; labor reserve is thinning, not failing",
+    "Seasonal grid interventions expired, while large-load planning pressure persists",
   ],
 } as const;
 
@@ -77,8 +77,8 @@ export const GPM_WATCHING_BLOCKS = [
     body: "Whether observed East-West Pipeline / Yanbu restoration persists and rebuilds routing slack, or fails again while Hormuz traffic remains constrained. Analyst price paths are scenarios, not forecasts.",
   },
   {
-    title: "Hormuz transit vs continued restriction",
-    body: "Whether independently trackable commodity-vessel traffic recovers from single-digit prints, or whether restriction deepens from the four-vessel Monday print.",
+    title: "Hormuz and bypass durability",
+    body: "Whether September's partial increase in Hormuz shipments and restored bypass flows persist long enough to rebuild inventories, or reverse under renewed disruption.",
   },
   {
     title: "Diesel and refining durability",
@@ -352,6 +352,16 @@ export const GPM_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "October 1, 2026",
+      evidenceCutoff: "October 1, 2026",
+      currentState: GPM_CURRENT_STATE,
+      currentDirection: GPM_CURRENT_DIRECTION,
+      previousState: "Very high external pressure / Broader energy transmission",
+      materialChangeSummary: GPM_WHAT_CHANGED,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: bufferSourcesForOctober1("energy", "financial-system", "labor", "grid", "food"),
+    },
+    {
+      reviewDate: LEDGER_EVIDENCE_CUTOFF,
       evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
       currentState: GPM_CURRENT_STATE,
       currentDirection: GPM_CURRENT_DIRECTION,

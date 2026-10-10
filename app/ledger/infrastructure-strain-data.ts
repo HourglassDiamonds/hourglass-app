@@ -10,7 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
-import { bufferSourcesFor } from "./buffer-health-data";
+import { bufferSourcesFor, bufferSourcesForOctober1 } from "./buffer-health-data";
 
 export const ISI_UPDATED_LABEL = "";
 
@@ -25,17 +25,17 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Public infrastructure strain remains high, with active adaptation and thinner grid reserve. Repeated September Carolinas interventions and record regional loads are observed evidence of episodic stress. The orders expired without national grid failure, and forecast planning adequacy remains intact across much of the system. Forecast record electricity demand and Texas power/water gating remain structural constraints. Provisional labor evidence is still functional. Physical Infrastructure holds High / Partial.";
+  "Public infrastructure strain remains high, with active adaptation and thinner grid reserve. October EIA evidence shows strong third-quarter electricity demand, including commercial growth tied partly to data centers. NERC now treats large computational loads as a central planning and operating challenge while advancing standards and enhanced fuel-assurance analysis. Seasonal emergency orders expired without national grid failure; Physical Infrastructure holds High / Partial.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "Observed Carolinas interventions confirm episodic extreme-weather strain, while their expiration and forecast planning adequacy argue against a failing national grid. Record-load forecasts remain explicit forecasts, and provisional labor data remains functional. Physical Infrastructure holds High / Partial.";
+  "Large-load reliability pressure is structural, not merely a September weather episode. Strong observed demand and NERC's standards work confirm strain plus adaptation, while the absence of national failure or a new emergency order prevents escalation beyond High / Partial.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "EIA forecasts record U.S. electricity sales in 2026 and 2027. Texas paused new data-center grid connections pending an audit and is enforcing water reporting. Previously scored PJM congestion remains structural. European operators continue compensating through imports, alternate generation, and river engineering. Systems function; spare flexibility is narrower.",
+    body: "Third-quarter U.S. electricity use rose about 4% year over year, with residential and commercial demand both stronger. NERC is adding large-load and fuel-assurance analysis to reliability work. Texas power/water gating and previously scored PJM congestion remain structural. Systems function; spare flexibility is narrower.",
   },
   {
     name: "Data-Center Load",
@@ -401,14 +401,51 @@ export const ISI_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "October 1, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "October 1, 2026",
       currentState: "High infrastructure strain",
       currentDirection: "Episodic grid stress / Active adaptation",
       previousState: "High infrastructure strain",
       materialChangeSummary:
         "Repeated September Carolinas interventions and record regional loads show thinning extreme-weather margin. The observed orders expired without national grid failure; forecast national and SERC-East planning adequacy remains intact under modeled mitigations. Provisional labor evidence remains functional. Physical Infrastructure holds High / Partial.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
-      sources: bufferSourcesFor("grid", "labor"),
+      sources: bufferSourcesForOctober1("grid", "labor"),
+    },
+    {
+      reviewDate: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain",
+      currentDirection: "Large-load reliability pressure / Active standards and planning adaptation",
+      previousState: "High infrastructure strain",
+      materialChangeSummary:
+        "October EIA data show third-quarter electricity use about 4% above a year earlier, with residential and commercial demand both stronger. NERC identified large computational loads as a central planning and operating challenge and advanced standards and enhanced fuel-assurance analysis. This confirms structural strain plus adaptation, not national grid failure. Physical Infrastructure holds High / Partial.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "EIA",
+          title: "Short-Term Energy Outlook — October 2026",
+          date: "October 6, 2026",
+          url: "https://www.eia.gov/outlooks/steo/archives/oct26.pdf",
+          supports:
+            "Third-quarter electricity use rose about 4% year over year, including 6% residential and 5% commercial growth; data centers remain a source of commercial load growth.",
+        },
+        {
+          institution: "NERC",
+          title: "North American Collaboration, Large Loads, Standards Key Topics at Board Meeting",
+          date: "October 8, 2026",
+          url: "https://www.nerc.com/newsroom/north-american-collaboration-large-loads-standards-key-topics-at-board-meeting",
+          supports:
+            "Large loads are a grid planning and operations challenge; reliability assessments are expanding gas and pipeline analysis.",
+        },
+        {
+          institution: "NERC",
+          title: "Computational Loads Standards Advance Following Initial Ballot",
+          date: "September 19, 2026 (reviewed October 10, 2026)",
+          url: "https://www.nerc.com/newsroom/computational-loads-standards-advance-following-initial-ballot",
+          supports:
+            "New reliability standards for computational loads advanced, demonstrating active institutional adaptation.",
+        },
+        ...bufferSourcesFor("grid", "labor"),
+      ],
     },
   ],
 });

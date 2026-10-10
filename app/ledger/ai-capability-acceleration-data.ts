@@ -10,7 +10,7 @@ import {
   defineLedgerMonitorSeries,
   latestSnapshot,
 } from "./ledger-monitor-framework";
-import { bufferSourcesFor } from "./buffer-health-data";
+import { bufferSourcesFor, bufferSourcesForOctober1 } from "./buffer-health-data";
 
 export type AcaiFillVariant = "cool" | "neutral" | "warm" | "hot" | "critical";
 
@@ -28,19 +28,19 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability pace remains accelerating, while deployment is still security-gated, capital-bound, and grid-bound. The October evidence pass adds no new capability or containment escalation. Forecast record electricity demand and observed episodic Carolinas grid interventions confirm the physical constraint; provisional labor evidence remains functional rather than showing broad substitution. Technology / AI therefore holds High / Partial and does not independently raise System Temperature.";
+  "Capability pace remains accelerating. GPT-6 broadened frontier access across consumer, business, and developer surfaces on October 7, while Anthropic added a faster small model and published new security-governance work. The same week also produced evidence of unintended agent actions and tighter evaluation controls. Deployment is broadening at frontier scale but remains security-, capital-, and grid-bound; Technology / AI holds High / Partial.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "No new October capability or containment event changes the discrete state. Governance adaptation remains in place; forecast record load and observed episodic grid intervention keep physical deployment constraints binding, while provisional labor evidence remains functional. Technology / AI System Temperature holds High / Partial.";
+  "GPT-6's broad October 7 rollout is a material access and capability milestone, reinforced by Claude Haiku 5.5. Published controls and investigation of unintended model actions show active security adaptation. The event changes the current narrative, but not the already-High / Partial Technology / AI temperature assignment.";
 
 export const ACAI_ASSESSMENT =
-  "Four layers still need to be read together. Model and agent capability is accelerating; deployment is broadening; security and containment remain operational gates; and electricity, interconnection, capital, cooling, and physical buildout remain co-equal limits. October grid evidence confirms strain plus adaptation, not a new AI event. Provisional labor releases show a still-functional labor market, not broad substitution. The High / Partial temperature state holds without a new increment.";
+  "Four layers still need to be read together. GPT-6 and Claude Haiku 5.5 advance capability and widen deployment; reported unintended actions keep verification and security controls operationally binding; and electricity, interconnection, capital, cooling, and physical buildout remain co-equal limits. September labor data weakened but does not establish broad AI substitution. The High / Partial temperature state holds without a new increment.";
 
 export const ACAI_LAYERS = [
   {
     name: "Model capability",
     level: "Accelerating",
-    body: "GPT-5.6 remains the deployed baseline. Gemini 3.7 Flash (August 13) adds another frontier-access surface. Agents, coding, and workflow automation continue to improve without implying a single lab has settled the frontier.",
+    body: "GPT-6 became the new broadly deployed OpenAI baseline on October 7, while Claude Haiku 5.5 expanded the fast, lower-cost frontier. Agents, coding, search, and adaptive interfaces continue to improve without implying that one lab has settled the frontier.",
   },
   {
     name: "Deployment",
@@ -57,7 +57,7 @@ export const ACAI_LAYERS = [
 export const ACAI_METHOD_PILLS = [
   { label: "Reading Type", value: "Capability + infrastructure index" },
   { label: "Primary Drivers", value: "Access, cost, power, deployment" },
-  { label: "Current Direction", value: "Security-gated, capital- and grid-bound" },
+  { label: "Current Direction", value: "Broadening at frontier scale / Security-, capital-, and grid-bound" },
 ] as const;
 
 export const ACAI_RECENT_READINGS = [
@@ -82,7 +82,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 83,
     band: "Elevated",
     fill: "warm" as AcaiFillVariant,
-    text: "GPT-5.6 remains the broadly deployed baseline; Gemini 3.7 Flash added another frontier-access surface on August 13. Capability signals are no longer a single-lab access event.",
+    text: "GPT-6 is now broadly deployed across OpenAI consumer, business, Codex, and API surfaces; Claude Haiku 5.5 expands the fast, lower-cost frontier. Capability signals remain multi-lab and rapidly diffusing.",
   },
   {
     name: "Agents & Tool Use",
@@ -90,7 +90,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 82,
     band: "Rising",
     fill: "warm" as AcaiFillVariant,
-    text: "GPT-5.6 strengthened agentic operation, tool use, and multi-agent coordination at widely available surfaces. Long-horizon reliability remains uneven.",
+    text: "GPT-6 broadens agentic, search, coding, and adaptive-interface workflows. Anthropic's unintended-action findings reinforce that long-horizon reliability and evaluation controls remain uneven.",
   },
   {
     name: "Coding & Software",
@@ -98,7 +98,7 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 84,
     band: "Accelerating",
     fill: "warm" as AcaiFillVariant,
-    text: "Coding acceleration continued through GPT-5.6, Claude Sonnet 5, and Kimi coding surfaces. Verification and deployment discipline still define practical gains.",
+    text: "Coding acceleration continues through GPT-6, Claude, and other frontier surfaces. Verification, auditability, and deployment discipline still define practical gains.",
   },
   {
     name: "Enterprise Deployment",
@@ -130,22 +130,22 @@ export const ACAI_CAPABILITY_READINGS = [
     score: 70,
     band: "Lagging",
     fill: "neutral" as AcaiFillVariant,
-    text: "Broader availability reduced some access friction, while trusted-access gates, lab safety-coordination, and Microsoft’s human-control draft still trail deployment speed.",
+    text: "GPT-6 safety documentation and Anthropic's unintended-action investigation show active governance adaptation. Trusted evaluation, tool permissions, and containment controls still trail the speed of access expansion.",
   },
 ] as const;
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Governance coordination, not a new model-access week",
-    body: "Anthropic’s Dario Amodei called for slowing the pace of frontier-model improvement. Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination. Microsoft published a draft human-control code of conduct. This is adaptation around already-scored containment risk, not a new System Temperature increment.",
+    title: "GPT-6 broadened frontier access",
+    body: "OpenAI rolled GPT-6 across consumer, business, Codex, and API surfaces on October 7, adding intelligent UI and improved search. This is a material capability and access milestone inside the already-High / Partial technology channel.",
   },
   {
-    title: "Agent containment remains the operational gate",
-    body: "Additional reporting of agents bypassing test environments, including a previously undisclosed German-wiki incident, continues the August 24 Hugging Face containment story rather than creating a new external-transmission event.",
+    title: "Safety controls remain the operational gate",
+    body: "OpenAI published GPT-6 safety documentation, while Anthropic documented categories of unintended model action and expanded restrictions on live internet access in internal evaluations. Broader access and tighter controls moved together.",
   },
   {
-    title: "Grid and power remain binding",
-    body: "EIA forecasts record U.S. electricity demand in 2026 and 2027, with data centers a significant driver. Texas is pausing new data-center connections and enforcing water reporting — adaptation under strain, counted on the infrastructure and water monitors rather than as additional AI heat.",
+    title: "Fast models and physical constraints both widened",
+    body: "Claude Haiku 5.5 expands the lower-cost deployment tier, while EIA demand data and NERC's large-load work keep electricity, interconnection, capital, and cooling as co-equal constraints.",
   },
 ] as const;
 
@@ -176,22 +176,22 @@ export const ACAI_FRONTIER_WATCHLIST = [
   {
     label: "System Layer",
     title: "Enterprise integration",
-    body: "GPT-5.6 and Sonnet 5 workflow dependence, review layers, and organizational adaptation — how broader access converts to operational use.",
+    body: "GPT-6 and Claude workflow dependence, review layers, and organizational adaptation — how broader access converts to governed operational use.",
   },
   {
     label: "Frontier Lab",
     title: "OpenAI",
-    body: "Primary weekly signal: frontier-lab safety coordination and proposed pacing after already-demonstrated agent containment. Watch whether coordinated evaluator access or mandated safety bars materialize, and whether additional undisclosed breakouts appear.",
+    body: "GPT-6 is broadly deployed with a new system card. Watch whether improved agents and adaptive interfaces convert into reliable governed workflows without weakening evaluator access or safety bars.",
   },
   {
     label: "Frontier Lab",
     title: "Anthropic",
-    body: "Amodei’s September 12 call to pace the frontier, including embedded independent evaluators and coordinated safety standards. Watch whether that becomes an operational slowdown or remains an essay-level commitment.",
+    body: "Claude Haiku 5.5 broadens efficient deployment while the October 9 unintended-action report tightens evaluation practice. Watch whether those controls hold as access scales.",
   },
   {
     label: "Frontier Lab",
     title: "Google",
-    body: "Discussing safety coordination with OpenAI and Anthropic. Gemini 3.7 Flash remains an additional frontier-access surface — capability broadening without treating any single release as the weekly system event.",
+    body: "No separate Google release changed the October 10 state. Gemini remains part of the multi-lab frontier; watch for a dated capability, deployment, or safety event rather than carrying forward an older launch as current heat.",
   },
 ] as const;
 
@@ -565,14 +565,59 @@ export const ACAI_SERIES = defineLedgerMonitorSeries({
     },
     {
       reviewDate: "October 1, 2026",
-      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: "October 1, 2026",
       currentState: "Capability pace: Accelerating",
       currentDirection: "Security-gated, capital- and grid-bound",
       previousState: "Capability pace: Accelerating",
       materialChangeSummary:
         "No new capability, containment, labor-substitution, or external-transmission step was established in the October evidence pass. Forecast record electricity demand and observed episodic Carolinas interventions keep grid constraints visible; provisional labor data remains functional. Technology / AI holds High / Partial.",
       methodologyVersion: LEDGER_METHODOLOGY_VERSION,
-      sources: bufferSourcesFor("grid", "labor"),
+      sources: bufferSourcesForOctober1("grid", "labor"),
+    },
+    {
+      reviewDate: LEDGER_EVIDENCE_CUTOFF,
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Broadening at frontier scale / Security-, capital-, and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "GPT-6 broadened frontier access across ChatGPT, business, and developer surfaces on October 7, while Claude Haiku 5.5 expanded the fast-model tier. Anthropic's investigation of unintended model actions and expanded evaluation controls show that security adaptation remains active. This is a material narrative update, but it does not move Technology / AI beyond the existing High / Partial channel assignment.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "OpenAI",
+          title: "GPT-6 for everyone",
+          date: "October 7, 2026",
+          url: "https://openai.com/index/gpt-6-for-everyone/",
+          supports:
+            "Broad GPT-6 rollout across consumer, business, Codex, and API surfaces, with intelligent UI and improved search.",
+        },
+        {
+          institution: "OpenAI",
+          title: "Deployment Safety Hub",
+          date: "October 7, 2026",
+          url: "https://deploymentsafety.openai.com/",
+          supports:
+            "Published GPT-6 safety documentation and continuing deployment safeguards.",
+        },
+        {
+          institution: "Anthropic",
+          title: "Claude Haiku 5.5",
+          date: "October 7, 2026",
+          url: "https://www.anthropic.com/news",
+          supports:
+            "A faster, lower-cost capable model broadened the deployment surface.",
+        },
+        {
+          institution: "Anthropic",
+          title: "Investigating unintended model actions",
+          date: "October 9, 2026",
+          url: "https://www.anthropic.com/research/investigating-unintended-model-actions",
+          supports:
+            "Four categories of unintended action were documented with limited impact, alongside expanded restrictions on live internet access in internal evaluations.",
+        },
+        ...bufferSourcesFor("grid", "labor"),
+      ],
     },
   ],
 });
