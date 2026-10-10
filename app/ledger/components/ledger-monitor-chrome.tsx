@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { permittedLedgerSources } from "@/lib/ledger-automation/provider-policy";
 import {
   LEDGER_EVIDENCE_CUTOFF_LABEL,
   LEDGER_METHOD_NOTICE,
@@ -48,7 +49,8 @@ export function LedgerSourcesReviewed({
   sources,
   className = "",
 }: SourcesReviewedProps) {
-  if (sources.length === 0) return null;
+  const publicSources = permittedLedgerSources(sources);
+  if (publicSources.length === 0) return null;
 
   return (
     <div className={`ledger-index-section ledger-sources-reviewed ${className}`}>
@@ -58,7 +60,7 @@ export function LedgerSourcesReviewed({
         distinct from the Ledger&apos;s interpretive framing.
       </p>
       <ul className="ledger-sources-list">
-        {sources.map((source) => (
+        {publicSources.map((source) => (
           <li key={`${source.institution}-${source.title}`} className="ledger-source-item">
             <p className="ledger-source-institution">{source.institution}</p>
             <p className="ledger-source-title">

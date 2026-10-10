@@ -21,9 +21,10 @@ const PROVIDER_URLS: Readonly<Record<LedgerLiveProvider, string>> = {
   EIA_ELECTRICITY: "https://api.eia.gov/v2/electricity/rto/region-data/data/",
   TREASURY_YIELD_CURVE:
     "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml",
-  FRED_HIGH_YIELD_OAS: "https://api.stlouisfed.org/fred/series/observations",
   FRED_FINANCIAL_STRESS: "https://api.stlouisfed.org/fred/series/observations",
 };
+
+export const APPROVED_FRED_SERIES_IDS = Object.freeze(["STLFSI4"] as const);
 
 type FetchLike = typeof fetch;
 type LogEvent = Readonly<Record<string, unknown>>;
@@ -240,16 +241,16 @@ function parseEia(payload: unknown): ParsedObservation {
   };
 }
 
-function parseFred(payload: unknown, seriesId: string): ParsedObservation {
+function parseFred(payload: unknown): ParsedObservation {
   const observations = asArray(asRecord(payload).observations).map(asRecord);
   const row = observations.find((item) => item.value !== ".");
   if (!row) throw new AdapterFailure("INVALID", "MISSING_OBSERVATION", "FRED returned no current observation.", false);
   return {
     observationTimestamp: requireIso(`${String(row.date)}T00:00:00.000Z`),
     rawValue: numeric(row.value),
-    rawPayload: { seriesId, date: row.date, value: row.value },
-    unit: seriesId === "BAMLH0A0HYM2" ? "percent" : "index",
-    metadata: { seriesId },
+    rawPayload: { seriesId: "STLFSI4", date: row.date, value: row.value },
+    unit: "index",
+    metadata: { seriesId: "STLFSI4" },
   };
 }
 
@@ -285,7 +286,11 @@ async function fetchProvider(
   if (!provider) throw new AdapterFailure("INVALID", "MISSING_PROVIDER", "Live source has no approved provider.", false);
   const env = options.env ?? process.env;
   const secret = credential(source, env);
-  const url = new URL(PROVIDER_URLS[provider]);
+  const providerUrl = PROVIDER_URLS[provider];
+  if (!providerUrl) {
+    throw new AdapterFailure("INVALID", "UNAPPROVED_PROVIDER", "Live source provider is not approved.", false);
+  }
+  const url = new URL(providerUrl);
   let payload: unknown;
 
   if (provider === "BLS_EMPLOYMENT" || provider === "BLS_JOLTS") {
@@ -340,14 +345,16 @@ async function fetchProvider(
     return { parsed: parseTreasury(payload), sourceUrl: url.toString() };
   }
 
-  const seriesId = provider === "FRED_HIGH_YIELD_OAS" ? "BAMLH0A0HYM2" : "STLFSI4";
-  url.searchParams.set("series_id", seriesId);
+  if (provider !== "FRED_FINANCIAL_STRESS") {
+    throw new AdapterFailure("INVALID", "UNAPPROVED_PROVIDER", "FRED source is not approved.", false);
+  }
+  url.searchParams.set("series_id", APPROVED_FRED_SERIES_IDS[0]);
   url.searchParams.set("api_key", secret ?? "");
   url.searchParams.set("file_type", "json");
   url.searchParams.set("sort_order", "desc");
   url.searchParams.set("limit", "10");
   payload = await request(url, options, "json");
-  return { parsed: parseFred(payload, seriesId), sourceUrl: redactUrl(url) };
+  return { parsed: parseFred(payload), sourceUrl: redactUrl(url) };
 }
 
 function baseCheck(source: LedgerSourceDefinition, context: LedgerAdapterContext): Omit<LedgerSourceCheck,

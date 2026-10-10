@@ -1,4 +1,5 @@
 import type { LedgerEvidenceSource } from "@/app/ledger/ledger-monitor-framework";
+import { permittedLedgerSources } from "./provider-policy";
 import type { FounderDecisionRecord, LedgerAutomationRunRecord, LedgerSourceCheck, LedgerSourceStatus } from "./types";
 import type { LedgerPublication } from "./publication-types";
 
@@ -25,7 +26,10 @@ function mergeSources(
   previous: readonly LedgerEvidenceSource[],
   checks: readonly LedgerSourceCheck[],
 ): readonly LedgerEvidenceSource[] {
-  const sources = [...previous, ...checks.filter((check) => !check.failure).map(sourceReference)];
+  const sources = permittedLedgerSources([
+    ...previous,
+    ...checks.filter((check) => !check.failure).map(sourceReference),
+  ]);
   return [...new Map(sources.map((source) => [`${source.institution}|${source.title}|${source.date}`, source])).values()];
 }
 

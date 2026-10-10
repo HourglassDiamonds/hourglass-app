@@ -10,6 +10,7 @@ import LedgerIndexBreadcrumb from "./ledger-index-breadcrumb";
 import { LEDGER_INDEX_PAGE_CLASS } from "./ledger-index-page-chrome";
 import { LedgerMonitorStatusLines } from "./ledger-monitor-chrome";
 import type { LedgerPublication } from "@/lib/ledger-automation/publication-types";
+import { permittedLedgerSources } from "@/lib/ledger-automation/provider-policy";
 
 function publishedDomains(publication: LedgerPublication): readonly BufferDomain[] {
   return BUFFER_HEALTH_DOMAINS.map((domain) => {
@@ -20,7 +21,7 @@ function publishedDomains(publication: LedgerPublication): readonly BufferDomain
       reserveState: published.state,
       rationale: published.rationale,
       lastUpdated: published.evidenceReviewedThrough,
-      sources: published.sourceReferences.map((source) => ({
+      sources: permittedLedgerSources(published.sourceReferences).map((source) => ({
         ...source,
         evidenceLabel: source.evidenceLabel ?? "Observed",
         dataPeriod: source.dataPeriod ?? source.date,

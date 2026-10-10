@@ -7,6 +7,7 @@ import { ISI_SNAPSHOT } from "@/app/ledger/infrastructure-strain-data";
 import type { LedgerIndexId } from "@/app/ledger/ledger-data";
 import type { LedgerMonitorSnapshot } from "@/app/ledger/ledger-monitor-framework";
 import { PMI_SNAPSHOT } from "@/app/ledger/precious-materials-data";
+import { isRestrictedIceSource } from "./provider-policy";
 import type { LedgerLiveProvider, LedgerSourceDefinition } from "./types";
 
 const BASELINE_LAST_CHECKED = "2026-10-01T23:59:59.000Z";
@@ -35,9 +36,6 @@ function sourceMetadata(institution: string, title: string): SourceMetadata {
   }
   if (institution === "U.S. Treasury") {
     return live("TREASURY_YIELD_CURVE", undefined, "business-daily", 7);
-  }
-  if (institution === "St. Louis Fed / ICE") {
-    return live("FRED_HIGH_YIELD_OAS", "FRED_API_KEY", "business-daily", 7);
   }
   if (institution === "St. Louis Fed") {
     return live("FRED_FINANCIAL_STRESS", "FRED_API_KEY", "weekly", 14);
@@ -79,9 +77,10 @@ function monitorSources(
   monitorId: Exclude<LedgerIndexId, "buffer-health">,
   snapshot: LedgerMonitorSnapshot,
 ): LedgerSourceDefinition[] {
-  return snapshot.sources.map((source, index) => {
+  return snapshot.sources.flatMap((source, index) => {
+    if (isRestrictedIceSource(source)) return [];
     const sourceLocation = source.url ?? `${monitorId}:approved-source:${index + 1}`;
-    return {
+    return [{
       sourceId: `${monitorId}:${index + 1}`,
       monitorId,
       sourceName: `${source.institution} — ${source.title}`,
@@ -100,14 +99,15 @@ function monitorSources(
         proposedMonitorState: snapshot.currentState,
         significance: "NONE",
       },
-    } satisfies LedgerSourceDefinition;
+    } satisfies LedgerSourceDefinition];
   });
 }
 
 function bufferSources(domain: BufferDomain): LedgerSourceDefinition[] {
-  return domain.sources.map((source, index) => {
+  return domain.sources.flatMap((source, index) => {
+    if (isRestrictedIceSource(source)) return [];
     const sourceLocation = source.url ?? `buffer-health:${domain.id}:approved-source:${index + 1}`;
-    return {
+    return [{
       sourceId: `buffer-health:${domain.id}:${index + 1}`,
       monitorId: "buffer-health",
       bufferDomainId: domain.id,
@@ -127,7 +127,7 @@ function bufferSources(domain: BufferDomain): LedgerSourceDefinition[] {
         proposedBufferState: domain.reserveState,
         significance: "NONE",
       },
-    } satisfies LedgerSourceDefinition;
+    } satisfies LedgerSourceDefinition];
   });
 }
 

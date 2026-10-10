@@ -42,6 +42,33 @@ export default function TermsPage() {
             feels unclear, the best approach is simply to ask.
           </p>
 
+          <div className="space-y-4 border-t border-[#d4c9bb] pt-6">
+            <h2 className="text-[18px] font-medium leading-[1.35] text-[#1f1d1a]">
+              Ledger data providers
+            </h2>
+            <p>
+              The Hourglass Ledger uses public economic and energy data from
+              government and public-data APIs. This product uses the Bureau of
+              Economic Analysis (BEA) Data API but is not endorsed or certified
+              by BEA. This product uses the FRED® API but is not endorsed or
+              certified by the Federal Reserve Bank of St. Louis. EIA data is
+              identified as originating from the U.S. Energy Information
+              Administration, without implying endorsement.
+            </p>
+            <p>
+              By using the Ledger, you agree to be bound by the {" "}
+              <a
+                href="https://fred.stlouisfed.org/docs/api/terms_of_use.html"
+                className="underline decoration-[#c4b8a8] underline-offset-4"
+              >
+                FRED® API Terms of Use
+              </a>
+              . Data series may also be subject to the rights and restrictions
+              of their originating providers. Hourglass preserves provider and
+              source references with each Ledger publication.
+            </p>
+          </div>
+
         </div>
       </section>
     </div>

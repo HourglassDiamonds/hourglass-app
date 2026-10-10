@@ -3,7 +3,11 @@ import { readFile } from "node:fs/promises";
 import { describe, it } from "node:test";
 import { join } from "node:path";
 import { runLedgerAutomation } from "./engine";
-import { APPROVED_LIVE_SOURCE_URLS, createLiveLedgerAdapter } from "./live-adapters";
+import {
+  APPROVED_FRED_SERIES_IDS,
+  APPROVED_LIVE_SOURCE_URLS,
+  createLiveLedgerAdapter,
+} from "./live-adapters";
 import { LEDGER_SOURCE_REGISTRY } from "./source-registry";
 import type { LedgerLiveProvider, LedgerSourceDefinition } from "./types";
 
@@ -136,6 +140,63 @@ describe("Ledger Automation V1.1 live adapters", () => {
     assert.equal(invalidValue.failure?.code, "INVALID_VALUE");
   });
 
+  it("captures the fixed STLFSI4 observation with its timestamp and freshness", async () => {
+    let requestedSeries: string | null = null;
+    const result = await check(source("FRED_FINANCIAL_STRESS"), async (input) => {
+      const url = new URL(String(input));
+      requestedSeries = url.searchParams.get("series_id");
+      return jsonResponse({ observations: [{ date: "2026-09-25", value: "-0.75" }] });
+    }, { env: { FRED_API_KEY: "test-key" } });
+    assert.equal(requestedSeries, "STLFSI4");
+    assert.equal(result.observationTimestamp, "2026-09-25T00:00:00.000Z");
+    assert.equal(result.sourceFreshness, "CURRENT");
+    assert.equal(result.status, "MANUAL_REVIEW_REQUIRED");
+    assert.equal(result.unit, "index");
+    assert.equal(result.metadata.seriesId, "STLFSI4");
+  });
+
+  it("marks an old STLFSI4 observation stale", async () => {
+    const result = await check(source("FRED_FINANCIAL_STRESS"), async () => jsonResponse({
+      observations: [{ date: "2026-08-01", value: "-0.25" }],
+    }), { env: { FRED_API_KEY: "test-key" } });
+    assert.equal(result.sourceFreshness, "STALE");
+    assert.equal(result.status, "STALE");
+  });
+
+  it("rejects an invalid STLFSI4 payload", async () => {
+    const result = await check(source("FRED_FINANCIAL_STRESS"), async () => jsonResponse({
+      observations: [{ date: "2026-09-25", value: "." }],
+    }), { env: { FRED_API_KEY: "test-key" } });
+    assert.equal(result.status, "INVALID");
+    assert.equal(result.failure?.code, "MISSING_OBSERVATION");
+  });
+
+  it("requires the FRED credential before requesting STLFSI4", async () => {
+    let called = false;
+    const result = await check(source("FRED_FINANCIAL_STRESS"), async () => {
+      called = true;
+      return jsonResponse({});
+    }, { env: {} });
+    assert.equal(result.status, "AUTH_REQUIRED");
+    assert.equal(result.failure?.code, "MISSING_CREDENTIAL");
+    assert.equal(called, false);
+  });
+
+  it("rejects a runtime attempt to inject an unapproved FRED provider", async () => {
+    let called = false;
+    const injected = {
+      ...source("FRED_FINANCIAL_STRESS"),
+      liveProvider: "FRED_HIGH_YIELD_OAS" as LedgerLiveProvider,
+    };
+    const result = await check(injected, async () => {
+      called = true;
+      return jsonResponse({});
+    }, { env: { FRED_API_KEY: "test-key" } });
+    assert.equal(result.status, "INVALID");
+    assert.equal(result.failure?.code, "UNAPPROVED_PROVIDER");
+    assert.equal(called, false);
+  });
+
   it("retains manual approved sources explicitly", async () => {
     const result = await check(manualSource(), async () => {
       throw new Error("manual sources must not fetch");
@@ -193,10 +254,13 @@ describe("Ledger Automation V1.1 live adapters", () => {
   });
 
   it("does not invent methodology thresholds", async () => {
-    const result = await check(source("BLS_EMPLOYMENT"), async () => jsonResponse(blsPayload()));
+    const result = await check(source("FRED_FINANCIAL_STRESS"), async () => jsonResponse({
+      observations: [{ date: "2026-09-25", value: "-0.75" }],
+    }), { env: { FRED_API_KEY: "test-key" } });
     assert.equal(result.normalizedObservation?.significance, "NONE");
     assert.equal(result.normalizedObservation?.proposedMonitorState, undefined);
     assert.equal(result.normalizedObservation?.proposedBufferState, undefined);
+    assert.equal(result.normalizedObservation?.proposedTemperatureChannel, undefined);
   });
 
   it("cannot publish from a dry-run engine invocation", async () => {
@@ -222,8 +286,8 @@ describe("Ledger Automation V1.1 live adapters", () => {
   it("never logs credentials", async () => {
     const secret = "secret-fred-key-123";
     const logs: string[] = [];
-    await check(source("FRED_HIGH_YIELD_OAS"), async () => jsonResponse({
-      observations: [{ date: "2026-10-01", value: "3.25" }],
+    await check(source("FRED_FINANCIAL_STRESS"), async () => jsonResponse({
+      observations: [{ date: "2026-10-01", value: "-0.25" }],
     }), {
       env: { FRED_API_KEY: secret },
       logger: (event) => logs.push(JSON.stringify(event)),
@@ -235,5 +299,6 @@ describe("Ledger Automation V1.1 live adapters", () => {
     assert.ok(APPROVED_LIVE_SOURCE_URLS.length > 0);
     assert.ok(APPROVED_LIVE_SOURCE_URLS.every((url) => url.startsWith("https://")));
     assert.ok(APPROVED_LIVE_SOURCE_URLS.every((url) => !url.includes("localhost") && !url.includes("127.0.0.1")));
+    assert.deepEqual(APPROVED_FRED_SERIES_IDS, ["STLFSI4"]);
   });
 });

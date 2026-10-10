@@ -47,7 +47,6 @@ export type LedgerLiveProvider =
   | "EIA_STEO"
   | "EIA_ELECTRICITY"
   | "TREASURY_YIELD_CURVE"
-  | "FRED_HIGH_YIELD_OAS"
   | "FRED_FINANCIAL_STRESS";
 
 export type NormalizedLedgerObservation = {
