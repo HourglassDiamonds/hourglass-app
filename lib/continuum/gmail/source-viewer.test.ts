@@ -325,6 +325,7 @@ describe("read-only source viewer fetch", () => {
     assert.deepEqual(result, {
       ok: false,
       safeErrorCode: "insufficient_permissions",
+      httpStatus: 403,
     });
   });
 

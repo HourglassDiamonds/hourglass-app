@@ -6,10 +6,14 @@
   "include": [
     "next-env.d.ts",
     "app/executive-dashboard/concierge/gmail-evidence-audit-actions.ts",
+    "app/executive-dashboard/concierge/gmail-forbidden-diagnostic-actions.ts",
+    "app/executive-dashboard/concierge/components/gmail-forbidden-diagnostic.tsx",
     "app/executive-dashboard/concierge/gmail/page.tsx",
     "lib/continuum/gmail/adapter-forbidden.test.ts",
     "lib/continuum/gmail/evidence-completeness-audit.ts",
     "lib/continuum/gmail/evidence-completeness-audit.test.ts",
+    "lib/continuum/gmail/forbidden-diagnostic.ts",
+    "lib/continuum/gmail/forbidden-diagnostic.test.ts",
     "lib/continuum/today-sterling/**/*.ts",
     "scripts/continuum-sterling-today-shadow.ts"
   ],

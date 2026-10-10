@@ -11,6 +11,7 @@ import {
   GMAIL_INCREMENTAL_JOB_KEY,
 } from "@/lib/continuum/gmail/types";
 import { GmailConnectionTestForm } from "../components/gmail-connection-test";
+import { GmailForbiddenDiagnostic } from "../components/gmail-forbidden-diagnostic";
 import { GmailHistoryForm } from "../components/gmail-history";
 import { GmailIncrementalForm } from "../components/gmail-incremental";
 
@@ -60,6 +61,7 @@ export default async function ConciergeGmailPage() {
           Gmail
         </h1>
         <GmailConnectionTestForm connected={connected} />
+        <GmailForbiddenDiagnostic />
         <GmailHistoryForm initial={history} />
         <GmailIncrementalForm initial={incremental} publicState={publicState} />
         <Link

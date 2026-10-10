@@ -59,6 +59,7 @@ export type SourceViewerFetchInput = {
 export type SourceViewerFetchFailure = {
   ok: false;
   safeErrorCode: SourceViewerErrorCode;
+  httpStatus?: number;
 };
 
 export type SourceViewerFetchSuccess = {
@@ -88,8 +89,15 @@ function isConnectedCredential(
   return Boolean(row && row.status === "connected" && row.refreshToken);
 }
 
-function failed(code: SourceViewerErrorCode): SourceViewerFetchFailure {
-  return { ok: false, safeErrorCode: code };
+function failed(
+  code: SourceViewerErrorCode,
+  httpStatus?: number,
+): SourceViewerFetchFailure {
+  return {
+    ok: false,
+    safeErrorCode: code,
+    ...(httpStatus == null ? {} : { httpStatus }),
+  };
 }
 
 function threadFetchErrorCode(error: unknown): SourceViewerErrorCode {
@@ -233,7 +241,10 @@ export async function runPreparedSourceViewerFetch(input: {
       readOnly: true,
     };
   } catch (error) {
-    return failed(threadFetchErrorCode(error));
+    return failed(
+      threadFetchErrorCode(error),
+      error instanceof GmailHttpError ? error.status : undefined,
+    );
   }
 }
 
