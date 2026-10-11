@@ -76,7 +76,9 @@ export class InMemorySterlingRunLeaseStore implements SterlingRunLeaseStore {
 
   async finish(runId: string, state: "completed" | "failed", _finishedAt: string): Promise<boolean> {
     void _finishedAt;
-    if (!this.current || this.current.runId !== runId || this.current.state !== "running") return false;
+    if (!this.current || this.current.runId !== runId) return false;
+    if (this.current.state === state) return true;
+    if (this.current.state !== "running") return false;
     this.current = { ...this.current, state };
     return true;
   }
