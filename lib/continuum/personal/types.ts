@@ -261,6 +261,12 @@ export type SterlingProposal = {
   recovery?: Omit<RecoveryEntry, "id" | "recordedAt">;
   nextSchedule: ScheduledWorkout[];
   affectedWorkoutIds: string[];
+  displacedWorkouts: Array<{
+    workoutId: string;
+    name: string;
+    fromDate: string;
+    toDate: string;
+  }>;
   warnings: string[];
   sourceWorkoutId?: string;
   targetDate?: string;

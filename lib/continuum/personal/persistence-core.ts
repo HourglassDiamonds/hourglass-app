@@ -75,7 +75,8 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
     });
     if (error) {
       if (error.code === "40001" || /performance_revision_conflict/i.test(error.message)) throw new PerformanceRevisionConflict(await loadPerformanceStateWithClient(input.founderKey, now.slice(0, 10), db));
-      throw new Error(`performance-save-failed:${error.message}`);
+      if (error.code === "23514" && /continuum_performance_audit_action_check/i.test(error.message)) throw new Error("performance-mutation-action-unavailable");
+      throw new Error(`performance-save-failed:${error.code || "unknown"}`);
     }
     const row = (Array.isArray(data) ? data[0] : data) as { saved_state?: unknown; saved_revision?: unknown; was_duplicate?: unknown } | null;
     if (!row) throw new Error("performance-save-failed:empty-result");

@@ -11,6 +11,9 @@ const css = readFileSync(join(directory, "performance.module.css"), "utf8");
 test("Performance exposes explicit workout resolution controls and confirmation-gated Sterling changes", () => {
   for (const label of ["Start", "Modify today", "Defer", "Skip", "Confirm changes", "Reject"]) assert.match(source, new RegExp(label));
   assert.match(source, /nothing has changed yet/i);
+  assert.match(source, /Other planned sessions that will move/);
+  assert.match(source, /displacedWorkouts/);
+  assert.match(source, /performance-mutation-action-unavailable/);
 });
 
 test("meal photo and recovery flows stay optional, editable, and mobile usable", () => {

@@ -78,6 +78,41 @@ test("two simultaneous conflicting writes against one revision cannot both succe
   assert.equal(db.audits.size, 2, "the rejected write must not create an audit mutation");
 });
 
+test("an accepted adjustment uses the durable audit action and database constraint failures stay privacy-safe", async () => {
+  const state = createInitialPersonalState("2026-10-12");
+  const db = fakeSupabase();
+  const saved = await savePerformanceStateWithClient({
+    founderKey: "founder-a",
+    expectedRevision: 0,
+    state,
+    mutation: { idempotencyKey: "adjustment-proposal-1", action: "accept_adjustment" },
+  }, db.client);
+  assert.equal(saved.revision, 1);
+
+  const rejectedClient = {
+    rpc: async () => ({
+      data: null,
+      error: {
+        code: "23514",
+        message: "new row violates check constraint continuum_performance_audit_action_check with private row details",
+      },
+    }),
+    from: () => { throw new Error("state reload is not expected for a constraint failure"); },
+    storage: { from: () => ({ remove: async () => ({ error: null }) }) },
+  } as unknown as SupabaseClient;
+  await assert.rejects(
+    () => savePerformanceStateWithClient({
+      founderKey: "founder-a",
+      expectedRevision: 0,
+      state,
+      mutation: { idempotencyKey: "adjustment-proposal-2", action: "accept_adjustment" },
+    }, rejectedClient),
+    (error: unknown) => error instanceof Error
+      && error.message === "performance-mutation-action-unavailable"
+      && !error.message.includes("private row details"),
+  );
+});
+
 test("source uploads require an accepted entry and supported private image", async () => {
   const db = fakeSupabase(); const state = createInitialPersonalState("2026-10-12");
   await assert.rejects(() => savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation: { idempotencyKey: "snapshot-123", action: "snapshot" }, sourceFile: new File(["x"], "x.jpg", { type: "image/jpeg" }) }, db.client), /ownership-invalid/);

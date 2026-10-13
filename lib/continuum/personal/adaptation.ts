@@ -56,6 +56,19 @@ function conflicts(candidate: ScheduledWorkout, placed: ScheduledWorkout[]): boo
   return false;
 }
 
+function displacedWorkouts(
+  currentSchedule: readonly ScheduledWorkout[],
+  nextSchedule: readonly ScheduledWorkout[],
+  sourceWorkoutId: string,
+): SterlingProposal["displacedWorkouts"] {
+  const currentById = new Map(currentSchedule.map((workout) => [workout.id, workout]));
+  return nextSchedule.flatMap((workout) => {
+    const current = currentById.get(workout.id);
+    if (!current || current.id === sourceWorkoutId || current.date === workout.date || workout.history.at(-1)?.action !== "reflowed") return [];
+    return [{ workoutId: workout.id, name: workout.prescription.name, fromDate: current.date, toDate: workout.date }];
+  }).sort((left, right) => left.fromDate.localeCompare(right.fromDate) || left.workoutId.localeCompare(right.workoutId));
+}
+
 export function deferAndReflow(schedule: readonly ScheduledWorkout[], workoutId: string, targetDate: string, now = new Date().toISOString(), actor: "user" | "sterling" = "user"): ScheduledWorkout[] {
   const source = schedule.find((item) => item.id === workoutId);
   if (!source) return [...schedule];
@@ -117,6 +130,7 @@ export function proposeSterlingAdjustment(state: PersonalState, command: string,
       recovery,
       nextSchedule: state.schedule,
       affectedWorkoutIds: [],
+      displacedWorkouts: [],
       warnings: [],
     };
   }
@@ -138,6 +152,7 @@ export function proposeSterlingAdjustment(state: PersonalState, command: string,
     recovery,
     nextSchedule,
     affectedWorkoutIds: [todayWorkout.id, ...nextSchedule.filter((item) => item.history.at(-1)?.action === "reflowed").map((item) => item.id)],
+    displacedWorkouts: displacedWorkouts(state.schedule, nextSchedule, todayWorkout.id),
     warnings: constrained ? ["About four hours of sleep and high fatigue support a reduced session; no injury is inferred."] : [],
     sourceWorkoutId: todayWorkout.id,
     targetDate: tomorrow,
@@ -168,6 +183,7 @@ export function buildSterlingScheduleAdjustment(input: {
     summary: input.summary,
     nextSchedule,
     affectedWorkoutIds: [workout.id, ...nextSchedule.filter((row) => row.history.at(-1)?.action === "reflowed").map((row) => row.id)],
+    displacedWorkouts: displacedWorkouts(input.state.schedule, nextSchedule, workout.id),
     warnings: (input.warnings ?? []).slice(0, 6),
     sourceWorkoutId: workout.id,
     targetDate: input.targetDate,
