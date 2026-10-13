@@ -4,6 +4,7 @@ import {
   websiteIntakeWhatMatters,
 } from "@/lib/continuum/client-memory/read/website-intake-presentation";
 import type { ClientWebsiteIntake } from "@/lib/continuum/client-memory/read/website-intake";
+import { WebsiteIntakeControls } from "./website-intake-controls";
 
 function fieldValue(field: ReturnType<typeof websiteIntakeFields>[number]) {
   const className = `mt-1 min-w-0 break-words text-[15px] leading-relaxed text-[#efe8de]${
@@ -82,6 +83,7 @@ export function ConciergeIntakeDetail({
             </dd>
           </div>
         </dl>
+        <WebsiteIntakeControls intake={intake} />
       </div>
     </details>
   );

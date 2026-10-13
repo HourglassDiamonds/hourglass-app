@@ -3,6 +3,8 @@ import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { deletePerformanceSourceWithClient, loadPerformanceStateWithClient, PerformanceRevisionConflict, savePerformanceStateWithClient } from "./persistence-core";
 import { createInitialPersonalState } from "./program";
+import { createHash } from "node:crypto";
+import type { NaturalIngestionProposal } from "./types";
 
 type Row = Record<string, unknown>;
 
@@ -89,4 +91,37 @@ test("founder-controlled source deletion removes the private object but retains 
   const deleted = await deletePerformanceSourceWithClient({ founderKey: "founder-a", expectedRevision: 1, entryId: "meal-delete-source", kind: "meal", idempotencyKey: "delete-source-1" }, db.client);
   assert.equal(deleted.revision, 2); assert.equal(deleted.state.meals.length, 1);
   assert.equal(deleted.state.meals[0]?.photo?.storagePath, undefined); assert.equal(db.uploads.size, 0); assert.equal(db.audits.size, 2);
+});
+
+test("activity screenshot persistence binds dedupe identity to the exact source bytes", async () => {
+  const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-12");
+  const bytes = new Uint8Array([9, 8, 7, 6]);
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  const idempotencyKey = `accept-activity-${digest}`;
+  const entryId = `activity-${digest.slice(0, 32)}`;
+  const proposal: Extract<NaturalIngestionProposal, { kind: "activity" }> = {
+    id: "proposal-a", proposedAt: "2026-10-13T12:00:00Z", sourceType: "activity_screenshot",
+    confidence: "high", assumptions: [], summary: "Visible golf activity", model: "test", sourceDigest: digest,
+    kind: "activity", activity: { activityType: "Golf", durationMinutes: { value: 90, evidence: "observed" } }, guidance: "Review visible values.",
+  };
+  const activity = {
+    id: entryId, timestamp: "2026-10-13T12:01:00Z", occurredOn: "2026-10-11", facts: proposal.activity,
+    sourceType: "activity_screenshot" as const, source: { name: "golf.png", type: "image/png", size: bytes.length }, sterlingProposal: proposal,
+    assumptions: [], corrections: [], guidance: proposal.guidance, idempotencyKey, provenance: ["sterling" as const, "user_confirmed" as const],
+  };
+  const state = { ...initial, activities: [activity] };
+  const mutation = { idempotencyKey, action: "accept_activity" as const, entryId, sourceType: "activity_screenshot" as const, proposal, accepted: activity };
+  const source = new File([bytes], "golf.png", { type: "image/png" });
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: source }, db.client);
+  assert.equal(first.duplicate, false); assert.equal(db.uploads.size, 1);
+  const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: source }, db.client);
+  assert.equal(retry.duplicate, true); assert.equal(db.audits.size, 1); assert.equal(db.uploads.size, 1);
+  await assert.rejects(() => savePerformanceStateWithClient({
+    founderKey: "founder-a", expectedRevision: 1, state,
+    mutation: { ...mutation, idempotencyKey: "accept-activity-tampered" }, sourceFile: source,
+  }, db.client), /source-dedupe-invalid/);
+  await assert.rejects(() => savePerformanceStateWithClient({
+    founderKey: "founder-a", expectedRevision: 1, state,
+    mutation: { ...mutation, proposal: { ...proposal, sourceDigest: "0".repeat(64) } }, sourceFile: source,
+  }, db.client), /source-digest-invalid/);
 });

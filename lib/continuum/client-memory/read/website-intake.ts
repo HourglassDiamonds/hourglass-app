@@ -24,6 +24,12 @@ export type ClientWebsiteIntake = {
   attribution: Record<string, unknown>;
   source: string;
   submittedAt: string;
+  correspondenceReview?: {
+    candidateId: string;
+    status: "pending" | "approved";
+    confidence: "low" | "medium" | "high" | "ambiguous";
+    sourceTimestamp: string;
+  } | null;
 };
 
 export type ClientWebsiteIntakeReader = {

@@ -5,6 +5,7 @@ import { cookies } from "next/headers";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { requireInternalClientMemorySession } from "./access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import {
   CLIENT_WEBSITE_INTAKE_RECENT_LIMIT,
   type ClientWebsiteIntake,
@@ -83,6 +84,7 @@ function intakeRow(row: Record<string, unknown>): ClientWebsiteIntake | null {
     attribution,
     source: String(row.source ?? ""),
     submittedAt,
+    correspondenceReview: null,
   };
 }
 
@@ -101,12 +103,63 @@ async function readRows(query: PromiseLike<{ data: unknown; error: { message?: s
 class SupabaseClientWebsiteIntakeReader implements ClientWebsiteIntakeReader {
   constructor(private readonly client: SupabaseClient) {}
 
+  private async withCorrespondenceReview(
+    intakes: ClientWebsiteIntake[],
+  ): Promise<ClientWebsiteIntake[]> {
+    const hashes = new Set(
+      intakes.flatMap((intake) => {
+        const value = hashEmail(intake.email);
+        return value ? [value] : [];
+      }),
+    );
+    if (hashes.size === 0) return intakes;
+    const { data, error } = await this.client
+      .from("continuum_candidates")
+      .select(
+        "candidate_id, source_system, source_timestamp, candidate_type, payload, proposed_target, founder_edited_target, confidence, review_status, candidate_state",
+      )
+      .eq("source_system", "gmail")
+      .eq("candidate_type", "person_association")
+      .in("review_status", ["pending", "approved"])
+      .or([...hashes].map((value) => `payload->>emailHash.eq.${value}`).join(","))
+      .order("source_timestamp", { ascending: false })
+      .limit(Math.max(25, hashes.size * 4));
+    if (error || !Array.isArray(data)) return intakes;
+    const byHash = new Map<string, ClientWebsiteIntake["correspondenceReview"]>();
+    for (const raw of data) {
+      if (!raw || typeof raw !== "object") continue;
+      const row = raw as Record<string, unknown>;
+      if (row.candidate_state === "superseded") continue;
+      const payload = row.payload && typeof row.payload === "object"
+        ? row.payload as Record<string, unknown>
+        : null;
+      const emailHash = payload?.kind === "person_association"
+        ? String(payload.emailHash ?? "").trim()
+        : "";
+      if (!emailHash || !hashes.has(emailHash) || byHash.has(emailHash)) continue;
+      const status = row.review_status === "approved" ? "approved" : "pending";
+      const confidence = ["low", "medium", "high", "ambiguous"].includes(String(row.confidence))
+        ? row.confidence as "low" | "medium" | "high" | "ambiguous"
+        : "ambiguous";
+      byHash.set(emailHash, {
+        candidateId: String(row.candidate_id ?? ""),
+        status,
+        confidence,
+        sourceTimestamp: String(row.source_timestamp ?? ""),
+      });
+    }
+    return intakes.map((intake) => ({
+      ...intake,
+      correspondenceReview: byHash.get(hashEmail(intake.email) ?? "") ?? null,
+    }));
+  }
+
   async listRecent(options?: { limit?: number }): Promise<ClientWebsiteIntake[]> {
     const limit = Math.min(
       Math.max(options?.limit ?? CLIENT_WEBSITE_INTAKE_RECENT_LIMIT, 1),
       CLIENT_WEBSITE_INTAKE_RECENT_LIMIT,
     );
-    return readRows(
+    const rows = await readRows(
       this.client
         .from("continuum_website_intakes")
         .select(WEBSITE_INTAKE_COLUMNS)
@@ -114,6 +167,7 @@ class SupabaseClientWebsiteIntakeReader implements ClientWebsiteIntakeReader {
         .order("submitted_at", { ascending: false })
         .limit(limit),
     );
+    return this.withCorrespondenceReview(rows);
   }
 
   async listActiveRecent(options?: { limit?: number }): Promise<ClientWebsiteIntake[]> {

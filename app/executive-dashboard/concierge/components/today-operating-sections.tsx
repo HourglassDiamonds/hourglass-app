@@ -11,6 +11,7 @@ import {
   websiteIntakeSubmittedLabel,
   websiteIntakeWhatMatters,
 } from "@/lib/continuum/client-memory/read/website-intake-presentation";
+import { WebsiteIntakeControls } from "./website-intake-controls";
 
 type SterlingAction = (input: {
   query: string;
@@ -32,7 +33,7 @@ type SterlingAction = (input: {
 type OptimisticMove = "remove" | "production" | "waiting_client" | "watching" | null;
 
 function intendedMove(query: string): OptimisticMove {
-  if (/\b(?:dead|spam|delivered|complete|completed|done|closed|lost)\b/i.test(query)) return "remove";
+  if (/\b(?:remove|dismiss|dead|spam|delivered|complete|completed|done|closed|lost)\b/i.test(query)) return "remove";
   if (/\b(?:manufacturing|in production)\b/i.test(query)) return "production";
   if (/\b(?:already (?:emailed|replied|responded|followed up)|i (?:emailed|replied to|responded to))\b/i.test(query)) return "waiting_client";
   if (/\b(?:backburner|back burner|held|deferred|put .* on hold)\b/i.test(query)) return "watching";
@@ -113,6 +114,7 @@ function IntakeCard({ intake, selected, onSelect }: { intake: ClientWebsiteIntak
         <button type="button" onClick={onSelect} className="mt-3 min-h-10 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">
           {selected ? "Selected for Sterling" : "Tell Sterling about this"}
         </button>
+        <WebsiteIntakeControls intake={intake} />
       </div>
     </details>
   );
@@ -145,7 +147,13 @@ export function TodayOperatingSections({
     const beforeHidden = hiddenIntakes;
     const move = intendedMove(trimmed);
     const target = targetFor(trimmed, sections) ?? sections.flatMap((section) => section.items).find((item) => item.id === selectedTargetId) ?? null;
-    const intakeTarget = intakes.find((intake) => trimmed.toLowerCase().includes(intake.fullName.split(/\s+/)[0]!.toLowerCase())) ?? intakes.find((intake) => intake.intakeId === selectedTargetId) ?? null;
+    const intakeTarget = intakes.find((intake) => intake.intakeId === selectedTargetId) ?? null;
+    if (move === "remove" && intakeTarget) {
+      setReply("I found the selected intake. Review dismissal on that intake, then approve it to remove the Job from the active queue while preserving the submission and audit history.");
+      setFailedQuery(null);
+      setQuery("");
+      return;
+    }
     if (move && target) {
       setSections(
         applyOptimistic(sections, target, move).map((section) => ({
@@ -154,7 +162,6 @@ export function TodayOperatingSections({
         })),
       );
     }
-    if (move === "remove" && intakeTarget) setHiddenIntakes(new Set([...hiddenIntakes, intakeTarget.intakeId]));
     setReply(null);
     setFailedQuery(null);
     startTransition(async () => {

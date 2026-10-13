@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { parsePersonalState } from "./state";
-import type { NaturalIngestionProposal, PerformanceSourceType, PersonalState } from "./types";
+import type { NaturalIngestionProposal, PerformanceSourceType, PersonalState, SterlingProposal } from "./types";
 import { validatePersonalState } from "./validation";
 
 export const PERFORMANCE_SOURCE_BUCKET = "continuum-performance-sources";
@@ -9,9 +9,9 @@ const STATE_TABLE = "continuum_performance_state";
 const MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 const SOURCE_RETENTION_DAYS = 90;
 const SOURCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
+const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
 
-export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
+export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
 export type SavePerformanceStateInput = { founderKey: string; expectedRevision: number; state: PersonalState; mutation: PerformanceMutation; sourceFile?: File; now?: string };
 export type SavedPerformanceState = { state: PersonalState; revision: number; duplicate: boolean };
 
@@ -44,8 +44,19 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
   let storagePath: string | undefined; let uploaded = false;
   if (input.sourceFile) {
     if (!SOURCE_MIME_TYPES.has(input.sourceFile.type) || input.sourceFile.size <= 0 || input.sourceFile.size > MAX_SOURCE_BYTES) throw new Error("performance-source-invalid");
+    const sourceBytes = Buffer.from(await input.sourceFile.arrayBuffer());
+    if (input.mutation.action === "accept_activity") {
+      const proposal = input.mutation.proposal;
+      const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
+      if (!proposal || !("kind" in proposal) || proposal.kind !== "activity" || proposal.sourceDigest !== actualDigest) {
+        throw new Error("performance-source-digest-invalid");
+      }
+      if (input.mutation.idempotencyKey !== `accept-activity-${actualDigest}` || input.mutation.entryId !== `activity-${actualDigest.slice(0, 32)}`) {
+        throw new Error("performance-source-dedupe-invalid");
+      }
+    }
     storagePath = `${founderPath(input.founderKey)}/${input.mutation.entryId}.${safeExtension(input.sourceFile)}`;
-    const { error } = await db.storage.from(PERFORMANCE_SOURCE_BUCKET).upload(storagePath, Buffer.from(await input.sourceFile.arrayBuffer()), { contentType: input.sourceFile.type, upsert: false });
+    const { error } = await db.storage.from(PERFORMANCE_SOURCE_BUCKET).upload(storagePath, sourceBytes, { contentType: input.sourceFile.type, upsert: false });
     if (error && !/already exists|duplicate/i.test(error.message)) throw new Error(`performance-source-upload-failed:${error.message}`);
     uploaded = !error;
   }

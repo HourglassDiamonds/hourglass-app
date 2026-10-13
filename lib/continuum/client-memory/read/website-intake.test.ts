@@ -36,6 +36,7 @@ const intake: ClientWebsiteIntake = {
   },
   source: "hourglassdiamonds.com/concierge",
   submittedAt: "2026-10-05T14:10:11.233Z",
+  correspondenceReview: null,
 };
 
 describe("Clients website intake presentation", () => {

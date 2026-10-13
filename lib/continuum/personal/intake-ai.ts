@@ -1,6 +1,6 @@
 import "server-only";
 
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { getConciergeOpenAiApiKey } from "@/lib/continuum/concierge-sol/env";
 import { CONCIERGE_SOL_RESPONSES_ENDPOINT, conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import { activityNutritionGuidance } from "./guidance";
@@ -72,7 +72,9 @@ export async function interpretPerformanceIntake(input: {
     text ? `Founder description: ${text}` : "No accompanying description was supplied.",
   ].join("\n");
   const content: Array<Record<string, unknown>> = [{ type: "input_text", text: instructions }];
-  if (input.file) content.push({ type: "input_image", image_url: `data:${input.file.type};base64,${Buffer.from(await input.file.arrayBuffer()).toString("base64")}`, detail: "high" });
+  const sourceBytes = input.file ? Buffer.from(await input.file.arrayBuffer()) : undefined;
+  const sourceDigest = sourceBytes ? createHash("sha256").update(sourceBytes).digest("hex") : undefined;
+  if (input.file && sourceBytes) content.push({ type: "input_image", image_url: `data:${input.file.type};base64,${sourceBytes.toString("base64")}`, detail: "high" });
   const response = await fetch(CONCIERGE_SOL_RESPONSES_ENDPOINT, {
     method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model, store: false, input: [{ role: "user", content }], text: { format: { type: "json_schema", name: "performance_intake", strict: true, schema: intakeSchema } } }),
@@ -82,7 +84,7 @@ export async function interpretPerformanceIntake(input: {
   const parsed = JSON.parse(outputText(await response.json())) as Record<string, unknown>;
   const confidence: ProposalConfidence = parsed.confidence === "low" || parsed.confidence === "high" ? parsed.confidence : "medium";
   const assumptions = Array.isArray(parsed.assumptions) ? parsed.assumptions.filter((value): value is string => typeof value === "string").map((value) => value.slice(0, 240)) : [];
-  const base = { id: randomUUID(), proposedAt: new Date().toISOString(), sourceType: input.sourceType, rawInput: text || undefined, confidence, assumptions, summary: String(parsed.summary ?? "Review Sterling's interpretation.").slice(0, 500), model };
+  const base = { id: randomUUID(), proposedAt: new Date().toISOString(), sourceType: input.sourceType, rawInput: text || undefined, confidence, assumptions, summary: String(parsed.summary ?? "Review Sterling's interpretation.").slice(0, 500), model, sourceDigest };
   if (parsed.kind === "meal" && parsed.meal && typeof parsed.meal === "object") {
     const rawMeal = parsed.meal as Record<string, unknown>;
     const items: MealItem[] = Array.isArray(rawMeal.items) ? rawMeal.items.flatMap((candidate, index) => {

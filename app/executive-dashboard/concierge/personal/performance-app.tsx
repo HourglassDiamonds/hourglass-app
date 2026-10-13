@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
-import { applySterlingProposal, deferAndReflow, proposeSterlingAdjustment } from "@/lib/continuum/personal/adaptation";
+import { applySterlingProposal, deferAndReflow, retargetSterlingScheduleAdjustment } from "@/lib/continuum/personal/adaptation";
 import { createInitialPersonalState, dateKey, shiftDate } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
@@ -43,6 +43,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const view = initialView;
   const [sterlingText, setSterlingText] = useState("");
   const [sterlingProposal, setSterlingProposal] = useState<SterlingProposal | null>(null);
+  const [sterlingBusy, setSterlingBusy] = useState(false);
+  const [sterlingError, setSterlingError] = useState("");
   const [modifyOpen, setModifyOpen] = useState(false);
   const [deferOpen, setDeferOpen] = useState(false);
   const [mealEstimate, setMealEstimate] = useState<MealEstimate | null>(null);
@@ -56,6 +58,9 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [intakeProposal, setIntakeProposal] = useState<NaturalIngestionProposal | null>(null);
   const [intakeFile, setIntakeFile] = useState<File | null>(null);
   const [intakeBusy, setIntakeBusy] = useState(false);
+  const [pastActivityOpen, setPastActivityOpen] = useState(false);
+  const [pastActivityDate, setPastActivityDate] = useState(() => shiftDate(localToday(), -1));
+  const [activityDefaultDate, setActivityDefaultDate] = useState(() => shiftDate(localToday(), -1));
   const [persistStatus, setPersistStatus] = useState<"loading" | "saved" | "saving" | "browser" | "conflict" | "error">("loading");
   const [revision, setRevision] = useState(0);
   const persistInFlight = useRef(false);
@@ -202,13 +207,52 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     });
   }
 
-  function askSterling(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); const proposal = proposeSterlingAdjustment(state, sterlingText, today);
-    setSterlingProposal(proposal);
+  async function askSterling(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSterlingBusy(true); setSterlingError(""); setSterlingProposal(null);
+    try {
+      const response = await fetch("/executive-dashboard/concierge/personal/adjustment", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ command: sterlingText, today, state }),
+      });
+      const payload = await response.json() as { ok: boolean; proposal?: SterlingProposal; error?: string; clarification?: string | null };
+      if (!response.ok || !payload.ok || !payload.proposal) {
+        throw new Error(payload.clarification || payload.error || "adjustment-failed");
+      }
+      setSterlingProposal(payload.proposal);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "adjustment-failed";
+      setSterlingError(message === "performance-analysis-unavailable"
+        ? "Sterling interpretation is not configured. Your training plan has not changed."
+        : message === "adjustment-failed" || message.startsWith("performance-adjustment-failed")
+          ? "Sterling could not interpret that request. Your training plan has not changed; retry or describe the workout and date more specifically."
+          : message);
+    } finally { setSterlingBusy(false); }
   }
 
-  function confirmSterling() {
-    if (!sterlingProposal) return; setState((current) => applySterlingProposal(current, sterlingProposal)); setSterlingProposal(null); setSterlingText("");
+  async function confirmSterling() {
+    if (!sterlingProposal || sterlingBusy) return;
+    setSterlingBusy(true); setSterlingError("");
+    try {
+      const next = applySterlingProposal(state, sterlingProposal);
+      const saved = await persistStateMutation(next, {
+        idempotencyKey: `adjustment-${sterlingProposal.id}`,
+        action: "accept_adjustment",
+        rawInput: sterlingProposal.command,
+        proposal: sterlingProposal,
+        accepted: { affectedWorkoutIds: sterlingProposal.affectedWorkoutIds, targetDate: sterlingProposal.targetDate },
+      });
+      setState(saved); setSterlingProposal(null); setSterlingText("");
+    } catch {
+      setSterlingError("The adjustment was not saved. The existing schedule remains authoritative; retry after resolving the persistence error.");
+    } finally { setSterlingBusy(false); }
+  }
+
+  function changeSterlingTarget(targetDate: string) {
+    if (!sterlingProposal) return;
+    const revised = retargetSterlingScheduleAdjustment(state, sterlingProposal, targetDate);
+    if (!revised) { setSterlingError("Choose a date after the original planned workout."); return; }
+    setSterlingError(""); setSterlingProposal(revised);
   }
 
   function saveRecovery(event: FormEvent<HTMLFormElement>) {
@@ -232,15 +276,17 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     setMealBusy(true); setIntakeBusy(true); setMealError(""); setMealEstimate(null); setIntakeProposal(null);
     try {
       if (input.file && input.file.size > 4 * 1024 * 1024) throw new Error("invalid-image");
-      const image = input.file ? await compactImage(input.file) : undefined; const body = new FormData();
+      const image = input.file
+        ? input.sourceType === "activity_screenshot" ? input.file : await compactImage(input.file)
+        : undefined; const body = new FormData();
       if (image) body.set("image", image); if (input.text?.trim()) body.set("text", input.text.trim()); body.set("sourceType", input.sourceType);
       body.set("knownMeals", JSON.stringify(frequentlyEaten.map((meal) => `${meal.name}: ${meal.calories} kcal, ${meal.protein}P, ${meal.carbs}C, ${meal.fat}F`)));
       body.set("nutritionTargets", JSON.stringify(state.nutritionTargets));
       const response = await fetch("/executive-dashboard/concierge/personal/intake", { method: "POST", body });
       const payload = await response.json() as { ok: boolean; proposal?: NaturalIngestionProposal; error?: string };
       if (!response.ok || !payload.ok || !payload.proposal) throw new Error(payload.error || "analysis-failed");
-      setIntakeFile(input.file ?? null); setIntakeProposal(payload.proposal);
-      if (payload.proposal.kind === "meal") { setMealPhoto(input.file ? { name: input.file.name, type: input.file.type, size: input.file.size } : null); setMealEstimate(payload.proposal.meal); }
+      setIntakeFile(image ?? null); setIntakeProposal(payload.proposal);
+      if (payload.proposal.kind === "meal") { setMealPhoto(image ? { name: image.name, type: image.type, size: image.size } : null); setMealEstimate(payload.proposal.meal); }
     } catch (error) { setMealError(error instanceof Error && error.message === "performance-analysis-unavailable" ? "Sterling interpretation is not configured. Manual logging remains available." : error instanceof Error && error.message === "invalid-image" ? "Use a JPEG, PNG, WebP, or GIF no larger than 4 MB." : "Sterling could not interpret that input just now. Review the input and retry."); }
     finally { setMealBusy(false); setIntakeBusy(false); }
   }
@@ -252,7 +298,10 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   function submitMealDescription(event: FormEvent<HTMLFormElement>) { event.preventDefault(); if (intakeText.trim()) void analyzeIntake({ text: intakeText, sourceType: "text" }); }
   function chooseNutritionLabel(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; event.target.value = ""; if (file) void analyzeIntake({ text: intakeText, file, sourceType: "nutrition_label" }); }
-  function chooseActivityScreenshot(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; event.target.value = ""; if (file) void analyzeIntake({ file, sourceType: "activity_screenshot" }); }
+  function chooseActivityScreenshot(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]; event.target.value = "";
+    if (file) { setActivityDefaultDate(pastActivityDate); void analyzeIntake({ file, sourceType: "activity_screenshot" }); }
+  }
 
   function updateMealItem(id: string, patch: Partial<MealItem>) { setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.map((item) => item.id === id ? { ...item, ...patch } : item) } : null); }
   async function acceptMeal(mealType?: MealLog["mealType"]) {
@@ -268,12 +317,14 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   async function acceptActivity(facts: ActivityFacts, occurredOn: string) {
     if (intakeProposal?.kind !== "activity") return;
-    const idempotencyKey = `accept-${intakeProposal.id}`; const at = new Date().toISOString();
-    const activity = buildAcceptedActivity({ proposal: intakeProposal, facts, occurredOn, timestamp: at, id: uid("activity"), idempotencyKey, source: intakeFile ? { name: intakeFile.name, type: intakeFile.type, size: intakeFile.size } : undefined, targets: state.nutritionTargets });
+    const digest = intakeProposal.sourceDigest;
+    const idempotencyKey = digest ? `accept-activity-${digest}` : `accept-${intakeProposal.id}`; const at = new Date().toISOString();
+    const activityId = digest ? `activity-${digest.slice(0, 32)}` : uid("activity");
+    const activity = buildAcceptedActivity({ proposal: intakeProposal, facts, occurredOn, timestamp: at, id: activityId, idempotencyKey, source: intakeFile ? { name: intakeFile.name, type: intakeFile.type, size: intakeFile.size } : undefined, targets: state.nutritionTargets });
     const next = acceptProposal(state, intakeProposal, activity);
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_activity", entryId: activity.id, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: activity, corrections: activity.corrections }, intakeFile ?? undefined);
-      setState(saved); setIntakeProposal(null); setIntakeFile(null); setMealError("");
+      setState(saved); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false);
     } catch { setMealError("The reviewed activity was not saved. Nothing was added; retry when private persistence is available."); }
   }
 
@@ -387,9 +438,12 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
           {deferOpen ? <form className={styles.editPanel} onSubmit={deferWorkout}><label>Move to<input name="date" type="date" min={shiftDate(today, 1)} defaultValue={shiftDate(today, 1)} /></label><p>Later sessions will reflow; this workout keeps its prescription and history.</p><button className={styles.primary}>Confirm defer</button></form> : null}
         </> : <p>Completed, deferred, or consciously skipped sessions remain in the week history.</p>}
       </section>
-      <section className={styles.card}><p className={styles.kicker}>Ask Sterling · adaptive coach</p><h2>What changed in real life?</h2><form className={styles.sterling} onSubmit={askSterling}><textarea value={sterlingText} onChange={(event) => setSterlingText(event.target.value)} placeholder="I got about four hours of sleep and I’m gassed. Skip the weights today. I’m going to ruck. Move the weights to tomorrow." required /><button className={styles.primary}>Review adjustment</button></form>
-        {sterlingProposal ? <div className={styles.proposal}><strong>Proposed — nothing has changed yet</strong><p>{sterlingProposal.summary}</p>{sterlingProposal.warnings.map((warning) => <p key={warning} className={styles.warning}>{warning}</p>)}<div className={styles.proposalGrid}>{sterlingProposal.nextSchedule.filter((item) => item.date >= today && item.status !== "deferred").slice(0, 5).map((item) => <div key={`${item.id}-${item.date}`}><span>{prettyDate(item.date)}</span><strong>{item.prescription.name}</strong><small>{item.prescription.intent} · {item.prescription.durationMinutes} min</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={confirmSterling}>Confirm changes</button><button onClick={() => setSterlingProposal(null)}>Reject</button></div></div> : null}
+      <section className={styles.card}><p className={styles.kicker}>Ask Sterling · adaptive coach</p><h2>What changed in real life?</h2><form className={styles.sterling} onSubmit={askSterling}><textarea value={sterlingText} onChange={(event) => setSterlingText(event.target.value)} placeholder="I’m golfing Thursday. Move Thursday’s planned workout to Friday." required /><button className={styles.primary} disabled={sterlingBusy}>{sterlingBusy ? "Reviewing…" : "Review adjustment"}</button></form>
+        {sterlingError ? <p role="alert" className={styles.warning}>{sterlingError}</p> : null}
+        {sterlingProposal ? <div className={styles.proposal}><strong>Proposed — nothing has changed yet</strong><p>{sterlingProposal.summary}</p>{sterlingProposal.warnings.map((warning) => <p key={warning} className={styles.warning}>{warning}</p>)}{sterlingProposal.sourceWorkoutId && sterlingProposal.targetDate ? <label>Move selected workout to<input type="date" min={shiftDate(state.schedule.find((item) => item.id === sterlingProposal.sourceWorkoutId)?.date ?? today, 1)} value={sterlingProposal.targetDate} onChange={(event) => changeSterlingTarget(event.target.value)} disabled={sterlingBusy} /></label> : null}<div className={styles.proposalGrid}>{sterlingProposal.nextSchedule.filter((item) => item.date >= today && item.status !== "deferred").slice(0, 5).map((item) => <div key={`${item.id}-${item.date}`}><span>{prettyDate(item.date)}</span><strong>{item.prescription.name}</strong><small>{item.prescription.intent} · {item.prescription.durationMinutes} min</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmSterling()} disabled={sterlingBusy}>{sterlingBusy ? "Saving…" : "Confirm changes"}</button><button onClick={() => { setSterlingProposal(null); setSterlingError(""); }} disabled={sterlingBusy}>Reject</button></div></div> : null}
       </section>
+      <section className={styles.card}><div className={styles.cardTop}><div><p className={styles.kicker}>Retrospective activity</p><h2>Log Past Activity</h2></div><button onClick={() => setPastActivityOpen((open) => !open)}>{pastActivityOpen ? "Close" : "Log Past Activity"}</button></div><p>Upload a WHOOP, Tonal, Peloton, golf, run, or ruck screenshot. This records completed history; it does not reschedule a planned workout.</p>{pastActivityOpen ? <div className={styles.editPanel}><label>Activity date<input type="date" max={shiftDate(today, -1)} value={pastActivityDate} onChange={(event) => setPastActivityDate(event.target.value)} /></label><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD ACTIVITY SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseActivityScreenshot} disabled={intakeBusy || !pastActivityDate} /></label>{intakeBusy ? <p aria-live="polite">Sterling is reading only the visible activity facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</div> : null}</section>
+      {view === "today" && intakeProposal?.kind === "activity" ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Edit visible metrics before saving.</h2><ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={shiftDate(today, -1)} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></section> : null}
       {latestRecovery ? <section className={styles.card}><p className={styles.kicker}>Today’s recovery context</p><h2>{latestRecovery.sleepHours ? `${latestRecovery.sleepHours.value}h sleep` : "Recovery logged"}{latestRecovery.fatigue ? ` · ${latestRecovery.fatigue.value} fatigue` : ""}</h2><p>Only supplied values are recorded. Missing WHOOP metrics remain blank.</p></section> : null}
       {state.progressionProposals.some((proposal) => proposal.status === "pending" || proposal.status === "edited") ? <section className={styles.card}><p className={styles.kicker}>Next-session proposals</p><h2>Review before progression changes.</h2>{state.progressionProposals.filter((proposal) => proposal.status === "pending" || proposal.status === "edited").map((proposal) => <div className={styles.savedRow} key={proposal.id}><strong>{proposal.action.toUpperCase()}{proposal.proposedLoad !== undefined ? ` · ${proposal.proposedLoad} lb` : ""}</strong><span>{proposal.reason}</span><div className={styles.actions}><button className={styles.primary} onClick={() => resolveProgression(proposal.id, "accepted")}>Accept</button><button onClick={() => resolveProgression(proposal.id, "edited")}>Edit</button><button onClick={() => resolveProgression(proposal.id, "rejected")}>Reject</button></div></div>)}</section> : null}
       {todayActivities.length ? <section className={styles.card}><p className={styles.kicker}>Accepted activity today</p>{todayActivities.map((activity) => <ActivityRow key={activity.id} activity={activity} onDeleteSource={activity.source?.storagePath ? () => void deleteSource("activity", activity.id) : undefined} />)}</section> : null}
@@ -408,7 +462,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
     {view === "recovery" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Morning check-in</p><h2>Log only what you know.</h2><p>Every field is optional. Measured/manual numbers stay distinct from subjective ratings; absent WHOOP metrics remain absent.</p><RecoveryForm existing={latestRecovery} onSubmit={saveRecovery} /></section>{latestRecovery ? <section className={styles.card}><p className={styles.kicker}>Saved today</p><div className={styles.metricGrid}>{Object.entries(latestRecovery).filter(([, value]) => value && typeof value === "object" && "source" in value).map(([key, value]) => { const metric = value as { value: string | number; source: string }; return <div key={key}><span>{key}</span><strong>{metric.value}</strong><small>{metric.source}</small></div>; })}</div></section> : null}</div> : null}
 
-    {view === "week" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Completed activity intake</p><h2>Upload a run, ruck, Peloton, WHOOP, Tonal, or Apple Fitness screenshot.</h2><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD WORKOUT SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseActivityScreenshot} disabled={intakeBusy} /></label>{intakeBusy ? <p aria-live="polite">Sterling is reading the visible workout facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>{intakeProposal?.kind === "activity" ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Observed facts stay distinct from estimates.</h2><ActivityReview proposal={intakeProposal} defaultDate={today} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></section> : null}<section className={styles.week}>{week.map((workout) => <article className={styles.card} key={`${workout.id}-${workout.date}-${workout.status}`}><div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(workout.date)} · {workout.status.replace("_", " ")}</p><h3>{workout.prescription.name}</h3></div><span>{workout.prescription.domain}</span></div><p>{workout.prescription.notes}</p><small>{workout.history.at(-1)?.note}</small>{workout.prescription.alternative && workout.status === "planned" ? <div className={styles.actions}><button onClick={() => swapWorkout(workout.id)}>Swap equivalent</button></div> : null}</article>)}</section><section className={styles.card}><p className={styles.kicker}>Accepted activity history</p>{state.activities.length ? state.activities.slice(0, 12).map((activity) => <ActivityRow key={activity.id} activity={activity} />) : <p>No accepted activities yet.</p>}</section></div> : null}
+    {view === "week" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Completed activity intake</p><h2>Log Past Activity</h2><p>This adds completed history without changing planned workouts.</p><div className={styles.formGrid}><label>Activity date<input type="date" max={shiftDate(today, -1)} value={pastActivityDate} onChange={(event) => setPastActivityDate(event.target.value)} /></label><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD ACTIVITY SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseActivityScreenshot} disabled={intakeBusy || !pastActivityDate} /></label></div>{intakeBusy ? <p aria-live="polite">Sterling is reading the visible workout facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>{intakeProposal?.kind === "activity" ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Observed facts stay distinct from estimates.</h2><ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={shiftDate(today, -1)} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></section> : null}<section className={styles.week}>{week.map((workout) => <article className={styles.card} key={`${workout.id}-${workout.date}-${workout.status}`}><div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(workout.date)} · {workout.status.replace("_", " ")}</p><h3>{workout.prescription.name}</h3></div><span>{workout.prescription.domain}</span></div><p>{workout.prescription.notes}</p><small>{workout.history.at(-1)?.note}</small>{workout.prescription.alternative && workout.status === "planned" ? <div className={styles.actions}><button onClick={() => swapWorkout(workout.id)}>Swap equivalent</button></div> : null}</article>)}</section><section className={styles.card}><p className={styles.kicker}>Accepted activity history</p>{state.activities.length ? state.activities.slice(0, 12).map((activity) => <ActivityRow key={activity.id} activity={activity} />) : <p>No accepted activities yet.</p>}</section></div> : null}
 
     {view === "progress" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Weekly signal</p><h2>Consistency without punishment.</h2><div className={styles.metricGrid}><div><span>Completed</span><strong>{state.schedule.filter((workout) => workout.date >= weekStart && workout.date <= weekEnd && workout.status === "completed").length}</strong><small>sessions this week</small></div><div><span>Unresolved</span><strong>{state.schedule.filter((workout) => workout.status === "unresolved").length}</strong><small>awaiting a decision</small></div><div><span>Nutrition</span><strong>{loggedDays}</strong><small>days logged</small></div><div><span>Average protein</span><strong>{loggedDays ? Math.round(weekNutrition.protein / loggedDays) : 0}g</strong><small>on logged days</small></div></div></section><section className={styles.card}><p className={styles.kicker}>Bodyweight trend</p><h2>{weights.at(-1)?.bodyweightLb?.value ? `${weights.at(-1)!.bodyweightLb!.value} lb` : "No bodyweight logged"}</h2>{weights.length ? weights.slice(-8).map((entry) => <div className={styles.savedRow} key={entry.id}><span>{prettyDate(entry.date)}</span><strong>{entry.bodyweightLb?.value} lb</strong><small>{entry.bodyweightLb?.source}</small></div>) : <p>Log bodyweight in the morning Recovery check-in.</p>}<p className={styles.provenance}>Apple Health is not connected. This web app does not claim direct HealthKit access.</p></section></div> : null}
   </main>;
@@ -440,7 +494,7 @@ function MealOccurrenceEditor({ meal, onChange, onDone }: { meal: MealLog; onCha
   return <div className={styles.inlineEditor}><strong>Edit this occurrence</strong><p>Your saved frequent default will not change.</p>{meal.items.map((item) => <MacroItemEditor key={item.id} item={item} onChange={(patch) => onChange(item.id, patch)} />)}<button className={styles.primary} onClick={onDone}>Done</button></div>;
 }
 
-function ActivityReview({ proposal, defaultDate, onAccept, onReject }: { proposal: Extract<NaturalIngestionProposal, { kind: "activity" }>; defaultDate: string; onAccept: (facts: ActivityFacts, occurredOn: string) => void | Promise<void>; onReject: () => void }) {
+function ActivityReview({ proposal, defaultDate, maxDate, onAccept, onReject }: { proposal: Extract<NaturalIngestionProposal, { kind: "activity" }>; defaultDate: string; maxDate: string; onAccept: (facts: ActivityFacts, occurredOn: string) => void | Promise<void>; onReject: () => void }) {
   const [facts, setFacts] = useState<ActivityFacts>(() => structuredClone(proposal.activity));
   const [occurredOn, setOccurredOn] = useState(defaultDate);
   const numericFields: Array<{ key: Exclude<keyof ActivityFacts, "activityType" | "pace" | "notes">; label: string; step?: number }> = [
@@ -451,7 +505,7 @@ function ActivityReview({ proposal, defaultDate, onAccept, onReject }: { proposa
     { key: "steps", label: "Steps", step: 1 }, { key: "ruckWeightLb", label: "Ruck / vest · lb", step: .1 },
   ];
   const setNumeric = (key: typeof numericFields[number]["key"], value: string) => setFacts((current) => ({ ...current, [key]: value === "" ? undefined : { value: Math.max(0, Number(value) || 0), evidence: "user_supplied" } }));
-  return <div className={styles.mealReview}><div className={styles.reviewTop}><strong>{proposal.summary}</strong><span>{proposal.confidence} confidence</span></div>{proposal.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<div className={styles.formGrid}><label>Activity<input value={facts.activityType} onChange={(event) => setFacts((current) => ({ ...current, activityType: event.target.value }))} /></label><label>Activity date<input type="date" value={occurredOn} onChange={(event) => setOccurredOn(event.target.value)} /></label><label>Pace<input value={facts.pace?.value ?? ""} onChange={(event) => setFacts((current) => ({ ...current, pace: event.target.value ? { value: event.target.value, evidence: "user_supplied" } : undefined }))} /></label>{numericFields.map((field) => <label key={field.key}>{field.label}<input type="number" min="0" step={field.step} value={(facts[field.key] as { value?: number } | undefined)?.value ?? ""} onChange={(event) => setNumeric(field.key, event.target.value)} /></label>)}</div><label>Notes<textarea value={facts.notes ?? ""} onChange={(event) => setFacts((current) => ({ ...current, notes: event.target.value }))} /></label><p>{proposal.guidance}</p><p className={styles.provenance}>Visible values retain observed provenance. Any field you change becomes user supplied.</p><div className={styles.actions}><button className={styles.primary} disabled={!facts.activityType.trim() || !occurredOn} onClick={() => void onAccept(facts, occurredOn)}>Accept activity</button><button onClick={onReject}>Reject</button></div></div>;
+  return <div className={styles.mealReview}><div className={styles.reviewTop}><strong>{proposal.summary}</strong><span>{proposal.confidence} confidence</span></div>{proposal.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<div className={styles.formGrid}><label>Activity<input value={facts.activityType} onChange={(event) => setFacts((current) => ({ ...current, activityType: event.target.value }))} /></label><label>Activity date<input type="date" max={maxDate} value={occurredOn} onChange={(event) => setOccurredOn(event.target.value)} /></label><label>Pace<input value={facts.pace?.value ?? ""} onChange={(event) => setFacts((current) => ({ ...current, pace: event.target.value ? { value: event.target.value, evidence: "user_supplied" } : undefined }))} /></label>{numericFields.map((field) => <label key={field.key}>{field.label}<input type="number" min="0" step={field.step} value={(facts[field.key] as { value?: number } | undefined)?.value ?? ""} onChange={(event) => setNumeric(field.key, event.target.value)} /></label>)}</div><label>Notes<textarea value={facts.notes ?? ""} onChange={(event) => setFacts((current) => ({ ...current, notes: event.target.value }))} /></label><p>{proposal.guidance}</p><p className={styles.provenance}>Visible values retain observed provenance. Any field you change becomes user supplied. Accepting this completed activity does not reschedule a planned workout.</p><div className={styles.actions}><button className={styles.primary} disabled={!facts.activityType.trim() || !occurredOn || occurredOn > maxDate} onClick={() => void onAccept(facts, occurredOn)}>Accept activity</button><button onClick={onReject}>Reject</button></div></div>;
 }
 
 function ActivityRow({ activity, onDeleteSource }: { activity: ActivityLog; onDeleteSource?: () => void }) {

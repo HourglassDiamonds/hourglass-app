@@ -1,0 +1,28 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import test from "node:test";
+
+const directory = dirname(fileURLToPath(import.meta.url));
+const app = readFileSync(join(directory, "performance-app.tsx"), "utf8");
+const ai = readFileSync(join(directory, "../../../../lib/continuum/personal/intake-ai.ts"), "utf8");
+const persistence = readFileSync(join(directory, "../../../../lib/continuum/personal/persistence-core.ts"), "utf8");
+
+test("past activity has explicit date-first review and never reschedules a planned workout", () => {
+  assert.match(app, /Log Past Activity/);
+  assert.match(app, /max=\{shiftDate\(today, -1\)\}/);
+  assert.match(app, /does not reschedule a planned workout/);
+  assert.match(app, /input\.sourceType === "activity_screenshot" \? input\.file/);
+  assert.match(app, /setIntakeFile\(image \?\? null\)/);
+  assert.match(app, /ActivityReview/);
+  assert.match(app, /Accept activity/);
+});
+
+test("screenshot provenance uses a byte digest for server-enforced dedupe without invented metrics", () => {
+  assert.match(ai, /createHash\("sha256"\)/);
+  assert.match(ai, /Null absent values/);
+  assert.match(persistence, /performance-source-digest-invalid/);
+  assert.match(persistence, /accept-activity-\$\{actualDigest\}/);
+  assert.match(persistence, /upsert:\s*false/);
+});

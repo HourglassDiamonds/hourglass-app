@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { applySterlingProposal, proposeSterlingAdjustment } from "./adaptation";
+import { applySterlingProposal, buildSterlingScheduleAdjustment, proposeSterlingAdjustment, retargetSterlingScheduleAdjustment } from "./adaptation";
 import { createInitialPersonalState, shiftDate } from "./program";
 
 test("four hours sleep / gassed / ruck today / weights tomorrow is proposed, confirmed, and reflowed", () => {
@@ -34,4 +34,33 @@ test("Sterling can propose a recovery-only entry without fabricating WHOOP value
   assert.deepEqual(proposal?.recovery?.sleepHours, { value: 4, source: "manual" });
   assert.equal(proposal?.recovery?.hrvMs, undefined);
   assert.equal(proposal?.affectedWorkoutIds.length, 0);
+});
+
+test("natural-language schedule intent becomes an editable proposal without mutating the program", () => {
+  const today = "2026-10-12";
+  const state = createInitialPersonalState(today);
+  const source = state.schedule.find((workout) => workout.date === "2026-10-15")!;
+  const proposal = buildSterlingScheduleAdjustment({
+    state,
+    command: "I am golfing Thursday. Move Thursday's planned workout to Friday.",
+    workoutId: source.id,
+    targetDate: "2026-10-16",
+    summary: "Move Thursday's workout to Friday around golf.",
+    confidence: "high",
+    now: "2026-10-13T12:00:00.000Z",
+  });
+  assert.ok(proposal);
+  assert.equal(state.schedule.find((workout) => workout.id === source.id)?.status, "planned");
+  assert.equal(proposal?.sourceWorkoutId, source.id);
+  assert.equal(proposal?.targetDate, "2026-10-16");
+  assert.deepEqual(
+    proposal?.nextSchedule.find((workout) => workout.replacesWorkoutId === source.id && workout.date === "2026-10-16")?.prescription,
+    source.prescription,
+  );
+  const edited = retargetSterlingScheduleAdjustment(state, proposal!, "2026-10-17");
+  assert.equal(edited?.targetDate, "2026-10-17");
+  assert.equal(edited?.nextSchedule.some((workout) => workout.replacesWorkoutId === source.id && workout.date === "2026-10-17"), true);
+  assert.equal(buildSterlingScheduleAdjustment({ state, command: "move", workoutId: "unknown", targetDate: "2026-10-17", summary: "x" }), null);
+  assert.equal(buildSterlingScheduleAdjustment({ state, command: "move", workoutId: source.id, targetDate: source.date, summary: "x" }), null);
+  assert.equal(state.program.anchorDate, "2026-10-12");
 });

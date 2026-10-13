@@ -139,7 +139,58 @@ export function proposeSterlingAdjustment(state: PersonalState, command: string,
     nextSchedule,
     affectedWorkoutIds: [todayWorkout.id, ...nextSchedule.filter((item) => item.history.at(-1)?.action === "reflowed").map((item) => item.id)],
     warnings: constrained ? ["About four hours of sleep and high fatigue support a reduced session; no injury is inferred."] : [],
+    sourceWorkoutId: todayWorkout.id,
+    targetDate: tomorrow,
+    confidence: "medium",
   };
+}
+
+export function buildSterlingScheduleAdjustment(input: {
+  state: PersonalState;
+  command: string;
+  workoutId: string;
+  targetDate: string;
+  summary: string;
+  warnings?: string[];
+  confidence?: "low" | "medium" | "high";
+  now?: string;
+}): SterlingProposal | null {
+  const workout = input.state.schedule.find((row) => row.id === input.workoutId);
+  if (!workout || (workout.status !== "planned" && workout.status !== "unresolved")) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.targetDate) || input.targetDate <= workout.date) return null;
+  const createdAt = input.now ?? new Date().toISOString();
+  const nextSchedule = deferAndReflow(input.state.schedule, workout.id, input.targetDate, createdAt, "sterling");
+  if (!nextSchedule.some((row) => row.replacesWorkoutId === workout.id && row.date === input.targetDate)) return null;
+  return {
+    id: `sterling-adjustment-${createdAt}-${workout.id}`,
+    command: input.command,
+    createdAt,
+    summary: input.summary,
+    nextSchedule,
+    affectedWorkoutIds: [workout.id, ...nextSchedule.filter((row) => row.history.at(-1)?.action === "reflowed").map((row) => row.id)],
+    warnings: (input.warnings ?? []).slice(0, 6),
+    sourceWorkoutId: workout.id,
+    targetDate: input.targetDate,
+    confidence: input.confidence ?? "medium",
+  };
+}
+
+export function retargetSterlingScheduleAdjustment(
+  state: PersonalState,
+  proposal: SterlingProposal,
+  targetDate: string,
+): SterlingProposal | null {
+  if (!proposal.sourceWorkoutId) return null;
+  return buildSterlingScheduleAdjustment({
+    state,
+    command: proposal.command,
+    workoutId: proposal.sourceWorkoutId,
+    targetDate,
+    summary: proposal.summary,
+    warnings: proposal.warnings,
+    confidence: proposal.confidence,
+    now: proposal.createdAt,
+  });
 }
 
 export function applySterlingProposal(state: PersonalState, proposal: SterlingProposal): PersonalState {

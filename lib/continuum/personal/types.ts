@@ -212,6 +212,7 @@ type ProposalBase = {
   assumptions: string[];
   summary: string;
   model: string;
+  sourceDigest?: string;
 };
 
 export type MealIngestionProposal = ProposalBase & {
@@ -261,6 +262,9 @@ export type SterlingProposal = {
   nextSchedule: ScheduledWorkout[];
   affectedWorkoutIds: string[];
   warnings: string[];
+  sourceWorkoutId?: string;
+  targetDate?: string;
+  confidence?: ProposalConfidence;
 };
 
 export type PersonalState = {
