@@ -3,6 +3,7 @@ import type { PersonalState, ScheduledWorkout, WorkoutPrescription } from "./typ
 const DAY_MS = 86_400_000;
 export const PROGRAM_RESTART_DATE = "2026-10-12";
 export const PROGRAM_TIME_ZONE = "America/New_York";
+export const PROGRAM_HORIZON_DAYS = 12 * 7;
 
 export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
   {
@@ -70,10 +71,8 @@ export function weekdayIndex(key: string): number {
   return day === 0 ? 6 : day - 1;
 }
 
-export function plannedWorkout(key: string): ScheduledWorkout {
-  const prescription = key < PROGRAM_RESTART_DATE
-    ? prepPrescription(key)
-    : programPrescription(key);
+export function plannedWorkout(key: string, anchorDate = PROGRAM_RESTART_DATE): ScheduledWorkout {
+  const prescription = programPrescription(key, anchorDate);
   return {
     id: `program-${key}-${prescription.id}`,
     date: key,
@@ -85,14 +84,14 @@ export function plannedWorkout(key: string): ScheduledWorkout {
   };
 }
 
-export function programWeek(key: string): number {
-  if (key < PROGRAM_RESTART_DATE) return 0;
-  const elapsed = Math.floor((Date.parse(`${key}T12:00:00Z`) - Date.parse(`${PROGRAM_RESTART_DATE}T12:00:00Z`)) / DAY_MS);
+export function programWeek(key: string, anchorDate = PROGRAM_RESTART_DATE): number {
+  if (key < anchorDate) return 0;
+  const elapsed = Math.floor((Date.parse(`${key}T12:00:00Z`) - Date.parse(`${anchorDate}T12:00:00Z`)) / DAY_MS);
   return Math.floor(elapsed / 7) + 1;
 }
 
-function programPrescription(key: string): WorkoutPrescription {
-  const week = programWeek(key);
+function programPrescription(key: string, anchorDate: string): WorkoutPrescription {
+  const week = programWeek(key, anchorDate);
   const prescription = structuredClone(WEEKLY_PROGRAM[weekdayIndex(key)]!);
   prescription.trainingBlock = `Week ${week} · sustainable strength + 5K`;
   if (week >= 11 && prescription.id === "easy-run") {
@@ -103,29 +102,12 @@ function programPrescription(key: string): WorkoutPrescription {
   return prescription;
 }
 
-function prepPrescription(key: string): WorkoutPrescription {
-  const sunday = weekdayIndex(key) === 6;
-  return {
-    id: sunday ? "prestart-rest" : "prestart-ramp",
-    name: sunday ? "Hard rest · restart eve" : "Prep / ramp-in activity",
-    domain: "recovery",
-    mode: "recovery",
-    intent: "easy",
-    durationMinutes: sunday ? 0 : 25,
-    notes: sunday
-      ? "Sunday remains hard rest. No catch-up work before the Week 1 restart."
-      : "Optional easy movement only. This does not advance training or create a missed-session penalty.",
-    trainingBlock: `Prep · Week 1 begins ${PROGRAM_RESTART_DATE}`,
-    lowerBodyLoad: "none",
-    exercises: [],
-  };
-}
-
 export function createInitialPersonalState(today = dateKey()): PersonalState {
+  void today;
   return {
     version: 3,
-    program: { anchorDate: PROGRAM_RESTART_DATE, anchorVersion: 1 },
-    schedule: Array.from({ length: 14 }, (_, offset) => plannedWorkout(shiftDate(today, offset))),
+    program: { status: "setup", anchorVersion: 1, legacyAnchorDate: PROGRAM_RESTART_DATE },
+    schedule: [],
     sessions: [],
     recoveryEntries: [],
     meals: [],
@@ -133,5 +115,19 @@ export function createInitialPersonalState(today = dateKey()): PersonalState {
     frequentMeals: [],
     progressionProposals: [],
     nutritionTargets: { calories: 2400, protein: 190, carbs: 240, fat: 80 },
+  };
+}
+
+export function activateTrainingProgram(state: PersonalState, anchorDate: string, activatedAt = new Date().toISOString()): PersonalState {
+  if (state.program.status !== "setup") throw new Error("performance-program-already-active");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(anchorDate) || weekdayIndex(anchorDate) !== 0) throw new Error("performance-program-start-must-be-monday");
+  const generated = Array.from({ length: PROGRAM_HORIZON_DAYS }, (_, offset) => plannedWorkout(shiftDate(anchorDate, offset), anchorDate));
+  const retainedIds = new Set(state.sessions.map((session) => session.scheduledWorkoutId));
+  const historical = state.schedule.filter((workout) => workout.date < anchorDate && (retainedIds.has(workout.id) || !["planned", "unresolved"].includes(workout.status)));
+  return {
+    ...state,
+    program: { status: "active", anchorVersion: 1, anchorDate, activatedAt, legacyAnchorDate: state.program.legacyAnchorDate || PROGRAM_RESTART_DATE },
+    schedule: [...historical, ...generated].sort((a, b) => a.date.localeCompare(b.date)),
+    progressionProposals: state.progressionProposals.filter((proposal) => proposal.status !== "pending" && proposal.status !== "edited"),
   };
 }

@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createInitialPersonalState } from "./program";
+import { activateTrainingProgram, createInitialPersonalState } from "./program";
 import { migrateLegacyPersonalState, parsePersonalState, rolloverUnresolved } from "./state";
 
 test("an untouched workout remains planned / unresolved after midnight", () => {
-  const state = createInitialPersonalState("2026-10-12");
+  const state = activateTrainingProgram(createInitialPersonalState("2026-10-12"), "2026-10-12", "2026-10-11T12:00:00Z");
   const rolled = rolloverUnresolved(state, "2026-10-13", "2026-10-13T04:01:00.000Z");
   const prior = rolled.schedule.find((workout) => workout.date === "2026-10-12");
   assert.equal(prior?.status, "unresolved");
@@ -32,5 +32,6 @@ test("existing v2 browser state migrates forward with an empty frequent-meal col
   delete prior.frequentMeals;
   const parsed = parsePersonalState(JSON.stringify(prior), "2026-10-05");
   assert.deepEqual(parsed.frequentMeals, []);
-  assert.equal(parsed.schedule.length, 14);
+  assert.equal(parsed.schedule.length, 0);
+  assert.equal(parsed.program.status, "setup");
 });

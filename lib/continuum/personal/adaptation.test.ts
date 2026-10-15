@@ -1,11 +1,15 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { applySterlingProposal, buildSterlingScheduleAdjustment, proposeSterlingAdjustment, retargetSterlingScheduleAdjustment } from "./adaptation";
-import { createInitialPersonalState, shiftDate } from "./program";
+import { activateTrainingProgram, createInitialPersonalState, shiftDate } from "./program";
+
+function activeState(today: string) {
+  return activateTrainingProgram(createInitialPersonalState(today), today, `${today}T04:00:00.000Z`);
+}
 
 test("four hours sleep / gassed / ruck today / weights tomorrow is proposed, confirmed, and reflowed", () => {
   const today = "2026-10-05";
-  const state = createInitialPersonalState(today);
+  const state = activeState(today);
   const original = state.schedule.find((workout) => workout.date === today)!;
   const proposal = proposeSterlingAdjustment(state, "I got about four hours of sleep and I’m gassed. Skip the weights today. I’m going to ruck. Move the weights to tomorrow.", today);
   assert.ok(proposal);
@@ -28,7 +32,7 @@ test("four hours sleep / gassed / ruck today / weights tomorrow is proposed, con
 });
 
 test("Sterling can propose a recovery-only entry without fabricating WHOOP values", () => {
-  const state = createInitialPersonalState("2026-10-05");
+  const state = activeState("2026-10-05");
   const proposal = proposeSterlingAdjustment(state, "I slept about four hours and feel wrecked. No pain.", "2026-10-05");
   assert.ok(proposal);
   assert.deepEqual(proposal?.recovery?.sleepHours, { value: 4, source: "manual" });
@@ -38,7 +42,7 @@ test("Sterling can propose a recovery-only entry without fabricating WHOOP value
 
 test("natural-language schedule intent becomes an editable proposal without mutating the program", () => {
   const today = "2026-10-12";
-  const state = createInitialPersonalState(today);
+  const state = activeState(today);
   const source = state.schedule.find((workout) => workout.date === "2026-10-15")!;
   const proposal = buildSterlingScheduleAdjustment({
     state,
@@ -66,7 +70,7 @@ test("natural-language schedule intent becomes an editable proposal without muta
 });
 
 test("moving Foundation A onto Foundation B explicitly discloses every displaced session", () => {
-  const state = createInitialPersonalState("2026-10-12");
+  const state = activeState("2026-10-12");
   const foundationA = state.schedule.find((workout) => workout.date === "2026-10-12")!;
   const foundationB = state.schedule.find((workout) => workout.date === "2026-10-13")!;
   const proposal = buildSterlingScheduleAdjustment({

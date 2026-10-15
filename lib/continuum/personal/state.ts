@@ -18,12 +18,15 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
   try {
     const value: unknown = JSON.parse(raw);
     if (!isRecord(value) || (value.version !== 2 && value.version !== 3)) return fallback;
-    const hasRestartAnchor = value.version === 3 && isRecord(value.program) && value.program.anchorDate === PROGRAM_RESTART_DATE;
     const schedule = Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120) : [];
-    return ensureSchedule({
+    const rawProgram = value.version === 3 && isRecord(value.program) ? value.program : null;
+    const active = rawProgram?.status === "active" && typeof rawProgram.anchorDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawProgram.anchorDate) && typeof rawProgram.activatedAt === "string";
+    const next: PersonalState = {
       version: 3,
-      program: { anchorDate: PROGRAM_RESTART_DATE, anchorVersion: 1 },
-      schedule: hasRestartAnchor ? schedule : resetProgramFromAnchor(schedule),
+      program: active
+        ? { status: "active", anchorDate: rawProgram.anchorDate as string, activatedAt: rawProgram.activatedAt as string, anchorVersion: 1, legacyAnchorDate: PROGRAM_RESTART_DATE }
+        : { status: "setup", anchorVersion: 1, legacyAnchorDate: PROGRAM_RESTART_DATE },
+      schedule: active ? schedule : preserveHistoricalSchedule(schedule, value.sessions),
       sessions: Array.isArray(value.sessions) ? value.sessions as PersonalState["sessions"] : [],
       recoveryEntries: Array.isArray(value.recoveryEntries) ? value.recoveryEntries as PersonalState["recoveryEntries"] : [],
       meals: Array.isArray(value.meals) ? value.meals as PersonalState["meals"] : [],
@@ -38,14 +41,16 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
             fat: Number(value.nutritionTargets.fat) || fallback.nutritionTargets.fat,
           }
         : fallback.nutritionTargets,
-    }, today);
+    };
+    return ensureSchedule(next, today);
   } catch {
     return fallback;
   }
 }
 
-function resetProgramFromAnchor(schedule: ScheduledWorkout[]): ScheduledWorkout[] {
-  return schedule.filter((workout) => workout.originalDate < PROGRAM_RESTART_DATE);
+function preserveHistoricalSchedule(schedule: ScheduledWorkout[], rawSessions: unknown): ScheduledWorkout[] {
+  const sessionWorkoutIds = new Set(Array.isArray(rawSessions) ? rawSessions.flatMap((session) => isRecord(session) && typeof session.scheduledWorkoutId === "string" ? [session.scheduledWorkoutId] : []) : []);
+  return schedule.filter((workout) => sessionWorkoutIds.has(workout.id) || !["planned", "unresolved"].includes(workout.status));
 }
 
 export function migrateLegacyPersonalState(raw: string | null, today: string): PersonalState | null {
@@ -127,18 +132,20 @@ export function migrateLegacyPersonalState(raw: string | null, today: string): P
 }
 
 export function ensureSchedule(state: PersonalState, today: string): PersonalState {
+  if (state.program.status !== "active" || !state.program.anchorDate) return { ...state, schedule: preserveHistoricalSchedule(state.schedule, state.sessions) };
   const schedule = [...state.schedule];
   for (let offset = 0; offset < 14; offset += 1) {
     const key = shiftDate(today, offset);
-    if (!schedule.some((workout) => workout.originalDate === key)) schedule.push(plannedWorkout(key));
+    if (key >= state.program.anchorDate && !schedule.some((workout) => workout.originalDate === key)) schedule.push(plannedWorkout(key, state.program.anchorDate));
   }
   return rolloverUnresolved({ ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) }, today);
 }
 
 export function rolloverUnresolved(state: PersonalState, today: string, now = new Date().toISOString()): PersonalState {
+  if (state.program.status !== "active" || !state.program.anchorDate) return state;
   return {
     ...state,
-    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned" && workout.originalDate >= PROGRAM_RESTART_DATE
+    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned" && workout.originalDate >= state.program.anchorDate!
       ? {
           ...workout,
           status: "unresolved" as const,

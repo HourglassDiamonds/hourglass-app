@@ -275,7 +275,13 @@ export type SterlingProposal = {
 
 export type PersonalState = {
   version: 3;
-  program: { anchorDate: string; anchorVersion: 1 };
+  program: {
+    status: "setup" | "active";
+    anchorVersion: 1;
+    anchorDate?: string;
+    activatedAt?: string;
+    legacyAnchorDate: string;
+  };
   schedule: ScheduledWorkout[];
   sessions: WorkoutSession[];
   recoveryEntries: RecoveryEntry[];

@@ -46,3 +46,14 @@ test("route navigation and legacy browser data migration remain available", () =
   assert.match(source, /migrateLegacyPersonalState/);
   assert.match(css, /\.tabs a\[aria-current=page\]/);
 });
+
+test("program stays in setup until a reviewed Monday activation is explicitly persisted", () => {
+  assert.match(source, /program not started/);
+  assert.match(source, /Review Week 1/);
+  assert.match(source, /Proposed — the program is still not started/);
+  assert.match(source, /Confirm and activate/);
+  assert.match(source, /action:\s*"activate_program"/);
+  assert.match(source, /week11ObjectiveDate/);
+  assert.match(source, /lastPersistedState/);
+  assert.match(source, /serialized === lastPersistedState\.current/);
+});

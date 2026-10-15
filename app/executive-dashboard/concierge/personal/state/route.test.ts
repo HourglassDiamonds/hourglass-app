@@ -9,6 +9,7 @@ const route = readFileSync(join(directory, "route.ts"), "utf8");
 const migration = readFileSync(join(directory, "../../../../../supabase/migrations/20261008161606_continuum_performance_natural_ingestion.sql"), "utf8");
 const auditMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261008162017_continuum_performance_audit_immutability.sql"), "utf8");
 const adjustmentMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261013162343_performance_accept_adjustment_action.sql"), "utf8");
+const activationMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261015215857_performance_program_activation_action.sql"), "utf8");
 
 test("state reads and writes require the founder session and never return a public source URL", () => {
   assert.match(route, /requireInternalClientMemorySession/); assert.match(route, /status:\s*401/g);
@@ -38,4 +39,8 @@ test("migration keeps state and source objects private with explicit service-rol
   assert.match(adjustmentMigration, /continuum_performance_audit_action_check/);
   assert.match(adjustmentMigration, /'accept_adjustment'/);
   assert.doesNotMatch(adjustmentMigration, /grant|create policy|continuum_performance_state|continuum_performance_evidence/i);
+  assert.match(activationMigration, /continuum_performance_audit_action_check/);
+  assert.match(activationMigration, /'accept_adjustment'/);
+  assert.match(activationMigration, /'activate_program'/);
+  assert.doesNotMatch(activationMigration, /grant|create policy|continuum_performance_state|continuum_performance_evidence/i);
 });

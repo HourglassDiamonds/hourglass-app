@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { deletePerformanceSourceWithClient, loadPerformanceStateWithClient, PerformanceRevisionConflict, savePerformanceStateWithClient } from "./persistence-core";
-import { createInitialPersonalState } from "./program";
+import { activateTrainingProgram, createInitialPersonalState } from "./program";
 import { createHash } from "node:crypto";
 import type { NaturalIngestionProposal } from "./types";
 
@@ -58,7 +58,7 @@ test("state survives a reload, scopes rows by founder, and deduplicates a retry"
   assert.equal(retry.duplicate, true); assert.equal(retry.revision, 1);
   assert.equal(db.audits.size, 1); assert.equal(db.evidence.size, 1); assert.equal(db.uploads.size, 1);
   const reloaded = await loadPerformanceStateWithClient("founder-a", "2026-10-12", db.client);
-  assert.equal(reloaded?.state.program.anchorDate, "2026-10-12");
+  assert.equal(reloaded?.state.program.status, "setup");
   assert.equal(await loadPerformanceStateWithClient("founder-b", "2026-10-12", db.client), null);
 });
 
@@ -111,6 +111,18 @@ test("an accepted adjustment uses the durable audit action and database constrai
       && error.message === "performance-mutation-action-unavailable"
       && !error.message.includes("private row details"),
   );
+});
+
+test("founder-confirmed activation is an idempotent durable mutation", async () => {
+  const db = fakeSupabase();
+  const state = activateTrainingProgram(createInitialPersonalState("2026-10-15"), "2026-10-19", "2026-10-15T12:00:00Z");
+  const mutation = { idempotencyKey: "activate-program-2026-10-19", action: "activate_program" as const, accepted: { startDate: "2026-10-19" } };
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation }, db.client);
+  const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation }, db.client);
+  assert.equal(first.revision, 1);
+  assert.equal(retry.duplicate, true);
+  assert.equal(db.audits.size, 1);
+  assert.equal(first.state.program.anchorDate, "2026-10-19");
 });
 
 test("source uploads require an accepted entry and supported private image", async () => {

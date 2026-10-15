@@ -67,7 +67,10 @@ export function validateAcceptedProposal(proposal: NaturalIngestionProposal, acc
 
 export function validatePersonalState(state: PersonalState): string[] {
   const errors: string[] = [];
-  if (state.version !== 3 || state.program.anchorDate !== "2026-10-12") errors.push("state-version");
+  if (state.version !== 3 || !["setup", "active"].includes(state.program.status) || state.program.anchorVersion !== 1 || state.program.legacyAnchorDate !== "2026-10-12") errors.push("state-version");
+  if (state.program.status === "setup" && (state.program.anchorDate || state.program.activatedAt)) errors.push("program-setup-state");
+  if (state.program.status === "setup" && state.schedule.some((workout) => ["planned", "unresolved"].includes(workout.status))) errors.push("program-setup-schedule");
+  if (state.program.status === "active" && (!state.program.anchorDate || !DATE_KEY.test(state.program.anchorDate) || new Date(`${state.program.anchorDate}T12:00:00Z`).getUTCDay() !== 1 || !state.program.activatedAt)) errors.push("program-active-state");
   if (state.meals.length > 5_000 || state.activities.length > 5_000) errors.push("state-size");
   errors.push(...state.meals.flatMap(validateMealLog), ...state.activities.flatMap(validateActivityLog));
   if (!finite(state.nutritionTargets.calories, 500, 10_000) || !finite(state.nutritionTargets.protein, 0, 500)) errors.push("nutrition-targets");
