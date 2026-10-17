@@ -26,3 +26,9 @@ test("screenshot provenance uses a byte digest for server-enforced dedupe withou
   assert.match(persistence, /accept-activity-\$\{actualDigest\}/);
   assert.match(persistence, /upsert:\s*false/);
 });
+
+test("activity acceptance reports initial success and byte-identical duplicates", () => {
+  assert.match(app, /duplicate\?: boolean/);
+  assert.match(app, /saved\.duplicate \? "Activity already logged" : "Activity logged successfully"/);
+  assert.match(app, /aria-live="polite" className=\{styles\.warning\}/);
+});

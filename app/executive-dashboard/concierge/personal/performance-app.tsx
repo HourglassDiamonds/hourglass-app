@@ -62,6 +62,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [pastActivityOpen, setPastActivityOpen] = useState(false);
   const [pastActivityDate, setPastActivityDate] = useState(() => shiftDate(localToday(), -1));
   const [activityDefaultDate, setActivityDefaultDate] = useState(() => shiftDate(localToday(), -1));
+  const [activityFeedback, setActivityFeedback] = useState("");
   const [persistStatus, setPersistStatus] = useState<"loading" | "saved" | "saving" | "browser" | "conflict" | "error">("loading");
   const persistInFlight = useRef(false);
   const revisionRef = useRef(0);
@@ -112,7 +113,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     ? activateTrainingProgram(state, programStartDate, "1970-01-01T00:00:00.000Z").schedule.filter((workout) => workout.date >= programStartDate && workout.date <= shiftDate(programStartDate, 6))
     : [];
 
-  async function persistStateMutation(next: PersonalState, mutation: Record<string, unknown>, source?: File): Promise<PersonalState> {
+  async function persistStateMutation(next: PersonalState, mutation: Record<string, unknown>, source?: File): Promise<{ state: PersonalState; duplicate: boolean }> {
     setPersistStatus("saving"); persistInFlight.current = true;
     const init: RequestInit = { method: source ? "POST" : "PUT" };
     if (source) {
@@ -122,7 +123,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     }
     try {
       const response = await fetch("/executive-dashboard/concierge/personal/state", init);
-      const payload = await response.json() as { ok: boolean; state?: PersonalState; revision?: number; error?: string };
+      const payload = await response.json() as { ok: boolean; state?: PersonalState; revision?: number; duplicate?: boolean; error?: string };
       if (response.status === 409) {
         if (payload.state) setState(parsePersonalState(JSON.stringify(payload.state), today));
         const conflictRevision = payload.revision ?? 0;
@@ -131,7 +132,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       if (!response.ok || !payload.ok || !payload.state) { setPersistStatus(response.status === 503 ? "browser" : "error"); throw new Error(payload.error ?? "performance-save-failed"); }
       const saved = parsePersonalState(JSON.stringify(payload.state), today);
       const savedRevision = payload.revision ?? revisionRef.current + 1;
-      revisionRef.current = savedRevision; lastPersistedState.current = JSON.stringify(saved); setPersistStatus("saved"); return saved;
+      revisionRef.current = savedRevision; lastPersistedState.current = JSON.stringify(saved); setPersistStatus("saved"); return { state: saved, duplicate: Boolean(payload.duplicate) };
     } finally { persistInFlight.current = false; }
   }
 
@@ -165,7 +166,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         action: "activate_program",
         accepted: { startDate: programStartDate, week11ObjectiveDate: shiftDate(programStartDate, 10 * 7 + 4) },
       });
-      setState(saved); setActivationReview(false);
+      setState(saved.state); setActivationReview(false);
     } catch (error) {
       const message = error instanceof Error ? error.message : "performance-save-failed";
       setActivationError(message === "performance-revision-conflict"
@@ -289,7 +290,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         proposal: sterlingProposal,
         accepted: { affectedWorkoutIds: sterlingProposal.affectedWorkoutIds, targetDate: sterlingProposal.targetDate },
       });
-      setState(saved); setSterlingProposal(null); setSterlingText("");
+      setState(saved.state); setSterlingProposal(null); setSterlingText("");
     } catch (error) {
       const message = error instanceof Error ? error.message : "performance-save-failed";
       setSterlingError(message === "performance-revision-conflict"
@@ -352,7 +353,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   function chooseNutritionLabel(event: ChangeEvent<HTMLInputElement>) { const file = event.target.files?.[0]; event.target.value = ""; if (file) void analyzeIntake({ text: intakeText, file, sourceType: "nutrition_label" }); }
   function chooseActivityScreenshot(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = "";
-    if (file) { setActivityDefaultDate(pastActivityDate); void analyzeIntake({ file, sourceType: "activity_screenshot" }); }
+    if (file) { setActivityFeedback(""); setActivityDefaultDate(pastActivityDate); void analyzeIntake({ file, sourceType: "activity_screenshot" }); }
   }
 
   function updateMealItem(id: string, patch: Partial<MealItem>) { setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.map((item) => item.id === id ? { ...item, ...patch } : item) } : null); }
@@ -363,7 +364,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     const next = acceptProposal(state, intakeProposal, meal);
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_meal", entryId: meal.id, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: meal, corrections: meal.corrections }, intakeFile ?? undefined);
-      setState(saved); setMealEstimate(null); setMealPhoto(null); setIntakeProposal(null); setIntakeFile(null); setIntakeText("");
+      setState(saved.state); setMealEstimate(null); setMealPhoto(null); setIntakeProposal(null); setIntakeFile(null); setIntakeText("");
     } catch { setMealError("The reviewed meal was not saved. Nothing was added; retry when private persistence is available."); }
   }
 
@@ -376,7 +377,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     const next = acceptProposal(state, intakeProposal, activity);
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_activity", entryId: activity.id, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: activity, corrections: activity.corrections }, intakeFile ?? undefined);
-      setState(saved); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false);
+      setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false);
+      setActivityFeedback(saved.duplicate ? "Activity already logged" : "Activity logged successfully");
     } catch { setMealError("The reviewed activity was not saved. Nothing was added; retry when private persistence is available."); }
   }
 
@@ -480,6 +482,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   return <main className={styles.app} data-personal-performance>
     <header className={styles.header}><div><p className={styles.eyebrow}>Personal / Performance</p><h1>Tell Sterling what happened. Keep the plan alive.</h1><p>Daily training, recovery, and nutrition with explicit decisions and durable context.</p></div><span className={styles.private}>Private · {state.program.status === "setup" ? "program not started" : `active since ${state.program.anchorDate}`} · {persistStatus === "saved" ? "saved" : persistStatus === "saving" ? "saving…" : persistStatus === "browser" ? "browser fallback" : persistStatus === "conflict" ? "refreshed after conflict" : persistStatus}</span></header>
+    {activityFeedback ? <p aria-live="polite" className={styles.warning}>{activityFeedback}</p> : null}
     <nav className={styles.tabs} aria-label="Performance sections">{tabs.map((tab) => <Link key={tab.id} href={tab.href} aria-current={view === tab.id ? "page" : undefined}>{tab.label}</Link>)}</nav>
 
     {state.program.status === "setup" ? <section className={`${styles.card} ${styles.hero}`} data-program-status="setup"><p className={styles.kicker}>Training program · not started / setup</p><h2>Choose when Week 1 actually begins.</h2><p>No workout is missed, no progression advances, and no catch-up session is created while setup is active. Nutrition and completed activity logging remain available for testing.</p><div className={styles.formGrid}><label>Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div><div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review Week 1</button></div>{activationError ? <p role="alert" className={styles.warning}>{activationError}</p> : null}{activationReview ? <div className={styles.proposal}><strong>Proposed — the program is still not started</strong><p>Week 1 begins {prettyDate(programStartDate)}. The Week 11 continuous 5K objective falls on {prettyDate(shiftDate(programStartDate, 10 * 7 + 4))}. Existing accepted meals, activities, recovery, and historical sessions stay unchanged.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min · {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy}>{activationBusy ? "Activating…" : "Confirm and activate"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}</section> : null}
