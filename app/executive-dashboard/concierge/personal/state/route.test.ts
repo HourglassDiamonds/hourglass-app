@@ -11,6 +11,7 @@ const auditMigration = readFileSync(join(directory, "../../../../../supabase/mig
 const adjustmentMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261013162343_performance_accept_adjustment_action.sql"), "utf8");
 const activationMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261015215857_performance_program_activation_action.sql"), "utf8");
 const tonalMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261017203000_performance_tonal_program_actions.sql"), "utf8");
+const tonalPlanMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261017232419_performance_tonal_session_plan_action.sql"), "utf8");
 
 test("state reads and writes require the founder session and never return a public source URL", () => {
   assert.match(route, /requireInternalClientMemorySession/); assert.match(route, /status:\s*401/g);
@@ -49,4 +50,7 @@ test("migration keeps state and source objects private with explicit service-rol
   assert.match(tonalMigration, /'accept_adjustment'/);
   assert.match(tonalMigration, /'activate_program'/);
   assert.doesNotMatch(tonalMigration, /grant|create policy|continuum_performance_state|continuum_performance_evidence|create table/i);
+  assert.match(tonalPlanMigration, /'plan_strength_session'/);
+  assert.match(tonalPlanMigration, /'configure_strength_program'/);
+  assert.doesNotMatch(tonalPlanMigration, /grant|create policy|continuum_performance_state|continuum_performance_evidence|create table/i);
 });

@@ -1,4 +1,4 @@
-import { createInitialTonalPlan, requiredTonalSessionCount, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG, TONAL_PROGRESSION, verifiedTonalSessions } from "./tonal-programs";
+import { createInitialTonalPlan, createTonalSessionSlots, requiredTonalSessionCount, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG, TONAL_PROGRESSION } from "./tonal-programs";
 import type { PersonalState, ScheduledWorkout, TonalProgramId, TonalProgramPlan, TonalProgramSource, TonalProgramTransition, WorkoutPrescription } from "./types";
 
 const DAY_MS = 86_400_000;
@@ -44,23 +44,24 @@ function programPrescription(key: string, anchorDate: string, tonal: TonalProgra
   const day = weekdayIndex(key);
   const block = TONAL_PROGRAM_CATALOG[tonal.selectedProgramId];
   const base: Pick<WorkoutPrescription, "trainingBlock" | "exercises"> = { trainingBlock: `Week ${week} · ${block.title} + 5K development`, exercises: [] };
-  const strengthDays = block.weeklyFrequency === 2 ? [0, 3] : [0, 1, 3, 4];
+  const weeklyFrequency = tonal.enrollment.weeklyFrequency;
+  const strengthDays = weeklyFrequency === 2 ? [0, 3] : weeklyFrequency === 3 ? [0, 2, 4] : [0, 1, 3, 4];
   const strengthDayIndex = strengthDays.indexOf(day);
   if (strengthDayIndex >= 0) {
-    const order = (week - 1) * block.weeklyFrequency + strengthDayIndex + 1;
+    const order = (week - 1) * weeklyFrequency + strengthDayIndex + 1;
     const session = tonal.enrollment.sessions.find((candidate) => candidate.order === order);
     return {
       ...base,
       id: `tonal-${block.id}-${order}`,
       name: session?.title ? `${block.title} · ${session.title}` : `${block.title} · Session ${order} — title confirmation required`,
       domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: block.sessionMinutes[1],
-      notes: session?.title ? `Follow Tonal's verified session exactly with ${block.trainer}.` : "Do not activate or perform this slot from Continuum until its exact Tonal title is confirmed from the app or machine.",
+      notes: session?.title ? `Follow the founder-approved Tonal screenshot for this session with ${block.trainer}.` : "Upload the upcoming Tonal workout screenshot and approve the visible details before performing this slot.",
       lowerBodyLoad: "moderate", tonalProgramId: block.id, tonalSessionOrder: order,
     };
   }
-  if (block.weeklyFrequency === 2 && day === 1) return { ...base, id: "run-progression-a", name: "5K development · easy run/walk", domain: "engine", mode: "run", intent: "easy", durationMinutes: Math.min(36, 28 + (week - 1) * 2), notes: "Conversational effort. Preserve fresh legs after Monday strength; no hard intervals.", lowerBodyLoad: "moderate" };
-  if (day === 2) return { ...base, id: "restore", name: "Recovery · walk + mobility", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 25, notes: "Easy movement only. Recovery protects the next Tonal session.", lowerBodyLoad: "none" };
-  if (block.weeklyFrequency === 2 && day === 4) return { ...base, id: "optional-conditioning", name: "Optional light conditioning / ruck", domain: "engine", mode: "ruck", intent: "easy", durationMinutes: 30, notes: "Optional only. Skip when Thursday strength or recovery signals warrant it; never convert this into a third heavy workout.", lowerBodyLoad: "low" };
+  if (day === 1) return { ...base, id: "run-progression-a", name: "5K development · easy run/walk", domain: "engine", mode: "run", intent: "easy", durationMinutes: Math.min(36, 28 + (week - 1) * 2), notes: "Conversational effort; no hard intervals.", lowerBodyLoad: "moderate" };
+  if ((weeklyFrequency !== 3 && day === 2) || (weeklyFrequency === 3 && day === 3)) return { ...base, id: "restore", name: "Recovery · walk + mobility", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 25, notes: "Easy movement only. Recovery protects the next Tonal session.", lowerBodyLoad: "none" };
+  if (weeklyFrequency === 2 && day === 4) return { ...base, id: "optional-conditioning", name: "Optional light conditioning / ruck", domain: "engine", mode: "ruck", intent: "easy", durationMinutes: 30, notes: "Optional only. Skip when Thursday strength or recovery signals warrant it; never convert this into a third heavy workout.", lowerBodyLoad: "low" };
   if (day === 5) return { ...base, id: "run-progression-b", name: "5K development · aerobic run/walk", domain: "engine", mode: "run", intent: "moderate", durationMinutes: Math.min(42, 34 + (week - 1) * 2), notes: "Controlled aerobic progression. Finish with energy in reserve.", lowerBodyLoad: "moderate" };
   return { ...base, id: "hard-rest", name: "Hard rest", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 0, notes: "No catch-up workout. Begin Monday recovered.", lowerBodyLoad: "none" };
 }
@@ -96,7 +97,7 @@ export function activateTrainingProgram(state: PersonalState, anchorDate: string
     ...session,
     scheduledWorkoutId: generated.find((workout) => workout.prescription.tonalSessionOrder === session.order)?.id,
   }));
-  if (sessions.length !== requiredTonalSessionCount(block.id) || sessions.some((session) => !session.scheduledWorkoutId)) throw new Error("tonal-session-schedule-invalid");
+  if (sessions.length !== requiredTonalSessionCount(block.id, state.tonal.enrollment.weeklyFrequency) || sessions.some((session) => !session.scheduledWorkoutId)) throw new Error("tonal-session-schedule-invalid");
   const retainedIds = new Set(state.sessions.map((session) => session.scheduledWorkoutId));
   const historical = state.schedule.filter((workout) => workout.date < anchorDate && (retainedIds.has(workout.id) || !["planned", "unresolved"].includes(workout.status)));
   return {
@@ -111,7 +112,7 @@ export function activateTrainingProgram(state: PersonalState, anchorDate: string
 export function transitionTrainingProgram(state: PersonalState, input: {
   nextProgramId: TonalProgramId;
   startDate: string;
-  sessionTitles: readonly string[];
+  weeklyFrequency: 4;
   source: TonalProgramSource;
   readiness: TonalProgramTransition["readiness"];
   reviewedAt: string;
@@ -123,11 +124,11 @@ export function transitionTrainingProgram(state: PersonalState, input: {
   if (TONAL_PROGRESSION[currentIndex + 1] !== input.nextProgramId) throw new Error("tonal-transition-order-invalid");
   if (!input.approvedAt || !input.reviewedAt) throw new Error("tonal-transition-founder-approval-required");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate) || weekdayIndex(input.startDate) !== 0) throw new Error("performance-program-start-must-be-monday");
-  const sessions = verifiedTonalSessions(input.nextProgramId, input.sessionTitles);
+  const sessions = createTonalSessionSlots(input.nextProgramId, input.weeklyFrequency);
   const nextTonal: TonalProgramPlan = {
     ...state.tonal,
     selectedProgramId: input.nextProgramId,
-    enrollment: { programId: input.nextProgramId, status: "active", sessions, sources: [input.source], founderVerifiedAt: input.approvedAt, startedOn: input.startDate },
+    enrollment: { programId: input.nextProgramId, weeklyFrequency: input.weeklyFrequency, status: "active", sessions, sources: [input.source], founderVerifiedAt: input.approvedAt, startedOn: input.startDate },
     completedEnrollments: [...state.tonal.completedEnrollments, current],
     transitions: [...state.tonal.transitions, { from: current.programId, to: input.nextProgramId, reviewedAt: input.reviewedAt, approvedAt: input.approvedAt, readiness: input.readiness }],
   };

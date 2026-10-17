@@ -5,7 +5,7 @@ import { activateTrainingProgram, createInitialPersonalState, shiftDate } from "
 import { configureTonalProgram } from "./tonal-programs";
 
 function activeState(today: string) {
-  const setup = configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", sessionTitles: Array.from({ length: 8 }, (_, index) => `Verified ${index + 1}`), source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T03:00:00.000Z` }, founderVerifiedAt: `${today}T03:00:00.000Z` });
+  const setup = configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 2, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T03:00:00.000Z` }, founderVerifiedAt: `${today}T03:00:00.000Z` });
   return activateTrainingProgram(setup, today, `${today}T04:00:00.000Z`);
 }
 

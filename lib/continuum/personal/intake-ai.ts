@@ -4,18 +4,20 @@ import { createHash, randomUUID } from "node:crypto";
 import { getConciergeOpenAiApiKey } from "@/lib/continuum/concierge-sol/env";
 import { CONCIERGE_SOL_RESPONSES_ENDPOINT, conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import { activityNutritionGuidance } from "./guidance";
-import type { ActivityFacts, ActivityMetric, EvidenceKind, MealItem, NaturalIngestionProposal, PerformanceSourceType, PersonalState, ProposalConfidence } from "./types";
+import type { ActivityFacts, ActivityMetric, EvidenceKind, MealItem, NaturalIngestionProposal, PerformanceSourceType, PersonalState, ProposalConfidence, TonalProgramMovement } from "./types";
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ACTIVITY_FIELDS = ["workoutTitle", "trainer", "tonalProgramTitle", "tonalSessionOrder", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "totalVolumeLb", "maxResistanceLb", "completedSets", "completedReps"] as const;
 const activityObjectSchema = {
   type: "object", additionalProperties: false,
-  required: ["activityType", "workoutTitle", "trainer", "tonalProgramTitle", "tonalSessionOrder", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "totalVolumeLb", "maxResistanceLb", "completedSets", "completedReps", "notes", "observedFields"],
+  required: ["activityType", "workoutTitle", "trainer", "tonalProgramTitle", "tonalSessionOrder", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "totalVolumeLb", "maxResistanceLb", "completedSets", "completedReps", "tonalMovements", "notes", "observedFields"],
   properties: {
     activityType: { type: "string" }, workoutTitle: nullableString(), trainer: nullableString(), tonalProgramTitle: nullableString(), tonalSessionOrder: nullableNumber(), durationMinutes: nullableNumber(), distanceMiles: nullableNumber(), pace: nullableString(), averageSpeedMph: nullableNumber(),
     averageHeartRate: nullableNumber(), maxHeartRate: nullableNumber(), elevationFeet: nullableNumber(), reportedCalories: nullableNumber(), whoopStrain: nullableNumber(),
-    steps: nullableNumber(), ruckWeightLb: nullableNumber(), totalVolumeLb: nullableNumber(), maxResistanceLb: nullableNumber(), completedSets: nullableNumber(), completedReps: nullableNumber(), notes: nullableString(), observedFields: { type: "array", items: { type: "string", enum: [...ACTIVITY_FIELDS] } },
+    steps: nullableNumber(), ruckWeightLb: nullableNumber(), totalVolumeLb: nullableNumber(), maxResistanceLb: nullableNumber(), completedSets: nullableNumber(), completedReps: nullableNumber(),
+    tonalMovements: { type: "array", maxItems: 40, items: { type: "object", additionalProperties: false, required: ["name", "sets", "reps", "prescribedResistance", "details"], properties: { name: { type: "string" }, sets: nullableNumber(), reps: nullableString(), prescribedResistance: nullableString(), details: nullableString() } } },
+    notes: nullableString(), observedFields: { type: "array", items: { type: "string", enum: [...ACTIVITY_FIELDS] } },
   },
 } as const;
 
@@ -62,7 +64,7 @@ function round(value: unknown): number { return Math.max(0, Math.round(typeof va
 function metric<T extends number | string>(value: T | null, evidence: EvidenceKind): ActivityMetric<T> | undefined { return value === null || value === "" ? undefined : { value, evidence }; }
 
 export async function interpretPerformanceIntake(input: {
-  text?: string; file?: File; sourceType: PerformanceSourceType; knownMeals?: string[]; nutritionTargets: PersonalState["nutritionTargets"];
+  text?: string; file?: File; sourceType: PerformanceSourceType; knownMeals?: string[]; nutritionTargets: PersonalState["nutritionTargets"]; intent?: "completed_activity" | "upcoming_tonal_session";
 }): Promise<NaturalIngestionProposal> {
   const text = input.text?.trim().slice(0, 2_000) ?? "";
   if (!text && !input.file) throw new Error("intake-required");
@@ -72,11 +74,12 @@ export async function interpretPerformanceIntake(input: {
   const model = conciergeForegroundModel(process.env.CONTINUUM_CONCIERGE_MODEL);
   const context = (input.knownMeals ?? []).slice(0, 12).join("; ");
   const instructions = [
-    "Interpret this single Performance intake as either a meal/nutrition record or a completed activity.",
+    input.intent === "upcoming_tonal_session" ? "Interpret this image as an upcoming, not-yet-completed Tonal workout plan. Return kind activity solely as the structured review carrier; do not claim completion." : "Interpret this single Performance intake as either a meal/nutrition record or a completed activity.",
     "Use only visible or user-supplied facts. Never invent a missing metric or false precision.",
     "For nutrition labels, use visible label values and serving math. For meals, estimate practical portions/macros and state assumptions.",
     "For activity screenshots, extract visible duration, distance, pace/speed, heart rate, elevation, reported calories, WHOOP strain, steps, ruck weight, total volume, maximum resistance, completed sets, and completed reps. Null absent values.",
     "For a Tonal completion screenshot, extract the exact visible workout title, trainer, program title, and program session order only when displayed. Never infer them from exercise content or filename.",
+    "For a Tonal screenshot, list each visible movement in tonalMovements with only its displayed sets, reps, prescribed resistance, and other details. Use null for every missing detail; never reconstruct a workout from memory.",
     "For an activity screenshot, extract a visible calendar date into activityDate. Preserve visible month and day; include year only when the image explicitly shows it. Use null when no date is visible or the date is ambiguous.",
     "Each distinct completed activity row must remain separate: put the first in activity and any others in additionalActivities. Never combine Golf, Soccer, Walking, or another row into one daily-summary activity.",
     "Daily WHOOP metrics belong only in dailySummary. Never assign overall daily strain to an individual activity. Sleep is not an activity.",
@@ -118,6 +121,12 @@ export async function interpretPerformanceIntake(input: {
     const observed = new Set(Array.isArray(row.observedFields) ? row.observedFields.filter((value): value is string => typeof value === "string") : []);
     const evidenceFor = (field: string): EvidenceKind => input.file && observed.has(field) ? "observed" : text ? "user_supplied" : "estimated";
     const numeric = (field: string) => typeof row[field] === "number" && Number.isFinite(row[field]) ? metric(Math.max(0, row[field] as number), evidenceFor(field)) : undefined;
+    const tonalMovements: TonalProgramMovement[] = Array.isArray(row.tonalMovements) ? row.tonalMovements.flatMap((candidate) => {
+      if (!candidate || typeof candidate !== "object") return [];
+      const movement = candidate as Record<string, unknown>; const name = typeof movement.name === "string" ? movement.name.trim().slice(0, 120) : "";
+      if (!name) return [];
+      return [{ name, sets: typeof movement.sets === "number" && movement.sets > 0 ? Math.floor(movement.sets) : undefined, reps: typeof movement.reps === "string" ? movement.reps.trim().slice(0, 80) || undefined : undefined, prescribedResistance: typeof movement.prescribedResistance === "string" ? movement.prescribedResistance.trim().slice(0, 80) || undefined : undefined, details: typeof movement.details === "string" ? movement.details.trim().slice(0, 240) || undefined : undefined }];
+    }).slice(0, 40) : [];
     return {
       activityType,
       workoutTitle: typeof row.workoutTitle === "string" ? row.workoutTitle.trim().slice(0, 160) || undefined : undefined,
@@ -128,6 +137,7 @@ export async function interpretPerformanceIntake(input: {
       averageSpeedMph: numeric("averageSpeedMph"), averageHeartRate: numeric("averageHeartRate"), maxHeartRate: numeric("maxHeartRate"), elevationFeet: numeric("elevationFeet"),
       reportedCalories: numeric("reportedCalories"), whoopStrain: numeric("whoopStrain"), steps: numeric("steps"), ruckWeightLb: numeric("ruckWeightLb"),
       totalVolumeLb: numeric("totalVolumeLb"), maxResistanceLb: numeric("maxResistanceLb"), completedSets: numeric("completedSets"), completedReps: numeric("completedReps"),
+      tonalMovements,
       notes: typeof row.notes === "string" ? row.notes.slice(0, 500) : undefined,
     };
   };

@@ -21,7 +21,9 @@ export async function POST(request: Request) {
     const knownMealsParsed: unknown = JSON.parse(String(form.get("knownMeals") ?? "[]"));
     const targetsParsed = JSON.parse(String(form.get("nutritionTargets") ?? "{}")) as Partial<PersonalState["nutritionTargets"]>;
     const nutritionTargets = { calories: Number(targetsParsed.calories) || 2400, protein: Number(targetsParsed.protein) || 190, carbs: Number(targetsParsed.carbs) || 240, fat: Number(targetsParsed.fat) || 80 };
-    const proposal = await interpretPerformanceIntake({ text, file, sourceType: sourceTypeValue as PerformanceSourceType, knownMeals: Array.isArray(knownMealsParsed) ? knownMealsParsed.filter((value): value is string => typeof value === "string").slice(0, 12) : [], nutritionTargets });
+    const intentValue = String(form.get("intent") ?? "completed_activity");
+    if (!new Set(["completed_activity", "upcoming_tonal_session"]).has(intentValue)) return NextResponse.json({ ok: false, error: "invalid-intent" }, { status: 400 });
+    const proposal = await interpretPerformanceIntake({ text, file, sourceType: sourceTypeValue as PerformanceSourceType, knownMeals: Array.isArray(knownMealsParsed) ? knownMealsParsed.filter((value): value is string => typeof value === "string").slice(0, 12) : [], nutritionTargets, intent: intentValue as "completed_activity" | "upcoming_tonal_session" });
     return NextResponse.json({ ok: true, proposal });
   } catch (error) {
     const message = error instanceof Error ? error.message : "performance-analysis-failed";

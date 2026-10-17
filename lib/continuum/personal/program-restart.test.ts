@@ -4,10 +4,9 @@ import { activateTrainingProgram, createInitialPersonalState, plannedWorkout, pr
 import { parsePersonalState, rolloverUnresolved } from "./state";
 import { configureTonalProgram } from "./tonal-programs";
 
-const TITLES = Array.from({ length: 8 }, (_, index) => `Verified Tonal Workout ${index + 1}`);
 function configuredState() {
   return configureTonalProgram({
-    state: createInitialPersonalState("2026-10-15"), programId: "fit-over-40", sessionTitles: TITLES,
+    state: createInitialPersonalState("2026-10-15"), programId: "fit-over-40", weeklyFrequency: 2,
     source: { kind: "founder_confirmed", reference: "Tonal machine program overview", reviewedAt: "2026-10-17T12:00:00Z" },
     founderVerifiedAt: "2026-10-17T12:00:00Z",
   });
@@ -29,7 +28,7 @@ test("explicit activation generates Week 1 from the selected Monday with Sunday 
   const monday = state.schedule.find((workout) => workout.date === "2026-10-19")!;
   const sunday = state.schedule.find((workout) => workout.date === "2026-10-25")!;
   assert.equal(monday.prescription.id, "tonal-fit-over-40-1");
-  assert.equal(monday.prescription.name, "Fit Over 40 · Verified Tonal Workout 1");
+  assert.equal(monday.prescription.name, "Fit Over 40 · Session 1 — title confirmation required");
   assert.equal(state.schedule.find((workout) => workout.date === "2026-10-22")?.prescription.id, "tonal-fit-over-40-2");
   assert.match(monday.prescription.trainingBlock, /Week 1/);
   assert.equal(sunday.prescription.id, "hard-rest");
@@ -56,6 +55,16 @@ test("Week 1 preview has two Tonal slots, two runs, optional conditioning, and S
   assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "run").map((workout) => workout.date), ["2026-10-20", "2026-10-24"]);
   assert.match(preview.find((workout) => workout.date === "2026-10-23")!.prescription.name, /Optional light conditioning/);
   assert.equal(preview.at(-1)?.prescription.id, "hard-rest");
+});
+
+test("founder-confirmed three-session cadence keeps order, recovery, two runs, and Sunday hard rest", () => {
+  const setup = configureTonalProgram({ state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "Tonal machine", reviewedAt: "2026-10-17T12:00:00Z" }, founderVerifiedAt: "2026-10-17T12:00:00Z" });
+  const preview = previewTrainingWeek(setup.tonal, "2026-10-19");
+  assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "tonal").map((workout) => workout.date), ["2026-10-19", "2026-10-21", "2026-10-23"]);
+  assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "run").map((workout) => workout.date), ["2026-10-20", "2026-10-24"]);
+  assert.equal(preview.find((workout) => workout.date === "2026-10-22")?.prescription.id, "restore");
+  assert.equal(preview.at(-1)?.prescription.id, "hard-rest");
+  assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "tonal").map((workout) => workout.prescription.tonalSessionOrder), [1, 2, 3]);
 });
 
 test("activation rejects a start date that would move Sunday rest", () => {

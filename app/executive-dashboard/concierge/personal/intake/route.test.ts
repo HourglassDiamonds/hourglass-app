@@ -18,4 +18,5 @@ test("unified intake authenticates and sends only submitted Performance context 
 test("activity contract distinguishes observed fields and leaves missing metrics nullable", () => {
   for (const field of ["durationMinutes", "distanceMiles", "pace", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "observedFields"]) assert.match(ai, new RegExp(field));
   assert.match(ai, /Null absent values/); assert.match(ai, /evidenceFor/);
+  assert.match(ai, /upcoming_tonal_session/); assert.match(ai, /tonalMovements/); assert.match(ai, /never reconstruct a workout from memory/i);
 });

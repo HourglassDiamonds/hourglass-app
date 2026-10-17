@@ -1,12 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState, transitionTrainingProgram } from "./program";
-import { configureTonalProgram, markTonalSessionCompletedFromActivity, nextTonalSession, requiredTonalSessionCount, reviewTonalTransition, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
+import { configureTonalProgram, markTonalSessionCompletedFromActivity, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
 
-const titles = Array.from({ length: 8 }, (_, index) => `Machine title ${index + 1}`);
 function configured() {
   return configureTonalProgram({
-    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", sessionTitles: titles,
+    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 2,
     source: { kind: "tonal_app_screenshot", reference: "sha256:abc", digest: "abc", reviewedAt: "2026-10-17T12:00:00Z", file: { name: "program.png", type: "image/png", size: 123 } },
     founderVerifiedAt: "2026-10-17T12:00:00Z",
   });
@@ -24,16 +23,20 @@ test("official Tonal identities and published program dimensions stay exact", ()
   assert.equal(requiredTonalSessionCount("fit-over-40"), 8);
 });
 
-test("configuration requires the complete founder-verified sequence and provenance", () => {
-  assert.throws(() => configureTonalProgram({ state: createInitialPersonalState(), programId: "fit-over-40", sessionTitles: titles.slice(0, 7), source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "now" }, founderVerifiedAt: "now" }), /count-required:8/);
-  assert.throws(() => configureTonalProgram({ state: createInitialPersonalState(), programId: "fit-over-40", sessionTitles: [...titles.slice(0, 7), titles[0]!], source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "now" }, founderVerifiedAt: "now" }), /title-duplicate/);
+test("configuration requires founder-confirmed cadence but no future workout titles", () => {
+  const two = configured();
+  assert.equal(two.tonal.enrollment.sessions.length, 8);
+  assert.equal(two.tonal.enrollment.sessions.every((session) => session.title === undefined), true);
+  const three = configureTonalProgram({ state: createInitialPersonalState(), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "now" }, founderVerifiedAt: "now" });
+  assert.equal(three.tonal.enrollment.sessions.length, 12);
 });
 
 test("exact founder-approved Tonal activity marks only the matching session complete", () => {
-  const active = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
-  const unchanged = markTonalSessionCompletedFromActivity(active, { activityId: "activity-wrong", programTitle: "Fit Over 40", workoutTitle: "Not a real session", at: "2026-10-19T13:00:00Z" });
+  const activated = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
+  const active = planTonalSessionFromScreenshot(activated, { sequencePosition: 1, title: "Machine title 1", movements: [{ name: "Goblet squat", sets: 3, reps: "10", prescribedResistance: "30 lb" }, { name: "Row" }], source: { kind: "tonal_app_screenshot", reference: "sha256:plan", digest: "plan", reviewedAt: "now", file: { name: "plan.png", type: "image/png", size: 100 } }, approvedAt: "2026-10-18T13:00:00Z" });
+  const unchanged = markTonalSessionCompletedFromActivity(active, { activityId: "activity-wrong", sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Not a real session", at: "2026-10-19T13:00:00Z" });
   assert.equal(tonalSessionStatus(unchanged, unchanged.tonal.enrollment.sessions[0]!), "planned");
-  const completed = markTonalSessionCompletedFromActivity(active, { activityId: "activity-1", programTitle: "Fit Over 40", workoutTitle: titles[0], at: "2026-10-19T13:00:00Z" });
+  const completed = markTonalSessionCompletedFromActivity(active, { activityId: "activity-1", sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Machine title 1", at: "2026-10-19T13:00:00Z" });
   assert.equal(tonalSessionStatus(completed, completed.tonal.enrollment.sessions[0]!), "completed");
   assert.equal(completed.tonal.enrollment.sessions[0]?.completedActivityId, "activity-1");
   assert.equal(nextTonalSession(completed)?.order, 2);
@@ -51,7 +54,7 @@ test("founder-approved transition activates only the next verified program block
   const active = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
   const completed = { ...active, schedule: active.schedule.map((workout) => workout.prescription.mode === "tonal" ? { ...workout, status: "completed" as const } : workout), tonal: { ...active.tonal, enrollment: { ...active.tonal.enrollment, status: "completed" as const, completedAt: "2026-11-15T12:00:00Z" } } };
   const next = transitionTrainingProgram(completed, {
-    nextProgramId: "next-level-strength", startDate: "2026-11-16", sessionTitles: Array.from({ length: 16 }, (_, index) => `NLS verified ${index + 1}`),
+    nextProgramId: "next-level-strength", startDate: "2026-11-16", weeklyFrequency: 4,
     source: { kind: "tonal_link", reference: "https://tonal.com/program/verified", reviewedAt: "2026-11-15T12:00:00Z" }, reviewedAt: "2026-11-15T12:00:00Z", approvedAt: "2026-11-15T12:05:00Z",
     readiness: { adherence: "8/8 complete", strengthProgression: "ready", recoveryAndFatigue: "stable", runningProgress: "on plan", availableTrainingTime: "four days confirmed" },
   });

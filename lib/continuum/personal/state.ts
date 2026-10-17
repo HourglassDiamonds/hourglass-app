@@ -19,8 +19,15 @@ function parseTonalPlan(value: unknown): TonalProgramPlan {
   const enrollment = value.enrollment;
   if (!TONAL_PROGRESSION.includes(enrollment.programId as TonalProgramId) || !["setup", "active", "completed", "paused"].includes(String(enrollment.status))) return fallback;
   const sessions = Array.isArray(enrollment.sessions) ? enrollment.sessions.flatMap((candidate) => {
-    if (!isRecord(candidate) || !Number.isSafeInteger(candidate.order) || Number(candidate.order) < 1 || typeof candidate.title !== "string" || !candidate.title.trim()) return [];
-    return [{ order: Number(candidate.order), title: candidate.title.slice(0, 160), scheduledWorkoutId: typeof candidate.scheduledWorkoutId === "string" ? candidate.scheduledWorkoutId : undefined, completedActivityId: typeof candidate.completedActivityId === "string" ? candidate.completedActivityId : undefined }];
+    if (!isRecord(candidate) || !Number.isSafeInteger(candidate.order) || Number(candidate.order) < 1) return [];
+    const movements = Array.isArray(candidate.movements) ? candidate.movements.flatMap((movement) => {
+      if (!isRecord(movement) || typeof movement.name !== "string" || !movement.name.trim()) return [];
+      return [{ name: movement.name.slice(0, 120), sets: Number.isSafeInteger(movement.sets) && Number(movement.sets) > 0 ? Number(movement.sets) : undefined, reps: typeof movement.reps === "string" ? movement.reps.slice(0, 80) : undefined, prescribedResistance: typeof movement.prescribedResistance === "string" ? movement.prescribedResistance.slice(0, 80) : undefined, details: typeof movement.details === "string" ? movement.details.slice(0, 240) : undefined }];
+    }) : [];
+    const plannedSource = isRecord(candidate.plannedSource) && ["tonal_app_screenshot", "tonal_link", "founder_confirmed"].includes(String(candidate.plannedSource.kind)) && typeof candidate.plannedSource.reference === "string" && typeof candidate.plannedSource.reviewedAt === "string"
+      ? { kind: candidate.plannedSource.kind as "tonal_app_screenshot" | "tonal_link" | "founder_confirmed", reference: candidate.plannedSource.reference.slice(0, 500), reviewedAt: candidate.plannedSource.reviewedAt, digest: typeof candidate.plannedSource.digest === "string" ? candidate.plannedSource.digest : undefined, file: isRecord(candidate.plannedSource.file) && typeof candidate.plannedSource.file.name === "string" && typeof candidate.plannedSource.file.type === "string" && typeof candidate.plannedSource.file.size === "number" ? { name: candidate.plannedSource.file.name, type: candidate.plannedSource.file.type, size: candidate.plannedSource.file.size, storagePath: typeof candidate.plannedSource.file.storagePath === "string" ? candidate.plannedSource.file.storagePath : undefined } : undefined }
+      : undefined;
+    return [{ order: Number(candidate.order), title: typeof candidate.title === "string" && candidate.title.trim() ? candidate.title.slice(0, 160) : undefined, movements, plannedAt: typeof candidate.plannedAt === "string" ? candidate.plannedAt : undefined, plannedSource, scheduledWorkoutId: typeof candidate.scheduledWorkoutId === "string" ? candidate.scheduledWorkoutId : undefined, completedActivityId: typeof candidate.completedActivityId === "string" ? candidate.completedActivityId : undefined }];
   }) : [];
   const sources = Array.isArray(enrollment.sources) ? enrollment.sources.flatMap((candidate) => {
     if (!isRecord(candidate) || !["tonal_app_screenshot", "tonal_link", "founder_confirmed"].includes(String(candidate.kind)) || typeof candidate.reference !== "string" || typeof candidate.reviewedAt !== "string") return [];
@@ -31,6 +38,7 @@ function parseTonalPlan(value: unknown): TonalProgramPlan {
     selectedProgramId: value.selectedProgramId as TonalProgramId,
     enrollment: {
       programId: enrollment.programId as TonalProgramId,
+      weeklyFrequency: [2, 3, 4].includes(Number(enrollment.weeklyFrequency)) ? Number(enrollment.weeklyFrequency) as 2 | 3 | 4 : fallback.enrollment.weeklyFrequency,
       status: enrollment.status as "setup" | "active" | "completed" | "paused",
       sessions,
       sources,

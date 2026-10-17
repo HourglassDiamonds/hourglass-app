@@ -9,9 +9,9 @@ const STATE_TABLE = "continuum_performance_state";
 const MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 const SOURCE_RETENTION_DAYS = 90;
 const SOURCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "configure_strength_program", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
+const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "configure_strength_program", "plan_strength_session", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
 
-export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "configure_strength_program" | "activate_program" | "transition_strength_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
+export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "configure_strength_program" | "plan_strength_session" | "activate_program" | "transition_strength_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
 export type SavePerformanceStateInput = { founderKey: string; expectedRevision: number; state: PersonalState; mutation: PerformanceMutation; sourceFile?: File; now?: string };
 export type SavedPerformanceState = { state: PersonalState; revision: number; duplicate: boolean };
 
@@ -28,7 +28,7 @@ function attachStoragePath(state: PersonalState, entryId: string | undefined, st
     ...state,
     meals: state.meals.map((meal) => meal.id === entryId && meal.photo ? { ...meal, photo: { ...meal.photo, storagePath } } : meal),
     activities: state.activities.map((activity) => (activity.id === entryId || activity.idempotencyKey === idempotencyKey) && activity.source ? { ...activity, source: { ...activity.source, storagePath } } : activity),
-    tonal: { ...state.tonal, enrollment: { ...state.tonal.enrollment, sources: state.tonal.enrollment.sources.map((source) => source.digest && entryId.includes(source.digest.slice(0, 32)) && source.file ? { ...source, file: { ...source.file, storagePath } } : source) } },
+    tonal: { ...state.tonal, enrollment: { ...state.tonal.enrollment, sources: state.tonal.enrollment.sources.map((source) => source.digest && entryId.includes(source.digest.slice(0, 32)) && source.file ? { ...source, file: { ...source.file, storagePath } } : source), sessions: state.tonal.enrollment.sessions.map((session) => session.plannedSource?.digest && entryId.includes(session.plannedSource.digest.slice(0, 32)) && session.plannedSource.file ? { ...session, plannedSource: { ...session.plannedSource, file: { ...session.plannedSource.file, storagePath } } } : session) } },
   };
 }
 function evidenceHash(mutation: PerformanceMutation): string {
@@ -45,7 +45,7 @@ export async function loadPerformanceStateWithClient(founderKey: string, today: 
 export async function savePerformanceStateWithClient(input: SavePerformanceStateInput, db: SupabaseClient): Promise<SavedPerformanceState> {
   const now = input.now ?? new Date().toISOString();
   if (!input.founderKey.trim() || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0 || !MUTATION_ACTIONS.has(input.mutation.action)) throw new Error("performance-mutation-invalid");
-  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "configure_strength_program"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
+  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "configure_strength_program", "plan_strength_session"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
   let storagePath: string | undefined; let uploaded = false;
   if (input.sourceFile) {
     if (!SOURCE_MIME_TYPES.has(input.sourceFile.type) || input.sourceFile.size <= 0 || input.sourceFile.size > MAX_SOURCE_BYTES) throw new Error("performance-source-invalid");
@@ -64,6 +64,14 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
       const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
       const accepted = input.mutation.accepted as { sourceDigest?: unknown } | undefined;
       if (accepted?.sourceDigest !== actualDigest || input.mutation.idempotencyKey !== `configure-tonal-${actualDigest}` || input.mutation.entryId !== `tonal-program-${actualDigest.slice(0, 32)}`) {
+        throw new Error("performance-source-digest-invalid");
+      }
+    }
+    if (input.mutation.action === "plan_strength_session") {
+      const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
+      const accepted = input.mutation.accepted as { sourceDigest?: unknown; sequencePosition?: unknown } | undefined;
+      const order = Number(accepted?.sequencePosition);
+      if (accepted?.sourceDigest !== actualDigest || !Number.isSafeInteger(order) || order < 1 || input.mutation.idempotencyKey !== `plan-tonal-${order}-${actualDigest}` || input.mutation.entryId !== `tonal-plan-${order}-${actualDigest.slice(0, 32)}`) {
         throw new Error("performance-source-digest-invalid");
       }
     }

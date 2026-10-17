@@ -41,6 +41,7 @@ function metricErrors(facts: ActivityFacts): string[] {
   if (facts.workoutTitle && facts.workoutTitle.length > 160) errors.push("activity-workout-title");
   if (facts.trainer && facts.trainer.length > 120) errors.push("activity-trainer");
   if (facts.tonalProgramTitle && facts.tonalProgramTitle.length > 160) errors.push("activity-tonal-program");
+  if (facts.tonalMovements && (facts.tonalMovements.length > 40 || facts.tonalMovements.some((movement) => !movement.name.trim() || movement.name.length > 120 || movement.sets !== undefined && (!Number.isSafeInteger(movement.sets) || movement.sets < 1)))) errors.push("activity-tonal-movements");
   const ranges: Array<[keyof ActivityFacts, number, number]> = [
     ["durationMinutes", 0, 1_440], ["distanceMiles", 0, 500], ["averageSpeedMph", 0, 100],
     ["averageHeartRate", 20, 260], ["maxHeartRate", 20, 280], ["elevationFeet", 0, 100_000],
@@ -81,7 +82,8 @@ export function validatePersonalState(state: PersonalState): string[] {
   if (state.program.status === "active" && (!state.program.anchorDate || !DATE_KEY.test(state.program.anchorDate) || new Date(`${state.program.anchorDate}T12:00:00Z`).getUTCDay() !== 1 || !state.program.activatedAt)) errors.push("program-active-state");
   if (!state.tonal || !TONAL_PROGRESSION.includes(state.tonal.selectedProgramId) || state.tonal.enrollment.programId !== state.tonal.selectedProgramId) errors.push("tonal-program-identity");
   else {
-    if (state.tonal.enrollment.sessions.length > requiredTonalSessionCount(state.tonal.selectedProgramId)) errors.push("tonal-session-count");
+    if (![2, 3, 4].includes(state.tonal.enrollment.weeklyFrequency) || state.tonal.enrollment.sessions.length > requiredTonalSessionCount(state.tonal.selectedProgramId, state.tonal.enrollment.weeklyFrequency)) errors.push("tonal-session-count");
+    if (state.tonal.enrollment.sessions.some((session, index) => session.order !== index + 1 || session.title && session.title.length > 160 || session.movements.length > 40 || session.movements.some((movement) => !movement.name.trim() || movement.name.length > 120))) errors.push("tonal-session-shape");
     if (state.tonal.enrollment.founderVerifiedAt && !tonalEnrollmentReady(state.tonal)) errors.push("tonal-session-sequence");
     if (state.program.status === "active" && (!tonalEnrollmentReady(state.tonal) || !["active", "completed", "paused"].includes(state.tonal.enrollment.status))) errors.push("tonal-active-state");
     if (state.program.status === "setup" && state.tonal.enrollment.status !== "setup") errors.push("tonal-setup-state");

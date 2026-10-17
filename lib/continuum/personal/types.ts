@@ -195,6 +195,7 @@ export type ActivityFacts = {
   maxResistanceLb?: ActivityMetric<number>;
   completedSets?: ActivityMetric<number>;
   completedReps?: ActivityMetric<number>;
+  tonalMovements?: TonalProgramMovement[];
   notes?: string;
 };
 
@@ -289,13 +290,25 @@ export type TonalProgramSource = {
 
 export type TonalProgramSession = {
   order: number;
-  title: string;
+  title?: string;
+  movements: TonalProgramMovement[];
+  plannedAt?: string;
+  plannedSource?: TonalProgramSource;
   scheduledWorkoutId?: string;
   completedActivityId?: string;
 };
 
+export type TonalProgramMovement = {
+  name: string;
+  sets?: number;
+  reps?: string;
+  prescribedResistance?: string;
+  details?: string;
+};
+
 export type TonalProgramEnrollment = {
   programId: TonalProgramId;
+  weeklyFrequency: 2 | 3 | 4;
   status: "setup" | "active" | "completed" | "paused";
   sessions: TonalProgramSession[];
   sources: TonalProgramSource[];
