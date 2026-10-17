@@ -1,4 +1,5 @@
 import type { ActivityFacts, ActivityLog, MealItem, MealLog, NaturalIngestionProposal, PersonalState } from "./types";
+import { compareActivityDate } from "./activity-date";
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -53,6 +54,8 @@ export function validateActivityLog(activity: ActivityLog): string[] {
   const errors = metricErrors(activity.facts);
   if (!activity.id || !activity.timestamp || !DATE_KEY.test(activity.occurredOn)) errors.push("activity-shape");
   if (!activity.idempotencyKey) errors.push("activity-idempotency");
+  if (activity.sterlingProposal?.kind === "activity" && compareActivityDate(activity.sterlingProposal.sourceDate, activity.occurredOn) === "conflict"
+    && !activity.corrections.some((correction) => correction.field === "occurredOn" && correction.to === activity.occurredOn)) errors.push("activity-date-confirmation");
   return [...new Set(errors)];
 }
 

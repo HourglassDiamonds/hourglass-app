@@ -187,6 +187,18 @@ export type ActivityFacts = {
   notes?: string;
 };
 
+export type VisibleActivityDate = {
+  month: number;
+  day: number;
+  year?: number;
+  evidence: "observed";
+};
+
+export type DailyActivitySummary = {
+  whoopStrain?: ActivityMetric<number>;
+  notes?: string;
+};
+
 export type ActivityLog = {
   id: string;
   timestamp: string;
@@ -223,6 +235,9 @@ export type MealIngestionProposal = ProposalBase & {
 export type ActivityIngestionProposal = ProposalBase & {
   kind: "activity";
   activity: ActivityFacts;
+  activities?: ActivityFacts[];
+  sourceDate?: VisibleActivityDate;
+  dailySummary?: DailyActivitySummary;
   guidance: string;
 };
 

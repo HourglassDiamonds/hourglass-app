@@ -16,7 +16,7 @@ test("past activity has explicit date-first review and never reschedules a plann
   assert.match(app, /input\.sourceType === "activity_screenshot" \? input\.file/);
   assert.match(app, /setIntakeFile\(image \?\? null\)/);
   assert.match(app, /ActivityReview/);
-  assert.match(app, /Accept activity/);
+  assert.match(app, /Accept \{activities\.length === 1 \? "activity"/);
 });
 
 test("screenshot provenance uses a byte digest for server-enforced dedupe without invented metrics", () => {
@@ -29,6 +29,17 @@ test("screenshot provenance uses a byte digest for server-enforced dedupe withou
 
 test("activity acceptance reports initial success and byte-identical duplicates", () => {
   assert.match(app, /duplicate\?: boolean/);
-  assert.match(app, /saved\.duplicate \? "Activity already logged" : "Activity logged successfully"/);
+  assert.match(app, /saved\.duplicate \? "Activity already logged" : activities\.length === 1 \? "Activity logged successfully"/);
   assert.match(app, /aria-live="polite" className=\{styles\.warning\}/);
+});
+
+test("visible dates conflict visibly, multiple activities stay separate, and accepted dates are correctable", () => {
+  assert.match(ai, /activityDate/);
+  assert.match(ai, /additionalActivities/);
+  assert.match(ai, /Daily WHOOP metrics belong only in dailySummary/);
+  assert.match(app, /selected date conflicts with the visible screenshot date/);
+  assert.match(app, /dateConflictConfirmed/);
+  assert.match(app, /Correct activity date/);
+  assert.match(app, /action:\s*"edit_activity"/);
+  assert.match(app, /activities\.length === 1/);
 });

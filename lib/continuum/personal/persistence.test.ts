@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { deletePerformanceSourceWithClient, loadPerformanceStateWithClient, PerformanceRevisionConflict, savePerformanceStateWithClient } from "./persistence-core";
 import { activateTrainingProgram, createInitialPersonalState } from "./program";
 import { createHash } from "node:crypto";
+import { correctActivityDate } from "./mutations";
 import type { NaturalIngestionProposal } from "./types";
 
 type Row = Record<string, unknown>;
@@ -171,4 +172,46 @@ test("activity screenshot persistence binds dedupe identity to the exact source 
     founderKey: "founder-a", expectedRevision: 1, state,
     mutation: { ...mutation, proposal: { ...proposal, sourceDigest: "0".repeat(64) } }, sourceFile: source,
   }, db.client), /source-digest-invalid/);
+});
+
+test("one screenshot can persist distinct activities against one source and one audit mutation", async () => {
+  const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-17");
+  const bytes = new Uint8Array([1, 3, 5, 7]);
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  const idempotencyKey = `accept-activity-${digest}`;
+  const entryId = `activity-${digest.slice(0, 32)}`;
+  const proposal: Extract<NaturalIngestionProposal, { kind: "activity" }> = {
+    id: "proposal-multi", proposedAt: "2026-10-17T12:00:00Z", sourceType: "activity_screenshot", confidence: "high", assumptions: [], summary: "Golf and Soccer", model: "test", sourceDigest: digest,
+    kind: "activity", activity: { activityType: "Golf" }, activities: [{ activityType: "Golf" }, { activityType: "Soccer" }], guidance: "Review visible values.",
+  };
+  const source = { name: "whoop.png", type: "image/png", size: bytes.length };
+  const activities = proposal.activities!.map((facts, index) => ({
+    id: index === 0 ? entryId : `${entryId}-${index + 1}`, timestamp: "2026-10-17T12:01:00Z", occurredOn: "2026-10-12", facts,
+    sourceType: "activity_screenshot" as const, source, sterlingProposal: proposal, assumptions: [], corrections: [], guidance: proposal.guidance, idempotencyKey, provenance: ["sterling" as const, "user_confirmed" as const],
+  }));
+  const state = { ...initial, activities };
+  const saved = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation: { idempotencyKey, action: "accept_activity", entryId, sourceType: "activity_screenshot", proposal, accepted: activities }, sourceFile: new File([bytes], "whoop.png", { type: "image/png" }) }, db.client);
+  assert.equal(saved.state.activities.length, 2);
+  assert.equal(saved.state.activities[0]?.source?.storagePath, saved.state.activities[1]?.source?.storagePath);
+  assert.equal(db.uploads.size, 1); assert.equal(db.audits.size, 1); assert.equal(db.evidence.size, 1);
+  const deleted = await deletePerformanceSourceWithClient({ founderKey: "founder-a", expectedRevision: 1, entryId, kind: "activity", idempotencyKey: "delete-shared-source" }, db.client);
+  assert.equal(deleted.state.activities.every((activity) => !activity.source?.storagePath), true);
+  assert.equal(db.uploads.size, 0);
+});
+
+test("an activity date correction persists in place and an idempotent retry creates no duplicate mutation", async () => {
+  const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-17");
+  const activity = {
+    id: "activity-correct-date", timestamp: "2026-10-17T12:00:00Z", occurredOn: "2026-10-16", facts: { activityType: "Golf" },
+    sourceType: "activity_screenshot" as const, assumptions: [], corrections: [], guidance: "Review visible values.",
+    idempotencyKey: "accept-activity-correct-date", provenance: ["sterling" as const, "user_confirmed" as const],
+  };
+  const accepted = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state: { ...initial, activities: [activity] }, mutation: { idempotencyKey: activity.idempotencyKey, action: "accept_activity", entryId: activity.id, accepted: activity } }, db.client);
+  const corrected = correctActivityDate(accepted.state, activity.id, "2026-10-12");
+  const mutation = { idempotencyKey: "edit-activity-date-activity-correct-date-2026-10-12", action: "edit_activity" as const, entryId: activity.id, accepted: corrected.activity, corrections: corrected.activity.corrections };
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 1, state: corrected.state, mutation }, db.client);
+  const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 1, state: corrected.state, mutation }, db.client);
+  assert.equal(first.revision, 2); assert.equal(first.state.activities.length, 1);
+  assert.equal(first.state.activities[0]?.occurredOn, "2026-10-12");
+  assert.equal(retry.duplicate, true); assert.equal(retry.revision, 2); assert.equal(db.audits.size, 2);
 });

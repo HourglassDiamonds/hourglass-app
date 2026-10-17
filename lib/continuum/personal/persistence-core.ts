@@ -22,9 +22,9 @@ export class PerformanceRevisionConflict extends Error {
 function founderPath(founderKey: string): string { return createHash("sha256").update(founderKey).digest("hex").slice(0, 20); }
 function safeExtension(file: File): string { return file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : file.type === "image/gif" ? "gif" : "jpg"; }
 function addDays(iso: string, days: number): string { const value = new Date(iso); value.setUTCDate(value.getUTCDate() + days); return value.toISOString(); }
-function attachStoragePath(state: PersonalState, entryId: string | undefined, storagePath: string | undefined): PersonalState {
+function attachStoragePath(state: PersonalState, entryId: string | undefined, storagePath: string | undefined, idempotencyKey?: string): PersonalState {
   if (!entryId || !storagePath) return state;
-  return { ...state, meals: state.meals.map((meal) => meal.id === entryId && meal.photo ? { ...meal, photo: { ...meal.photo, storagePath } } : meal), activities: state.activities.map((activity) => activity.id === entryId && activity.source ? { ...activity, source: { ...activity.source, storagePath } } : activity) };
+  return { ...state, meals: state.meals.map((meal) => meal.id === entryId && meal.photo ? { ...meal, photo: { ...meal.photo, storagePath } } : meal), activities: state.activities.map((activity) => (activity.id === entryId || activity.idempotencyKey === idempotencyKey) && activity.source ? { ...activity, source: { ...activity.source, storagePath } } : activity) };
 }
 function evidenceHash(mutation: PerformanceMutation): string {
   return createHash("sha256").update(JSON.stringify({ rawInput: mutation.rawInput ?? null, proposal: mutation.proposal ?? null, accepted: mutation.accepted ?? null, corrections: mutation.corrections ?? [] })).digest("hex");
@@ -60,7 +60,7 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
     if (error && !/already exists|duplicate/i.test(error.message)) throw new Error(`performance-source-upload-failed:${error.message}`);
     uploaded = !error;
   }
-  const state = attachStoragePath(input.state, input.mutation.entryId, storagePath); const validation = validatePersonalState(state);
+  const state = attachStoragePath(input.state, input.mutation.entryId, storagePath, input.mutation.idempotencyKey); const validation = validatePersonalState(state);
   if (validation.length) throw new Error(`performance-state-invalid:${validation.join(",")}`);
   try {
     const { data, error } = await db.rpc("continuum_performance_save", {
@@ -97,6 +97,6 @@ export async function deletePerformanceSourceWithClient(input: { founderKey: str
   if (removeError) throw new Error(`performance-source-delete-failed:${removeError.message}`);
   const state: PersonalState = input.kind === "meal"
     ? { ...loaded.state, meals: loaded.state.meals.map((meal) => meal.id === input.entryId && meal.photo ? { ...meal, photo: { name: meal.photo.name, type: meal.photo.type, size: meal.photo.size } } : meal) }
-    : { ...loaded.state, activities: loaded.state.activities.map((activity) => activity.id === input.entryId && activity.source ? { ...activity, source: { name: activity.source.name, type: activity.source.type, size: activity.source.size } } : activity) };
+    : { ...loaded.state, activities: loaded.state.activities.map((activity) => activity.source?.storagePath === path ? { ...activity, source: { name: activity.source.name, type: activity.source.type, size: activity.source.size } } : activity) };
   return savePerformanceStateWithClient({ founderKey: input.founderKey, expectedRevision: input.expectedRevision, state, mutation: { idempotencyKey: input.idempotencyKey, action: "delete_source", entryId: input.entryId, sourceStoragePath: path }, now: input.now }, db);
 }

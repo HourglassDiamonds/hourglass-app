@@ -9,10 +9,19 @@ import type { ActivityFacts, ActivityMetric, EvidenceKind, MealItem, NaturalInge
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ACTIVITY_FIELDS = ["durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb"] as const;
+const activityObjectSchema = {
+  type: "object", additionalProperties: false,
+  required: ["activityType", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "notes", "observedFields"],
+  properties: {
+    activityType: { type: "string" }, durationMinutes: nullableNumber(), distanceMiles: nullableNumber(), pace: nullableString(), averageSpeedMph: nullableNumber(),
+    averageHeartRate: nullableNumber(), maxHeartRate: nullableNumber(), elevationFeet: nullableNumber(), reportedCalories: nullableNumber(), whoopStrain: nullableNumber(),
+    steps: nullableNumber(), ruckWeightLb: nullableNumber(), notes: nullableString(), observedFields: { type: "array", items: { type: "string", enum: [...ACTIVITY_FIELDS] } },
+  },
+} as const;
 
 const intakeSchema = {
   type: "object", additionalProperties: false,
-  required: ["kind", "summary", "confidence", "assumptions", "meal", "activity"],
+  required: ["kind", "summary", "confidence", "assumptions", "meal", "activity", "additionalActivities", "activityDate", "dailySummary"],
   properties: {
     kind: { type: "string", enum: ["meal", "activity"] }, summary: { type: "string" },
     confidence: { type: "string", enum: ["low", "medium", "high"] },
@@ -24,14 +33,14 @@ const intakeSchema = {
         confidence: { type: "string", enum: ["low", "medium", "high"] },
       } } }, clarification: { anyOf: [{ type: "string" }, { type: "null" }] }, caveat: { type: "string" },
     } }] },
-    activity: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false,
-      required: ["activityType", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "notes", "observedFields"],
-      properties: {
-        activityType: { type: "string" }, durationMinutes: nullableNumber(), distanceMiles: nullableNumber(), pace: nullableString(), averageSpeedMph: nullableNumber(),
-        averageHeartRate: nullableNumber(), maxHeartRate: nullableNumber(), elevationFeet: nullableNumber(), reportedCalories: nullableNumber(), whoopStrain: nullableNumber(),
-        steps: nullableNumber(), ruckWeightLb: nullableNumber(), notes: nullableString(), observedFields: { type: "array", items: { type: "string", enum: [...ACTIVITY_FIELDS] } },
-      },
-    }] },
+    activity: { anyOf: [{ type: "null" }, activityObjectSchema] },
+    additionalActivities: { type: "array", maxItems: 9, items: activityObjectSchema },
+    activityDate: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["month", "day", "year"], properties: {
+      month: { type: "integer", minimum: 1, maximum: 12 }, day: { type: "integer", minimum: 1, maximum: 31 }, year: { anyOf: [{ type: "integer", minimum: 2000, maximum: 2100 }, { type: "null" }] },
+    } }] },
+    dailySummary: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["whoopStrain", "notes"], properties: {
+      whoopStrain: nullableNumber(), notes: nullableString(),
+    } }] },
   },
 } as const;
 
@@ -67,6 +76,9 @@ export async function interpretPerformanceIntake(input: {
     "Use only visible or user-supplied facts. Never invent a missing metric or false precision.",
     "For nutrition labels, use visible label values and serving math. For meals, estimate practical portions/macros and state assumptions.",
     "For activity screenshots, extract visible duration, distance, pace/speed, heart rate, elevation, reported calories, WHOOP strain, steps, and ruck weight. Null absent values.",
+    "For an activity screenshot, extract a visible calendar date into activityDate. Preserve visible month and day; include year only when the image explicitly shows it. Use null when no date is visible or the date is ambiguous.",
+    "Each distinct completed activity row must remain separate: put the first in activity and any others in additionalActivities. Never combine Golf, Soccer, Walking, or another row into one daily-summary activity.",
+    "Daily WHOOP metrics belong only in dailySummary. Never assign overall daily strain to an individual activity. Sleep is not an activity.",
     "observedFields must include only activity values directly visible in the image. Previously accepted meals are hints, not authority.",
     context ? `Accepted frequent-meal context: ${context}` : "No accepted frequent-meal context was supplied.",
     text ? `Founder description: ${text}` : "No accompanying description was supplied.",
@@ -97,10 +109,26 @@ export async function interpretPerformanceIntake(input: {
     return { ...base, kind: "meal", meal: { id: base.id, estimatedAt: base.proposedAt, items, calories: total("calories"), protein: total("protein"), carbs: total("carbs"), fat: total("fat"), confidence, clarification: typeof rawMeal.clarification === "string" && rawMeal.clarification.trim() ? rawMeal.clarification.trim().slice(0, 240) : undefined, caveat: typeof rawMeal.caveat === "string" ? rawMeal.caveat.slice(0, 300) : "Review portions and macros before saving.", assumptions, model } };
   }
   if (parsed.kind !== "activity" || !parsed.activity || typeof parsed.activity !== "object") throw new Error("performance-analysis-invalid");
-  const row = parsed.activity as Record<string, unknown>;
-  const observed = new Set(Array.isArray(row.observedFields) ? row.observedFields.filter((value): value is string => typeof value === "string") : []);
-  const evidenceFor = (field: string): EvidenceKind => input.file && observed.has(field) ? "observed" : text ? "user_supplied" : "estimated";
-  const numeric = (field: string) => typeof row[field] === "number" && Number.isFinite(row[field]) ? metric(Math.max(0, row[field] as number), evidenceFor(field)) : undefined;
-  const facts: ActivityFacts = { activityType: String(row.activityType ?? "Activity").trim().slice(0, 80) || "Activity", durationMinutes: numeric("durationMinutes"), distanceMiles: numeric("distanceMiles"), pace: typeof row.pace === "string" ? metric(row.pace.slice(0, 40), evidenceFor("pace")) : undefined, averageSpeedMph: numeric("averageSpeedMph"), averageHeartRate: numeric("averageHeartRate"), maxHeartRate: numeric("maxHeartRate"), elevationFeet: numeric("elevationFeet"), reportedCalories: numeric("reportedCalories"), whoopStrain: numeric("whoopStrain"), steps: numeric("steps"), ruckWeightLb: numeric("ruckWeightLb"), notes: typeof row.notes === "string" ? row.notes.slice(0, 500) : undefined };
-  return { ...base, kind: "activity", activity: facts, guidance: activityNutritionGuidance(facts, input.nutritionTargets) };
+  const activityFacts = (candidate: unknown): ActivityFacts | null => {
+    if (!candidate || typeof candidate !== "object") return null;
+    const row = candidate as Record<string, unknown>;
+    const activityType = String(row.activityType ?? "").trim().slice(0, 80);
+    if (!activityType) return null;
+    const observed = new Set(Array.isArray(row.observedFields) ? row.observedFields.filter((value): value is string => typeof value === "string") : []);
+    const evidenceFor = (field: string): EvidenceKind => input.file && observed.has(field) ? "observed" : text ? "user_supplied" : "estimated";
+    const numeric = (field: string) => typeof row[field] === "number" && Number.isFinite(row[field]) ? metric(Math.max(0, row[field] as number), evidenceFor(field)) : undefined;
+    return { activityType, durationMinutes: numeric("durationMinutes"), distanceMiles: numeric("distanceMiles"), pace: typeof row.pace === "string" ? metric(row.pace.slice(0, 40), evidenceFor("pace")) : undefined, averageSpeedMph: numeric("averageSpeedMph"), averageHeartRate: numeric("averageHeartRate"), maxHeartRate: numeric("maxHeartRate"), elevationFeet: numeric("elevationFeet"), reportedCalories: numeric("reportedCalories"), whoopStrain: numeric("whoopStrain"), steps: numeric("steps"), ruckWeightLb: numeric("ruckWeightLb"), notes: typeof row.notes === "string" ? row.notes.slice(0, 500) : undefined };
+  };
+  const facts = activityFacts(parsed.activity);
+  if (!facts) throw new Error("performance-analysis-invalid");
+  const activities = [facts, ...(Array.isArray(parsed.additionalActivities) ? parsed.additionalActivities.flatMap((candidate) => activityFacts(candidate) ?? []) : [])];
+  const rawDate = parsed.activityDate && typeof parsed.activityDate === "object" ? parsed.activityDate as Record<string, unknown> : null;
+  const sourceDate = rawDate && Number.isInteger(rawDate.month) && Number.isInteger(rawDate.day)
+    ? { month: Number(rawDate.month), day: Number(rawDate.day), ...(Number.isInteger(rawDate.year) ? { year: Number(rawDate.year) } : {}), evidence: "observed" as const }
+    : undefined;
+  const rawDaily = parsed.dailySummary && typeof parsed.dailySummary === "object" ? parsed.dailySummary as Record<string, unknown> : null;
+  const dailySummary = rawDaily
+    ? { whoopStrain: typeof rawDaily.whoopStrain === "number" ? metric(Math.max(0, rawDaily.whoopStrain), input.file ? "observed" : "user_supplied") : undefined, notes: typeof rawDaily.notes === "string" ? rawDaily.notes.slice(0, 500) : undefined }
+    : undefined;
+  return { ...base, kind: "activity", activity: facts, activities, sourceDate, dailySummary, guidance: activityNutritionGuidance(facts, input.nutritionTargets) };
 }
