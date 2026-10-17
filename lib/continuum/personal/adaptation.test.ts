@@ -2,9 +2,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { applySterlingProposal, buildSterlingScheduleAdjustment, proposeSterlingAdjustment, retargetSterlingScheduleAdjustment } from "./adaptation";
 import { activateTrainingProgram, createInitialPersonalState, shiftDate } from "./program";
+import { configureTonalProgram } from "./tonal-programs";
 
 function activeState(today: string) {
-  return activateTrainingProgram(createInitialPersonalState(today), today, `${today}T04:00:00.000Z`);
+  const setup = configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", sessionTitles: Array.from({ length: 8 }, (_, index) => `Verified ${index + 1}`), source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T03:00:00.000Z` }, founderVerifiedAt: `${today}T03:00:00.000Z` });
+  return activateTrainingProgram(setup, today, `${today}T04:00:00.000Z`);
 }
 
 test("four hours sleep / gassed / ruck today / weights tomorrow is proposed, confirmed, and reflowed", () => {
@@ -69,7 +71,7 @@ test("natural-language schedule intent becomes an editable proposal without muta
   assert.equal(state.program.anchorDate, "2026-10-12");
 });
 
-test("moving Foundation A onto Foundation B explicitly discloses every displaced session", () => {
+test("moving a Tonal session onto the next planned session explicitly discloses every displacement", () => {
   const state = activeState("2026-10-12");
   const foundationA = state.schedule.find((workout) => workout.date === "2026-10-12")!;
   const foundationB = state.schedule.find((workout) => workout.date === "2026-10-13")!;

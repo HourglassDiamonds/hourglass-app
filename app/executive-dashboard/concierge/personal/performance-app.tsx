@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { applySterlingProposal, deferAndReflow, retargetSterlingScheduleAdjustment } from "@/lib/continuum/personal/adaptation";
-import { activateTrainingProgram, createInitialPersonalState, dateKey, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
+import { activateTrainingProgram, createInitialPersonalState, dateKey, previewTrainingWeek, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
 import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealName, mealSignature, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
 import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, correctActivityDate as correctActivityDateInState } from "@/lib/continuum/personal/mutations";
 import { compareActivityDate, visibleActivityDateLabel } from "@/lib/continuum/personal/activity-date";
+import { configureTonalProgram, markTonalSessionCompletedFromActivity, syncTonalProgramCompletion, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
 import type { ActivityFacts, ActivityLog, FrequentMeal, MealEstimate, MealItem, MealLog, NaturalIngestionProposal, PerformedSet, PerformanceSourceType, PersonalState, RecoveryEntry, ScheduledWorkout, SterlingProposal, WorkoutSession } from "@/lib/continuum/personal/types";
 import styles from "./performance.module.css";
 
@@ -72,6 +73,11 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [activationReview, setActivationReview] = useState(false);
   const [activationBusy, setActivationBusy] = useState(false);
   const [activationError, setActivationError] = useState("");
+  const [tonalSessionTitles, setTonalSessionTitles] = useState("");
+  const [tonalSourceLink, setTonalSourceLink] = useState("");
+  const [tonalSourceFile, setTonalSourceFile] = useState<File | null>(null);
+  const [tonalConfigBusy, setTonalConfigBusy] = useState(false);
+  const [tonalConfigFeedback, setTonalConfigFeedback] = useState("");
 
   useEffect(() => {
     const key = localToday(); setToday(key);
@@ -111,7 +117,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const frequentlyEaten = deriveFrequentlyEaten(state.meals, state.frequentMeals);
   const todayActivities = state.activities.filter((activity) => activity.occurredOn === today);
   const activationPreview = activationReview
-    ? activateTrainingProgram(state, programStartDate, "1970-01-01T00:00:00.000Z").schedule.filter((workout) => workout.date >= programStartDate && workout.date <= shiftDate(programStartDate, 6))
+    ? previewTrainingWeek(state.tonal, programStartDate)
     : [];
 
   async function persistStateMutation(next: PersonalState, mutation: Record<string, unknown>, source?: File): Promise<{ state: PersonalState; duplicate: boolean }> {
@@ -156,6 +162,34 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     setActivationReview(true);
   }
 
+  async function configureTonalSequence() {
+    if (tonalConfigBusy || state.program.status !== "setup") return;
+    setTonalConfigBusy(true); setTonalConfigFeedback(""); setActivationError("");
+    try {
+      const titles = tonalSessionTitles.split(/\r?\n/).map((title) => title.trim()).filter(Boolean);
+      if (!tonalSourceFile && !tonalSourceLink.trim()) throw new Error("tonal-source-required");
+      if (tonalSourceLink.trim() && !/^https:\/\//i.test(tonalSourceLink.trim())) throw new Error("tonal-source-link-invalid");
+      const bytes = tonalSourceFile ? await tonalSourceFile.arrayBuffer() : new TextEncoder().encode(`${tonalSourceLink.trim()}\n${titles.join("\n")}`).buffer;
+      const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))).map((value) => value.toString(16).padStart(2, "0")).join("");
+      const reviewedAt = new Date().toISOString();
+      const source = tonalSourceFile
+        ? { kind: "tonal_app_screenshot" as const, reference: `sha256:${digest}`, digest, reviewedAt, file: { name: tonalSourceFile.name, type: tonalSourceFile.type, size: tonalSourceFile.size } }
+        : { kind: "tonal_link" as const, reference: tonalSourceLink.trim(), digest, reviewedAt };
+      const next = configureTonalProgram({ state, programId: "fit-over-40", sessionTitles: titles, source, founderVerifiedAt: reviewedAt });
+      const saved = await persistStateMutation(next, {
+        idempotencyKey: `configure-tonal-${digest}`,
+        action: "configure_strength_program",
+        entryId: `tonal-program-${digest.slice(0, 32)}`,
+        sourceType: tonalSourceFile ? "tonal_program_screenshot" : "text",
+        accepted: { programId: "fit-over-40", sourceDigest: digest, sessions: next.tonal.enrollment.sessions },
+      }, tonalSourceFile ?? undefined);
+      setState(saved.state); setTonalConfigFeedback(saved.duplicate ? "Tonal sequence already verified" : "Tonal sequence verified and saved"); setTonalSourceFile(null);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "tonal-configuration-failed";
+      setTonalConfigFeedback(message.startsWith("tonal-session-count-required") ? "Fit Over 40 requires eight ordered session titles at two workouts per week for four weeks. Confirm them in the Tonal app or machine." : message === "performance-mutation-action-unavailable" ? "The database cannot record Tonal program configuration yet. Nothing changed." : "The Tonal sequence was not saved. Confirm the source and all ordered titles.");
+    } finally { setTonalConfigBusy(false); }
+  }
+
   async function confirmActivation() {
     if (!activationReview || activationBusy || state.program.status !== "setup") return;
     setActivationBusy(true); setActivationError("");
@@ -174,6 +208,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         ? "Performance changed in another save. Review the start date again before activating."
         : message === "performance-mutation-action-unavailable"
           ? "This Preview database cannot record program activation yet. The program remains not started."
+          : message === "tonal-session-sequence-required"
+            ? "Confirm all eight Fit Over 40 session titles from the Tonal app or machine before activation."
           : "The program was not activated. Existing nutrition and activity history remains unchanged.");
     } finally { setActivationBusy(false); }
   }
@@ -206,12 +242,12 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     if (!activeSession || !activeToday) return;
     const at = new Date().toISOString();
     const proposals = activeToday.prescription.exercises.map((exercise) => proposeProgression(exercise, activeSession.sets.filter((set) => set.exerciseId === exercise.id)));
-    setState((current) => ({
+    setState((current) => syncTonalProgramCompletion({
       ...current,
       sessions: current.sessions.map((session) => session.id === activeSession.id ? { ...session, completedAt: at } : session),
       schedule: current.schedule.map((workout) => workout.id === activeToday.id ? { ...workout, status: "completed", history: [...workout.history, { at, action: "completed", actor: "user", note: "Workout completed and progression reviewed." }] } : workout),
       progressionProposals: [...current.progressionProposals, ...proposals],
-    }));
+    }, at));
   }
 
   function saveModification(event: FormEvent<HTMLFormElement>) {
@@ -376,7 +412,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     const activityId = digest ? `activity-${digest.slice(0, 32)}` : uid("activity");
     const originals = intakeProposal.activities?.length ? intakeProposal.activities : [intakeProposal.activity];
     const activities = facts.map((activityFacts, index) => buildAcceptedActivity({ proposal: intakeProposal, originalFacts: originals[index], facts: activityFacts, occurredOn, timestamp: at, id: index === 0 ? activityId : `${activityId}-${index + 1}`, idempotencyKey, dateConflictConfirmed, source: intakeFile ? { name: intakeFile.name, type: intakeFile.type, size: intakeFile.size } : undefined, targets: state.nutritionTargets }));
-    const next = acceptActivityProposal(state, intakeProposal, activities);
+    const acceptedState = acceptActivityProposal(state, intakeProposal, activities);
+    const next = activities.reduce((current, activity) => markTonalSessionCompletedFromActivity(current, { activityId: activity.id, programTitle: activity.facts.tonalProgramTitle, workoutTitle: activity.facts.workoutTitle, at }), acceptedState);
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_activity", entryId: activityId, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: activities, corrections: activities.flatMap((activity) => activity.corrections) }, intakeFile ?? undefined);
       setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false);
@@ -506,7 +543,25 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     {activityFeedback ? <p aria-live="polite" className={styles.warning}>{activityFeedback}</p> : null}
     <nav className={styles.tabs} aria-label="Performance sections">{tabs.map((tab) => <Link key={tab.id} href={tab.href} aria-current={view === tab.id ? "page" : undefined}>{tab.label}</Link>)}</nav>
 
-    {state.program.status === "setup" ? <section className={`${styles.card} ${styles.hero}`} data-program-status="setup"><p className={styles.kicker}>Training program · not started / setup</p><h2>Choose when Week 1 actually begins.</h2><p>No workout is missed, no progression advances, and no catch-up session is created while setup is active. Nutrition and completed activity logging remain available for testing.</p><div className={styles.formGrid}><label>Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div><div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review Week 1</button></div>{activationError ? <p role="alert" className={styles.warning}>{activationError}</p> : null}{activationReview ? <div className={styles.proposal}><strong>Proposed — the program is still not started</strong><p>Week 1 begins {prettyDate(programStartDate)}. The Week 11 continuous 5K objective falls on {prettyDate(shiftDate(programStartDate, 10 * 7 + 4))}. Existing accepted meals, activities, recovery, and historical sessions stay unchanged.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min · {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy}>{activationBusy ? "Activating…" : "Confirm and activate"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}</section> : null}
+    {state.program.status === "setup" ? <section className={`${styles.card} ${styles.hero}`} data-program-status="setup">
+      <p className={styles.kicker}>Training program · not started / setup</p>
+      <h2>Fit Over 40 first. Start only after the real Tonal sequence is verified.</h2>
+      <p>{TONAL_PROGRAM_CATALOG["fit-over-40"].trainer} · 4 weeks · two strength workouts per week · 35–55 minutes. Tonal&apos;s general catalog currently conflicts by showing three days; the machine/app must resolve that discrepancy before activation.</p>
+      <p>No workout is missed, no progression advances, and no catch-up session is created while setup is active. Next Level Strength and 12 Weeks to Jacked remain future, founder-approved blocks.</p>
+      <div className={styles.inlineEditor}>
+        <strong>Verify the eight-session Tonal order</strong>
+        <p>Upload a Tonal program-overview screenshot or provide its HTTPS link, then paste the exact workout titles in order—one per line. Continuum will not invent titles, exercises, or a third weekly session.</p>
+        <label>Ordered session titles<textarea value={tonalSessionTitles} onChange={(event) => setTonalSessionTitles(event.target.value)} placeholder={"Session 1 exact Tonal title\nSession 2 exact Tonal title\n…through Session 8"} /></label>
+        <div className={styles.formGrid}><label>Tonal source link · optional<input type="url" value={tonalSourceLink} onChange={(event) => setTonalSourceLink(event.target.value)} placeholder="https://…" /></label><label className={styles.photoAction}>TONAL PROGRAM SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => setTonalSourceFile(event.target.files?.[0] ?? null)} /></label></div>
+        <div className={styles.actions}><button className={styles.primary} onClick={() => void configureTonalSequence()} disabled={tonalConfigBusy}>{tonalConfigBusy ? "Saving…" : "Verify and save sequence"}</button></div>
+        {tonalConfigFeedback ? <p aria-live="polite" className={styles.warning}>{tonalConfigFeedback}</p> : null}
+        {tonalEnrollmentReady(state.tonal) ? <p className={styles.provenance}>Verified sequence saved · {state.tonal.enrollment.sessions.length} sessions · activation remains separate.</p> : <p className={styles.provenance}>Activation blocked until all eight exact titles and their source are founder-approved.</p>}
+      </div>
+      <div className={styles.formGrid}><label>Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div>
+      <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review Week 1</button></div>
+      {activationError ? <p role="alert" className={styles.warning}>{activationError}</p> : null}
+      {activationReview ? <div className={styles.proposal}><strong>Proposed — the program is still not started</strong><p>Week 1 begins {prettyDate(programStartDate)}. Monday and Thursday are the two Tonal sessions, Tuesday and Saturday build toward a continuous 5K, Friday is optional light conditioning, and Sunday is hard rest. Existing accepted history stays unchanged.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min · {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy || !tonalEnrollmentReady(state.tonal)}>{activationBusy ? "Activating…" : "Confirm and activate"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
+    </section> : null}
 
     {view === "today" ? <div className={styles.stack}>
       <section className={`${styles.card} ${styles.hero}`}>
@@ -578,16 +633,18 @@ function ActivityReview({ proposal, defaultDate, maxDate, onAccept, onReject }: 
   const [occurredOn, setOccurredOn] = useState(defaultDate);
   const [dateConflictConfirmed, setDateConflictConfirmed] = useState(false);
   const dateConflict = compareActivityDate(proposal.sourceDate, occurredOn) === "conflict";
-  const numericFields: Array<{ key: Exclude<keyof ActivityFacts, "activityType" | "pace" | "notes">; label: string; step?: number }> = [
+  const numericFields: Array<{ key: keyof Pick<ActivityFacts, "durationMinutes" | "distanceMiles" | "averageSpeedMph" | "averageHeartRate" | "maxHeartRate" | "elevationFeet" | "reportedCalories" | "whoopStrain" | "steps" | "ruckWeightLb" | "tonalSessionOrder" | "totalVolumeLb" | "maxResistanceLb" | "completedSets" | "completedReps">; label: string; step?: number }> = [
     { key: "durationMinutes", label: "Duration · min", step: .1 }, { key: "distanceMiles", label: "Distance · mi", step: .01 },
     { key: "averageSpeedMph", label: "Average speed · mph", step: .1 }, { key: "averageHeartRate", label: "Average HR", step: 1 },
     { key: "maxHeartRate", label: "Max HR", step: 1 }, { key: "elevationFeet", label: "Elevation · ft", step: 1 },
     { key: "reportedCalories", label: "Reported calories", step: 1 }, { key: "whoopStrain", label: "WHOOP strain", step: .1 },
     { key: "steps", label: "Steps", step: 1 }, { key: "ruckWeightLb", label: "Ruck / vest · lb", step: .1 },
+    { key: "tonalSessionOrder", label: "Tonal session order", step: 1 }, { key: "totalVolumeLb", label: "Tonal volume · lb", step: 1 },
+    { key: "maxResistanceLb", label: "Max resistance · lb", step: .1 }, { key: "completedSets", label: "Completed sets", step: 1 }, { key: "completedReps", label: "Completed reps", step: 1 },
   ];
   const updateActivity = (index: number, updater: (facts: ActivityFacts) => ActivityFacts) => setActivities((current) => current.map((facts, candidate) => candidate === index ? updater(facts) : facts));
   const setNumeric = (index: number, key: typeof numericFields[number]["key"], value: string) => updateActivity(index, (current) => ({ ...current, [key]: value === "" ? undefined : { value: Math.max(0, Number(value) || 0), evidence: "user_supplied" } }));
-  return <div className={styles.mealReview}><div className={styles.reviewTop}><strong>{proposal.summary}</strong><span>{proposal.confidence} confidence</span></div>{proposal.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<label>Activity date<input type="date" max={maxDate} value={occurredOn} onChange={(event) => { setOccurredOn(event.target.value); setDateConflictConfirmed(false); }} /></label>{proposal.sourceDate ? <p className={styles.provenance}>Visible screenshot date · {visibleActivityDateLabel(proposal.sourceDate)}</p> : <p className={styles.provenance}>No reliable date was visible in the screenshot; review the selected date.</p>}{dateConflict ? <div role="alert" className={styles.warning}><p>The selected date conflicts with the visible screenshot date. Nothing can be saved until you explicitly confirm the selected date.</p><label><input type="checkbox" checked={dateConflictConfirmed} onChange={(event) => setDateConflictConfirmed(event.target.checked)} /> Save under {prettyDate(occurredOn)} despite the visible source date</label></div> : null}{activities.map((facts, index) => <div key={index} className={styles.inlineEditor}><strong>Activity {index + 1}</strong><div className={styles.formGrid}><label>Activity<input value={facts.activityType} onChange={(event) => updateActivity(index, (current) => ({ ...current, activityType: event.target.value }))} /></label><label>Pace<input value={facts.pace?.value ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, pace: event.target.value ? { value: event.target.value, evidence: "user_supplied" } : undefined }))} /></label>{numericFields.map((field) => <label key={field.key}>{field.label}<input type="number" min="0" step={field.step} value={(facts[field.key] as { value?: number } | undefined)?.value ?? ""} onChange={(event) => setNumeric(index, field.key, event.target.value)} /></label>)}</div><label>Notes<textarea value={facts.notes ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, notes: event.target.value }))} /></label></div>)}{proposal.dailySummary ? <p className={styles.provenance}>Daily WHOOP summary — not saved as an individual activity{proposal.dailySummary.whoopStrain ? ` · strain ${proposal.dailySummary.whoopStrain.value}` : ""}{proposal.dailySummary.notes ? ` · ${proposal.dailySummary.notes}` : ""}</p> : null}<p>{proposal.guidance}</p><p className={styles.provenance}>Visible values retain observed provenance. Any field you change becomes user supplied. Distinct activities remain separate, and accepting them does not reschedule a planned workout.</p><div className={styles.actions}><button className={styles.primary} disabled={activities.some((facts) => !facts.activityType.trim()) || !occurredOn || occurredOn > maxDate || (dateConflict && !dateConflictConfirmed)} onClick={() => void onAccept(activities, occurredOn, dateConflictConfirmed)}>Accept {activities.length === 1 ? "activity" : `${activities.length} activities`}</button><button onClick={onReject}>Reject</button></div></div>;
+  return <div className={styles.mealReview}><div className={styles.reviewTop}><strong>{proposal.summary}</strong><span>{proposal.confidence} confidence</span></div>{proposal.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<label>Activity date<input type="date" max={maxDate} value={occurredOn} onChange={(event) => { setOccurredOn(event.target.value); setDateConflictConfirmed(false); }} /></label>{proposal.sourceDate ? <p className={styles.provenance}>Visible screenshot date · {visibleActivityDateLabel(proposal.sourceDate)}</p> : <p className={styles.provenance}>No reliable date was visible in the screenshot; review the selected date.</p>}{dateConflict ? <div role="alert" className={styles.warning}><p>The selected date conflicts with the visible screenshot date. Nothing can be saved until you explicitly confirm the selected date.</p><label><input type="checkbox" checked={dateConflictConfirmed} onChange={(event) => setDateConflictConfirmed(event.target.checked)} /> Save under {prettyDate(occurredOn)} despite the visible source date</label></div> : null}{activities.map((facts, index) => <div key={index} className={styles.inlineEditor}><strong>Activity {index + 1}</strong><div className={styles.formGrid}><label>Activity<input value={facts.activityType} onChange={(event) => updateActivity(index, (current) => ({ ...current, activityType: event.target.value }))} /></label><label>Tonal workout title<input value={facts.workoutTitle ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, workoutTitle: event.target.value || undefined }))} /></label><label>Tonal program<input value={facts.tonalProgramTitle ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, tonalProgramTitle: event.target.value || undefined }))} /></label><label>Trainer<input value={facts.trainer ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, trainer: event.target.value || undefined }))} /></label><label>Pace<input value={facts.pace?.value ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, pace: event.target.value ? { value: event.target.value, evidence: "user_supplied" } : undefined }))} /></label>{numericFields.map((field) => <label key={field.key}>{field.label}<input type="number" min="0" step={field.step} value={(facts[field.key] as { value?: number } | undefined)?.value ?? ""} onChange={(event) => setNumeric(index, field.key, event.target.value)} /></label>)}</div><label>Notes<textarea value={facts.notes ?? ""} onChange={(event) => updateActivity(index, (current) => ({ ...current, notes: event.target.value }))} /></label></div>)}{proposal.dailySummary ? <p className={styles.provenance}>Daily WHOOP summary — not saved as an individual activity{proposal.dailySummary.whoopStrain ? ` · strain ${proposal.dailySummary.whoopStrain.value}` : ""}{proposal.dailySummary.notes ? ` · ${proposal.dailySummary.notes}` : ""}</p> : null}<p>{proposal.guidance}</p><p className={styles.provenance}>Visible values retain observed provenance. Any field you change becomes user supplied. A Tonal session advances only when the approved program and workout title exactly match one verified session. Distinct activities remain separate, and accepting them does not otherwise reschedule a planned workout.</p><div className={styles.actions}><button className={styles.primary} disabled={activities.some((facts) => !facts.activityType.trim()) || !occurredOn || occurredOn > maxDate || (dateConflict && !dateConflictConfirmed)} onClick={() => void onAccept(activities, occurredOn, dateConflictConfirmed)}>Accept {activities.length === 1 ? "activity" : `${activities.length} activities`}</button><button onClick={onReject}>Reject</button></div></div>;
 }
 
 function ActivityRow({ activity, maxDate, onCorrectDate, onDeleteSource }: { activity: ActivityLog; maxDate?: string; onCorrectDate?: (date: string) => void; onDeleteSource?: () => void }) {

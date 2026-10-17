@@ -9,9 +9,9 @@ const STATE_TABLE = "continuum_performance_state";
 const MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 const SOURCE_RETENTION_DAYS = 90;
 const SOURCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
-const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "activate_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
+const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "configure_strength_program", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
 
-export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "activate_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
+export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "configure_strength_program" | "activate_program" | "transition_strength_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
 export type SavePerformanceStateInput = { founderKey: string; expectedRevision: number; state: PersonalState; mutation: PerformanceMutation; sourceFile?: File; now?: string };
 export type SavedPerformanceState = { state: PersonalState; revision: number; duplicate: boolean };
 
@@ -24,7 +24,12 @@ function safeExtension(file: File): string { return file.type === "image/png" ? 
 function addDays(iso: string, days: number): string { const value = new Date(iso); value.setUTCDate(value.getUTCDate() + days); return value.toISOString(); }
 function attachStoragePath(state: PersonalState, entryId: string | undefined, storagePath: string | undefined, idempotencyKey?: string): PersonalState {
   if (!entryId || !storagePath) return state;
-  return { ...state, meals: state.meals.map((meal) => meal.id === entryId && meal.photo ? { ...meal, photo: { ...meal.photo, storagePath } } : meal), activities: state.activities.map((activity) => (activity.id === entryId || activity.idempotencyKey === idempotencyKey) && activity.source ? { ...activity, source: { ...activity.source, storagePath } } : activity) };
+  return {
+    ...state,
+    meals: state.meals.map((meal) => meal.id === entryId && meal.photo ? { ...meal, photo: { ...meal.photo, storagePath } } : meal),
+    activities: state.activities.map((activity) => (activity.id === entryId || activity.idempotencyKey === idempotencyKey) && activity.source ? { ...activity, source: { ...activity.source, storagePath } } : activity),
+    tonal: { ...state.tonal, enrollment: { ...state.tonal.enrollment, sources: state.tonal.enrollment.sources.map((source) => source.digest && entryId.includes(source.digest.slice(0, 32)) && source.file ? { ...source, file: { ...source.file, storagePath } } : source) } },
+  };
 }
 function evidenceHash(mutation: PerformanceMutation): string {
   return createHash("sha256").update(JSON.stringify({ rawInput: mutation.rawInput ?? null, proposal: mutation.proposal ?? null, accepted: mutation.accepted ?? null, corrections: mutation.corrections ?? [] })).digest("hex");
@@ -40,7 +45,7 @@ export async function loadPerformanceStateWithClient(founderKey: string, today: 
 export async function savePerformanceStateWithClient(input: SavePerformanceStateInput, db: SupabaseClient): Promise<SavedPerformanceState> {
   const now = input.now ?? new Date().toISOString();
   if (!input.founderKey.trim() || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0 || !MUTATION_ACTIONS.has(input.mutation.action)) throw new Error("performance-mutation-invalid");
-  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
+  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "configure_strength_program"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
   let storagePath: string | undefined; let uploaded = false;
   if (input.sourceFile) {
     if (!SOURCE_MIME_TYPES.has(input.sourceFile.type) || input.sourceFile.size <= 0 || input.sourceFile.size > MAX_SOURCE_BYTES) throw new Error("performance-source-invalid");
@@ -53,6 +58,13 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
       }
       if (input.mutation.idempotencyKey !== `accept-activity-${actualDigest}` || input.mutation.entryId !== `activity-${actualDigest.slice(0, 32)}`) {
         throw new Error("performance-source-dedupe-invalid");
+      }
+    }
+    if (input.mutation.action === "configure_strength_program") {
+      const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
+      const accepted = input.mutation.accepted as { sourceDigest?: unknown } | undefined;
+      if (accepted?.sourceDigest !== actualDigest || input.mutation.idempotencyKey !== `configure-tonal-${actualDigest}` || input.mutation.entryId !== `tonal-program-${actualDigest.slice(0, 32)}`) {
+        throw new Error("performance-source-digest-invalid");
       }
     }
     storagePath = `${founderPath(input.founderKey)}/${input.mutation.entryId}.${safeExtension(input.sourceFile)}`;

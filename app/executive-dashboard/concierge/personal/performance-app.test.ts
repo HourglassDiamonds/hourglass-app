@@ -56,4 +56,14 @@ test("program stays in setup until a reviewed Monday activation is explicitly pe
   assert.match(source, /week11ObjectiveDate/);
   assert.match(source, /lastPersistedState/);
   assert.match(source, /serialized === lastPersistedState\.current/);
+  for (const copy of ["Fit Over 40", "two strength workouts per week", "Next Level Strength", "12 Weeks to Jacked", "TONAL PROGRAM SCREENSHOT", "Verify and save sequence", "Activation blocked"]) assert.match(source, new RegExp(copy));
+  assert.match(source, /tonalEnrollmentReady/);
+  assert.match(source, /configure_strength_program/);
+  assert.match(source, /tonal-session-sequence-required/);
+});
+
+test("Tonal completion screenshots remain editable and require exact approved identity", () => {
+  for (const label of ["Tonal workout title", "Tonal program", "Trainer", "Tonal volume", "Max resistance", "Completed sets", "Completed reps"]) assert.match(source, new RegExp(label));
+  assert.match(source, /markTonalSessionCompletedFromActivity/);
+  assert.match(source, /exactly match one verified session/);
 });

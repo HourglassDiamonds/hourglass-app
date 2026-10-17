@@ -1,61 +1,10 @@
-import type { PersonalState, ScheduledWorkout, WorkoutPrescription } from "./types";
+import { createInitialTonalPlan, requiredTonalSessionCount, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG, TONAL_PROGRESSION, verifiedTonalSessions } from "./tonal-programs";
+import type { PersonalState, ScheduledWorkout, TonalProgramId, TonalProgramPlan, TonalProgramSource, TonalProgramTransition, WorkoutPrescription } from "./types";
 
 const DAY_MS = 86_400_000;
 export const PROGRAM_RESTART_DATE = "2026-10-12";
 export const PROGRAM_TIME_ZONE = "America/New_York";
-export const PROGRAM_HORIZON_DAYS = 12 * 7;
-
-export const WEEKLY_PROGRAM: readonly WorkoutPrescription[] = [
-  {
-    id: "foundation-a", name: "Foundation A · Tonal strength", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 45,
-    notes: "Full-body strength. Leave 2–3 clean reps in reserve.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "moderate",
-    exercises: [
-      { id: "front-squat", name: "Tonal front squat", equipment: "Tonal", sets: 3, targetReps: [8, 10], targetLoad: 40, notes: "Brace first; keep every rep clean.", progressionContext: "Add the smallest load only after all sets reach 10 with 2 RIR." },
-      { id: "bench", name: "Tonal bench press", equipment: "Tonal + bench", sets: 3, targetReps: [8, 12], targetLoad: 35, notes: "Stop before form changes.", progressionContext: "Build reps before load." },
-      { id: "pulldown", name: "Tonal lat pulldown", equipment: "Tonal bar", sets: 3, targetReps: [8, 12], targetLoad: 40, notes: "Pull elbows down without leaning back.", progressionContext: "Build clean reps before load." },
-    ],
-  },
-  {
-    id: "foundation-b", name: "Foundation B · hinge + pull", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 45,
-    notes: "Hinge, press, row, and trunk work without grinding.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "high",
-    exercises: [
-      { id: "rdl", name: "Tonal Romanian deadlift", equipment: "Tonal bar", sets: 3, targetReps: [8, 10], targetLoad: 45, notes: "Hips back; stop at the hamstring limit.", progressionContext: "Hold when recovery is poor; never chase missed volume." },
-      { id: "press", name: "Tonal standing press", equipment: "Tonal handles", sets: 3, targetReps: [8, 12], targetLoad: 20, notes: "Ribs stacked; no backbend.", progressionContext: "Build reps before load." },
-      { id: "row", name: "Tonal seated row", equipment: "Tonal", sets: 3, targetReps: [10, 12], targetLoad: 35, notes: "Finish with elbows, not momentum.", progressionContext: "Add load after three clean top-range sets." },
-    ],
-  },
-  {
-    id: "restore", name: "Restore · walk + mobility", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 25,
-    notes: "Easy movement only. Recovery creates room to progress.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "none", exercises: [],
-  },
-  {
-    id: "foundation-c", name: "Foundation C · full body", domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: 46,
-    notes: "Finish the strength week with crisp volume, not failure.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "moderate",
-    exercises: [
-      { id: "split-squat", name: "Tonal split squat", equipment: "Tonal handles", sets: 3, targetReps: [8, 10], targetLoad: 20, notes: "Use a short stable stance and control the descent.", progressionContext: "Build clean reps before load." },
-      { id: "chest-press", name: "Tonal standing chest press", equipment: "Tonal handles", sets: 3, targetReps: [10, 12], targetLoad: 25, notes: "Staggered stance; resist rotation.", progressionContext: "Progress only after repeatable top-range sets." },
-      { id: "pullover", name: "Tonal pullover", equipment: "Tonal rope", sets: 3, targetReps: [10, 15], targetLoad: 25, notes: "Keep ribs down and move through the shoulders.", progressionContext: "Hold load until all reps stay controlled." },
-    ],
-  },
-  {
-    id: "easy-run", name: "Easy 5K development", domain: "engine", mode: "run", intent: "moderate", durationMinutes: 32,
-    notes: "Conversational run/walk with a controlled finish. Do not chase exercise calories.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "moderate", exercises: [],
-    alternative: { name: "Peloton aerobic build", domain: "engine", mode: "peloton", intent: "moderate", durationMinutes: 38, notes: "Steady aerobic work with a controlled finish; no all-out intervals.", lowerBodyLoad: "moderate", exercises: [] },
-  },
-  {
-    id: "ruck-foundation", name: "Light ruck + 5 / 10 / 15", domain: "engine", mode: "combination", intent: "easy", durationMinutes: 35,
-    notes: "Gradual ruck re-entry, then unhurried bodyweight practice. Add time before load and stop well short of failure.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "low", exercises: [
-      { id: "benchmark-pull", name: "Pull-up progression", equipment: "Pull-up bar", sets: 3, targetReps: [5, 5], notes: "Use the easiest version that stays controlled.", progressionContext: "Build rounds before advancing the movement." },
-      { id: "benchmark-push", name: "Push-up progression", equipment: "Floor or incline", sets: 3, targetReps: [10, 10], notes: "Choose an incline that keeps every rep strict.", progressionContext: "Lower the incline only after repeatable rounds." },
-      { id: "benchmark-squat", name: "Squat progression", equipment: "Floor or support", sets: 3, targetReps: [15, 15], notes: "Controlled reps to a repeatable depth.", progressionContext: "Reduce support only after clean repeatable rounds." },
-    ],
-    alternative: { name: "Peloton recovery ride + movement", domain: "recovery", mode: "combination", intent: "easy", durationMinutes: 35, notes: "Easy spin followed by controlled bodyweight movement.", lowerBodyLoad: "low", exercises: [] },
-  },
-  {
-    id: "hard-rest", name: "Hard rest", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 0,
-    notes: "No catch-up workout. Easy daily living is enough; begin Monday recovered.", trainingBlock: "Foundation · sustainable strength + 5K", lowerBodyLoad: "none", exercises: [],
-  },
-] as const;
+export const PROGRAM_HORIZON_DAYS = 4 * 7;
 
 export function dateKey(date = new Date()): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
@@ -71,8 +20,8 @@ export function weekdayIndex(key: string): number {
   return day === 0 ? 6 : day - 1;
 }
 
-export function plannedWorkout(key: string, anchorDate = PROGRAM_RESTART_DATE): ScheduledWorkout {
-  const prescription = programPrescription(key, anchorDate);
+export function plannedWorkout(key: string, anchorDate = PROGRAM_RESTART_DATE, tonal = createInitialTonalPlan()): ScheduledWorkout {
+  const prescription = programPrescription(key, anchorDate, tonal);
   return {
     id: `program-${key}-${prescription.id}`,
     date: key,
@@ -90,16 +39,34 @@ export function programWeek(key: string, anchorDate = PROGRAM_RESTART_DATE): num
   return Math.floor(elapsed / 7) + 1;
 }
 
-function programPrescription(key: string, anchorDate: string): WorkoutPrescription {
+function programPrescription(key: string, anchorDate: string, tonal: TonalProgramPlan): WorkoutPrescription {
   const week = programWeek(key, anchorDate);
-  const prescription = structuredClone(WEEKLY_PROGRAM[weekdayIndex(key)]!);
-  prescription.trainingBlock = `Week ${week} · sustainable strength + 5K`;
-  if (week >= 11 && prescription.id === "easy-run") {
-    prescription.name = "Continuous 5K objective";
-    prescription.durationMinutes = 40;
-    prescription.notes = "Run the continuous 5K only if the prior ten weeks support it. A controlled run/walk remains a valid completion.";
+  const day = weekdayIndex(key);
+  const block = TONAL_PROGRAM_CATALOG[tonal.selectedProgramId];
+  const base: Pick<WorkoutPrescription, "trainingBlock" | "exercises"> = { trainingBlock: `Week ${week} · ${block.title} + 5K development`, exercises: [] };
+  const strengthDays = block.weeklyFrequency === 2 ? [0, 3] : [0, 1, 3, 4];
+  const strengthDayIndex = strengthDays.indexOf(day);
+  if (strengthDayIndex >= 0) {
+    const order = (week - 1) * block.weeklyFrequency + strengthDayIndex + 1;
+    const session = tonal.enrollment.sessions.find((candidate) => candidate.order === order);
+    return {
+      ...base,
+      id: `tonal-${block.id}-${order}`,
+      name: session?.title ? `${block.title} · ${session.title}` : `${block.title} · Session ${order} — title confirmation required`,
+      domain: "strength", mode: "tonal", intent: "moderate", durationMinutes: block.sessionMinutes[1],
+      notes: session?.title ? `Follow Tonal's verified session exactly with ${block.trainer}.` : "Do not activate or perform this slot from Continuum until its exact Tonal title is confirmed from the app or machine.",
+      lowerBodyLoad: "moderate", tonalProgramId: block.id, tonalSessionOrder: order,
+    };
   }
-  return prescription;
+  if (block.weeklyFrequency === 2 && day === 1) return { ...base, id: "run-progression-a", name: "5K development · easy run/walk", domain: "engine", mode: "run", intent: "easy", durationMinutes: Math.min(36, 28 + (week - 1) * 2), notes: "Conversational effort. Preserve fresh legs after Monday strength; no hard intervals.", lowerBodyLoad: "moderate" };
+  if (day === 2) return { ...base, id: "restore", name: "Recovery · walk + mobility", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 25, notes: "Easy movement only. Recovery protects the next Tonal session.", lowerBodyLoad: "none" };
+  if (block.weeklyFrequency === 2 && day === 4) return { ...base, id: "optional-conditioning", name: "Optional light conditioning / ruck", domain: "engine", mode: "ruck", intent: "easy", durationMinutes: 30, notes: "Optional only. Skip when Thursday strength or recovery signals warrant it; never convert this into a third heavy workout.", lowerBodyLoad: "low" };
+  if (day === 5) return { ...base, id: "run-progression-b", name: "5K development · aerobic run/walk", domain: "engine", mode: "run", intent: "moderate", durationMinutes: Math.min(42, 34 + (week - 1) * 2), notes: "Controlled aerobic progression. Finish with energy in reserve.", lowerBodyLoad: "moderate" };
+  return { ...base, id: "hard-rest", name: "Hard rest", domain: "recovery", mode: "recovery", intent: "easy", durationMinutes: 0, notes: "No catch-up workout. Begin Monday recovered.", lowerBodyLoad: "none" };
+}
+
+export function previewTrainingWeek(tonal: TonalProgramPlan, anchorDate: string): ScheduledWorkout[] {
+  return Array.from({ length: 7 }, (_, offset) => plannedWorkout(shiftDate(anchorDate, offset), anchorDate, tonal));
 }
 
 export function createInitialPersonalState(today = dateKey()): PersonalState {
@@ -107,6 +74,7 @@ export function createInitialPersonalState(today = dateKey()): PersonalState {
   return {
     version: 3,
     program: { status: "setup", anchorVersion: 1, legacyAnchorDate: PROGRAM_RESTART_DATE },
+    tonal: createInitialTonalPlan(),
     schedule: [],
     sessions: [],
     recoveryEntries: [],
@@ -121,13 +89,52 @@ export function createInitialPersonalState(today = dateKey()): PersonalState {
 export function activateTrainingProgram(state: PersonalState, anchorDate: string, activatedAt = new Date().toISOString()): PersonalState {
   if (state.program.status !== "setup") throw new Error("performance-program-already-active");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(anchorDate) || weekdayIndex(anchorDate) !== 0) throw new Error("performance-program-start-must-be-monday");
-  const generated = Array.from({ length: PROGRAM_HORIZON_DAYS }, (_, offset) => plannedWorkout(shiftDate(anchorDate, offset), anchorDate));
+  if (!tonalEnrollmentReady(state.tonal)) throw new Error("tonal-session-sequence-required");
+  const block = TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId];
+  const generated = Array.from({ length: block.durationWeeks * 7 }, (_, offset) => plannedWorkout(shiftDate(anchorDate, offset), anchorDate, state.tonal));
+  const sessions = state.tonal.enrollment.sessions.map((session) => ({
+    ...session,
+    scheduledWorkoutId: generated.find((workout) => workout.prescription.tonalSessionOrder === session.order)?.id,
+  }));
+  if (sessions.length !== requiredTonalSessionCount(block.id) || sessions.some((session) => !session.scheduledWorkoutId)) throw new Error("tonal-session-schedule-invalid");
   const retainedIds = new Set(state.sessions.map((session) => session.scheduledWorkoutId));
   const historical = state.schedule.filter((workout) => workout.date < anchorDate && (retainedIds.has(workout.id) || !["planned", "unresolved"].includes(workout.status)));
   return {
     ...state,
     program: { status: "active", anchorVersion: 1, anchorDate, activatedAt, legacyAnchorDate: state.program.legacyAnchorDate || PROGRAM_RESTART_DATE },
+    tonal: { ...state.tonal, enrollment: { ...state.tonal.enrollment, status: "active", startedOn: anchorDate, sessions } },
     schedule: [...historical, ...generated].sort((a, b) => a.date.localeCompare(b.date)),
     progressionProposals: state.progressionProposals.filter((proposal) => proposal.status !== "pending" && proposal.status !== "edited"),
   };
+}
+
+export function transitionTrainingProgram(state: PersonalState, input: {
+  nextProgramId: TonalProgramId;
+  startDate: string;
+  sessionTitles: readonly string[];
+  source: TonalProgramSource;
+  readiness: TonalProgramTransition["readiness"];
+  reviewedAt: string;
+  approvedAt: string;
+}): PersonalState {
+  const current = state.tonal.enrollment;
+  if (state.program.status !== "active" || current.status !== "completed") throw new Error("tonal-transition-requires-completion");
+  const currentIndex = TONAL_PROGRESSION.indexOf(current.programId);
+  if (TONAL_PROGRESSION[currentIndex + 1] !== input.nextProgramId) throw new Error("tonal-transition-order-invalid");
+  if (!input.approvedAt || !input.reviewedAt) throw new Error("tonal-transition-founder-approval-required");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.startDate) || weekdayIndex(input.startDate) !== 0) throw new Error("performance-program-start-must-be-monday");
+  const sessions = verifiedTonalSessions(input.nextProgramId, input.sessionTitles);
+  const nextTonal: TonalProgramPlan = {
+    ...state.tonal,
+    selectedProgramId: input.nextProgramId,
+    enrollment: { programId: input.nextProgramId, status: "active", sessions, sources: [input.source], founderVerifiedAt: input.approvedAt, startedOn: input.startDate },
+    completedEnrollments: [...state.tonal.completedEnrollments, current],
+    transitions: [...state.tonal.transitions, { from: current.programId, to: input.nextProgramId, reviewedAt: input.reviewedAt, approvedAt: input.approvedAt, readiness: input.readiness }],
+  };
+  const block = TONAL_PROGRAM_CATALOG[input.nextProgramId];
+  const generated = Array.from({ length: block.durationWeeks * 7 }, (_, offset) => plannedWorkout(shiftDate(input.startDate, offset), input.startDate, nextTonal));
+  nextTonal.enrollment.sessions = sessions.map((session) => ({ ...session, scheduledWorkoutId: generated.find((workout) => workout.prescription.tonalSessionOrder === session.order)?.id }));
+  if (nextTonal.enrollment.sessions.some((session) => !session.scheduledWorkoutId)) throw new Error("tonal-session-schedule-invalid");
+  const preserved = state.schedule.filter((workout) => workout.date < input.startDate || !["planned", "unresolved"].includes(workout.status));
+  return { ...state, tonal: nextTonal, schedule: [...preserved, ...generated].sort((a, b) => a.date.localeCompare(b.date)) };
 }

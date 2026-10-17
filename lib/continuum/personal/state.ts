@@ -1,5 +1,6 @@
-import { createInitialPersonalState, plannedWorkout, PROGRAM_RESTART_DATE, shiftDate } from "./program";
-import type { PersonalState, ScheduledWorkout } from "./types";
+import { createInitialPersonalState, PROGRAM_RESTART_DATE } from "./program";
+import { createInitialTonalPlan, TONAL_PROGRESSION } from "./tonal-programs";
+import type { PersonalState, ScheduledWorkout, TonalProgramId, TonalProgramPlan } from "./types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -12,6 +13,46 @@ function isWorkout(value: unknown): value is ScheduledWorkout {
     typeof value.prescription.name === "string" && Array.isArray(value.prescription.exercises) && Array.isArray(value.history);
 }
 
+function parseTonalPlan(value: unknown): TonalProgramPlan {
+  const fallback = createInitialTonalPlan();
+  if (!isRecord(value) || !TONAL_PROGRESSION.includes(value.selectedProgramId as TonalProgramId) || !isRecord(value.enrollment)) return fallback;
+  const enrollment = value.enrollment;
+  if (!TONAL_PROGRESSION.includes(enrollment.programId as TonalProgramId) || !["setup", "active", "completed", "paused"].includes(String(enrollment.status))) return fallback;
+  const sessions = Array.isArray(enrollment.sessions) ? enrollment.sessions.flatMap((candidate) => {
+    if (!isRecord(candidate) || !Number.isSafeInteger(candidate.order) || Number(candidate.order) < 1 || typeof candidate.title !== "string" || !candidate.title.trim()) return [];
+    return [{ order: Number(candidate.order), title: candidate.title.slice(0, 160), scheduledWorkoutId: typeof candidate.scheduledWorkoutId === "string" ? candidate.scheduledWorkoutId : undefined, completedActivityId: typeof candidate.completedActivityId === "string" ? candidate.completedActivityId : undefined }];
+  }) : [];
+  const sources = Array.isArray(enrollment.sources) ? enrollment.sources.flatMap((candidate) => {
+    if (!isRecord(candidate) || !["tonal_app_screenshot", "tonal_link", "founder_confirmed"].includes(String(candidate.kind)) || typeof candidate.reference !== "string" || typeof candidate.reviewedAt !== "string") return [];
+    return [{ kind: candidate.kind as "tonal_app_screenshot" | "tonal_link" | "founder_confirmed", reference: candidate.reference.slice(0, 500), reviewedAt: candidate.reviewedAt, digest: typeof candidate.digest === "string" ? candidate.digest : undefined, file: isRecord(candidate.file) && typeof candidate.file.name === "string" && typeof candidate.file.type === "string" && typeof candidate.file.size === "number" ? { name: candidate.file.name, type: candidate.file.type, size: candidate.file.size, storagePath: typeof candidate.file.storagePath === "string" ? candidate.file.storagePath : undefined } : undefined }];
+  }) : [];
+  return {
+    progression: [...TONAL_PROGRESSION],
+    selectedProgramId: value.selectedProgramId as TonalProgramId,
+    enrollment: {
+      programId: enrollment.programId as TonalProgramId,
+      status: enrollment.status as "setup" | "active" | "completed" | "paused",
+      sessions,
+      sources,
+      founderVerifiedAt: typeof enrollment.founderVerifiedAt === "string" ? enrollment.founderVerifiedAt : undefined,
+      startedOn: typeof enrollment.startedOn === "string" ? enrollment.startedOn : undefined,
+      completedAt: typeof enrollment.completedAt === "string" ? enrollment.completedAt : undefined,
+    },
+    completedEnrollments: Array.isArray(value.completedEnrollments)
+      ? value.completedEnrollments.flatMap((candidate) => {
+        const parsed = parseTonalPlan({
+          selectedProgramId: isRecord(candidate) ? candidate.programId : undefined,
+          enrollment: candidate,
+          completedEnrollments: [],
+          transitions: [],
+        }).enrollment;
+        return parsed.status === "completed" ? [parsed] : [];
+      })
+      : [],
+    transitions: Array.isArray(value.transitions) ? value.transitions as TonalProgramPlan["transitions"] : [],
+  };
+}
+
 export function parsePersonalState(raw: string | null, today: string): PersonalState {
   const fallback = createInitialPersonalState(today);
   if (!raw) return fallback;
@@ -20,12 +61,14 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
     if (!isRecord(value) || (value.version !== 2 && value.version !== 3)) return fallback;
     const schedule = Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120) : [];
     const rawProgram = value.version === 3 && isRecord(value.program) ? value.program : null;
-    const active = rawProgram?.status === "active" && typeof rawProgram.anchorDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawProgram.anchorDate) && typeof rawProgram.activatedAt === "string";
+    const tonal = parseTonalPlan(value.tonal);
+    const active = rawProgram?.status === "active" && typeof rawProgram.anchorDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawProgram.anchorDate) && typeof rawProgram.activatedAt === "string" && ["active", "completed", "paused"].includes(tonal.enrollment.status);
     const next: PersonalState = {
       version: 3,
       program: active
         ? { status: "active", anchorDate: rawProgram.anchorDate as string, activatedAt: rawProgram.activatedAt as string, anchorVersion: 1, legacyAnchorDate: PROGRAM_RESTART_DATE }
         : { status: "setup", anchorVersion: 1, legacyAnchorDate: PROGRAM_RESTART_DATE },
+      tonal: active ? tonal : { ...tonal, enrollment: { ...tonal.enrollment, status: "setup", startedOn: undefined, completedAt: undefined } },
       schedule: active ? schedule : preserveHistoricalSchedule(schedule, value.sessions),
       sessions: Array.isArray(value.sessions) ? value.sessions as PersonalState["sessions"] : [],
       recoveryEntries: Array.isArray(value.recoveryEntries) ? value.recoveryEntries as PersonalState["recoveryEntries"] : [],
@@ -133,12 +176,7 @@ export function migrateLegacyPersonalState(raw: string | null, today: string): P
 
 export function ensureSchedule(state: PersonalState, today: string): PersonalState {
   if (state.program.status !== "active" || !state.program.anchorDate) return { ...state, schedule: preserveHistoricalSchedule(state.schedule, state.sessions) };
-  const schedule = [...state.schedule];
-  for (let offset = 0; offset < 14; offset += 1) {
-    const key = shiftDate(today, offset);
-    if (key >= state.program.anchorDate && !schedule.some((workout) => workout.originalDate === key)) schedule.push(plannedWorkout(key, state.program.anchorDate));
-  }
-  return rolloverUnresolved({ ...state, schedule: schedule.sort((a, b) => a.date.localeCompare(b.date)) }, today);
+  return rolloverUnresolved(state, today);
 }
 
 export function rolloverUnresolved(state: PersonalState, today: string, now = new Date().toISOString()): PersonalState {

@@ -2,9 +2,10 @@ export type TrainingMode = "tonal" | "peloton" | "bodyweight" | "ruck" | "run" |
 export type TrainingDomain = "strength" | "engine" | "recovery";
 export type WorkoutStatus = "planned" | "unresolved" | "in_progress" | "completed" | "deferred" | "skipped" | "replaced";
 export type Provenance = "program" | "user" | "sterling" | "manual_recovery" | "ai_meal_estimate" | "user_confirmed";
-export type PerformanceSourceType = "text" | "meal_photo" | "nutrition_label" | "activity_screenshot";
+export type PerformanceSourceType = "text" | "meal_photo" | "nutrition_label" | "activity_screenshot" | "tonal_program_screenshot";
 export type ProposalConfidence = "low" | "medium" | "high";
 export type EvidenceKind = "observed" | "estimated" | "user_supplied";
+export type TonalProgramId = "fit-over-40" | "next-level-strength" | "12-weeks-to-jacked";
 
 export type SourceReference = {
   name: string;
@@ -42,6 +43,8 @@ export type WorkoutPrescription = {
   trainingBlock: string;
   lowerBodyLoad: "none" | "low" | "moderate" | "high";
   exercises: ExercisePrescription[];
+  tonalProgramId?: TonalProgramId;
+  tonalSessionOrder?: number;
   alternative?: WorkoutAlternative;
 };
 
@@ -173,6 +176,10 @@ export type ActivityMetric<T> = {
 
 export type ActivityFacts = {
   activityType: string;
+  workoutTitle?: string;
+  trainer?: string;
+  tonalProgramTitle?: string;
+  tonalSessionOrder?: ActivityMetric<number>;
   durationMinutes?: ActivityMetric<number>;
   distanceMiles?: ActivityMetric<number>;
   pace?: ActivityMetric<string>;
@@ -184,6 +191,10 @@ export type ActivityFacts = {
   whoopStrain?: ActivityMetric<number>;
   steps?: ActivityMetric<number>;
   ruckWeightLb?: ActivityMetric<number>;
+  totalVolumeLb?: ActivityMetric<number>;
+  maxResistanceLb?: ActivityMetric<number>;
+  completedSets?: ActivityMetric<number>;
+  completedReps?: ActivityMetric<number>;
   notes?: string;
 };
 
@@ -268,6 +279,53 @@ export type ProgressionProposal = {
   status: "pending" | "accepted" | "edited" | "rejected";
 };
 
+export type TonalProgramSource = {
+  kind: "tonal_app_screenshot" | "tonal_link" | "founder_confirmed";
+  reference: string;
+  digest?: string;
+  file?: SourceReference;
+  reviewedAt: string;
+};
+
+export type TonalProgramSession = {
+  order: number;
+  title: string;
+  scheduledWorkoutId?: string;
+  completedActivityId?: string;
+};
+
+export type TonalProgramEnrollment = {
+  programId: TonalProgramId;
+  status: "setup" | "active" | "completed" | "paused";
+  sessions: TonalProgramSession[];
+  sources: TonalProgramSource[];
+  founderVerifiedAt?: string;
+  startedOn?: string;
+  completedAt?: string;
+};
+
+export type TonalProgramTransition = {
+  from: TonalProgramId;
+  to: TonalProgramId;
+  reviewedAt: string;
+  approvedAt?: string;
+  readiness: {
+    adherence: string;
+    strengthProgression: string;
+    recoveryAndFatigue: string;
+    runningProgress: string;
+    availableTrainingTime: string;
+  };
+};
+
+export type TonalProgramPlan = {
+  progression: TonalProgramId[];
+  selectedProgramId: TonalProgramId;
+  enrollment: TonalProgramEnrollment;
+  completedEnrollments: TonalProgramEnrollment[];
+  transitions: TonalProgramTransition[];
+};
+
 export type SterlingProposal = {
   id: string;
   command: string;
@@ -297,6 +355,7 @@ export type PersonalState = {
     activatedAt?: string;
     legacyAnchorDate: string;
   };
+  tonal: TonalProgramPlan;
   schedule: ScheduledWorkout[];
   sessions: WorkoutSession[];
   recoveryEntries: RecoveryEntry[];

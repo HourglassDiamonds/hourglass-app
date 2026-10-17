@@ -6,6 +6,11 @@ import { activateTrainingProgram, createInitialPersonalState } from "./program";
 import { createHash } from "node:crypto";
 import { correctActivityDate } from "./mutations";
 import type { NaturalIngestionProposal } from "./types";
+import { configureTonalProgram } from "./tonal-programs";
+
+function configuredState(today = "2026-10-15") {
+  return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", sessionTitles: Array.from({ length: 8 }, (_, index) => `Verified ${index + 1}`), source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "2026-10-17T10:00:00Z" }, founderVerifiedAt: "2026-10-17T10:00:00Z" });
+}
 
 type Row = Record<string, unknown>;
 
@@ -116,7 +121,7 @@ test("an accepted adjustment uses the durable audit action and database constrai
 
 test("founder-confirmed activation is an idempotent durable mutation", async () => {
   const db = fakeSupabase();
-  const state = activateTrainingProgram(createInitialPersonalState("2026-10-15"), "2026-10-19", "2026-10-15T12:00:00Z");
+  const state = activateTrainingProgram(configuredState(), "2026-10-19", "2026-10-17T12:00:00Z");
   const mutation = { idempotencyKey: "activate-program-2026-10-19", action: "activate_program" as const, accepted: { startDate: "2026-10-19" } };
   const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation }, db.client);
   const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation }, db.client);
@@ -124,6 +129,24 @@ test("founder-confirmed activation is an idempotent durable mutation", async () 
   assert.equal(retry.duplicate, true);
   assert.equal(db.audits.size, 1);
   assert.equal(first.state.program.anchorDate, "2026-10-19");
+});
+
+test("Tonal program screenshot configuration preserves digest provenance and deduplicates", async () => {
+  const db = fakeSupabase();
+  const bytes = new Uint8Array([9, 8, 7, 6]);
+  const digest = createHash("sha256").update(bytes).digest("hex");
+  const state = configureTonalProgram({
+    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", sessionTitles: Array.from({ length: 8 }, (_, index) => `Verified ${index + 1}`),
+    source: { kind: "tonal_app_screenshot", reference: `sha256:${digest}`, digest, reviewedAt: "2026-10-17T12:00:00Z", file: { name: "tonal.png", type: "image/png", size: bytes.length } },
+    founderVerifiedAt: "2026-10-17T12:00:00Z",
+  });
+  const mutation = { idempotencyKey: `configure-tonal-${digest}`, action: "configure_strength_program" as const, entryId: `tonal-program-${digest.slice(0, 32)}`, sourceType: "tonal_program_screenshot" as const, accepted: { sourceDigest: digest } };
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: new File([bytes], "tonal.png", { type: "image/png" }) }, db.client);
+  const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: new File([bytes], "tonal.png", { type: "image/png" }) }, db.client);
+  assert.equal(first.state.tonal.enrollment.sources[0]?.file?.storagePath?.includes(digest.slice(0, 32)), true);
+  assert.equal(retry.duplicate, true);
+  assert.equal(db.audits.size, 1);
+  assert.equal(db.uploads.size, 1);
 });
 
 test("source uploads require an accepted entry and supported private image", async () => {

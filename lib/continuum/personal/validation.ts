@@ -1,5 +1,6 @@
 import type { ActivityFacts, ActivityLog, MealItem, MealLog, NaturalIngestionProposal, PersonalState } from "./types";
 import { compareActivityDate } from "./activity-date";
+import { requiredTonalSessionCount, tonalEnrollmentReady, TONAL_PROGRESSION } from "./tonal-programs";
 
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -37,10 +38,14 @@ export function validateMealLog(meal: MealLog): string[] {
 function metricErrors(facts: ActivityFacts): string[] {
   const errors: string[] = [];
   if (!facts.activityType.trim() || facts.activityType.length > 80) errors.push("activity-type");
+  if (facts.workoutTitle && facts.workoutTitle.length > 160) errors.push("activity-workout-title");
+  if (facts.trainer && facts.trainer.length > 120) errors.push("activity-trainer");
+  if (facts.tonalProgramTitle && facts.tonalProgramTitle.length > 160) errors.push("activity-tonal-program");
   const ranges: Array<[keyof ActivityFacts, number, number]> = [
     ["durationMinutes", 0, 1_440], ["distanceMiles", 0, 500], ["averageSpeedMph", 0, 100],
     ["averageHeartRate", 20, 260], ["maxHeartRate", 20, 280], ["elevationFeet", 0, 100_000],
     ["reportedCalories", 0, 10_000], ["whoopStrain", 0, 21], ["steps", 0, 250_000], ["ruckWeightLb", 0, 250],
+    ["tonalSessionOrder", 1, 500], ["totalVolumeLb", 0, 10_000_000], ["maxResistanceLb", 0, 500], ["completedSets", 0, 1_000], ["completedReps", 0, 10_000],
   ];
   for (const [key, min, max] of ranges) {
     const metric = facts[key];
@@ -74,6 +79,14 @@ export function validatePersonalState(state: PersonalState): string[] {
   if (state.program.status === "setup" && (state.program.anchorDate || state.program.activatedAt)) errors.push("program-setup-state");
   if (state.program.status === "setup" && state.schedule.some((workout) => ["planned", "unresolved"].includes(workout.status))) errors.push("program-setup-schedule");
   if (state.program.status === "active" && (!state.program.anchorDate || !DATE_KEY.test(state.program.anchorDate) || new Date(`${state.program.anchorDate}T12:00:00Z`).getUTCDay() !== 1 || !state.program.activatedAt)) errors.push("program-active-state");
+  if (!state.tonal || !TONAL_PROGRESSION.includes(state.tonal.selectedProgramId) || state.tonal.enrollment.programId !== state.tonal.selectedProgramId) errors.push("tonal-program-identity");
+  else {
+    if (state.tonal.enrollment.sessions.length > requiredTonalSessionCount(state.tonal.selectedProgramId)) errors.push("tonal-session-count");
+    if (state.tonal.enrollment.founderVerifiedAt && !tonalEnrollmentReady(state.tonal)) errors.push("tonal-session-sequence");
+    if (state.program.status === "active" && (!tonalEnrollmentReady(state.tonal) || !["active", "completed", "paused"].includes(state.tonal.enrollment.status))) errors.push("tonal-active-state");
+    if (state.program.status === "setup" && state.tonal.enrollment.status !== "setup") errors.push("tonal-setup-state");
+    if (state.tonal.completedEnrollments.some((enrollment) => enrollment.status !== "completed" || !enrollment.completedAt)) errors.push("tonal-completed-history");
+  }
   if (state.meals.length > 5_000 || state.activities.length > 5_000) errors.push("state-size");
   errors.push(...state.meals.flatMap(validateMealLog), ...state.activities.flatMap(validateActivityLog));
   if (!finite(state.nutritionTargets.calories, 500, 10_000) || !finite(state.nutritionTargets.protein, 0, 500)) errors.push("nutrition-targets");

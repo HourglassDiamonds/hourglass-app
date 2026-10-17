@@ -2,9 +2,14 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState } from "./program";
 import { migrateLegacyPersonalState, parsePersonalState, rolloverUnresolved } from "./state";
+import { configureTonalProgram } from "./tonal-programs";
+
+function configuredState(today: string) {
+  return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", sessionTitles: Array.from({ length: 8 }, (_, index) => `Verified ${index + 1}`), source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T10:00:00Z` }, founderVerifiedAt: `${today}T10:00:00Z` });
+}
 
 test("an untouched workout remains planned / unresolved after midnight", () => {
-  const state = activateTrainingProgram(createInitialPersonalState("2026-10-12"), "2026-10-12", "2026-10-11T12:00:00Z");
+  const state = activateTrainingProgram(configuredState("2026-10-12"), "2026-10-12", "2026-10-11T12:00:00Z");
   const rolled = rolloverUnresolved(state, "2026-10-13", "2026-10-13T04:01:00.000Z");
   const prior = rolled.schedule.find((workout) => workout.date === "2026-10-12");
   assert.equal(prior?.status, "unresolved");
@@ -34,4 +39,16 @@ test("existing v2 browser state migrates forward with an empty frequent-meal col
   assert.deepEqual(parsed.frequentMeals, []);
   assert.equal(parsed.schedule.length, 0);
   assert.equal(parsed.program.status, "setup");
+});
+
+test("a completed Tonal block remains completed after canonical reload", () => {
+  const active = activateTrainingProgram(configuredState("2026-10-17"), "2026-10-19", "2026-10-17T12:01:00.000Z");
+  const completed = {
+    ...active,
+    tonal: { ...active.tonal, enrollment: { ...active.tonal.enrollment, status: "completed" as const, completedAt: "2026-11-15T12:00:00.000Z" } },
+  };
+  const parsed = parsePersonalState(JSON.stringify(completed), "2026-11-16");
+  assert.equal(parsed.program.status, "active");
+  assert.equal(parsed.tonal.enrollment.status, "completed");
+  assert.equal(parsed.tonal.enrollment.completedAt, "2026-11-15T12:00:00.000Z");
 });
