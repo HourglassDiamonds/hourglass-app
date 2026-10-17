@@ -44,6 +44,21 @@ function walk(dir: string, found: string[] = []): string[] {
   return found;
 }
 
+const SAFE_GMAIL_FRESHNESS_LOG = /console\.info\(\s*JSON\.stringify\(\{\s*event:\s*"continuum\.gmail_freshness\.foreground",\s*safeErrorCode:\s*result\.safeErrorCode,\s*durableSourceHealth:\s*result\.durableSourceHealth,\s*lastSuccessfulSyncAt:\s*result\.lastSuccessfulSyncAt,\s*\}\),\s*\);/;
+
+function assertPrivacySafeConciergeLogging(source: string, relativePath: string): void {
+  const calls = source.match(/console\.(?:log|info|debug|warn)\s*\(/g) ?? [];
+  if (calls.length === 0) return;
+
+  assert.equal(relativePath, "gmail-freshness-actions.ts");
+  assert.deepEqual(calls, ["console.info("]);
+  assert.match(source, SAFE_GMAIL_FRESHNESS_LOG);
+  assert.doesNotMatch(
+    source.replace(SAFE_GMAIL_FRESHNESS_LOG, ""),
+    /console\.(?:log|info|debug|warn)\s*\(/,
+  );
+}
+
 describe("Concierge Client Memory UI", () => {
   it("renders empty facts and wishes without placeholders", () => {
     const person = personProfile({ displayName: "Ada Lovelace" });
@@ -274,7 +289,10 @@ describe("Concierge Client Memory UI", () => {
       assert.doesNotMatch(source, /generateStaticParams/);
       assert.doesNotMatch(source, /import_row_key/);
       assert.doesNotMatch(source, /email_hash|phone_hash/);
-      assert.doesNotMatch(source, /console\.(log|info|debug|warn)/);
+      assertPrivacySafeConciergeLogging(
+        source,
+        file.slice(CONCIERGE_DIR.length + 1).replaceAll("\\", "/"),
+      );
     }
     const page = readFileSync(
       join(CONCIERGE_DIR, "client", "[personId]", "page.tsx"),
@@ -458,6 +476,39 @@ describe("Concierge Client Memory UI", () => {
     assert.match(editForm, /Save Changes/);
     assert.doesNotMatch(editForm, /street|address|spouse|birthday|project|noteText/i);
     assert.doesNotMatch(editForm, /roles|source_system|created_by/);
+  });
+
+  it("permits only the reviewed aggregate Gmail freshness telemetry event", () => {
+    const safeSource = readFileSync(
+      join(CONCIERGE_DIR, "gmail-freshness-actions.ts"),
+      "utf8",
+    );
+    assertPrivacySafeConciergeLogging(safeSource, "gmail-freshness-actions.ts");
+  });
+
+  it("rejects sensitive or arbitrary Gmail logging despite the aggregate exception", () => {
+    const unsafeSources = [
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", messageBody: message.body }));',
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", subject: message.subject }));',
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", snippet: message.snippet }));',
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", participant: message.from }));',
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", token: accessToken }));',
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", credentials }));',
+      'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground", response: rawApiResponse }));',
+      'console.warn("gmail failed", rawApiResponse);',
+    ];
+
+    for (const source of unsafeSources) {
+      assert.throws(() =>
+        assertPrivacySafeConciergeLogging(source, "gmail-freshness-actions.ts"),
+      );
+    }
+    assert.throws(() =>
+      assertPrivacySafeConciergeLogging(
+        'console.info(JSON.stringify({ event: "continuum.gmail_freshness.foreground" }));',
+        "another-action.ts",
+      ),
+    );
   });
 
   it("renders an honest Today surface without fake intelligence", () => {
