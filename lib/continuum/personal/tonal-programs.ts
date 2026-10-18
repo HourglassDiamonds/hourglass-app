@@ -23,6 +23,8 @@ export type TonalCatalogProgram = {
   cadenceNote?: string;
 };
 
+export const FIT_OVER_40_WEEKLY_FREQUENCY = 3 as const;
+
 export const TONAL_PROGRAM_CATALOG: Readonly<Record<TonalProgramId, TonalCatalogProgram>> = {
   "fit-over-40": {
     id: "fit-over-40",
@@ -30,12 +32,12 @@ export const TONAL_PROGRAM_CATALOG: Readonly<Record<TonalProgramId, TonalCatalog
     trainer: "Coach Tanysha",
     level: "intermediate",
     durationWeeks: 4,
-    weeklyFrequency: 2,
+    weeklyFrequency: FIT_OVER_40_WEEKLY_FREQUENCY,
     sessionMinutes: [35, 55],
     availability: "available",
     officialUrl: "https://tonal.com/pages/training-programs",
-    cadenceEvidence: "https://tonal.com/pages/success-stories-active-aging",
-    cadenceNote: "Tonal's current Fit Over 40 feature pages say two workouts per week; its general catalog currently conflicts by listing three. Confirm the machine/app cadence before activation.",
+    cadenceEvidence: "Founder-confirmed from the Tonal app or machine on 2026-10-18",
+    cadenceNote: "The founder verified three prescribed workouts per week, four weeks, and twelve ordered sessions in Tonal. Session content still arrives just in time from screenshots.",
   },
   "next-level-strength": {
     id: "next-level-strength",
@@ -74,7 +76,7 @@ export function createInitialTonalPlan(): TonalProgramPlan {
   return {
     progression: [...TONAL_PROGRESSION],
     selectedProgramId: "fit-over-40",
-    enrollment: { programId: "fit-over-40", weeklyFrequency: 2, status: "setup", sessions: [], sources: [] },
+    enrollment: { programId: "fit-over-40", weeklyFrequency: FIT_OVER_40_WEEKLY_FREQUENCY, status: "setup", sessions: [], sources: [] },
     completedEnrollments: [],
     transitions: [],
   };
@@ -87,13 +89,13 @@ export function createTonalSessionSlots(programId: TonalProgramId, weeklyFrequen
 export function configureTonalProgram(input: {
   state: PersonalState;
   programId: TonalProgramId;
-  weeklyFrequency: 2 | 3;
+  weeklyFrequency: typeof FIT_OVER_40_WEEKLY_FREQUENCY;
   source: TonalProgramSource;
   founderVerifiedAt: string;
 }): PersonalState {
   if (input.state.program.status !== "setup") throw new Error("tonal-configuration-requires-setup");
   if (input.programId !== "fit-over-40") throw new Error("tonal-initial-program-invalid");
-  if (![2, 3].includes(input.weeklyFrequency)) throw new Error("tonal-cadence-invalid");
+  if (input.weeklyFrequency !== FIT_OVER_40_WEEKLY_FREQUENCY) throw new Error("tonal-cadence-invalid");
   if (!input.source.reference.trim() || !input.founderVerifiedAt) throw new Error("tonal-source-required");
   const sessions = createTonalSessionSlots(input.programId, input.weeklyFrequency);
   const enrollment: TonalProgramEnrollment = {
@@ -110,6 +112,7 @@ export function configureTonalProgram(input: {
 export function tonalEnrollmentReady(plan: TonalProgramPlan): boolean {
   return Boolean(plan.enrollment.founderVerifiedAt)
     && plan.enrollment.programId === plan.selectedProgramId
+    && plan.enrollment.weeklyFrequency === TONAL_PROGRAM_CATALOG[plan.selectedProgramId].weeklyFrequency
     && plan.enrollment.sources.length > 0
     && plan.enrollment.sessions.length === requiredTonalSessionCount(plan.selectedProgramId, plan.enrollment.weeklyFrequency)
     && plan.enrollment.sessions.every((session, index) => session.order === index + 1);

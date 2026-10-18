@@ -56,7 +56,9 @@ test("program stays in setup until a reviewed Monday activation is explicitly pe
   assert.match(source, /week11ObjectiveDate/);
   assert.match(source, /lastPersistedState/);
   assert.match(source, /serialized === lastPersistedState\.current/);
-  for (const copy of ["Fit Over 40", "two or three strength workouts per week", "Next Level Strength", "12 Weeks to Jacked", "Confirm Fit Over 40 enrollment", "Activation is blocked"]) assert.match(source, new RegExp(copy));
+  for (const copy of ["Fit Over 40", "Founder-confirmed cadence:", "3 Tonal workouts per week", "12 prescribed sessions", "Next Level Strength", "12 Weeks to Jacked", "Confirm Fit Over 40 enrollment", "Activation is blocked"]) assert.match(source, new RegExp(copy));
+  assert.doesNotMatch(source, /2 Tonal workouts per week/);
+  assert.doesNotMatch(source, /two or three strength workouts per week/);
   assert.match(source, /tonalEnrollmentReady/);
   assert.match(source, /configure_strength_program/);
   assert.match(source, /tonal-session-sequence-required/);

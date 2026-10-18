@@ -5,7 +5,7 @@ import { configureTonalProgram, markTonalSessionCompletedFromActivity, nextTonal
 
 function configured() {
   return configureTonalProgram({
-    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 2,
+    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 3,
     source: { kind: "tonal_app_screenshot", reference: "sha256:abc", digest: "abc", reviewedAt: "2026-10-17T12:00:00Z", file: { name: "program.png", type: "image/png", size: 123 } },
     founderVerifiedAt: "2026-10-17T12:00:00Z",
   });
@@ -13,22 +13,23 @@ function configured() {
 
 test("official Tonal identities and published program dimensions stay exact", () => {
   assert.deepEqual({ ...TONAL_PROGRAM_CATALOG["fit-over-40"], cadenceNote: undefined }, {
-    id: "fit-over-40", title: "Fit Over 40", trainer: "Coach Tanysha", level: "intermediate", durationWeeks: 4, weeklyFrequency: 2,
-    sessionMinutes: [35, 55], availability: "available", officialUrl: "https://tonal.com/pages/training-programs", cadenceEvidence: "https://tonal.com/pages/success-stories-active-aging", cadenceNote: undefined,
+    id: "fit-over-40", title: "Fit Over 40", trainer: "Coach Tanysha", level: "intermediate", durationWeeks: 4, weeklyFrequency: 3,
+    sessionMinutes: [35, 55], availability: "available", officialUrl: "https://tonal.com/pages/training-programs", cadenceEvidence: "Founder-confirmed from the Tonal app or machine on 2026-10-18", cadenceNote: undefined,
   });
   assert.equal(TONAL_PROGRAM_CATALOG["next-level-strength"].weeklyFrequency, 4);
   assert.equal(TONAL_PROGRAM_CATALOG["next-level-strength"].durationWeeks, 4);
   assert.equal(TONAL_PROGRAM_CATALOG["12-weeks-to-jacked"].weeklyFrequency, 4);
   assert.equal(TONAL_PROGRAM_CATALOG["12-weeks-to-jacked"].durationWeeks, 12);
-  assert.equal(requiredTonalSessionCount("fit-over-40"), 8);
+  assert.equal(requiredTonalSessionCount("fit-over-40"), 12);
 });
 
 test("configuration requires founder-confirmed cadence but no future workout titles", () => {
-  const two = configured();
-  assert.equal(two.tonal.enrollment.sessions.length, 8);
-  assert.equal(two.tonal.enrollment.sessions.every((session) => session.title === undefined), true);
+  const confirmed = configured();
+  assert.equal(confirmed.tonal.enrollment.sessions.length, 12);
+  assert.equal(confirmed.tonal.enrollment.sessions.every((session) => session.title === undefined), true);
   const three = configureTonalProgram({ state: createInitialPersonalState(), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "now" }, founderVerifiedAt: "now" });
   assert.equal(three.tonal.enrollment.sessions.length, 12);
+  assert.throws(() => configureTonalProgram({ state: createInitialPersonalState(), programId: "fit-over-40", weeklyFrequency: 2 as 3, source: { kind: "founder_confirmed", reference: "stale assumption", reviewedAt: "now" }, founderVerifiedAt: "now" }), /tonal-cadence-invalid/);
 });
 
 test("exact founder-approved Tonal activity marks only the matching session complete", () => {
@@ -56,7 +57,7 @@ test("founder-approved transition activates only the next verified program block
   const next = transitionTrainingProgram(completed, {
     nextProgramId: "next-level-strength", startDate: "2026-11-16", weeklyFrequency: 4,
     source: { kind: "tonal_link", reference: "https://tonal.com/program/verified", reviewedAt: "2026-11-15T12:00:00Z" }, reviewedAt: "2026-11-15T12:00:00Z", approvedAt: "2026-11-15T12:05:00Z",
-    readiness: { adherence: "8/8 complete", strengthProgression: "ready", recoveryAndFatigue: "stable", runningProgress: "on plan", availableTrainingTime: "four days confirmed" },
+    readiness: { adherence: "12/12 complete", strengthProgression: "ready", recoveryAndFatigue: "stable", runningProgress: "on plan", availableTrainingTime: "four days confirmed" },
   });
   assert.equal(next.tonal.selectedProgramId, "next-level-strength");
   assert.equal(next.tonal.enrollment.status, "active");
@@ -64,7 +65,7 @@ test("founder-approved transition activates only the next verified program block
   assert.equal(next.tonal.completedEnrollments.length, 1);
   assert.equal(next.tonal.completedEnrollments[0]?.programId, "fit-over-40");
   assert.equal(next.tonal.completedEnrollments[0]?.status, "completed");
-  assert.equal(next.tonal.completedEnrollments[0]?.sessions.length, 8);
+  assert.equal(next.tonal.completedEnrollments[0]?.sessions.length, 12);
   assert.equal(next.schedule.filter((workout) => workout.date >= "2026-11-16" && workout.prescription.mode === "tonal").length, 16);
   assert.equal(next.schedule.filter((workout) => workout.date >= "2026-11-16" && workout.prescription.id === "hard-rest").length, 4);
   assert.equal(next.tonal.progression.includes("12-weeks-to-jacked"), true);

@@ -6,7 +6,7 @@ import { configureTonalProgram } from "./tonal-programs";
 
 function configuredState() {
   return configureTonalProgram({
-    state: createInitialPersonalState("2026-10-15"), programId: "fit-over-40", weeklyFrequency: 2,
+    state: createInitialPersonalState("2026-10-15"), programId: "fit-over-40", weeklyFrequency: 3,
     source: { kind: "founder_confirmed", reference: "Tonal machine program overview", reviewedAt: "2026-10-17T12:00:00Z" },
     founderVerifiedAt: "2026-10-17T12:00:00Z",
   });
@@ -29,11 +29,22 @@ test("explicit activation generates Week 1 from the selected Monday with Sunday 
   const sunday = state.schedule.find((workout) => workout.date === "2026-10-25")!;
   assert.equal(monday.prescription.id, "tonal-fit-over-40-1");
   assert.equal(monday.prescription.name, "Fit Over 40 · Session 1 — title confirmation required");
-  assert.equal(state.schedule.find((workout) => workout.date === "2026-10-22")?.prescription.id, "tonal-fit-over-40-2");
+  assert.equal(state.schedule.find((workout) => workout.date === "2026-10-21")?.prescription.id, "tonal-fit-over-40-2");
+  assert.equal(state.schedule.find((workout) => workout.date === "2026-10-23")?.prescription.id, "tonal-fit-over-40-3");
   assert.match(monday.prescription.trainingBlock, /Week 1/);
   assert.equal(sunday.prescription.id, "hard-rest");
   assert.equal(state.schedule.length, 28);
-  assert.equal(state.tonal.enrollment.sessions.filter((session) => session.scheduledWorkoutId).length, 8);
+  assert.equal(state.tonal.enrollment.sessions.filter((session) => session.scheduledWorkoutId).length, 12);
+  assert.deepEqual(
+    state.schedule.filter((workout) => workout.prescription.mode === "tonal").map((workout) => [workout.date, workout.prescription.tonalSessionOrder]),
+    [
+      ["2026-10-19", 1], ["2026-10-21", 2], ["2026-10-23", 3],
+      ["2026-10-26", 4], ["2026-10-28", 5], ["2026-10-30", 6],
+      ["2026-11-02", 7], ["2026-11-04", 8], ["2026-11-06", 9],
+      ["2026-11-09", 10], ["2026-11-11", 11], ["2026-11-13", 12],
+    ],
+  );
+  assert.equal(state.tonal.enrollment.sessions.every((session) => session.title === undefined), true);
 });
 
 test("legacy fixed-anchor state enters setup without creating missed sessions", () => {
@@ -49,11 +60,11 @@ test("legacy fixed-anchor state enters setup without creating missed sessions", 
   assert.deepEqual(rolled, parsed);
 });
 
-test("Week 1 preview has two Tonal slots, two runs, optional conditioning, and Sunday hard rest", () => {
+test("Week 1 preview has three Tonal slots, two runs, Thursday recovery, and Sunday hard rest", () => {
   const preview = previewTrainingWeek(configuredState().tonal, "2026-10-19");
-  assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "tonal").map((workout) => workout.date), ["2026-10-19", "2026-10-22"]);
+  assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "tonal").map((workout) => workout.date), ["2026-10-19", "2026-10-21", "2026-10-23"]);
   assert.deepEqual(preview.filter((workout) => workout.prescription.mode === "run").map((workout) => workout.date), ["2026-10-20", "2026-10-24"]);
-  assert.match(preview.find((workout) => workout.date === "2026-10-23")!.prescription.name, /Optional light conditioning/);
+  assert.match(preview.find((workout) => workout.date === "2026-10-22")!.prescription.name, /Recovery/);
   assert.equal(preview.at(-1)?.prescription.id, "hard-rest");
 });
 

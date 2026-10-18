@@ -5,7 +5,7 @@ import { activateTrainingProgram, createInitialPersonalState, shiftDate } from "
 import { configureTonalProgram } from "./tonal-programs";
 
 function activeState(today: string) {
-  const setup = configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 2, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T03:00:00.000Z` }, founderVerifiedAt: `${today}T03:00:00.000Z` });
+  const setup = configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T03:00:00.000Z` }, founderVerifiedAt: `${today}T03:00:00.000Z` });
   return activateTrainingProgram(setup, today, `${today}T04:00:00.000Z`);
 }
 
@@ -71,29 +71,29 @@ test("natural-language schedule intent becomes an editable proposal without muta
   assert.equal(state.program.anchorDate, "2026-10-12");
 });
 
-test("moving a Tonal session onto the next planned session explicitly discloses every displacement", () => {
+test("moving Monday Tonal onto Tuesday explicitly discloses and safely reflows the Tuesday run", () => {
   const state = activeState("2026-10-12");
-  const foundationA = state.schedule.find((workout) => workout.date === "2026-10-12")!;
-  const foundationB = state.schedule.find((workout) => workout.date === "2026-10-13")!;
+  const mondayTonal = state.schedule.find((workout) => workout.date === "2026-10-12")!;
+  const tuesdayRun = state.schedule.find((workout) => workout.date === "2026-10-13")!;
   const proposal = buildSterlingScheduleAdjustment({
     state,
-    command: "I played golf Monday. Move Monday Foundation A to Tuesday.",
-    workoutId: foundationA.id,
+    command: "I played golf Monday. Move Monday's Tonal session to Tuesday.",
+    workoutId: mondayTonal.id,
     targetDate: "2026-10-13",
-    summary: "Move Foundation A to Tuesday after Monday golf.",
+    summary: "Move Monday's Tonal session to Tuesday after Monday golf.",
     now: "2026-10-13T12:00:00.000Z",
   });
 
   assert.ok(proposal);
-  const displacedFoundationB = proposal.displacedWorkouts.find((workout) => workout.workoutId === foundationB.id);
-  assert.deepEqual(displacedFoundationB, {
-    workoutId: foundationB.id,
-    name: foundationB.prescription.name,
+  const displacedTuesdayRun = proposal.displacedWorkouts.find((workout) => workout.workoutId === tuesdayRun.id);
+  assert.deepEqual(displacedTuesdayRun, {
+    workoutId: tuesdayRun.id,
+    name: tuesdayRun.prescription.name,
     fromDate: "2026-10-13",
-    toDate: "2026-10-15",
+    toDate: "2026-10-16",
   });
   assert.equal(proposal.nextSchedule.filter((workout) => workout.date === "2026-10-13" && workout.status === "planned").length, 1);
-  assert.equal(proposal.nextSchedule.find((workout) => workout.id === foundationB.id)?.date, "2026-10-15");
+  assert.equal(proposal.nextSchedule.find((workout) => workout.id === tuesdayRun.id)?.date, "2026-10-16");
   assert.equal(new Set(proposal.nextSchedule.map((workout) => workout.id)).size, proposal.nextSchedule.length);
-  assert.equal(state.schedule.find((workout) => workout.id === foundationB.id)?.date, "2026-10-13", "proposal must not mutate the reviewed schedule");
+  assert.equal(state.schedule.find((workout) => workout.id === tuesdayRun.id)?.date, "2026-10-13", "proposal must not mutate the reviewed schedule");
 });

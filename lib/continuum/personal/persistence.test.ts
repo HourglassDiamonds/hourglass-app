@@ -9,7 +9,7 @@ import type { NaturalIngestionProposal } from "./types";
 import { configureTonalProgram, planTonalSessionFromScreenshot } from "./tonal-programs";
 
 function configuredState(today = "2026-10-15") {
-  return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 2, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "2026-10-17T10:00:00Z" }, founderVerifiedAt: "2026-10-17T10:00:00Z" });
+  return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "2026-10-17T10:00:00Z" }, founderVerifiedAt: "2026-10-17T10:00:00Z" });
 }
 
 type Row = Record<string, unknown>;
@@ -136,7 +136,7 @@ test("Tonal program screenshot configuration preserves digest provenance and ded
   const bytes = new Uint8Array([9, 8, 7, 6]);
   const digest = createHash("sha256").update(bytes).digest("hex");
   const state = configureTonalProgram({
-    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 2,
+    state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 3,
     source: { kind: "tonal_app_screenshot", reference: `sha256:${digest}`, digest, reviewedAt: "2026-10-17T12:00:00Z", file: { name: "tonal.png", type: "image/png", size: bytes.length } },
     founderVerifiedAt: "2026-10-17T12:00:00Z",
   });

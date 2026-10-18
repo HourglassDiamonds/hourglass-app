@@ -5,7 +5,7 @@ import { migrateLegacyPersonalState, parsePersonalState, rolloverUnresolved } fr
 import { configureTonalProgram } from "./tonal-programs";
 
 function configuredState(today: string) {
-  return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 2, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T10:00:00Z` }, founderVerifiedAt: `${today}T10:00:00Z` });
+  return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T10:00:00Z` }, founderVerifiedAt: `${today}T10:00:00Z` });
 }
 
 test("an untouched workout remains planned / unresolved after midnight", () => {

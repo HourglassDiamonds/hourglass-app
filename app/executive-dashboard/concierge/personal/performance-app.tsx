@@ -9,7 +9,7 @@ import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/
 import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealName, mealSignature, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
 import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, correctActivityDate as correctActivityDateInState } from "@/lib/continuum/personal/mutations";
 import { compareActivityDate, visibleActivityDateLabel } from "@/lib/continuum/personal/activity-date";
-import { configureTonalProgram, markTonalSessionCompletedFromActivity, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
+import { configureTonalProgram, FIT_OVER_40_WEEKLY_FREQUENCY, markTonalSessionCompletedFromActivity, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
 import type { ActivityFacts, ActivityLog, FrequentMeal, MealEstimate, MealItem, MealLog, NaturalIngestionProposal, PerformedSet, PerformanceSourceType, PersonalState, RecoveryEntry, ScheduledWorkout, SterlingProposal, TonalProgramMovement, WorkoutSession } from "@/lib/continuum/personal/types";
 import styles from "./performance.module.css";
 
@@ -74,7 +74,6 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [activationReview, setActivationReview] = useState(false);
   const [activationBusy, setActivationBusy] = useState(false);
   const [activationError, setActivationError] = useState("");
-  const [tonalCadence, setTonalCadence] = useState<2 | 3>(2);
   const [tonalConfigBusy, setTonalConfigBusy] = useState(false);
   const [tonalConfigFeedback, setTonalConfigFeedback] = useState("");
   const [tonalPlanProposal, setTonalPlanProposal] = useState<Extract<NaturalIngestionProposal, { kind: "activity" }> | null>(null);
@@ -169,18 +168,18 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     if (tonalConfigBusy || state.program.status !== "setup") return;
     setTonalConfigBusy(true); setTonalConfigFeedback(""); setActivationError("");
     try {
-      const reference = `Fit Over 40 confirmed in Tonal app or machine; ${tonalCadence} workouts per week`;
+      const reference = "Fit Over 40 founder-confirmed in Tonal app or machine; 3 workouts per week; 4 weeks; 12 prescribed sessions";
       const bytes = new TextEncoder().encode(reference).buffer;
       const digest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))).map((value) => value.toString(16).padStart(2, "0")).join("");
       const reviewedAt = new Date().toISOString();
       const source = { kind: "founder_confirmed" as const, reference, digest, reviewedAt };
-      const next = configureTonalProgram({ state, programId: "fit-over-40", weeklyFrequency: tonalCadence, source, founderVerifiedAt: reviewedAt });
+      const next = configureTonalProgram({ state, programId: "fit-over-40", weeklyFrequency: FIT_OVER_40_WEEKLY_FREQUENCY, source, founderVerifiedAt: reviewedAt });
       const saved = await persistStateMutation(next, {
         idempotencyKey: `configure-tonal-${digest}`,
         action: "configure_strength_program",
         entryId: `tonal-program-${digest.slice(0, 32)}`,
         sourceType: "text",
-        accepted: { programId: "fit-over-40", weeklyFrequency: tonalCadence, sourceDigest: digest },
+        accepted: { programId: "fit-over-40", weeklyFrequency: FIT_OVER_40_WEEKLY_FREQUENCY, durationWeeks: 4, prescribedSessions: 12, sourceDigest: digest },
       });
       setState(saved.state); setTonalConfigFeedback(saved.duplicate ? "Tonal enrollment already verified" : "Tonal enrollment verified and saved");
     } catch (error) {
@@ -208,7 +207,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         : message === "performance-mutation-action-unavailable"
           ? "This Preview database cannot record program activation yet. The program remains not started."
           : message === "tonal-session-sequence-required"
-            ? "Confirm Fit Over 40 and its actual two- or three-workout cadence before activation."
+            ? "Confirm the founder-verified Fit Over 40 cadence of three weekly workouts before activation."
           : "The program was not activated. Existing nutrition and activity history remains unchanged.");
     } finally { setActivationBusy(false); }
   }
@@ -595,13 +594,13 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
     {state.program.status === "setup" ? <section className={`${styles.card} ${styles.hero}`} data-program-status="setup">
       <p className={styles.kicker}>Training program · not started / setup</p>
-      <h2>Fit Over 40 first. Confirm the real cadence, then reveal each workout just in time.</h2>
-      <p>{TONAL_PROGRAM_CATALOG["fit-over-40"].trainer} · 4 weeks · founder-confirmed two or three strength workouts per week · 35–55 minutes. Tonal remains the source of truth for the workout order and details.</p>
+      <h2>Fit Over 40 first. Three weekly slots, with each workout revealed just in time.</h2>
+      <p>{TONAL_PROGRAM_CATALOG["fit-over-40"].trainer} · 4 weeks · founder-confirmed 3 strength workouts per week · 12 prescribed sessions · 35–55 minutes. Tonal remains the source of truth for the workout order and details.</p>
       <p>No workout is missed, no progression advances, and no catch-up session is created while setup is active. Next Level Strength and 12 Weeks to Jacked remain future, founder-approved blocks.</p>
       <div className={styles.inlineEditor}>
         <strong>Confirm enrollment</strong>
         <p>Confirm the cadence shown by the Tonal app or machine. Future workout titles are not required and will not be invented.</p>
-        <label>Fit Over 40 cadence<select value={tonalCadence} onChange={(event) => setTonalCadence(Number(event.target.value) as 2 | 3)}><option value={2}>2 Tonal workouts per week</option><option value={3}>3 Tonal workouts per week</option></select></label>
+        <p><strong>Founder-confirmed cadence:</strong> 3 Tonal workouts per week · 4 weeks · 12 prescribed sessions.</p>
         <div className={styles.actions}><button className={styles.primary} onClick={() => void configureTonalSequence()} disabled={tonalConfigBusy}>{tonalConfigBusy ? "Saving…" : "Confirm Fit Over 40 enrollment"}</button></div>
         {tonalConfigFeedback ? <p aria-live="polite" className={styles.warning}>{tonalConfigFeedback}</p> : null}
         {tonalEnrollmentReady(state.tonal) ? <p className={styles.provenance}>Enrollment saved · {state.tonal.enrollment.weeklyFrequency} weekly sessions · titles arrive from screenshots just in time · activation remains separate.</p> : <p className={styles.provenance}>Activation is blocked until program identity and cadence are founder-confirmed.</p>}
