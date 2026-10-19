@@ -111,6 +111,37 @@ export function validateSterlingTodayProposal(
     }
   }
 
+  const relationshipKeys = new Set<string>();
+  for (const relationship of proposal.relationshipProposals) {
+    const workUnit = workUnits.get(relationship.workUnitId);
+    if (!relationship.proposalKey.trim() || relationshipKeys.has(relationship.proposalKey)) {
+      errors.push(`duplicate-or-empty-relationship-key:${relationship.proposalKey}`);
+    }
+    relationshipKeys.add(relationship.proposalKey);
+    if (!workUnit) {
+      errors.push(`unknown-relationship-work-unit:${relationship.workUnitId}`);
+      continue;
+    }
+    if (relationship.requiresFounderApproval !== true) errors.push(`relationship-founder-approval-required:${relationship.proposalKey}`);
+    if (relationship.evidenceRefs.length === 0) errors.push(`relationship-evidence-required:${relationship.proposalKey}`);
+    for (const ref of relationship.evidenceRefs) {
+      if (!evidence.has(ref)) errors.push(`unknown-relationship-evidence:${relationship.proposalKey}:${ref}`);
+      else if (!workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-relationship-evidence:${relationship.proposalKey}:${ref}`);
+    }
+    if (relationship.threadIds.length === 0 || relationship.threadIds.some((threadId) => !workUnit.threadIds.includes(threadId))) {
+      errors.push(`relationship-thread-outside-work-unit:${relationship.proposalKey}`);
+    }
+    if (relationship.kind === "associate_existing_person") {
+      if (!relationship.personId || !people.has(relationship.personId) || relationship.projectId !== null) {
+        errors.push(`invalid-existing-person-association:${relationship.proposalKey}`);
+      }
+    } else if (relationship.kind === "associate_thread_with_project") {
+      if (!relationship.projectId || !projects.has(relationship.projectId)) {
+        errors.push(`invalid-project-thread-association:${relationship.proposalKey}`);
+      }
+    }
+  }
+
   const seenKeys = new Set<string>();
   const mutationValidations = proposal.proposedCanonicalMutations.map(mutation => {
     const reasons = validateMutation(mutation, { projects, people, evidence, jobs, seenKeys, workingSet });

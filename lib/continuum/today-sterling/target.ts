@@ -54,6 +54,7 @@ export function summarizeSterlingTodayTargetPackage(workingSet: SterlingTodayWor
       identityBasis: workUnit.identityBasis,
       projectId: workUnit.projectId,
       observedIdentifiers: workUnit.observedIdentifiers,
+      typedIdentifiers: workUnit.typedIdentifiers,
       threadIds: workUnit.threadIds,
       sourceRefs: workUnit.sourceRefs,
     },

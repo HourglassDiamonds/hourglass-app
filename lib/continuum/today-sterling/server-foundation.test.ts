@@ -53,11 +53,14 @@ describe("Sterling server-owned acceptance scope", () => {
   it("preserves the original ten and adds Audrey plus correction assertions", () => {
     const keys = new Set<string>(STERLING_TODAY_ACCEPTANCE_SCOPE.map((row) => row.key));
     for (const key of ["abbey", "sarah", "nathan", "alex", "madi", "dylan", "grant", "pennock", "duane", "timJenn",
-      "audrey", "lucasResolved", "justinIntake", "jenniferActionability"]) assert.equal(keys.has(key), true);
+      "audrey", "zane", "jackie", "jamesReturning", "noiseNewsletter", "noiseSolicitation", "nivodaReturn",
+      "lucasResolved", "justinIntake", "jenniferActionability"]) assert.equal(keys.has(key), true);
     assert.equal(scopeMatchesText(scopeDefinition("audrey")!, "CAD C026401"), true);
     assert.equal(scopeMatchesText(scopeDefinition("audrey")!, "Audreyy"), false);
     assert.equal(scopeMatchesIdentifierText(scopeDefinition("audrey")!, "Audrey"), false);
     assert.equal(scopeMatchesIdentifierText(scopeDefinition("audrey")!, "CAD C026401"), true);
+    assert.deepEqual(scopeDefinition("zane")?.exactThreadIds,
+      ["1a1212396a8ac111", "1a13660ae3fdb7ac", "1a13cc2c1f3d5951"]);
   });
 
   it("requires durable founder-correction identity rather than a matching name", () => {
@@ -176,6 +179,8 @@ describe("Sterling server execution boundaries", () => {
     assert.match(source, /executeSterlingEvidenceGatedRequest/);
     assert.match(source, /validateSterlingTodayProposal/);
     assert.match(source, /scopeMatchesIdentifierText/);
+    assert.match(source, /acceptanceThreadIds\(\)/);
+    assert.match(source, /explicitEvidenceGroups/);
     assert.doesNotMatch(source, /definitionMatchesStableInput\(definition, person\.displayName\)/);
   });
 
@@ -188,10 +193,12 @@ describe("Sterling server execution boundaries", () => {
 
   it("requires founder authentication and exposes no public diagnostic route", () => {
     const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
+    const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
     const page = read("app/executive-dashboard/concierge/sterling-today/page.tsx");
     const control = read("app/executive-dashboard/concierge/components/sterling-today-shadow-control.tsx");
     assert.match(action, /^"use server";/);
-    assert.match(action, /getAuthenticatedGmailHistoryStores/);
+    assert.match(runtime, /getAuthenticatedGmailHistoryStores/);
+    assert.doesNotMatch(action, /getSupabaseAdmin|SUPABASE_SERVICE_ROLE_KEY/);
     assert.doesNotMatch(action, /threadId|projectId|targetCase|request\.json/);
     assert.match(control, /<form action=\{assemblyAction\}/);
     assert.match(control, /<form action=\{semanticAction\}/);
@@ -202,8 +209,8 @@ describe("Sterling server execution boundaries", () => {
   });
 
   it("fails semantic execution closed before evidence assembly", () => {
-    const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
-    const semantic = action.slice(action.indexOf("export async function runSterlingTodaySemanticAction"));
+    const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
+    const semantic = runtime.slice(runtime.indexOf("export async function runAuthenticatedSterlingTodaySemantic"));
     assert.match(semantic, /semantic-feature-disabled/);
     assert.match(semantic, /durable-lease-unavailable/);
     assert.ok(semantic.indexOf("semantic-feature-disabled") < semantic.indexOf("assembleSterlingTodayShadow"));

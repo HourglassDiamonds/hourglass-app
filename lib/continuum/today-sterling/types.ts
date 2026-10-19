@@ -1,8 +1,8 @@
 /** Sterling-native Today V1 contracts. Sterling judges; Continuum validates. */
 import type { ProjectLifecycleStage } from "@/lib/continuum/client-memory/project-lifecycle";
 
-export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v2" as const;
-export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v4" as const;
+export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v3" as const;
+export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v5" as const;
 
 export const STERLING_TODAY_CATEGORIES = [
   "up_next", "founder_actions", "waiting_on_client", "waiting_on_shop",
@@ -57,13 +57,33 @@ export type SterlingPreviousTodayItem = {
 export type SterlingWorkingUnit = {
   workUnitId: string;
   kind: "canonical_project" | "provisional_evidence";
-  identityBasis: "canonical_project" | "exact_identifier" | "source_thread" | "source_record";
+  identityBasis: "canonical_project" | "exact_identifier" | "source_thread" | "source_record" | "scoped_evidence_group";
   projectId: string | null;
   label: string;
   observedIdentifiers: readonly string[];
+  typedIdentifiers: readonly { kind: "project" | "order" | "certificate" | "request" | "unknown"; value: string }[];
   threadIds: readonly string[];
   sourceRefs: readonly string[];
   evidenceRefs: readonly string[];
+};
+
+export const STERLING_RELATIONSHIP_PROPOSAL_KINDS = [
+  "associate_existing_person", "associate_thread_with_project",
+] as const;
+export type SterlingRelationshipProposalKind = (typeof STERLING_RELATIONSHIP_PROPOSAL_KINDS)[number];
+
+export type SterlingRelationshipProposal = {
+  proposalKey: string;
+  kind: SterlingRelationshipProposalKind;
+  workUnitId: string;
+  personId: string | null;
+  projectId: string | null;
+  threadIds: readonly string[];
+  basis: "exact_sender_identity" | "historical_thread_continuity" | "exact_operational_identifier" | "canonical_source_record";
+  confidence: SterlingConfidence;
+  reason: string;
+  evidenceRefs: readonly string[];
+  requiresFounderApproval: true;
 };
 
 export type SterlingTodayWorkingSet = {
@@ -125,6 +145,7 @@ export type SterlingTodayProposal = {
   contractVersion: typeof STERLING_TODAY_PROPOSAL_VERSION; runId: string; evidenceSnapshotId: string;
   generatedAt: string; portfolioAssessments: readonly SterlingPortfolioAssessment[];
   recommendations: readonly SterlingTodayRecommendation[];
+  relationshipProposals: readonly SterlingRelationshipProposal[];
   proposedCanonicalMutations: readonly SterlingProposedCanonicalMutation[]; portfolioAmbiguities: readonly string[];
 };
 

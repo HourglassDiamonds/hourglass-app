@@ -5,5 +5,6 @@ export * from "./evidence-load";
 export * from "./request";
 export * from "./validate";
 export * from "./acceptance";
+export * from "./october-19-acceptance";
 export * from "./target";
 export * from "./evidence-completeness";

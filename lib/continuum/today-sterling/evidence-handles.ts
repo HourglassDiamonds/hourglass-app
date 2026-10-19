@@ -59,6 +59,10 @@ export function resolveSterlingEvidenceHandles(
       obligations: resolveObligations(recommendation.obligations),
       evidenceRefs: resolveRefs(recommendation.evidenceRefs),
     })),
+    relationshipProposals: proposal.relationshipProposals.map(relationship => ({
+      ...relationship,
+      evidenceRefs: resolveRefs(relationship.evidenceRefs),
+    })),
     proposedCanonicalMutations: proposal.proposedCanonicalMutations.map(mutation => ({
       ...mutation,
       evidenceRefs: resolveRefs(mutation.evidenceRefs),

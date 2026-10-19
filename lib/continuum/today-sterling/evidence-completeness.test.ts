@@ -77,6 +77,7 @@ function baseWorkingSet(): SterlingTodayWorkingSet {
       projectId,
       label: `Project ${index + 1}`,
       observedIdentifiers: [],
+      typedIdentifiers: [],
       threadIds: [`thread-${index + 1}`],
       sourceRefs: [`gmail:thread:thread-${index + 1}:message:message-${index + 1}`],
       evidenceRefs: [`gmail-${index + 1}`, `canonical-${index + 1}`],
@@ -315,6 +316,7 @@ describe("Sterling permanent evidence completeness gate", () => {
         omissionReason: "No actionable recommendation.",
       }],
       recommendations: [],
+      relationshipProposals: [],
       proposedCanonicalMutations: [{
         proposalKey: "blocked-project-mutation",
         kind: "set_project_lifecycle",

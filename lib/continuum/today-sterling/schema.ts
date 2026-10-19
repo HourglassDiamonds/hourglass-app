@@ -1,5 +1,5 @@
 import {
-  STERLING_MUTATION_KINDS, STERLING_RELATIONSHIP_ROLES, STERLING_RESPONSIBLE_PARTIES,
+  STERLING_MUTATION_KINDS, STERLING_RELATIONSHIP_PROPOSAL_KINDS, STERLING_RELATIONSHIP_ROLES, STERLING_RESPONSIBLE_PARTIES,
   STERLING_TODAY_CATEGORIES, STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal,
 } from "./types";
 import { CUSTOM_LIFECYCLE_STAGES, REPAIR_LIFECYCLE_STAGES } from "@/lib/continuum/client-memory/project-lifecycle";
@@ -71,6 +71,19 @@ const mutation = {
     "targetLifecycleStage", "targetJobState", "targetResponsibleParty", "newJob", "reason",
     "evidenceRefs", "requiresFounderApproval"],
 } as const;
+const relationshipProposal = {
+  type: "object", additionalProperties: false,
+  properties: {
+    proposalKey: { type: "string" }, kind: { type: "string", enum: STERLING_RELATIONSHIP_PROPOSAL_KINDS },
+    workUnitId: { type: "string" }, personId: nullableString, projectId: nullableString,
+    threadIds: stringArray,
+    basis: { type: "string", enum: ["exact_sender_identity", "historical_thread_continuity", "exact_operational_identifier", "canonical_source_record"] },
+    confidence, reason: { type: "string" }, evidenceRefs: stringArray,
+    requiresFounderApproval: { type: "boolean", const: true },
+  },
+  required: ["proposalKey", "kind", "workUnitId", "personId", "projectId", "threadIds", "basis", "confidence",
+    "reason", "evidenceRefs", "requiresFounderApproval"],
+} as const;
 
 export const STERLING_TODAY_OUTPUT_SCHEMA = {
   type: "object", additionalProperties: false,
@@ -79,10 +92,11 @@ export const STERLING_TODAY_OUTPUT_SCHEMA = {
     runId: { type: "string" }, evidenceSnapshotId: { type: "string" }, generatedAt: { type: "string" },
     portfolioAssessments: { type: "array", items: portfolioAssessment },
     recommendations: { type: "array", items: recommendation },
+    relationshipProposals: { type: "array", items: relationshipProposal },
     proposedCanonicalMutations: { type: "array", items: mutation }, portfolioAmbiguities: stringArray,
   },
   required: ["contractVersion", "runId", "evidenceSnapshotId", "generatedAt", "portfolioAssessments", "recommendations",
-    "proposedCanonicalMutations", "portfolioAmbiguities"],
+    "relationshipProposals", "proposedCanonicalMutations", "portfolioAmbiguities"],
 } as const;
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -133,12 +147,20 @@ function validMutation(v: unknown): boolean {
     (v.targetResponsibleParty === null || oneOf(v.targetResponsibleParty, STERLING_RESPONSIBLE_PARTIES)) && validNew &&
     typeof v.reason === "string" && strings(v.evidenceRefs) && v.requiresFounderApproval === true;
 }
+function validRelationshipProposal(v: unknown): boolean {
+  return record(v) && typeof v.proposalKey === "string" && oneOf(v.kind, STERLING_RELATIONSHIP_PROPOSAL_KINDS) &&
+    typeof v.workUnitId === "string" && nullable(v.personId) && nullable(v.projectId) && strings(v.threadIds) &&
+    oneOf(v.basis, ["exact_sender_identity", "historical_thread_continuity", "exact_operational_identifier", "canonical_source_record"] as const) &&
+    oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.reason === "string" &&
+    strings(v.evidenceRefs) && v.requiresFounderApproval === true;
+}
 
 export function parseSterlingTodayProposal(value: unknown): SterlingTodayProposal | null {
   if (!record(value) || value.contractVersion !== STERLING_TODAY_PROPOSAL_VERSION || typeof value.runId !== "string" ||
       typeof value.evidenceSnapshotId !== "string" || typeof value.generatedAt !== "string" ||
       !Array.isArray(value.portfolioAssessments) || !value.portfolioAssessments.every(validPortfolioAssessment) ||
       !Array.isArray(value.recommendations) || !value.recommendations.every(validRecommendation) ||
+      !Array.isArray(value.relationshipProposals) || !value.relationshipProposals.every(validRelationshipProposal) ||
       !Array.isArray(value.proposedCanonicalMutations) || !value.proposedCanonicalMutations.every(validMutation) ||
       !strings(value.portfolioAmbiguities)) return null;
   return value as unknown as SterlingTodayProposal;

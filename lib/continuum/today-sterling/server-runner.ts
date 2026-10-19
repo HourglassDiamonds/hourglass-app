@@ -6,6 +6,7 @@ import { collectPagedRows } from "@/lib/continuum/candidates/page";
 import { rowToCandidate } from "@/lib/continuum/candidates/rows";
 import { CONTINUUM_CANDIDATES_TABLE } from "@/lib/continuum/candidates/activation";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
 import { SupabaseProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/supabase";
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
@@ -47,6 +48,7 @@ import type {
 import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
   acceptanceIdentifiers,
+  acceptanceThreadIds,
   candidateScopeText,
   isDurablyScopedFounderCorrection,
   scopeDefinition,
@@ -74,7 +76,7 @@ export type SterlingCalendarDiagnostic = {
 export type SterlingScopeCoverage = {
   publicId: string;
   resolved: boolean;
-  resolution: "exact_identifier" | "canonical_project" | "founder_correction" | "unresolved";
+  resolution: "exact_identifier" | "exact_thread_scope" | "canonical_project" | "founder_correction" | "unresolved";
   workUnitIds: readonly string[];
 };
 
@@ -210,6 +212,7 @@ function matchingUnits(
 ) {
   const evidence = new Map(workingSet.evidence.map((row) => [row.evidenceId, row]));
   return workingSet.workUnits.filter((unit) => {
+    if ((definition.exactThreadIds ?? []).some((threadId) => unit.threadIds.includes(threadId))) return true;
     if (scopeMatchesOperationalIdentifier(definition, unit.observedIdentifiers)) return true;
     if (unit.projectId && canonicalProjectIds.has(unit.projectId)) return true;
     if (definition.founderCorrectionOnly) {
@@ -231,18 +234,20 @@ function scopeCoverage(
     const canonicalProjectIds = canonicalProjectIdsByKey.get(definition.key) ?? new Set<string>();
     const units = matchingUnits(workingSet, definition, canonicalProjectIds);
     const exact = units.filter((unit) => scopeMatchesOperationalIdentifier(definition, unit.observedIdentifiers));
+    const exactThread = units.filter((unit) => (definition.exactThreadIds ?? []).some((threadId) => unit.threadIds.includes(threadId)));
     const founderCorrection = units.filter((unit) => unit.evidenceRefs.some((ref) => {
       const evidence = workingSet.evidence.find((row) => row.evidenceId === ref);
       return evidence?.sourceType === "founder_directive" && evidence.sourceRef.startsWith("founder-note:");
     }));
     const canonical = units.filter((unit) => unit.kind === "canonical_project");
-    const selected = exact.length === 1 ? exact : founderCorrection.length === 1 ? founderCorrection
+    const selected = exact.length === 1 ? exact : exactThread.length === 1 ? exactThread : founderCorrection.length === 1 ? founderCorrection
       : canonical.length === 1 ? canonical : [];
     return {
       publicId: definition.publicId,
       resolved: selected.length === 1,
       resolution: exact.length === 1 ? "exact_identifier"
-        : founderCorrection.length === 1 ? "founder_correction"
+        : exactThread.length === 1 ? "exact_thread_scope"
+          : founderCorrection.length === 1 ? "founder_correction"
           : canonical.length === 1 ? "canonical_project" : "unresolved",
       workUnitIds: units.map((row) => row.workUnitId),
     };
@@ -268,12 +273,15 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) => isDurablyScopedFounderCorrection(definition, event)),
   );
   const anchoredProjectIds = new Set(anchoredCorrections.flatMap((event) => event.projectId ? [event.projectId] : []));
-  const scopedProjects = projects.filter((project) => anchoredProjectIds.has(project.projectId) ||
+  const exactProjectIds = new Set(STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((definition) => [...(definition.exactProjectIds ?? [])]));
+  const scopedProjects = projects.filter((project) => exactProjectIds.has(project.projectId) || anchoredProjectIds.has(project.projectId) ||
     STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) => definitionMatchesStableInput(definition, projectText(project))));
   const scopedProjectIds = new Set(scopedProjects.map((project) => project.projectId));
   const canonicalProjectIdsByKey = new Map<string, ReadonlySet<string>>(
     STERLING_TODAY_ACCEPTANCE_SCOPE.map((definition) => [definition.key, new Set([
       ...scopedProjects.filter((project) => definitionMatchesStableInput(definition, projectText(project)))
+        .map((project) => project.projectId),
+      ...scopedProjects.filter((project) => (definition.exactProjectIds ?? []).includes(project.projectId))
         .map((project) => project.projectId),
       ...anchoredCorrections.filter((event) => isDurablyScopedFounderCorrection(definition, event))
         .flatMap((event) => event.projectId ? [event.projectId] : []),
@@ -281,13 +289,20 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   );
   const scopedCandidates = candidates.filter((candidate) => {
     const projectId = candidateProjectId(candidate);
-    return projectId != null && scopedProjectIds.has(projectId) || STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
+    const ids = collectExactGmailIds([candidate]);
+    const exactThreadMatch = STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
+      ids.threadIds.some((threadId) => (definition.exactThreadIds ?? []).includes(threadId)));
+    return exactThreadMatch || projectId != null && scopedProjectIds.has(projectId) || STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
       definitionMatchesStableInput(definition, candidateScopeText(candidate)));
   });
-  const scopedJobs = (jobs ?? []).filter((job) => job.projectId != null && scopedProjectIds.has(job.projectId) ||
+  const exactJobIds = new Set(STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((definition) => [...(definition.exactJobIds ?? [])]));
+  const scopedJobs = (jobs ?? []).filter((job) => exactJobIds.has(job.jobId) || job.projectId != null && scopedProjectIds.has(job.projectId) ||
     STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
       definitionMatchesStableInput(definition, `${job.subject} ${job.detail ?? ""}`)));
-  const scopedPeopleIds = new Set(scopedProjects.flatMap((project) => project.people.map((person) => person.personId)));
+  const scopedPeopleIds = new Set([
+    ...scopedProjects.flatMap((project) => project.people.map((person) => person.personId)),
+    ...STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((definition) => [...(definition.exactPersonIds ?? [])]),
+  ]);
   const scopedPeople = people.filter((person) => scopedPeopleIds.has(person.personId));
   const scopedCorrections = corrections.filter((event) => anchoredCorrections.includes(event) ||
     event.projectId != null && scopedProjectIds.has(event.projectId));
@@ -303,7 +318,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   const indexed = await expandSterlingIndexedThreadContext(
     input.client as never,
     await loadIndexedTodayThreadContext(scopedCandidates),
-    [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds],
+    [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds, ...acceptanceThreadIds()],
   );
   const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
   let gmailDiagnostics: TodayLiveEnrichmentDiagnostics | null = null;
@@ -329,6 +344,11 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     },
     previousToday: scopedPreviousToday,
     projectThreadIds,
+    explicitEvidenceGroups: STERLING_TODAY_ACCEPTANCE_SCOPE
+      .filter((definition) => (definition.exactThreadIds?.length ?? 0) > 0)
+      .map((definition) => ({ groupId: definition.key, label: definition.publicId,
+        identifiers: definition.identifiers, threadIds: definition.exactThreadIds ?? [],
+        jobIds: definition.exactJobIds ?? [] })),
   });
   const completeness = evaluateSterlingEvidenceCompleteness({ workingSet, threadOutcomes: liveThreadOutcomes });
   const coverage = scopeCoverage(workingSet, canonicalProjectIdsByKey);
@@ -345,8 +365,9 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       canonicalProjectIdsByKey.get(definition.key) ?? new Set<string>(),
     );
     const exact = matching.filter((unit) => scopeMatchesOperationalIdentifier(definition, unit.observedIdentifiers));
+    const exactThread = matching.filter((unit) => (definition.exactThreadIds ?? []).some((threadId) => unit.threadIds.includes(threadId)));
     const canonical = matching.filter((unit) => unit.kind === "canonical_project");
-    const selected = exact.length === 1 ? exact[0] : canonical.length === 1 ? canonical[0]
+    const selected = exact.length === 1 ? exact[0] : exactThread.length === 1 ? exactThread[0] : canonical.length === 1 ? canonical[0]
       : matching.length === 1 ? matching[0] : null;
     if (!selected) targetBlockedReason = matching.length === 0 ? "no-matching-work-unit" : "ambiguous-work-unit";
     else {

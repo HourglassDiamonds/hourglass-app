@@ -30,6 +30,13 @@ export type BuildSterlingTodayWorkingSetInput = {
   calendar?: readonly TodayUpcomingItem[];
   calendarAvailability?: SterlingTodayWorkingSet["calendarAvailability"];
   previousToday?: readonly SterlingPreviousTodayItem[];
+  explicitEvidenceGroups?: readonly {
+    groupId: string;
+    label: string;
+    identifiers: readonly string[];
+    threadIds: readonly string[];
+    jobIds?: readonly string[];
+  }[];
 };
 
 function relationshipRole(roles: readonly string[] | undefined): SterlingRelationshipRole {
@@ -79,6 +86,20 @@ function digest(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
+function typedIdentifiers(values: readonly string[]) {
+  return unique(values).map((value) => ({
+    kind: /^C\d{6}$/i.test(value) ? "project" as const
+      : /^NIV-/i.test(value) ? "order" as const
+        : /^LG\d+$/i.test(value) ? "certificate" as const
+          : /^\d{6}$/i.test(value) ? "request" as const : "unknown" as const,
+    value,
+  }));
+}
+
+function projectIdentifiers(value: string): string[] {
+  return strictProjectNumbers(value).filter((identifier) => !/^LG\d+$/i.test(identifier) && !/^NIV-/i.test(identifier));
+}
+
 export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSetInput): SterlingTodayWorkingSet {
   const knownByHash = new Map(input.knownPeople.map(person => [person.emailHash.toLowerCase(), person.personId]));
   const peopleById = new Map<string, typeof input.knownPeople[number][]>()
@@ -102,7 +123,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
   const projectsByIdentifier = new Map<string, Set<string>>();
   for (const project of input.projects) {
     const values = [project.title, ...(project.specs ?? []).map(spec => spec.value)];
-    for (const token of strictProjectNumbers(values.join(" "))) {
+    for (const token of projectIdentifiers(values.join(" "))) {
       const ids = projectsByIdentifier.get(token) ?? new Set<string>(); ids.add(project.projectId); projectsByIdentifier.set(token, ids);
     }
   }
@@ -110,7 +131,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     const haystack = [thread.subject, ...(thread.attachmentFilenames ?? []), ...(thread.messages ?? []).flatMap(message => [
       message.subject, message.operationalText, ...(message.attachmentFilenames ?? []),
     ])].filter(Boolean).join(" ");
-    const identifierProjectIds = new Set(strictProjectNumbers(haystack)
+    const identifierProjectIds = new Set(projectIdentifiers(haystack)
       .flatMap(token => [...(projectsByIdentifier.get(token) ?? [])]));
     if (identifierProjectIds.size === 1) addThreadProject(threadId, [...identifierProjectIds][0]);
   }
@@ -202,7 +223,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     status: "unavailable" as const,
     reason: "calendar-availability-not-supplied",
   };
-  const workUnits = buildWorkUnits(projects, evidence);
+  const workUnits = buildWorkUnits(projects, evidence, input.explicitEvidenceGroups ?? []);
   const snapshotMaterial = { sourceWatermark: input.sourceWatermark, projects, jobs, evidence, workUnits,
     calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
   return { contractVersion: STERLING_TODAY_WORKING_SET_VERSION, runId: input.runId ?? randomUUID(),
@@ -214,6 +235,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
 function buildWorkUnits(
   projects: SterlingTodayWorkingSet["projects"],
   evidence: readonly SterlingEvidence[],
+  explicitEvidenceGroups: NonNullable<BuildSterlingTodayWorkingSetInput["explicitEvidenceGroups"]>,
 ): SterlingTodayWorkingSet["workUnits"] {
   const canonical = projects.map(project => {
     const rows = evidence.filter(row => row.projectIds.includes(project.projectId));
@@ -223,7 +245,8 @@ function buildWorkUnits(
       identityBasis: "canonical_project" as const,
       projectId: project.projectId,
       label: project.title,
-      observedIdentifiers: strictProjectNumbers([project.title, ...project.specs.map(spec => spec.value)].join(" ")),
+      observedIdentifiers: projectIdentifiers([project.title, ...project.specs.map(spec => spec.value)].join(" ")),
+      typedIdentifiers: typedIdentifiers(projectIdentifiers([project.title, ...project.specs.map(spec => spec.value)].join(" "))),
       threadIds: unique([...(project.gmailThreadIds ?? []), ...rows.map(row => row.threadId)]),
       sourceRefs: unique(rows.map(row => row.sourceRef)),
       evidenceRefs: unique(rows.map(row => row.evidenceId)),
@@ -231,17 +254,39 @@ function buildWorkUnits(
   });
 
   type ProvisionalGroup = {
-    key: string; identityBasis: "exact_identifier" | "source_thread" | "source_record"; label: string;
+    key: string; identityBasis: "exact_identifier" | "source_thread" | "source_record" | "scoped_evidence_group"; label: string;
     identifiers: string[]; threadIds: string[]; sourceRefs: string[]; evidenceRefs: string[];
   };
+  const assignedEvidence = new Set<string>();
+  const explicit = explicitEvidenceGroups.flatMap((group): ProvisionalGroup[] => {
+    const threadIds = new Set(group.threadIds);
+    const jobEvidenceIds = new Set((group.jobIds ?? []).map((jobId) => `canonical:job:${jobId}`));
+    const rows = evidence.filter((row) => (row.threadId != null && threadIds.has(row.threadId) && row.projectIds.length === 0 &&
+      row.sourceType !== "canonical" && row.sourceType !== "calendar") || jobEvidenceIds.has(row.evidenceId));
+    if (rows.length === 0) return [];
+    for (const row of rows) assignedEvidence.add(row.evidenceId);
+    const identifiers = unique([
+      ...group.identifiers,
+      ...rows.flatMap((row) => strictProjectNumbers([row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "))),
+    ]);
+    return [{
+      key: `scope:${group.groupId}`,
+      identityBasis: "scoped_evidence_group",
+      label: group.label,
+      identifiers,
+      threadIds: unique(rows.map((row) => row.threadId)),
+      sourceRefs: unique(rows.map((row) => row.sourceRef)),
+      evidenceRefs: unique(rows.map((row) => row.evidenceId)),
+    }];
+  });
   const evidenceBySource = new Map<string, SterlingEvidence[]>();
   for (const row of evidence) {
-    if (row.projectIds.length > 0 || row.sourceType === "canonical" || row.sourceType === "calendar") continue;
+    if (assignedEvidence.has(row.evidenceId) || row.projectIds.length > 0 || row.sourceType === "canonical" || row.sourceType === "calendar") continue;
     const key = row.threadId ? `thread:${row.threadId}` : `source:${row.sourceRef}`;
     evidenceBySource.set(key, [...(evidenceBySource.get(key) ?? []), row]);
   }
   const identifiersBySource = new Map([...evidenceBySource].map(([sourceKey, rows]) => [sourceKey,
-    unique(rows.flatMap(row => strictProjectNumbers(
+    unique(rows.flatMap(row => projectIdentifiers(
       [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" ")))),
   ]));
   const identifierSourceCounts = new Map<string, number>();
@@ -268,13 +313,14 @@ function buildWorkUnits(
     current.evidenceRefs = unique([...current.evidenceRefs, ...rows.map(row => row.evidenceId)]);
     provisional.set(key, current);
   }
-  const provisionalUnits = [...provisional.values()].map(group => ({
+  const provisionalUnits = [...explicit, ...provisional.values()].map(group => ({
     workUnitId: `provisional:${digest(group.key).slice(0, 24)}`,
     kind: "provisional_evidence" as const,
     identityBasis: group.identityBasis,
     projectId: null,
     label: group.label,
     observedIdentifiers: group.identifiers,
+    typedIdentifiers: typedIdentifiers(group.identifiers),
     threadIds: group.threadIds,
     sourceRefs: group.sourceRefs,
     evidenceRefs: group.evidenceRefs,

@@ -66,6 +66,7 @@ function proposal(): SterlingTodayProposal {
       confidence: "high", explanation: "The newer outbound delivery fulfills the founder obligation.",
       evidenceRefs: [evidenceId], ambiguities: [],
       obligations: [{ obligationId: "send-cad", description: "Founder sends CAD", status: "fulfilled", responsibleParty: "founder", confidence: "high", evidenceRefs: [evidenceId] }] }],
+    relationshipProposals: [],
     proposedCanonicalMutations: [{ proposalKey: "resolve-send-cad", kind: "resolve_open_job", projectId, personId,
       jobId, expectedRecordVersion: openJob.recordVersion, targetLifecycleStage: null, targetJobState: "resolved",
       targetResponsibleParty: null, newJob: null, reason: "Delivery fulfilled the obligation.", evidenceRefs: [evidenceId], requiresFounderApproval: true }] };
@@ -112,6 +113,46 @@ describe("Sterling-native Today", () => {
     assert.equal(set.workUnits[0]?.projectId, null);
     assert.deepEqual(set.workUnits[0]?.threadIds, ["thread-a", "thread-b"]);
     assert.equal(set.workUnits[0]?.evidenceRefs.length, 2);
+  });
+
+  it("groups only server-scoped exact threads without claiming canonical identity", () => {
+    const thread = (messageId: string, subject: string) => ({ subject, messages: [{ messageId,
+      sentAt: "2026-10-17T13:00:00.000Z", direction: "inbound" as const, fromEmailHash: null,
+      operationalText: subject, attachmentFilenames: [] }] });
+    const set = buildSterlingTodayWorkingSet({ runId: "run-scoped", sourceWatermark: "wm",
+      generatedAt: "2026-10-19T12:00:00.000Z", projects: [], jobs: [], candidates: [], knownPeople: [],
+      threadContext: new Map([
+        ["zane-direct", thread("z1", "Client follow-up")],
+        ["zane-vendor", thread("z2", "Vendor quote")],
+        ["unrelated", thread("u1", "Unrelated")],
+      ]),
+      explicitEvidenceGroups: [{ groupId: "zane", label: "ZANE/C026732", identifiers: ["C026732"],
+        threadIds: ["zane-direct", "zane-vendor"] }],
+    });
+    const grouped = set.workUnits.find((row) => row.label === "ZANE/C026732");
+    assert.equal(grouped?.identityBasis, "scoped_evidence_group");
+    assert.equal(grouped?.projectId, null);
+    assert.deepEqual(grouped?.threadIds, ["zane-direct", "zane-vendor"]);
+    assert.equal(set.workUnits.some((row) => row.threadIds.includes("unrelated")), true);
+  });
+
+  it("types Nivoda order and certificate identifiers without treating them as project identity", () => {
+    const set = buildSterlingTodayWorkingSet({ runId: "run-nivoda", sourceWatermark: "wm",
+      generatedAt: "2026-10-19T12:00:00.000Z", projects: [], jobs: [], candidates: [], knownPeople: [],
+      threadContext: new Map([["nivoda", { subject: "Return LG819625099 / NIV-2609-13392551-2", messages: [{
+        messageId: "n1", sentAt: "2026-10-18T12:00:00.000Z", direction: "inbound", fromEmailHash: null,
+        operationalText: "Request 413451 has not arrived.", attachmentFilenames: [],
+      }] }]]),
+      explicitEvidenceGroups: [{ groupId: "nivoda", label: "NIVODA/RETURN",
+        identifiers: ["LG819625099", "NIV-2609-13392551-2", "413451"], threadIds: ["nivoda"] }],
+    });
+    const unit = set.workUnits.find((row) => row.label === "NIVODA/RETURN")!;
+    assert.deepEqual(unit.typedIdentifiers, [
+      { kind: "certificate", value: "LG819625099" },
+      { kind: "order", value: "NIV-2609-13392551-2" },
+      { kind: "request", value: "413451" },
+    ]);
+    assert.equal(unit.identityBasis, "scoped_evidence_group");
   });
 
   it("joins a multi-identifier source to one repeated exact identifier without using a name", () => {
@@ -163,6 +204,23 @@ describe("Sterling-native Today", () => {
     const set = workingSet(); const result = validateSterlingTodayProposal(set, proposal());
     assert.equal(result.accepted, true); assert.equal(result.mutationValidations[0]?.status, "approved_for_founder_review");
     assert.match(result.mutationValidations[0]?.rollback ?? "", /restore/i);
+  });
+
+  it("validates founder-review relationship proposals against exact work-unit provenance", () => {
+    const set = workingSet();
+    const raw = structuredClone(proposal());
+    raw.relationshipProposals = [{
+      proposalKey: "existing-person-thread", kind: "associate_existing_person",
+      workUnitId: set.workUnits[0]!.workUnitId, personId, projectId: null,
+      threadIds: ["thread-1"], basis: "historical_thread_continuity", confidence: "high",
+      reason: "The same verified sender identity continues an existing thread.",
+      evidenceRefs: [set.workUnits[0]!.evidenceRefs[0]!], requiresFounderApproval: true,
+    }];
+    assert.equal(validateSterlingTodayProposal(set, raw).accepted, true);
+    raw.relationshipProposals[0]!.personId = "99999999-9999-4999-8999-999999999999";
+    const invalid = validateSterlingTodayProposal(set, raw);
+    assert.equal(invalid.accepted, false);
+    assert.ok(invalid.errors.some((row) => row.startsWith("invalid-existing-person-association:")));
   });
 
   it("rejects cross-client collisions, unknown evidence, and stale versions without semantic reinterpretation", () => {

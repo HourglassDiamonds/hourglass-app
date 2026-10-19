@@ -3,7 +3,7 @@ import { createSterlingEvidenceHandleMap, resolveSterlingEvidenceHandles } from 
 import { parseSterlingTodayProposal, STERLING_TODAY_OUTPUT_SCHEMA } from "./schema";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal, type SterlingTodayWorkingSet } from "./types";
 
-export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v5" as const;
+export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v6" as const;
 export const STERLING_TODAY_TIMEOUT_MS = 180_000;
 export const STERLING_TODAY_TIMEOUT_ENV = "CONTINUUM_STERLING_TODAY_TIMEOUT_MS" as const;
 export const STERLING_TODAY_MAX_OUTPUT_TOKENS = 24_000;
@@ -29,6 +29,9 @@ const INSTRUCTIONS = [
   "If evidence is ambiguous, preserve current canonical state, record the ambiguity, and propose no mutation.",
   "An unavailable or disabled calendar means unknown calendar context, not confirmation that no events exist.",
   "Evidence-backed active work without a canonical project may receive a responsible-party and next-step classification with projectId null. Explain that it is provisional, cite exact evidence, and propose no canonical mutation for it.",
+  "A scoped_evidence_group means only that the server authorized those exact threads for joint assessment. It does not establish a shared person or project identity.",
+  "When exact sender identity, historical thread continuity, an exact operational identifier, or a canonical source record supports a possible association, place it in relationshipProposals for founder review. Never propose an association from name similarity alone, and never treat a relationship proposal as already applied.",
+  "Typed identifiers distinguish projects, orders, certificates, and requests. Never treat a certificate or order identifier as a canonical project number.",
   "Every conclusion must cite exact request-local evidenceId handles such as E0001 from the working set. Never cite sourceRef, messageId, threadId, or any invented identifier as evidenceRefs.",
   "Presentation recommendations and canonical mutations are separate. Mutations are proposals only and always require founder approval.",
   "Use the exact runId and evidenceSnapshotId supplied. Return only the strict structured object.",
@@ -134,7 +137,7 @@ export async function requestSterlingTodayProposal(input: {
       body: JSON.stringify({ model: input.model, store: false, max_output_tokens: STERLING_TODAY_MAX_OUTPUT_TOKENS,
         reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
         instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
-        text: { format: { type: "json_schema", name: "sterling_today_proposal_v4", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
+        text: { format: { type: "json_schema", name: "sterling_today_proposal_v5", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
     });
     const requestId = response.headers.get("x-request-id");
     if (!response.ok) {
