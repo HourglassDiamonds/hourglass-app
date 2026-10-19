@@ -9,7 +9,7 @@ import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/
 import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealName, mealSignature, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
 import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, correctActivityDate as correctActivityDateInState } from "@/lib/continuum/personal/mutations";
 import { compareActivityDate, visibleActivityDateLabel } from "@/lib/continuum/personal/activity-date";
-import { configureTonalProgram, FIT_OVER_40_WEEKLY_FREQUENCY, markTonalSessionCompletedFromActivity, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
+import { configureTonalProgram, FIT_OVER_40_WEEKLY_FREQUENCY, markTonalSessionCompletedFromActivity, matchesNextTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
 import type { ActivityFacts, ActivityLog, FrequentMeal, MealEstimate, MealItem, MealLog, NaturalIngestionProposal, PerformedSet, PerformanceSourceType, PersonalState, RecoveryEntry, ScheduledWorkout, SterlingProposal, TonalProgramMovement, WorkoutSession } from "@/lib/continuum/personal/types";
 import styles from "./performance.module.css";
 
@@ -80,6 +80,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [tonalPlanFile, setTonalPlanFile] = useState<File | null>(null);
   const [tonalPlanBusy, setTonalPlanBusy] = useState(false);
   const [tonalPlanFeedback, setTonalPlanFeedback] = useState("");
+  const [tonalCompletionFeedback, setTonalCompletionFeedback] = useState("");
+  const [tonalCompletionTargetOrder, setTonalCompletionTargetOrder] = useState<number | null>(null);
 
   useEffect(() => {
     const key = localToday(); setToday(key);
@@ -393,19 +395,31 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   async function chooseTonalCompletionScreenshot(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = "";
+    if (!file) return;
+    setTonalCompletionFeedback("Completion screenshot selected. Sterling is reading only the visible results…");
     const session = nextTonalSession(state);
-    if (!file || !session?.plannedAt || !session.title) return;
+    if (!session?.plannedAt || !session.plannedSource) {
+      setTonalCompletionFeedback("Screenshot selected, but this sequence position needs an approved upcoming-workout plan before completion can be matched. Nothing was uploaded or saved.");
+      return;
+    }
     setMealBusy(true); setIntakeBusy(true); setMealError(""); setIntakeProposal(null);
     try {
+      if (file.size > 4 * 1024 * 1024) throw new Error("invalid-image");
       const body = new FormData(); body.set("image", file); body.set("sourceType", "activity_screenshot"); body.set("intent", "completed_activity");
-      body.set("text", `Completion review for founder-approved ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. The visible workout title must match the approved planned title; do not infer it.`);
+      body.set("text", session.title
+        ? `Completion review for founder-approved ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. The visible workout title must match the approved planned title; do not infer it.`
+        : `Completion review for founder-approved ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. The approved plan had no visible title, so extract every visible movement for exact matching; do not infer a title or movement.`);
       body.set("knownMeals", "[]"); body.set("nutritionTargets", JSON.stringify(state.nutritionTargets));
       const response = await fetch("/executive-dashboard/concierge/personal/intake", { method: "POST", body });
       const payload = await response.json() as { ok: boolean; proposal?: NaturalIngestionProposal; error?: string };
       if (!response.ok || !payload.ok || payload.proposal?.kind !== "activity") throw new Error(payload.error || "analysis-failed");
       const facts = { ...payload.proposal.activity, tonalProgramTitle: payload.proposal.activity.tonalProgramTitle ?? TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title, tonalSessionOrder: { value: session.order, evidence: "user_supplied" as const } };
-      setIntakeFile(file); setActivityDefaultDate(today); setActivityMaxDate(today); setIntakeProposal({ ...payload.proposal, activity: facts, activities: [facts] });
-    } catch { setMealError("Sterling could not read that Tonal completion screenshot. Nothing was saved."); }
+      setTonalCompletionTargetOrder(session.order); setIntakeFile(file); setActivityDefaultDate(today); setActivityMaxDate(today); setIntakeProposal({ ...payload.proposal, activity: facts, activities: [facts] });
+      setTonalCompletionFeedback("Completion screenshot ready for review. Nothing is saved until you approve it.");
+    } catch (error) {
+      setTonalCompletionTargetOrder(null);
+      setTonalCompletionFeedback(error instanceof Error && error.message === "invalid-image" ? "Use a JPEG, PNG, WebP, or GIF no larger than 4 MB." : "Sterling could not read that Tonal completion screenshot. Nothing was saved.");
+    }
     finally { setMealBusy(false); setIntakeBusy(false); }
   }
 
@@ -456,16 +470,29 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   async function acceptActivity(facts: ActivityFacts[], occurredOn: string, dateConflictConfirmed: boolean) {
     if (intakeProposal?.kind !== "activity") return;
+    if (tonalCompletionTargetOrder !== null) {
+      const completion = facts.find((candidate) => candidate.tonalSessionOrder?.value === tonalCompletionTargetOrder);
+      if (!completion || !matchesNextTonalSessionCompletion(state, {
+        sequencePosition: completion.tonalSessionOrder?.value,
+        programTitle: completion.tonalProgramTitle,
+        workoutTitle: completion.workoutTitle,
+        movements: completion.tonalMovements,
+      })) {
+        setTonalCompletionFeedback("This screenshot does not match the approved next Tonal session. Review the program, title, and visible movements; nothing was saved.");
+        return;
+      }
+    }
     const digest = intakeProposal.sourceDigest;
     const idempotencyKey = digest ? `accept-activity-${digest}` : `accept-${intakeProposal.id}`; const at = new Date().toISOString();
     const activityId = digest ? `activity-${digest.slice(0, 32)}` : uid("activity");
     const originals = intakeProposal.activities?.length ? intakeProposal.activities : [intakeProposal.activity];
     const activities = facts.map((activityFacts, index) => buildAcceptedActivity({ proposal: intakeProposal, originalFacts: originals[index], facts: activityFacts, occurredOn, timestamp: at, id: index === 0 ? activityId : `${activityId}-${index + 1}`, idempotencyKey, dateConflictConfirmed, source: intakeFile ? { name: intakeFile.name, type: intakeFile.type, size: intakeFile.size } : undefined, targets: state.nutritionTargets }));
     const acceptedState = acceptActivityProposal(state, intakeProposal, activities);
-    const next = activities.reduce((current, activity) => markTonalSessionCompletedFromActivity(current, { activityId: activity.id, sequencePosition: activity.facts.tonalSessionOrder?.value, programTitle: activity.facts.tonalProgramTitle, workoutTitle: activity.facts.workoutTitle, at }), acceptedState);
+    const next = activities.reduce((current, activity) => markTonalSessionCompletedFromActivity(current, { activityId: activity.id, sequencePosition: activity.facts.tonalSessionOrder?.value, programTitle: activity.facts.tonalProgramTitle, workoutTitle: activity.facts.workoutTitle, movements: activity.facts.tonalMovements, at }), acceptedState);
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_activity", entryId: activityId, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: activities, corrections: activities.flatMap((activity) => activity.corrections) }, intakeFile ?? undefined);
-      setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false);
+      setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false); setTonalCompletionTargetOrder(null);
+      if (tonalCompletionTargetOrder !== null) setTonalCompletionFeedback(saved.duplicate ? "Completed workout already logged" : "Completed workout logged and matched to the approved session");
       setActivityFeedback(saved.duplicate ? "Activity already logged" : activities.length === 1 ? "Activity logged successfully" : `${activities.length} activities logged successfully`);
     } catch { setMealError("The reviewed activity was not saved. Nothing was added; retry when private persistence is available."); }
   }
@@ -491,7 +518,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   async function rejectIntake() {
     if (!intakeProposal) return;
-    const proposal = intakeProposal; setIntakeProposal(null); setMealEstimate(null); setMealPhoto(null); setIntakeFile(null);
+    const proposal = intakeProposal; setIntakeProposal(null); setMealEstimate(null); setMealPhoto(null); setIntakeFile(null); setTonalCompletionTargetOrder(null);
     try { await persistStateMutation(state, { idempotencyKey: `reject-${proposal.id}`, action: "reject_proposal", rawInput: proposal.rawInput, sourceType: proposal.sourceType, proposal }); } catch { /* Rejection still changes no canonical totals. */ }
   }
 
@@ -612,7 +639,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     </section> : null}
 
     {view === "today" ? <div className={styles.stack}>
-      {state.program.status === "active" && nextTonalSession(state) ? <section className={styles.card}><p className={styles.kicker}>Tonal · just-in-time plan</p><h2>Prepare session {nextTonalSession(state)!.order}</h2><p>Upload the upcoming workout screen. Sterling will propose only the visible title, movements, sets, reps, resistance, and details for your review.</p><div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD UPCOMING TONAL WORKOUT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseUpcomingTonalScreenshot} disabled={tonalPlanBusy} /></label><label className={styles.photoAction}>UPLOAD COMPLETION SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || !nextTonalSession(state)!.plannedAt || !nextTonalSession(state)!.title} /></label></div>{!nextTonalSession(state)!.plannedAt ? <p className={styles.provenance}>Completion is locked until this exact sequence position has an approved plan.</p> : null}{tonalPlanBusy ? <p aria-live="polite">Sterling is reading the visible Tonal plan…</p> : null}{tonalPlanFeedback ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}{tonalPlanProposal ? <TonalPlanReview sequencePosition={nextTonalSession(state)!.order} proposal={tonalPlanProposal} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}</section> : null}
+      {state.program.status === "active" && nextTonalSession(state) ? <section className={styles.card}><p className={styles.kicker}>Tonal · just-in-time plan</p><h2>Prepare session {nextTonalSession(state)!.order}</h2><p>Upload the upcoming workout screen. Sterling will propose only the visible title, movements, sets, reps, resistance, and details for your review.</p><div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD UPCOMING TONAL WORKOUT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseUpcomingTonalScreenshot} disabled={tonalPlanBusy} /></label><label className={styles.photoAction}>UPLOAD COMPLETION SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy} /></label></div>{!nextTonalSession(state)!.plannedAt ? <p className={styles.provenance}>You can choose a completion screenshot now, but Sterling will not upload or save it until this exact sequence position has an approved plan.</p> : null}{intakeBusy && tonalCompletionFeedback ? <p aria-live="polite">Sterling is reading the visible Tonal completion…</p> : null}{tonalCompletionFeedback ? <p aria-live="polite" className={styles.warning}>{tonalCompletionFeedback}</p> : null}{tonalPlanBusy ? <p aria-live="polite">Sterling is reading the visible Tonal plan…</p> : null}{tonalPlanFeedback ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}{tonalPlanProposal ? <TonalPlanReview sequencePosition={nextTonalSession(state)!.order} proposal={tonalPlanProposal} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}</section> : null}
       <section className={`${styles.card} ${styles.hero}`}>
         <div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(today)} · {state.program.status === "setup" ? "setup" : activeToday?.status.replace("_", " ") ?? "resolved"}</p><h2>{state.program.status === "setup" ? "No training session is active yet" : activeToday?.prescription.name ?? "Today is resolved"}</h2></div>{activeToday && state.program.status === "active" ? <span>{activeToday.prescription.durationMinutes} min</span> : null}</div>
         {activeToday && state.program.status === "active" ? <><p>{activeToday.prescription.notes}</p><p className={styles.provenance}>Planned by {activeToday.prescription.trainingBlock} · {activeToday.provenance.join(" · ")}</p>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState, transitionTrainingProgram } from "./program";
-import { configureTonalProgram, markTonalSessionCompletedFromActivity, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
+import { configureTonalProgram, markTonalSessionCompletedFromActivity, matchesNextTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
 
 function configured() {
   return configureTonalProgram({
@@ -41,6 +41,17 @@ test("exact founder-approved Tonal activity marks only the matching session comp
   assert.equal(tonalSessionStatus(completed, completed.tonal.enrollment.sessions[0]!), "completed");
   assert.equal(completed.tonal.enrollment.sessions[0]?.completedActivityId, "activity-1");
   assert.equal(nextTonalSession(completed)?.order, 2);
+});
+
+test("a titleless approved exercise-list plan matches only the same visible movements", () => {
+  const activated = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
+  const active = planTonalSessionFromScreenshot(activated, { sequencePosition: 1, movements: [{ name: "Goblet squat", sets: 3, reps: "10" }, { name: "Standing row", sets: 3 }], source: { kind: "tonal_app_screenshot", reference: "sha256:plan-list", digest: "plan-list", reviewedAt: "now", file: { name: "plan.png", type: "image/png", size: 100 } }, approvedAt: "2026-10-18T13:00:00Z" });
+  assert.equal(matchesNextTonalSessionCompletion(active, { sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Goblet squat" }] }), false);
+  assert.equal(matchesNextTonalSessionCompletion(active, { sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Standing Row" }, { name: "Goblet Squat" }] }), true);
+  const completed = markTonalSessionCompletedFromActivity(active, { activityId: "activity-list", sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Goblet squat" }, { name: "Standing row" }], at: "2026-10-19T13:00:00Z" });
+  assert.equal(tonalSessionStatus(completed, completed.tonal.enrollment.sessions[0]!), "completed");
+  const duplicate = markTonalSessionCompletedFromActivity(completed, { activityId: "activity-list-duplicate", sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Goblet squat" }, { name: "Standing row" }], at: "2026-10-19T13:05:00Z" });
+  assert.equal(duplicate.tonal.enrollment.sessions[0]?.completedActivityId, "activity-list");
 });
 
 test("deferred Tonal work stays linked and transition cannot occur without completion and approval", () => {

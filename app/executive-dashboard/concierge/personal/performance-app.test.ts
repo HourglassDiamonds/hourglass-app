@@ -70,3 +70,14 @@ test("just-in-time Tonal plans and completion screenshots remain editable and ex
   assert.match(source, /markTonalSessionCompletedFromActivity/);
   assert.match(source, /sequencePosition/);
 });
+
+test("mobile completion selection stays available while canonical completion remains match-gated", () => {
+  assert.match(source, /UPLOAD COMPLETION SCREENSHOT<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\} disabled=\{intakeBusy\}/);
+  assert.doesNotMatch(source, /disabled=\{intakeBusy \|\| !nextTonalSession\(state\)!\.plannedAt/);
+  assert.match(source, /Completion screenshot selected\. Sterling is reading only the visible results/);
+  assert.match(source, /Completion screenshot ready for review\. Nothing is saved until you approve it/);
+  assert.match(source, /matchesNextTonalSessionCompletion/);
+  assert.match(source, /does not match the approved next Tonal session/);
+  assert.match(source, /Use a JPEG, PNG, WebP, or GIF no larger than 4 MB/);
+  assert.match(source, /UPLOAD UPCOMING TONAL WORKOUT<input type="file"[^>]+onChange=\{chooseUpcomingTonalScreenshot\}/);
+});
