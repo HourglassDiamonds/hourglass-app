@@ -73,11 +73,21 @@ test("just-in-time Tonal plans and completion screenshots remain editable and ex
 
 test("mobile completion selection stays available while canonical completion remains match-gated", () => {
   assert.match(source, /UPLOAD COMPLETION SCREENSHOT<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\} disabled=\{intakeBusy\}/);
-  assert.doesNotMatch(source, /disabled=\{intakeBusy \|\| !nextTonalSession\(state\)!\.plannedAt/);
+  assert.match(source, /Workout History/);
+  assert.match(source, /Record \/ Complete Previous Workout/);
+  assert.match(source, /Choose a session/);
+  assert.match(source, /selectedTonalSessionOrder/);
+  assert.match(source, /Completed \/ Deferred \/ Skipped \/ Pending|tonalSessionOutcome/);
   assert.match(source, /Completion screenshot selected\. Sterling is reading only the visible results/);
   assert.match(source, /Completion screenshot ready for review\. Nothing is saved until you approve it/);
-  assert.match(source, /matchesNextTonalSessionCompletion/);
-  assert.match(source, /does not match the approved next Tonal session/);
+  assert.match(source, /matchesTonalSessionCompletion/);
+  assert.match(source, /does not match the founder-selected Tonal session/);
+  assert.match(source, /UPLOAD HISTORICAL PLAN SCREENSHOT/);
+  assert.match(source, /No workout details will be fabricated/);
+  assert.match(source, /already has an approved completion activity/);
+  assert.match(source, /append an audited correction and change only this session to Completed/);
   assert.match(source, /Use a JPEG, PNG, WebP, or GIF no larger than 4 MB/);
   assert.match(source, /UPLOAD UPCOMING TONAL WORKOUT<input type="file"[^>]+onChange=\{chooseUpcomingTonalScreenshot\}/);
+  assert.match(css, /\.sessionPicker select[^}]*min-height:48px/);
+  assert.doesNotMatch(source, /Today is resolved/);
 });

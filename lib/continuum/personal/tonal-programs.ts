@@ -129,7 +129,10 @@ function cleanMovements(movements: readonly TonalProgramMovement[]): TonalProgra
 export function planTonalSessionFromScreenshot(state: PersonalState, input: { sequencePosition: number; title?: string; movements: readonly TonalProgramMovement[]; source: TonalProgramSource; approvedAt: string }): PersonalState {
   if (state.program.status !== "active" || state.tonal.enrollment.status !== "active") throw new Error("tonal-session-plan-requires-active-program");
   const next = nextTonalSession(state);
-  if (!next || next.order !== input.sequencePosition || next.completedActivityId) throw new Error("tonal-session-plan-order-invalid");
+  const target = state.tonal.enrollment.sessions.find((session) => session.order === input.sequencePosition);
+  const targetStatus = target ? tonalSessionStatus(state, target) : "unplanned";
+  const historicalRecovery = targetStatus === "completed" || targetStatus === "deferred" || targetStatus === "skipped";
+  if (!target || target.completedActivityId || (next?.order !== input.sequencePosition && !historicalRecovery)) throw new Error("tonal-session-plan-order-invalid");
   if (!input.source.digest || !input.source.file || !input.approvedAt) throw new Error("tonal-session-plan-source-required");
   const title = input.title?.trim().slice(0, 160) || undefined;
   const movements = cleanMovements(input.movements);
@@ -168,28 +171,48 @@ type TonalCompletionIdentity = {
   movements?: readonly TonalProgramMovement[];
 };
 
+export type TonalSessionOutcome = "Completed" | "Deferred" | "Skipped" | "Pending";
+
+export function tonalSessionOutcome(state: PersonalState, session: TonalProgramSession): TonalSessionOutcome {
+  const status = tonalSessionStatus(state, session);
+  if (status === "completed") return "Completed";
+  if (status === "deferred") return "Deferred";
+  if (status === "skipped") return "Skipped";
+  return "Pending";
+}
+
 function normalized(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
 
-export function matchesNextTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity): boolean {
+export function matchesTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity): boolean {
   const program = TONAL_PROGRAM_CATALOG[state.tonal.enrollment.programId];
+  const target = state.tonal.enrollment.sessions.find((session) => session.order === input.sequencePosition);
   const next = nextTonalSession(state);
-  if (!next || input.sequencePosition !== next.order || !next.plannedAt || !next.plannedSource || next.completedActivityId) return false;
+  if (!target || !target.plannedAt || !target.plannedSource || target.completedActivityId) return false;
+  const status = tonalSessionStatus(state, target);
+  const historicalRecovery = status === "completed" || status === "deferred" || status === "skipped";
+  if (next?.order !== target.order && !historicalRecovery) return false;
   if (!input.programTitle || normalized(input.programTitle) !== normalized(program.title)) return false;
-  if (next.title) return Boolean(input.workoutTitle && normalized(input.workoutTitle) === normalized(next.title));
+  if (target.title) return Boolean(input.workoutTitle && normalized(input.workoutTitle) === normalized(target.title));
 
-  const plannedMovements = next.movements.map((movement) => normalized(movement.name)).filter(Boolean);
+  const plannedMovements = target.movements.map((movement) => normalized(movement.name)).filter(Boolean);
   const completedMovements = new Set((input.movements ?? []).map((movement) => normalized(movement.name)).filter(Boolean));
   return plannedMovements.length > 0 && plannedMovements.every((movement) => completedMovements.has(movement));
 }
 
+export function matchesNextTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity): boolean {
+  const next = nextTonalSession(state);
+  return Boolean(next && input.sequencePosition === next.order && matchesTonalSessionCompletion(state, input));
+}
+
 export function markTonalSessionCompletedFromActivity(state: PersonalState, input: TonalCompletionIdentity & { activityId: string; at: string }): PersonalState {
-  if (!matchesNextTonalSessionCompletion(state, input)) return state;
-  const next = nextTonalSession(state)!;
-  const match = next;
+  if (!matchesTonalSessionCompletion(state, input)) return state;
+  const match = state.tonal.enrollment.sessions.find((session) => session.order === input.sequencePosition)!;
   const schedule = state.schedule.map((workout): ScheduledWorkout => workout.id === match.scheduledWorkoutId
-    ? { ...workout, status: "completed", history: [...workout.history, { at: input.at, action: "completed", actor: "user", note: "Founder-approved Tonal summary matched this exact program session." }] }
+    ? workout.status === "completed"
+      ? workout
+      : { ...workout, status: "completed", history: [...workout.history, { at: input.at, action: "completed", actor: "user", note: "Founder-approved Tonal summary matched this exact program session." }] }
     : workout);
   const sessions = state.tonal.enrollment.sessions.map((session) => session.order === match.order ? { ...session, completedActivityId: input.activityId } : session);
   return syncTonalProgramCompletion({

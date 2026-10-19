@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState, transitionTrainingProgram } from "./program";
-import { configureTonalProgram, markTonalSessionCompletedFromActivity, matchesNextTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
+import { parsePersonalState } from "./state";
+import { configureTonalProgram, markTonalSessionCompletedFromActivity, matchesNextTonalSessionCompletion, matchesTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionOutcome, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
 
 function configured() {
   return configureTonalProgram({
@@ -52,6 +53,47 @@ test("a titleless approved exercise-list plan matches only the same visible move
   assert.equal(tonalSessionStatus(completed, completed.tonal.enrollment.sessions[0]!), "completed");
   const duplicate = markTonalSessionCompletedFromActivity(completed, { activityId: "activity-list-duplicate", sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Goblet squat" }, { name: "Standing row" }], at: "2026-10-19T13:05:00Z" });
   assert.equal(duplicate.tonal.enrollment.sessions[0]?.completedActivityId, "activity-list");
+});
+
+test("a schedule-completed historical session can receive its matching completion evidence after next-session advancement", () => {
+  const activated = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
+  const planned = planTonalSessionFromScreenshot(activated, { sequencePosition: 1, title: "Workout 1", movements: [{ name: "Goblet squat" }], source: { kind: "tonal_app_screenshot", reference: "sha256:plan-1", digest: "plan-1", reviewedAt: "now", file: { name: "plan.png", type: "image/png", size: 100 } }, approvedAt: "2026-10-19T12:00:00Z" });
+  const firstId = planned.tonal.enrollment.sessions[0]!.scheduledWorkoutId!;
+  const manuallyCompleted = { ...planned, schedule: planned.schedule.map((workout) => workout.id === firstId ? { ...workout, status: "completed" as const } : workout) };
+
+  assert.equal(nextTonalSession(manuallyCompleted)?.order, 2);
+  assert.equal(tonalSessionOutcome(manuallyCompleted, manuallyCompleted.tonal.enrollment.sessions[0]!), "Completed");
+  assert.equal(matchesNextTonalSessionCompletion(manuallyCompleted, { sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Workout 1" }), false);
+  assert.equal(matchesTonalSessionCompletion(manuallyCompleted, { sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Workout 1" }), true);
+
+  const historyCount = manuallyCompleted.schedule.find((workout) => workout.id === firstId)!.history.length;
+  const enriched = markTonalSessionCompletedFromActivity(manuallyCompleted, { activityId: "activity-session-1", sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Workout 1", at: "2026-10-19T18:00:00Z" });
+  assert.equal(enriched.tonal.enrollment.sessions[0]?.completedActivityId, "activity-session-1");
+  assert.equal(enriched.schedule.find((workout) => workout.id === firstId)?.status, "completed");
+  assert.equal(enriched.schedule.find((workout) => workout.id === firstId)?.history.length, historyCount);
+  assert.equal(enriched.tonal.enrollment.sessions[1]?.completedActivityId, undefined);
+
+  const reloaded = parsePersonalState(JSON.stringify(enriched), "2026-10-19");
+  assert.equal(reloaded.tonal.enrollment.sessions[0]?.completedActivityId, "activity-session-1");
+  assert.equal(reloaded.schedule.find((workout) => workout.id === firstId)?.status, "completed");
+
+  const duplicate = markTonalSessionCompletedFromActivity(enriched, { activityId: "activity-duplicate", sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Workout 1", at: "2026-10-19T18:05:00Z" });
+  assert.equal(duplicate.tonal.enrollment.sessions[0]?.completedActivityId, "activity-session-1");
+});
+
+test("historical recovery requires reviewed plan evidence and cannot target an unrelated future session", () => {
+  const activated = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
+  const firstId = activated.tonal.enrollment.sessions[0]!.scheduledWorkoutId!;
+  const skipped = { ...activated, schedule: activated.schedule.map((workout) => workout.id === firstId ? { ...workout, status: "skipped" as const } : workout) };
+  assert.equal(tonalSessionOutcome(skipped, skipped.tonal.enrollment.sessions[0]!), "Skipped");
+  assert.equal(matchesTonalSessionCompletion(skipped, { sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Workout 1" }), false);
+
+  const recoveredPlan = planTonalSessionFromScreenshot(skipped, { sequencePosition: 1, title: "Workout 1", movements: [], source: { kind: "tonal_app_screenshot", reference: "sha256:historical-plan", digest: "historical-plan", reviewedAt: "now", file: { name: "plan.png", type: "image/png", size: 100 } }, approvedAt: "2026-10-19T18:00:00Z" });
+  const corrected = markTonalSessionCompletedFromActivity(recoveredPlan, { activityId: "activity-recovery", sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Workout 1", at: "2026-10-19T19:00:00Z" });
+  assert.equal(tonalSessionOutcome(corrected, corrected.tonal.enrollment.sessions[0]!), "Completed");
+  assert.equal(corrected.tonal.enrollment.sessions[0]?.completedActivityId, "activity-recovery");
+
+  assert.throws(() => planTonalSessionFromScreenshot(activated, { sequencePosition: 3, title: "Future", movements: [], source: { kind: "tonal_app_screenshot", reference: "sha256:future", digest: "future", reviewedAt: "now", file: { name: "future.png", type: "image/png", size: 100 } }, approvedAt: "2026-10-19T18:00:00Z" }), /tonal-session-plan-order-invalid/);
 });
 
 test("deferred Tonal work stays linked and transition cannot occur without completion and approval", () => {
