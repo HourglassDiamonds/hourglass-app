@@ -18,7 +18,7 @@ const PROVIDER_URLS: Readonly<Record<LedgerLiveProvider, string>> = {
   BLS_JOLTS: "https://api.bls.gov/publicAPI/v2/timeseries/data/",
   EIA_PETROLEUM: "https://api.eia.gov/v2/petroleum/sum/sndw/data/",
   EIA_STEO: "https://api.eia.gov/v2/steo/data/",
-  EIA_ELECTRICITY: "https://api.eia.gov/v2/electricity/rto/region-data/data/",
+  EIA_ELECTRICITY: "https://api.eia.gov/v2/electricity/rto/daily-region-data/data/",
   TREASURY_YIELD_CURVE:
     "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/pages/xml",
   FRED_FINANCIAL_STRESS: "https://api.stlouisfed.org/fred/series/observations",
@@ -104,7 +104,7 @@ async function request(
 ): Promise<unknown> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const attempts = Math.max(1, Math.min(options.maxAttempts ?? 2, 3));
-  const timeoutMs = Math.max(100, Math.min(options.timeoutMs ?? 8_000, 30_000));
+  const timeoutMs = Math.max(100, Math.min(options.timeoutMs ?? 15_000, 30_000));
   let lastFailure: AdapterFailure | null = null;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -333,6 +333,7 @@ async function fetchProvider(
       url.searchParams.set("frequency", "daily");
       url.searchParams.append("facets[respondent][]", "US48");
       url.searchParams.append("facets[type][]", "D");
+      url.searchParams.append("facets[timezone][]", "Eastern");
     }
     payload = await request(url, options, "json");
     return { parsed: parseEia(payload), sourceUrl: redactUrl(url) };

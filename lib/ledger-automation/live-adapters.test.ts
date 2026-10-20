@@ -140,6 +140,20 @@ describe("Ledger Automation V1.1 live adapters", () => {
     assert.equal(invalidValue.failure?.code, "INVALID_VALUE");
   });
 
+  it("uses EIA's daily electricity route with its required daily facets", async () => {
+    let requestedUrl: URL | null = null;
+    const result = await check(source("EIA_ELECTRICITY"), async (input) => {
+      requestedUrl = new URL(String(input));
+      return jsonResponse(eiaPayload("456", "megawatthours"));
+    }, { env: { EIA_API_KEY: "test-key" } });
+    assert.equal(result.failure, null);
+    assert.match(requestedUrl?.pathname ?? "", /\/electricity\/rto\/daily-region-data\/data\/$/);
+    assert.equal(requestedUrl?.searchParams.get("frequency"), "daily");
+    assert.equal(requestedUrl?.searchParams.get("facets[respondent][]"), "US48");
+    assert.equal(requestedUrl?.searchParams.get("facets[type][]"), "D");
+    assert.equal(requestedUrl?.searchParams.get("facets[timezone][]"), "Eastern");
+  });
+
   it("captures the fixed STLFSI4 observation with its timestamp and freshness", async () => {
     let requestedSeries: string | null = null;
     const result = await check(source("FRED_FINANCIAL_STRESS"), async (input) => {
