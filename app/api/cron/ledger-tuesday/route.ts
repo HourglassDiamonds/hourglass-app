@@ -3,6 +3,7 @@ import { verifyCronRequest } from "@/lib/intelligence/cron-auth";
 import {
   createProductionLedgerAutomationStore,
   createProductionLedgerPublicationStore,
+  createLiveLedgerAdapter,
   evaluateLedgerSchedule,
   executeScheduledLedgerRun,
 } from "@/lib/ledger-automation";
@@ -24,6 +25,7 @@ export async function GET(request: Request) {
       now,
       store: createProductionLedgerAutomationStore(),
       publicationStore: createProductionLedgerPublicationStore(),
+      adapter: createLiveLedgerAdapter(),
     });
     console.info("ledger-automation", {
       runKey: result.run.runKey,

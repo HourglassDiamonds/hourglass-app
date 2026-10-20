@@ -27,6 +27,22 @@
     {
       "path": "/api/cron/continuum-gmail-freshness",
       "schedule": "*/2 * * * *"
+    },
+    {
+      "path": "/api/cron/ledger-tuesday",
+      "schedule": "30 10 * * 2"
+    },
+    {
+      "path": "/api/cron/ledger-tuesday",
+      "schedule": "30 11 * * 2"
+    },
+    {
+      "path": "/api/cron/ledger-friday",
+      "schedule": "30 10 * * 5"
+    },
+    {
+      "path": "/api/cron/ledger-friday",
+      "schedule": "30 11 * * 5"
     }
   ]
 }
