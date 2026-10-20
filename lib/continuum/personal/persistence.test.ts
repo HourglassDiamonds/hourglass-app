@@ -240,6 +240,32 @@ test("one screenshot can persist distinct activities against one source and one 
   assert.equal(db.uploads.size, 0);
 });
 
+test("recovery screenshots preserve private provenance and original-byte idempotency", async () => {
+  const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-20");
+  const bytes = pngBytes(4, 8, 15, 16, 23, 42); const digest = createHash("sha256").update(bytes).digest("hex");
+  const proposal: Extract<NaturalIngestionProposal, { kind: "recovery" }> = {
+    id: "recovery-proposal", proposedAt: "2026-10-20T11:00:00Z", sourceType: "recovery_screenshot", confidence: "high", assumptions: [],
+    summary: "Visible WHOOP recovery", model: "test", sourceDigest: digest, normalizedSourceDigest: digest, kind: "recovery",
+    recovery: { recoveryScore: { value: 71, source: "observed" }, hrvMs: { value: 48, source: "observed" }, strain: { value: 8.4, source: "observed" } },
+    sourceDate: { month: 10, day: 20, year: 2026, evidence: "observed" }, guidance: "Daily strain is not workout-specific.",
+  };
+  const idempotencyKey = `accept-recovery-${digest}`; const entryId = `recovery-${digest.slice(0, 32)}`;
+  const entry = {
+    id: entryId, date: "2026-10-20", recordedAt: "2026-10-20T11:01:00Z", ...proposal.recovery,
+    sourceType: "recovery_screenshot" as const, source: { name: "whoop.png", type: "image/png", size: bytes.length }, sterlingProposal: proposal,
+    assumptions: [], corrections: [], idempotencyKey, provenance: ["sterling" as const, "user_confirmed" as const],
+  };
+  const mutation = { idempotencyKey, action: "accept_recovery" as const, entryId, sourceType: "recovery_screenshot" as const, proposal, accepted: entry };
+  const source = new File([bytes], "whoop.png", { type: "image/png" });
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state: { ...initial, recoveryEntries: [entry] }, mutation, sourceFile: source }, db.client);
+  const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state: { ...initial, recoveryEntries: [entry] }, mutation, sourceFile: source }, db.client);
+  assert.equal(first.revision, 1); assert.equal(first.state.recoveryEntries[0]?.source?.storagePath?.includes(digest.slice(0, 16)), true);
+  assert.equal(first.state.activities.length, 0, "daily strain must not create an activity");
+  assert.equal(retry.duplicate, true); assert.equal(retry.revision, 1); assert.equal(db.audits.size, 1); assert.equal(db.uploads.size, 1);
+  await assert.rejects(() => savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 1, state: { ...initial, recoveryEntries: [entry] }, mutation: { ...mutation, idempotencyKey: "accept-recovery-tampered" }, sourceFile: source }, db.client), /source-dedupe-invalid/);
+  await assert.rejects(() => savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 1, state: { ...initial, recoveryEntries: [entry] }, mutation: { ...mutation, sourceType: "activity_screenshot" }, sourceFile: source }, db.client), /source-digest-invalid/);
+});
+
 test("an activity date correction persists in place and an idempotent retry creates no duplicate mutation", async () => {
   const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-17");
   const activity = {

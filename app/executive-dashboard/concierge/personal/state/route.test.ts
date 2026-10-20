@@ -12,6 +12,7 @@ const adjustmentMigration = readFileSync(join(directory, "../../../../../supabas
 const activationMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261015215857_performance_program_activation_action.sql"), "utf8");
 const tonalMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261017203000_performance_tonal_program_actions.sql"), "utf8");
 const tonalPlanMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261017232419_performance_tonal_session_plan_action.sql"), "utf8");
+const recoveryMigration = readFileSync(join(directory, "../../../../../supabase/migrations/20261020153000_performance_recovery_ingestion.sql"), "utf8");
 
 test("state reads and writes require the founder session and never return a public source URL", () => {
   assert.match(route, /requireInternalClientMemorySession/); assert.match(route, /status:\s*401/g);
@@ -53,4 +54,7 @@ test("migration keeps state and source objects private with explicit service-rol
   assert.match(tonalPlanMigration, /'plan_strength_session'/);
   assert.match(tonalPlanMigration, /'configure_strength_program'/);
   assert.doesNotMatch(tonalPlanMigration, /grant|create policy|continuum_performance_state|continuum_performance_evidence|create table/i);
+  for (const action of ["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_recovery", "accept_adjustment", "configure_strength_program", "plan_strength_session", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]) assert.match(recoveryMigration, new RegExp(`'${action}'`));
+  for (const sourceType of ["text", "meal_photo", "nutrition_label", "activity_screenshot", "recovery_screenshot", "tonal_program_screenshot"]) assert.match(recoveryMigration, new RegExp(`'${sourceType}'`));
+  assert.doesNotMatch(recoveryMigration, /create table|create or replace function|grant|revoke|create policy|enable row level security|continuum_performance_state|continuum_performance_evidence/i);
 });

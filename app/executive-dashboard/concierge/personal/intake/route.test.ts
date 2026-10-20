@@ -10,9 +10,17 @@ const ai = readFileSync(join(directory, "../../../../../lib/continuum/personal/i
 
 test("unified intake authenticates and sends only submitted Performance context with store false", () => {
   assert.match(route, /requireInternalClientMemorySession/); assert.match(route, /status:\s*401/);
-  for (const source of ["text", "meal_photo", "nutrition_label", "activity_screenshot"]) assert.match(route, new RegExp(source));
+  for (const source of ["text", "meal_photo", "nutrition_label", "activity_screenshot", "recovery_screenshot"]) assert.match(route, new RegExp(source));
   assert.match(ai, /store:\s*false/); assert.match(ai, /knownMeals.*slice\(0, 12\)/);
   assert.doesNotMatch(ai, /gmail|client-memory|project|concierge.*context/i);
+});
+
+test("recovery screenshots use a distinct strict proposal and preserve daily strain scope", () => {
+  assert.match(route, /"recovery"/);
+  for (const field of ["recoveryScore", "hrvMs", "restingHeartRate", "sleepHours", "sleepPerformance", "strain"]) assert.match(ai, new RegExp(field));
+  assert.match(ai, /Return kind recovery/);
+  assert.match(ai, /Daily strain is recovery-day context, never workout-specific strain/);
+  assert.match(ai, /performance-analysis-no-recovery-metrics/);
 });
 
 test("activity contract distinguishes observed fields and leaves missing metrics nullable", () => {

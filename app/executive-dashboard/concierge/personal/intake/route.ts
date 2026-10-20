@@ -6,7 +6,7 @@ import type { PerformanceSourceType, PersonalState } from "@/lib/continuum/perso
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
 export const runtime = "nodejs";
-const SOURCE_TYPES = new Set<PerformanceSourceType>(["text", "meal_photo", "nutrition_label", "activity_screenshot"]);
+const SOURCE_TYPES = new Set<PerformanceSourceType>(["text", "meal_photo", "nutrition_label", "activity_screenshot", "recovery_screenshot"]);
 
 export async function POST(request: Request) {
   const jar = await cookies();
@@ -24,8 +24,8 @@ export async function POST(request: Request) {
     const targetsParsed = JSON.parse(String(form.get("nutritionTargets") ?? "{}")) as Partial<PersonalState["nutritionTargets"]>;
     const nutritionTargets = { calories: Number(targetsParsed.calories) || 2400, protein: Number(targetsParsed.protein) || 190, carbs: Number(targetsParsed.carbs) || 240, fat: Number(targetsParsed.fat) || 80 };
     const intentValue = String(form.get("intent") ?? "completed_activity");
-    if (!new Set(["completed_activity", "upcoming_tonal_session"]).has(intentValue)) return NextResponse.json({ ok: false, error: "invalid-intent" }, { status: 400 });
-    const proposal = await interpretPerformanceIntake({ text, file, originalSourceDigest, sourceType: sourceTypeValue as PerformanceSourceType, knownMeals: Array.isArray(knownMealsParsed) ? knownMealsParsed.filter((value): value is string => typeof value === "string").slice(0, 12) : [], nutritionTargets, intent: intentValue as "completed_activity" | "upcoming_tonal_session" });
+    if (!new Set(["completed_activity", "upcoming_tonal_session", "recovery"]).has(intentValue)) return NextResponse.json({ ok: false, error: "invalid-intent" }, { status: 400 });
+    const proposal = await interpretPerformanceIntake({ text, file, originalSourceDigest, sourceType: sourceTypeValue as PerformanceSourceType, knownMeals: Array.isArray(knownMealsParsed) ? knownMealsParsed.filter((value): value is string => typeof value === "string").slice(0, 12) : [], nutritionTargets, intent: intentValue as "completed_activity" | "upcoming_tonal_session" | "recovery" });
     return NextResponse.json({ ok: true, proposal });
   } catch (error) {
     const message = error instanceof Error ? error.message : "performance-analysis-failed";

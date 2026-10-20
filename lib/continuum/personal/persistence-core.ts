@@ -9,9 +9,9 @@ export const PERFORMANCE_SOURCE_BUCKET = "continuum-performance-sources";
 const STATE_TABLE = "continuum_performance_state";
 const MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 const SOURCE_RETENTION_DAYS = 90;
-const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "configure_strength_program", "plan_strength_session", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
+const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_recovery", "accept_adjustment", "configure_strength_program", "plan_strength_session", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
 
-export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "configure_strength_program" | "plan_strength_session" | "activate_program" | "transition_strength_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
+export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_recovery" | "accept_adjustment" | "configure_strength_program" | "plan_strength_session" | "activate_program" | "transition_strength_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
 export type SavePerformanceStateInput = { founderKey: string; expectedRevision: number; state: PersonalState; mutation: PerformanceMutation; sourceFile?: File; now?: string };
 export type SavedPerformanceState = { state: PersonalState; revision: number; duplicate: boolean };
 
@@ -28,6 +28,7 @@ function attachStoragePath(state: PersonalState, entryId: string | undefined, st
     ...state,
     meals: state.meals.map((meal) => meal.id === entryId && meal.photo ? { ...meal, photo: { ...meal.photo, storagePath } } : meal),
     activities: state.activities.map((activity) => (activity.id === entryId || activity.idempotencyKey === idempotencyKey) && activity.source ? { ...activity, source: { ...activity.source, storagePath } } : activity),
+    recoveryEntries: state.recoveryEntries.map((entry) => entry.id === entryId && entry.source ? { ...entry, source: { ...entry.source, storagePath } } : entry),
     tonal: { ...state.tonal, enrollment: { ...state.tonal.enrollment, sources: state.tonal.enrollment.sources.map((source) => source.digest && entryId.includes(source.digest.slice(0, 32)) && source.file ? { ...source, file: { ...source.file, storagePath } } : source), sessions: state.tonal.enrollment.sessions.map((session) => session.plannedSource?.digest && entryId.includes(session.plannedSource.digest.slice(0, 32)) && session.plannedSource.file ? { ...session, plannedSource: { ...session.plannedSource, file: { ...session.plannedSource.file, storagePath } } } : session) } },
   };
 }
@@ -45,7 +46,7 @@ export async function loadPerformanceStateWithClient(founderKey: string, today: 
 export async function savePerformanceStateWithClient(input: SavePerformanceStateInput, db: SupabaseClient): Promise<SavedPerformanceState> {
   const now = input.now ?? new Date().toISOString();
   if (!input.founderKey.trim() || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0 || !MUTATION_ACTIONS.has(input.mutation.action)) throw new Error("performance-mutation-invalid");
-  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "configure_strength_program", "plan_strength_session", "edit_activity"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
+  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "accept_recovery", "configure_strength_program", "plan_strength_session", "edit_activity"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
   let storagePath: string | undefined; let uploaded = false;
   if (input.sourceFile) {
     if (input.sourceFile.size <= 0 || input.sourceFile.size > MAX_SOURCE_BYTES) throw new Error("performance-source-invalid");
@@ -61,6 +62,15 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
       if (input.mutation.idempotencyKey !== `accept-activity-${proposal.sourceDigest}` || input.mutation.entryId !== `activity-${proposal.sourceDigest.slice(0, 32)}`) {
         throw new Error("performance-source-dedupe-invalid");
       }
+    }
+    if (input.mutation.action === "accept_recovery") {
+      const proposal = input.mutation.proposal;
+      const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
+      const entry = input.state.recoveryEntries.find((candidate) => candidate.id === input.mutation.entryId);
+      if (!proposal || !("kind" in proposal) || proposal.kind !== "recovery" || proposal.sourceType !== "recovery_screenshot" || input.mutation.sourceType !== "recovery_screenshot" || proposal.normalizedSourceDigest !== actualDigest || !proposal.sourceDigest || !entry) {
+        throw new Error("performance-source-digest-invalid");
+      }
+      if (input.mutation.idempotencyKey !== `accept-recovery-${proposal.sourceDigest}` || entry.idempotencyKey !== input.mutation.idempotencyKey) throw new Error("performance-source-dedupe-invalid");
     }
     if (input.mutation.action === "edit_activity") {
       const proposal = input.mutation.proposal;
@@ -85,7 +95,7 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
         throw new Error("performance-source-digest-invalid");
       }
     }
-    const storageKey = input.mutation.action === "edit_activity" ? `${input.mutation.entryId}-${createHash("sha256").update(sourceBytes).digest("hex").slice(0, 16)}` : input.mutation.entryId;
+    const storageKey = ["edit_activity", "accept_recovery"].includes(input.mutation.action) ? `${input.mutation.entryId}-${createHash("sha256").update(sourceBytes).digest("hex").slice(0, 16)}` : input.mutation.entryId;
     storagePath = `${founderPath(input.founderKey)}/${storageKey}.${safeExtension(input.sourceFile)}`;
     const { error } = await db.storage.from(PERFORMANCE_SOURCE_BUCKET).upload(storagePath, sourceBytes, { contentType: sourceType, upsert: false });
     if (error && !/already exists|duplicate/i.test(error.message)) throw new Error(`performance-source-upload-failed:${error.message}`);
@@ -118,16 +128,18 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
   }
 }
 
-export async function deletePerformanceSourceWithClient(input: { founderKey: string; expectedRevision: number; entryId: string; kind: "meal" | "activity"; idempotencyKey: string; now?: string }, db: SupabaseClient): Promise<SavedPerformanceState> {
+export async function deletePerformanceSourceWithClient(input: { founderKey: string; expectedRevision: number; entryId: string; kind: "meal" | "activity" | "recovery"; idempotencyKey: string; now?: string }, db: SupabaseClient): Promise<SavedPerformanceState> {
   const loaded = await loadPerformanceStateWithClient(input.founderKey, (input.now ?? new Date().toISOString()).slice(0, 10), db);
   if (!loaded || loaded.revision !== input.expectedRevision) throw new PerformanceRevisionConflict(loaded);
-  const entry = input.kind === "meal" ? loaded.state.meals.find((meal) => meal.id === input.entryId) : loaded.state.activities.find((activity) => activity.id === input.entryId);
+  const entry = input.kind === "meal" ? loaded.state.meals.find((meal) => meal.id === input.entryId) : input.kind === "activity" ? loaded.state.activities.find((activity) => activity.id === input.entryId) : loaded.state.recoveryEntries.find((recovery) => recovery.id === input.entryId);
   const path = input.kind === "meal" ? (entry && "photo" in entry ? entry.photo?.storagePath : undefined) : (entry && "source" in entry ? entry.source?.storagePath : undefined);
   if (!path || !path.startsWith(`${founderPath(input.founderKey)}/`)) throw new Error("performance-source-not-found");
   const { error: removeError } = await db.storage.from(PERFORMANCE_SOURCE_BUCKET).remove([path]);
   if (removeError) throw new Error(`performance-source-delete-failed:${removeError.message}`);
   const state: PersonalState = input.kind === "meal"
     ? { ...loaded.state, meals: loaded.state.meals.map((meal) => meal.id === input.entryId && meal.photo ? { ...meal, photo: { name: meal.photo.name, type: meal.photo.type, size: meal.photo.size } } : meal) }
-    : { ...loaded.state, activities: loaded.state.activities.map((activity) => activity.source?.storagePath === path ? { ...activity, source: { name: activity.source.name, type: activity.source.type, size: activity.source.size } } : activity) };
+    : input.kind === "activity"
+      ? { ...loaded.state, activities: loaded.state.activities.map((activity) => activity.source?.storagePath === path ? { ...activity, source: { name: activity.source.name, type: activity.source.type, size: activity.source.size } } : activity) }
+      : { ...loaded.state, recoveryEntries: loaded.state.recoveryEntries.map((recovery) => recovery.source?.storagePath === path ? { ...recovery, source: { name: recovery.source.name, type: recovery.source.type, size: recovery.source.size } } : recovery) };
   return savePerformanceStateWithClient({ founderKey: input.founderKey, expectedRevision: input.expectedRevision, state, mutation: { idempotencyKey: input.idempotencyKey, action: "delete_source", entryId: input.entryId, sourceStoragePath: path }, now: input.now }, db);
 }

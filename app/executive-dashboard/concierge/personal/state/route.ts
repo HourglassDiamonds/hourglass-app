@@ -33,8 +33,8 @@ export async function DELETE(request: Request) {
   const session = await founderSession();
   if (!session.ok) return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
   try {
-    const body = await request.json() as { expectedRevision: number; entryId: string; kind: "meal" | "activity"; idempotencyKey: string };
-    if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 1 || !body.entryId || !["meal", "activity"].includes(body.kind) || !body.idempotencyKey) return NextResponse.json({ ok: false, error: "invalid-source-deletion" }, { status: 400 });
+    const body = await request.json() as { expectedRevision: number; entryId: string; kind: "meal" | "activity" | "recovery"; idempotencyKey: string };
+    if (!Number.isSafeInteger(body.expectedRevision) || body.expectedRevision < 1 || !body.entryId || !["meal", "activity", "recovery"].includes(body.kind) || !body.idempotencyKey) return NextResponse.json({ ok: false, error: "invalid-source-deletion" }, { status: 400 });
     const saved = await deletePerformanceSource({ founderKey: session.username, ...body });
     return NextResponse.json({ ok: true, ...saved }, { headers: { "Cache-Control": "private, no-store" } });
   } catch (error) {

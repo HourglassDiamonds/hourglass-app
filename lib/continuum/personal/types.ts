@@ -2,7 +2,7 @@ export type TrainingMode = "tonal" | "peloton" | "bodyweight" | "ruck" | "run" |
 export type TrainingDomain = "strength" | "engine" | "recovery";
 export type WorkoutStatus = "planned" | "unresolved" | "in_progress" | "completed" | "deferred" | "skipped" | "replaced";
 export type Provenance = "program" | "user" | "sterling" | "manual_recovery" | "ai_meal_estimate" | "user_confirmed";
-export type PerformanceSourceType = "text" | "meal_photo" | "nutrition_label" | "activity_screenshot" | "tonal_program_screenshot";
+export type PerformanceSourceType = "text" | "meal_photo" | "nutrition_label" | "activity_screenshot" | "recovery_screenshot" | "tonal_program_screenshot";
 export type ProposalConfidence = "low" | "medium" | "high";
 export type EvidenceKind = "observed" | "estimated" | "user_supplied";
 export type TonalProgramId = "fit-over-40" | "next-level-strength" | "12-weeks-to-jacked";
@@ -100,7 +100,7 @@ export type WorkoutSession = {
   sets: PerformedSet[];
 };
 
-export type MetricSource = "measured" | "manual" | "subjective" | "inferred";
+export type MetricSource = "measured" | "manual" | "subjective" | "inferred" | "observed";
 export type RecoveryMetric<T> = { value: T; source: MetricSource };
 export type RecoveryEntry = {
   id: string;
@@ -108,6 +108,7 @@ export type RecoveryEntry = {
   recordedAt: string;
   sleepHours?: RecoveryMetric<number>;
   sleepQuality?: RecoveryMetric<number>;
+  sleepPerformance?: RecoveryMetric<number>;
   recoveryScore?: RecoveryMetric<number>;
   strain?: RecoveryMetric<number>;
   restingHeartRate?: RecoveryMetric<number>;
@@ -118,6 +119,12 @@ export type RecoveryEntry = {
   pain?: RecoveryMetric<"none" | "mild" | "moderate" | "high">;
   notes?: string;
   rawNarrative?: string;
+  sourceType?: "recovery_screenshot";
+  source?: SourceReference;
+  sterlingProposal?: RecoveryIngestionProposal;
+  assumptions?: string[];
+  corrections?: AuditFact[];
+  idempotencyKey?: string;
   provenance: Provenance[];
 };
 
@@ -255,7 +262,23 @@ export type ActivityIngestionProposal = ProposalBase & {
   guidance: string;
 };
 
-export type NaturalIngestionProposal = MealIngestionProposal | ActivityIngestionProposal;
+export type RecoveryProposalFacts = {
+  recoveryScore?: RecoveryMetric<number>;
+  hrvMs?: RecoveryMetric<number>;
+  restingHeartRate?: RecoveryMetric<number>;
+  sleepHours?: RecoveryMetric<number>;
+  sleepPerformance?: RecoveryMetric<number>;
+  strain?: RecoveryMetric<number>;
+};
+
+export type RecoveryIngestionProposal = ProposalBase & {
+  kind: "recovery";
+  recovery: RecoveryProposalFacts;
+  sourceDate?: VisibleActivityDate;
+  guidance: string;
+};
+
+export type NaturalIngestionProposal = MealIngestionProposal | ActivityIngestionProposal | RecoveryIngestionProposal;
 
 export type FrequentMeal = {
   id: string;

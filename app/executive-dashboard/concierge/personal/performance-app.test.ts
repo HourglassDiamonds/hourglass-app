@@ -80,7 +80,7 @@ test("mobile completion selection stays available while canonical completion rem
   assert.match(source, /setSelectedTonalSessionOrder/);
   assert.match(source, /Completed \/ Deferred \/ Skipped \/ Pending|tonalSessionOutcome/);
   assert.match(source, /Completion screenshot selected\. Sterling is reading only the visible results/);
-  assert.match(source, /Completion screenshot ready for review\. Nothing is saved until you approve it/);
+  assert.match(source, /Extraction complete\. Review the selected Tonal session below; nothing is saved until you approve it/);
   assert.match(source, /matchesTonalSessionCompletion/);
   assert.match(source, /does not match the founder-selected Tonal session/);
   assert.match(source, /Add Before Photo/);
@@ -133,4 +133,36 @@ test("daily training and recovery keep evidence semantics distinct", () => {
   assert.match(source, /scheduledWorkoutId/);
   assert.match(source, /No plan details will be fabricated/);
   assert.match(source, /Unknown values remain unknown/);
+});
+
+test("daily review controls stay mounted on the selected day and never claim premature persistence", () => {
+  assert.match(source, /function openMealEntry\(date: string\)/);
+  assert.match(source, /data-meal-entry-date=\{day\.date\}/);
+  assert.match(source, /mealEntryRef\.current\?\.scrollIntoView/);
+  assert.match(source, /mealTextRef\.current\?\.focus/);
+  assert.match(source, /Close Meal Entry/);
+  assert.match(source, /Approve & Save Meal/);
+  assert.match(source, /occurredOn: mealTargetDate/);
+});
+
+test("Tonal completion extraction exposes the exact historical-session review", () => {
+  assert.match(source, /setPastActivityOpen\(true\)/);
+  assert.match(source, /data-completion-review=\{tonalCompletionTargetOrder/);
+  assert.match(source, /Review Fit Over 40 · Session/);
+  assert.match(source, /Approve & Save/);
+  assert.match(source, /enrich-activity-/);
+  assert.match(source, /does not create a second completion/);
+  assert.doesNotMatch(source, /Completion screenshot ready for review/);
+});
+
+test("recovery screenshots have date-gated editable review and confirmed persistence feedback", () => {
+  assert.match(source, /chooseRecoveryScreenshot/);
+  assert.match(source, /sourceType", "recovery_screenshot"/);
+  assert.match(source, /intent", "recovery"/);
+  assert.match(source, /data-recovery-review/);
+  assert.match(source, /selected date conflicts with the visible screenshot date/i);
+  assert.match(source, /Approve & Save Recovery/);
+  assert.match(source, /action: "accept_recovery"/);
+  assert.match(source, /Recovery screenshot already logged/);
+  assert.match(source, /Daily strain · not workout-specific/);
 });

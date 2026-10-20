@@ -1,4 +1,4 @@
-import type { ActivityFacts, ActivityLog, MealItem, MealLog, NaturalIngestionProposal, PersonalState } from "./types";
+import type { ActivityFacts, ActivityLog, MealItem, MealLog, NaturalIngestionProposal, PersonalState, RecoveryEntry } from "./types";
 import { compareActivityDate } from "./activity-date";
 import { requiredTonalSessionCount, tonalEnrollmentReady, TONAL_PROGRESSION } from "./tonal-programs";
 
@@ -65,11 +65,29 @@ export function validateActivityLog(activity: ActivityLog): string[] {
   return [...new Set(errors)];
 }
 
+export function validateRecoveryEntry(entry: RecoveryEntry): string[] {
+  const errors: string[] = [];
+  if (!entry.id || !DATE_KEY.test(entry.date) || !entry.recordedAt) errors.push("recovery-shape");
+  const ranges: Array<[keyof RecoveryEntry, number, number]> = [
+    ["sleepHours", 0, 24], ["sleepQuality", 0, 5], ["sleepPerformance", 0, 100], ["recoveryScore", 0, 100],
+    ["strain", 0, 21], ["restingHeartRate", 20, 250], ["hrvMs", 0, 1_000], ["bodyweightLb", 0, 1_500],
+  ];
+  for (const [key, min, max] of ranges) {
+    const metric = entry[key];
+    if (metric && typeof metric === "object" && "value" in metric && !finite(metric.value, min, max)) errors.push(`recovery-${key}`);
+  }
+  if (entry.sourceType === "recovery_screenshot" && (!entry.source || !entry.idempotencyKey || entry.sterlingProposal?.kind !== "recovery")) errors.push("recovery-source-provenance");
+  if (entry.sterlingProposal?.kind === "recovery" && compareActivityDate(entry.sterlingProposal.sourceDate, entry.date) === "conflict"
+    && !entry.corrections?.some((correction) => correction.field === "date" && correction.to === entry.date)) errors.push("recovery-date-confirmation");
+  return [...new Set(errors)];
+}
+
 export function validateAcceptedProposal(proposal: NaturalIngestionProposal, accepted: MealLog | ActivityLog): string[] {
   if (proposal.kind === "meal") {
     if (!("items" in accepted)) return ["proposal-kind-mismatch"];
     return validateMealLog(accepted);
   }
+  if (proposal.kind === "recovery") return ["proposal-kind-mismatch"];
   if (!("facts" in accepted)) return ["proposal-kind-mismatch"];
   return validateActivityLog(accepted);
 }
@@ -89,8 +107,8 @@ export function validatePersonalState(state: PersonalState): string[] {
     if (state.program.status === "setup" && state.tonal.enrollment.status !== "setup") errors.push("tonal-setup-state");
     if (state.tonal.completedEnrollments.some((enrollment) => enrollment.status !== "completed" || !enrollment.completedAt)) errors.push("tonal-completed-history");
   }
-  if (state.meals.length > 5_000 || state.activities.length > 5_000) errors.push("state-size");
-  errors.push(...state.meals.flatMap(validateMealLog), ...state.activities.flatMap(validateActivityLog));
+  if (state.meals.length > 5_000 || state.activities.length > 5_000 || state.recoveryEntries.length > 5_000) errors.push("state-size");
+  errors.push(...state.meals.flatMap(validateMealLog), ...state.activities.flatMap(validateActivityLog), ...state.recoveryEntries.flatMap(validateRecoveryEntry));
   if (state.activities.some((activity) => activity.scheduledWorkoutId && !state.schedule.some((workout) => workout.id === activity.scheduledWorkoutId))) errors.push("activity-scheduled-workout");
   if (!finite(state.nutritionTargets.calories, 500, 10_000) || !finite(state.nutritionTargets.protein, 0, 500)) errors.push("nutrition-targets");
   if (state.nutritionTargetHistory?.some((entry) => !DATE_KEY.test(entry.effectiveOn)

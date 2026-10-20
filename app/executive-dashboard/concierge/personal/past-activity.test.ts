@@ -16,7 +16,7 @@ test("past activity has explicit date-first review and never reschedules a plann
   assert.match(app, /input\.file \? await prepareUpload\(input\.file, input\.sourceType === "activity_screenshot"/);
   assert.match(app, /setIntakeFile\(image \?\? null\)/);
   assert.match(app, /ActivityReview/);
-  assert.match(app, /Accept \{activities\.length === 1 \? "activity"/);
+  assert.match(app, /acceptLabel = "Accept activity"/);
 });
 
 test("screenshot provenance uses a byte digest for server-enforced dedupe without invented metrics", () => {

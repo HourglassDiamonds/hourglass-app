@@ -5,7 +5,7 @@ import { getConciergeOpenAiApiKey } from "@/lib/continuum/concierge-sol/env";
 import { CONCIERGE_SOL_RESPONSES_ENDPOINT, conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import { activityNutritionGuidance } from "./guidance";
 import { detectedImageType } from "./image-upload";
-import type { ActivityFacts, ActivityMetric, EvidenceKind, MealItem, NaturalIngestionProposal, PerformanceSourceType, PersonalState, ProposalConfidence, TonalProgramMovement } from "./types";
+import type { ActivityFacts, ActivityMetric, EvidenceKind, MealItem, NaturalIngestionProposal, PerformanceSourceType, PersonalState, ProposalConfidence, RecoveryMetric, TonalProgramMovement } from "./types";
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
 const ACTIVITY_FIELDS = ["workoutTitle", "trainer", "tonalProgramTitle", "tonalSessionOrder", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "totalVolumeLb", "maxResistanceLb", "completedSets", "completedReps"] as const;
@@ -21,11 +21,21 @@ const activityObjectSchema = {
   },
 } as const;
 
+const RECOVERY_FIELDS = ["recoveryScore", "hrvMs", "restingHeartRate", "sleepHours", "sleepPerformance", "strain"] as const;
+const recoveryObjectSchema = {
+  type: "object", additionalProperties: false,
+  required: [...RECOVERY_FIELDS, "observedFields"],
+  properties: {
+    recoveryScore: nullableNumber(), hrvMs: nullableNumber(), restingHeartRate: nullableNumber(), sleepHours: nullableNumber(), sleepPerformance: nullableNumber(), strain: nullableNumber(),
+    observedFields: { type: "array", items: { type: "string", enum: [...RECOVERY_FIELDS] } },
+  },
+} as const;
+
 const intakeSchema = {
   type: "object", additionalProperties: false,
-  required: ["kind", "summary", "confidence", "assumptions", "meal", "activity", "additionalActivities", "activityDate", "dailySummary"],
+  required: ["kind", "summary", "confidence", "assumptions", "meal", "activity", "recovery", "additionalActivities", "activityDate", "dailySummary"],
   properties: {
-    kind: { type: "string", enum: ["meal", "activity"] }, summary: { type: "string" },
+    kind: { type: "string", enum: ["meal", "activity", "recovery"] }, summary: { type: "string" },
     confidence: { type: "string", enum: ["low", "medium", "high"] },
     assumptions: { type: "array", maxItems: 12, items: { type: "string" } },
     meal: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["items", "clarification", "caveat"], properties: {
@@ -36,6 +46,7 @@ const intakeSchema = {
       } } }, clarification: { anyOf: [{ type: "string" }, { type: "null" }] }, caveat: { type: "string" },
     } }] },
     activity: { anyOf: [{ type: "null" }, activityObjectSchema] },
+    recovery: { anyOf: [{ type: "null" }, recoveryObjectSchema] },
     additionalActivities: { type: "array", maxItems: 9, items: activityObjectSchema },
     activityDate: { anyOf: [{ type: "null" }, { type: "object", additionalProperties: false, required: ["month", "day", "year"], properties: {
       month: { type: "integer", minimum: 1, maximum: 12 }, day: { type: "integer", minimum: 1, maximum: 31 }, year: { anyOf: [{ type: "integer", minimum: 2000, maximum: 2100 }, { type: "null" }] },
@@ -64,7 +75,7 @@ function round(value: unknown): number { return Math.max(0, Math.round(typeof va
 function metric<T extends number | string>(value: T | null, evidence: EvidenceKind): ActivityMetric<T> | undefined { return value === null || value === "" ? undefined : { value, evidence }; }
 
 export async function interpretPerformanceIntake(input: {
-  text?: string; file?: File; originalSourceDigest?: string; sourceType: PerformanceSourceType; knownMeals?: string[]; nutritionTargets: PersonalState["nutritionTargets"]; intent?: "completed_activity" | "upcoming_tonal_session";
+  text?: string; file?: File; originalSourceDigest?: string; sourceType: PerformanceSourceType; knownMeals?: string[]; nutritionTargets: PersonalState["nutritionTargets"]; intent?: "completed_activity" | "upcoming_tonal_session" | "recovery";
 }): Promise<NaturalIngestionProposal> {
   const text = input.text?.trim().slice(0, 2_000) ?? "";
   if (!text && !input.file) throw new Error("intake-required");
@@ -74,7 +85,9 @@ export async function interpretPerformanceIntake(input: {
   const model = conciergeForegroundModel(process.env.CONTINUUM_CONCIERGE_MODEL);
   const context = (input.knownMeals ?? []).slice(0, 12).join("; ");
   const instructions = [
-    input.intent === "upcoming_tonal_session" ? "Interpret this image as an upcoming, not-yet-completed Tonal workout plan. Return kind activity solely as the structured review carrier; do not claim completion." : "Interpret this single Performance intake as either a meal/nutrition record or a completed activity.",
+    input.intent === "upcoming_tonal_session" ? "Interpret this image as an upcoming, not-yet-completed Tonal workout plan. Return kind activity solely as the structured review carrier; do not claim completion."
+      : input.intent === "recovery" ? "Interpret this image as a daily recovery/sleep record. Return kind recovery. Do not return an activity or assign a daily metric to a workout."
+        : "Interpret this single Performance intake as either a meal/nutrition record or a completed activity.",
     "Use only visible or user-supplied facts. Never invent a missing metric or false precision.",
     "For nutrition labels, use visible label values and serving math. For meals, estimate practical portions/macros and state assumptions.",
     "For activity screenshots, extract visible duration, distance, pace/speed, heart rate, elevation, reported calories, WHOOP strain, steps, ruck weight, total volume, maximum resistance, completed sets, and completed reps. Null absent values.",
@@ -83,6 +96,8 @@ export async function interpretPerformanceIntake(input: {
     "For an activity screenshot, extract a visible calendar date into activityDate. Preserve visible month and day; include year only when the image explicitly shows it. Use null when no date is visible or the date is ambiguous.",
     "Each distinct completed activity row must remain separate: put the first in activity and any others in additionalActivities. Never combine Golf, Soccer, Walking, or another row into one daily-summary activity.",
     "Daily WHOOP metrics belong only in dailySummary. Never assign overall daily strain to an individual activity. Sleep is not an activity.",
+    "For recovery screenshots, extract only visible recovery percentage, HRV, resting heart rate, sleep duration, sleep performance, and daily strain into recovery. Null absent values. Daily strain is recovery-day context, never workout-specific strain.",
+    "For recovery screenshots, extract a visible calendar date into activityDate using the same strict date rules. observedFields must include only recovery values directly visible in the image.",
     "observedFields must include only activity values directly visible in the image. Previously accepted meals are hints, not authority.",
     context ? `Accepted frequent-meal context: ${context}` : "No accepted frequent-meal context was supplied.",
     text ? `Founder description: ${text}` : "No accompanying description was supplied.",
@@ -114,6 +129,22 @@ export async function interpretPerformanceIntake(input: {
     if (!items.length) throw new Error("performance-analysis-invalid");
     const total = (key: "calories" | "protein" | "carbs" | "fat") => items.reduce((sum, item) => sum + item[key], 0);
     return { ...base, kind: "meal", meal: { id: base.id, estimatedAt: base.proposedAt, items, calories: total("calories"), protein: total("protein"), carbs: total("carbs"), fat: total("fat"), confidence, clarification: typeof rawMeal.clarification === "string" && rawMeal.clarification.trim() ? rawMeal.clarification.trim().slice(0, 240) : undefined, caveat: typeof rawMeal.caveat === "string" ? rawMeal.caveat.slice(0, 300) : "Review portions and macros before saving.", assumptions, model } };
+  }
+  const rawDate = parsed.activityDate && typeof parsed.activityDate === "object" ? parsed.activityDate as Record<string, unknown> : null;
+  const sourceDate = rawDate && Number.isInteger(rawDate.month) && Number.isInteger(rawDate.day)
+    ? { month: Number(rawDate.month), day: Number(rawDate.day), ...(Number.isInteger(rawDate.year) ? { year: Number(rawDate.year) } : {}), evidence: "observed" as const }
+    : undefined;
+  if (parsed.kind === "recovery" && parsed.recovery && typeof parsed.recovery === "object") {
+    const row = parsed.recovery as Record<string, unknown>;
+    const observed = new Set(Array.isArray(row.observedFields) ? row.observedFields.filter((value): value is string => typeof value === "string") : []);
+    const recoveryMetric = (field: typeof RECOVERY_FIELDS[number]): RecoveryMetric<number> | undefined =>
+      typeof row[field] === "number" && Number.isFinite(row[field]) && observed.has(field) ? { value: Math.max(0, row[field] as number), source: "observed" } : undefined;
+    const recovery = {
+      recoveryScore: recoveryMetric("recoveryScore"), hrvMs: recoveryMetric("hrvMs"), restingHeartRate: recoveryMetric("restingHeartRate"),
+      sleepHours: recoveryMetric("sleepHours"), sleepPerformance: recoveryMetric("sleepPerformance"), strain: recoveryMetric("strain"),
+    };
+    if (!Object.values(recovery).some(Boolean)) throw new Error("performance-analysis-no-recovery-metrics");
+    return { ...base, kind: "recovery", recovery, sourceDate, guidance: "Review every visible recovery value and the selected date. Daily strain is day-level context, not workout-specific strain." };
   }
   if (parsed.kind !== "activity" || !parsed.activity || typeof parsed.activity !== "object") throw new Error("performance-analysis-invalid");
   const activityFacts = (candidate: unknown): ActivityFacts | null => {
@@ -147,10 +178,6 @@ export async function interpretPerformanceIntake(input: {
   const facts = activityFacts(parsed.activity);
   if (!facts) throw new Error("performance-analysis-invalid");
   const activities = [facts, ...(Array.isArray(parsed.additionalActivities) ? parsed.additionalActivities.flatMap((candidate) => activityFacts(candidate) ?? []) : [])];
-  const rawDate = parsed.activityDate && typeof parsed.activityDate === "object" ? parsed.activityDate as Record<string, unknown> : null;
-  const sourceDate = rawDate && Number.isInteger(rawDate.month) && Number.isInteger(rawDate.day)
-    ? { month: Number(rawDate.month), day: Number(rawDate.day), ...(Number.isInteger(rawDate.year) ? { year: Number(rawDate.year) } : {}), evidence: "observed" as const }
-    : undefined;
   const rawDaily = parsed.dailySummary && typeof parsed.dailySummary === "object" ? parsed.dailySummary as Record<string, unknown> : null;
   const dailySummary = rawDaily
     ? { whoopStrain: typeof rawDaily.whoopStrain === "number" ? metric(Math.max(0, rawDaily.whoopStrain), input.file ? "observed" : "user_supplied") : undefined, notes: typeof rawDaily.notes === "string" ? rawDaily.notes.slice(0, 500) : undefined }

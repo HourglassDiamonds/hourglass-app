@@ -20,6 +20,6 @@ export function savePerformanceState(input: SavePerformanceStateInput, client?: 
   return savePerformanceStateWithClient(input, requireClient(client));
 }
 
-export function deletePerformanceSource(input: { founderKey: string; expectedRevision: number; entryId: string; kind: "meal" | "activity"; idempotencyKey: string; now?: string }, client?: SupabaseClient | null) {
+export function deletePerformanceSource(input: { founderKey: string; expectedRevision: number; entryId: string; kind: "meal" | "activity" | "recovery"; idempotencyKey: string; now?: string }, client?: SupabaseClient | null) {
   return deletePerformanceSourceWithClient(input, requireClient(client));
 }
