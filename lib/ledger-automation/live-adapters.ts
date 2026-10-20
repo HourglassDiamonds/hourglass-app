@@ -228,7 +228,7 @@ function parseEia(payload: unknown): ParsedObservation {
   const rawValue = selected.map((row) => ({
     series: row["series-description"] ?? row.seriesId ?? row.respondent ?? "series",
     value: numeric(row.value),
-    unit: String(row.units ?? row.unit ?? ""),
+    unit: String(row.units ?? row.unit ?? row["value-units"] ?? ""),
   }));
   if (rawValue.some((row) => !row.unit)) {
     throw new AdapterFailure("INVALID", "INVALID_UNIT", "EIA returned an empty unit.", false);
@@ -350,7 +350,11 @@ async function fetchProvider(
     const checked = new Date(checkedAt);
     const month = `${checked.getUTCFullYear()}${String(checked.getUTCMonth() + 1).padStart(2, "0")}`;
     url.searchParams.set("field_tdr_date_value_month", month);
-    payload = await request(url, options, "xml");
+    payload = await request(url, {
+      ...options,
+      timeoutMs: options.timeoutMs ?? 30_000,
+      maxAttempts: options.maxAttempts ?? 1,
+    }, "xml");
     return { parsed: parseTreasury(payload), sourceUrl: url.toString() };
   }
 

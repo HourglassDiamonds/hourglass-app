@@ -144,7 +144,11 @@ describe("Ledger Automation V1.1 live adapters", () => {
     let requestedUrl: URL | null = null;
     const result = await check(source("EIA_ELECTRICITY"), async (input) => {
       requestedUrl = new URL(String(input));
-      return jsonResponse(eiaPayload("456", "megawatthours"));
+      return jsonResponse({
+        response: {
+          data: [{ period: "2026-10-01", respondent: "US48", value: "456", "value-units": "megawatthours" }],
+        },
+      });
     }, { env: { EIA_API_KEY: "test-key" } });
     assert.equal(result.failure, null);
     assert.match(requestedUrl?.pathname ?? "", /\/electricity\/rto\/daily-region-data\/data\/$/);
