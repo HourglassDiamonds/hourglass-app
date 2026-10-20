@@ -185,11 +185,11 @@ function normalized(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
 
-export function matchesTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity): boolean {
+export function matchesTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity, options?: { allowCompletedEvidence?: boolean }): boolean {
   const program = TONAL_PROGRAM_CATALOG[state.tonal.enrollment.programId];
   const target = state.tonal.enrollment.sessions.find((session) => session.order === input.sequencePosition);
   const next = nextTonalSession(state);
-  if (!target || !target.plannedAt || !target.plannedSource || target.completedActivityId) return false;
+  if (!target || !target.plannedAt || !target.plannedSource || target.completedActivityId && !options?.allowCompletedEvidence) return false;
   const status = tonalSessionStatus(state, target);
   const historicalRecovery = status === "completed" || status === "deferred" || status === "skipped";
   if (next?.order !== target.order && !historicalRecovery) return false;

@@ -7,8 +7,9 @@ import { activateTrainingProgram, createInitialPersonalState, dateKey, previewTr
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
 import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealName, mealSignature, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
-import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, correctActivityDate as correctActivityDateInState } from "@/lib/continuum/personal/mutations";
+import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, completeScheduledWorkoutFromActivity, correctActivityDate as correctActivityDateInState } from "@/lib/continuum/personal/mutations";
 import { compareActivityDate, visibleActivityDateLabel } from "@/lib/continuum/personal/activity-date";
+import { PERFORMANCE_IMAGE_ACCEPT, performanceImageMessage, preparePerformanceImage, type PreparedPerformanceImage } from "@/lib/continuum/personal/image-upload";
 import { configureTonalProgram, FIT_OVER_40_WEEKLY_FREQUENCY, markTonalSessionCompletedFromActivity, matchesTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, tonalSessionOutcome, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
 import type { ActivityFacts, ActivityLog, FrequentMeal, MealEstimate, MealItem, MealLog, NaturalIngestionProposal, PerformedSet, PerformanceSourceType, PersonalState, RecoveryEntry, ScheduledWorkout, SterlingProposal, TonalProgramMovement, WorkoutSession } from "@/lib/continuum/personal/types";
 import styles from "./performance.module.css";
@@ -27,17 +28,6 @@ function localToday(): string { return dateKey(new Date()); }
 function nextMonday(key: string): string { return shiftDate(key, (7 - weekdayIndex(key)) % 7); }
 function prettyDate(key: string): string { return new Intl.DateTimeFormat("en-US", { weekday: "short", month: "short", day: "numeric" }).format(new Date(`${key}T12:00:00`)); }
 function totals(items: readonly MealItem[]) { return items.reduce((sum, item) => ({ calories: sum.calories + item.calories, protein: sum.protein + item.protein, carbs: sum.carbs + item.carbs, fat: sum.fat + item.fat }), { calories: 0, protein: 0, carbs: 0, fat: 0 }); }
-
-async function compactImage(file: File): Promise<File> {
-  if (file.size <= 900_000) return file;
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1400 / Math.max(bitmap.width, bitmap.height));
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(bitmap.width * scale)); canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-  canvas.getContext("2d")?.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.78));
-  return blob ? new File([blob], file.name.replace(/\.[^.]+$/, ".jpg"), { type: "image/jpeg" }) : file;
-}
 
 export function PerformanceApp({ initialView = "today" }: { initialView?: View }) {
   const [today, setToday] = useState(localToday);
@@ -82,8 +72,10 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [tonalPlanBusy, setTonalPlanBusy] = useState(false);
   const [tonalPlanFeedback, setTonalPlanFeedback] = useState("");
   const [tonalCompletionFeedback, setTonalCompletionFeedback] = useState("");
-  const [selectedTonalSessionOrder, setSelectedTonalSessionOrder] = useState<number | null>(null);
+  const [, setSelectedTonalSessionOrder] = useState<number | null>(null);
   const [tonalCompletionTargetOrder, setTonalCompletionTargetOrder] = useState<number | null>(null);
+  const [selectedWorkoutId, setSelectedWorkoutId] = useState<string | null>(null);
+  const [completionWorkoutId, setCompletionWorkoutId] = useState<string | null>(null);
 
   useEffect(() => {
     const key = localToday(); setToday(key);
@@ -127,12 +119,15 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     ? previewTrainingWeek(state.tonal, programStartDate)
     : [];
   const upcomingTonalSession = nextTonalSession(state);
-  const historicalTonalSessions = state.tonal.enrollment.sessions.filter((session) => {
-    const workout = state.schedule.find((candidate) => candidate.id === session.scheduledWorkoutId);
-    return Boolean(workout && (workout.date <= today || ["completed", "deferred", "skipped"].includes(workout.status)));
-  });
-  const selectedTonalSession = selectedTonalSessionOrder === null ? undefined : historicalTonalSessions.find((session) => session.order === selectedTonalSessionOrder);
-  const selectedTonalWorkout = selectedTonalSession ? state.schedule.find((workout) => workout.id === selectedTonalSession.scheduledWorkoutId) : undefined;
+  const selectableWorkouts = state.schedule.filter((workout) => workout.status !== "replaced").sort((a, b) => a.date.localeCompare(b.date));
+  const selectedWorkout = state.schedule.find((workout) => workout.id === selectedWorkoutId) ?? todayWorkout ?? selectableWorkouts.find((workout) => workout.date >= today) ?? selectableWorkouts.at(-1);
+  const selectedWorkoutTonalSession = selectedWorkout ? state.tonal.enrollment.sessions.find((session) => session.scheduledWorkoutId === selectedWorkout.id) : undefined;
+
+  async function prepareUpload(file: File, notify?: (message: string) => void): Promise<PreparedPerformanceImage> {
+    const prepared = await preparePerformanceImage(file);
+    if (prepared.converted) notify?.("iPhone photo prepared privately for review. Nothing is saved yet.");
+    return prepared;
+  }
 
   async function persistStateMutation(next: PersonalState, mutation: Record<string, unknown>, source?: File): Promise<{ state: PersonalState; duplicate: boolean }> {
     setPersistStatus("saving"); persistInFlight.current = true;
@@ -261,9 +256,9 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   }
 
   function saveModification(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!activeToday) return;
+    event.preventDefault(); if (!selectedWorkout || ["completed", "deferred", "skipped", "replaced"].includes(selectedWorkout.status)) return;
     const data = new FormData(event.currentTarget); const at = new Date().toISOString();
-    updateWorkout(activeToday.id, (workout) => ({ ...workout, prescription: { ...workout.prescription, name: String(data.get("name") || workout.prescription.name).slice(0, 100), durationMinutes: Math.max(5, Math.min(180, Number(data.get("duration")) || workout.prescription.durationMinutes)), notes: String(data.get("notes") || workout.prescription.notes).slice(0, 400) }, provenance: [...new Set([...workout.provenance, "user" as const])], history: [...workout.history, { at, action: "modified", actor: "user", note: "Today’s occurrence was modified; program identity remains attached." }] }));
+    updateWorkout(selectedWorkout.id, (workout) => ({ ...workout, prescription: { ...workout.prescription, name: String(data.get("name") || workout.prescription.name).slice(0, 100), durationMinutes: Math.max(5, Math.min(180, Number(data.get("duration")) || workout.prescription.durationMinutes)), notes: String(data.get("notes") || workout.prescription.notes).slice(0, 400) }, provenance: [...new Set([...workout.provenance, "user" as const])], history: [...workout.history, { at, action: "modified", actor: "user", note: "Founder edited this scheduled occurrence; program identity remains attached." }] }));
     setModifyOpen(false);
   }
 
@@ -375,11 +370,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   async function analyzeIntake(input: { text?: string; file?: File; sourceType: PerformanceSourceType }) {
     setMealBusy(true); setIntakeBusy(true); setMealError(""); setMealEstimate(null); setIntakeProposal(null);
     try {
-      if (input.file && input.file.size > 4 * 1024 * 1024) throw new Error("invalid-image");
-      const image = input.file
-        ? input.sourceType === "activity_screenshot" ? input.file : await compactImage(input.file)
-        : undefined; const body = new FormData();
-      if (image) body.set("image", image); if (input.text?.trim()) body.set("text", input.text.trim()); body.set("sourceType", input.sourceType);
+      const prepared = input.file ? await prepareUpload(input.file, input.sourceType === "activity_screenshot" ? setActivityFeedback : setMealError) : undefined; const image = prepared?.file; const body = new FormData();
+      if (image) body.set("image", image); if (prepared) body.set("originalSourceDigest", prepared.original.digest); if (input.text?.trim()) body.set("text", input.text.trim()); body.set("sourceType", input.sourceType);
       body.set("knownMeals", JSON.stringify(frequentlyEaten.map((meal) => `${meal.name}: ${meal.calories} kcal, ${meal.protein}P, ${meal.carbs}C, ${meal.fat}F`)));
       body.set("nutritionTargets", JSON.stringify(state.nutritionTargets));
       const response = await fetch("/executive-dashboard/concierge/personal/intake", { method: "POST", body });
@@ -387,7 +379,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       if (!response.ok || !payload.ok || !payload.proposal) throw new Error(payload.error || "analysis-failed");
       setIntakeFile(image ?? null); setIntakeProposal(payload.proposal);
       if (payload.proposal.kind === "meal") { setMealPhoto(image ? { name: image.name, type: image.type, size: image.size } : null); setMealEstimate(payload.proposal.meal); }
-    } catch (error) { setMealError(error instanceof Error && error.message === "performance-analysis-unavailable" ? "Sterling interpretation is not configured. Manual logging remains available." : error instanceof Error && error.message === "invalid-image" ? "Use a JPEG, PNG, WebP, or GIF no larger than 4 MB." : "Sterling could not interpret that input just now. Review the input and retry."); }
+    } catch (error) { setMealError(error instanceof Error && error.message === "performance-analysis-unavailable" ? "Sterling interpretation is not configured. Manual logging remains available." : error instanceof Error && ["unsupported-format", "file-too-large", "conversion-failed"].includes(error.message) ? performanceImageMessage(error) : "Extraction failed. Sterling could not interpret that photo; nothing was saved."); }
     finally { setMealBusy(false); setIntakeBusy(false); }
   }
 
@@ -403,17 +395,21 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     if (file) { setActivityFeedback(""); setActivityDefaultDate(pastActivityDate); setActivityMaxDate(shiftDate(today, -1)); void analyzeIntake({ file, sourceType: "activity_screenshot" }); }
   }
 
+  function chooseSelectedWorkoutCompletion(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]; event.target.value = "";
+    if (!file || !selectedWorkout || selectedWorkout.date > today) return;
+    setActivityFeedback("After photo selected. Sterling is reading only visible completion facts…");
+    setCompletionWorkoutId(selectedWorkout.id); setActivityDefaultDate(selectedWorkout.date); setActivityMaxDate(today);
+    void analyzeIntake({ file, sourceType: "activity_screenshot" });
+  }
+
   async function chooseTonalCompletionScreenshot(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = "";
     if (!file) return;
     setTonalCompletionFeedback("Completion screenshot selected. Sterling is reading only the visible results…");
-    const session = selectedTonalSession;
+    const session = selectedWorkoutTonalSession;
     if (!session) {
       setTonalCompletionFeedback("Choose the exact previous Tonal session before selecting its completion screenshot.");
-      return;
-    }
-    if (session.completedActivityId) {
-      setTonalCompletionFeedback("This session already has an approved completion activity. No duplicate was created.");
       return;
     }
     if (!session?.plannedAt || !session.plannedSource) {
@@ -422,8 +418,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     }
     setMealBusy(true); setIntakeBusy(true); setMealError(""); setIntakeProposal(null);
     try {
-      if (file.size > 4 * 1024 * 1024) throw new Error("invalid-image");
-      const body = new FormData(); body.set("image", file); body.set("sourceType", "activity_screenshot"); body.set("intent", "completed_activity");
+      const prepared = await prepareUpload(file, setTonalCompletionFeedback); const image = prepared.file;
+      const body = new FormData(); body.set("image", image); body.set("originalSourceDigest", prepared.original.digest); body.set("sourceType", "activity_screenshot"); body.set("intent", "completed_activity");
       body.set("text", session.title
         ? `Completion review for founder-approved ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. The visible workout title must match the approved planned title; do not infer it.`
         : `Completion review for founder-approved ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. The approved plan had no visible title, so extract every visible movement for exact matching; do not infer a title or movement.`);
@@ -433,11 +429,11 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       if (!response.ok || !payload.ok || payload.proposal?.kind !== "activity") throw new Error(payload.error || "analysis-failed");
       const facts = { ...payload.proposal.activity, tonalProgramTitle: payload.proposal.activity.tonalProgramTitle ?? TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title, tonalSessionOrder: { value: session.order, evidence: "user_supplied" as const } };
       const scheduledDate = state.schedule.find((workout) => workout.id === session.scheduledWorkoutId)?.date ?? today;
-      setTonalCompletionTargetOrder(session.order); setIntakeFile(file); setActivityDefaultDate(scheduledDate); setActivityMaxDate(today); setIntakeProposal({ ...payload.proposal, activity: facts, activities: [facts] });
+      setTonalCompletionTargetOrder(session.order); setCompletionWorkoutId(session.scheduledWorkoutId ?? null); setIntakeFile(image); setActivityDefaultDate(scheduledDate); setActivityMaxDate(today); setIntakeProposal({ ...payload.proposal, activity: facts, activities: [facts] });
       setTonalCompletionFeedback("Completion screenshot ready for review. Nothing is saved until you approve it.");
     } catch (error) {
       setTonalCompletionTargetOrder(null);
-      setTonalCompletionFeedback(error instanceof Error && error.message === "invalid-image" ? "Use a JPEG, PNG, WebP, or GIF no larger than 4 MB." : "Sterling could not read that Tonal completion screenshot. Nothing was saved.");
+      setTonalCompletionFeedback(error instanceof Error && ["unsupported-format", "file-too-large", "conversion-failed"].includes(error.message) ? performanceImageMessage(error) : "Extraction failed. Sterling could not read that Tonal completion screenshot. Nothing was saved.");
     }
     finally { setMealBusy(false); setIntakeBusy(false); }
   }
@@ -449,35 +445,35 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     setTonalPlanTargetOrder(session.order);
     setTonalPlanBusy(true); setTonalPlanFeedback(""); setMealError("");
     try {
-      if (file.size > 4 * 1024 * 1024) throw new Error("invalid-image");
-      const body = new FormData(); body.set("image", file); body.set("sourceType", "activity_screenshot"); body.set("intent", "upcoming_tonal_session");
+      const prepared = await prepareUpload(file, setTonalPlanFeedback); const image = prepared.file;
+      const body = new FormData(); body.set("image", image); body.set("originalSourceDigest", prepared.original.digest); body.set("sourceType", "activity_screenshot"); body.set("intent", "upcoming_tonal_session");
       body.set("text", `Upcoming ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. Extract only visible plan details; this is not a completion.`);
       body.set("knownMeals", "[]"); body.set("nutritionTargets", JSON.stringify(state.nutritionTargets));
       const response = await fetch("/executive-dashboard/concierge/personal/intake", { method: "POST", body });
       const payload = await response.json() as { ok: boolean; proposal?: NaturalIngestionProposal; error?: string };
       if (!response.ok || !payload.ok || payload.proposal?.kind !== "activity") throw new Error(payload.error || "analysis-failed");
-      setTonalPlanFile(file); setTonalPlanProposal(payload.proposal);
-    } catch { setTonalPlanFeedback("Sterling could not read that upcoming-workout screenshot. Nothing was saved."); }
+      setTonalPlanFile(image); setTonalPlanProposal(payload.proposal);
+    } catch (error) { setTonalPlanFeedback(error instanceof Error && ["unsupported-format", "file-too-large", "conversion-failed"].includes(error.message) ? performanceImageMessage(error) : "Extraction failed. Sterling could not read that upcoming-workout screenshot. Nothing was saved."); }
     finally { setTonalPlanBusy(false); }
   }
 
   async function chooseHistoricalTonalPlanScreenshot(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]; event.target.value = "";
-    const session = selectedTonalSession;
+    const session = selectedWorkoutTonalSession;
     if (!file || !session || session.completedActivityId || state.program.status !== "active") return;
     setTonalPlanTargetOrder(session.order); setTonalPlanBusy(true); setTonalPlanFeedback(""); setMealError("");
     try {
-      if (file.size > 4 * 1024 * 1024) throw new Error("invalid-image");
-      const body = new FormData(); body.set("image", file); body.set("sourceType", "activity_screenshot"); body.set("intent", "upcoming_tonal_session");
+      const prepared = await prepareUpload(file, setTonalPlanFeedback); const image = prepared.file;
+      const body = new FormData(); body.set("image", image); body.set("originalSourceDigest", prepared.original.digest); body.set("sourceType", "activity_screenshot"); body.set("intent", "upcoming_tonal_session");
       body.set("text", `Historical plan evidence for founder-selected ${TONAL_PROGRAM_CATALOG[state.tonal.selectedProgramId].title} sequence position ${session.order}. Extract only visible plan details; this is not a completion and does not reopen the session.`);
       body.set("knownMeals", "[]"); body.set("nutritionTargets", JSON.stringify(state.nutritionTargets));
       const response = await fetch("/executive-dashboard/concierge/personal/intake", { method: "POST", body });
       const payload = await response.json() as { ok: boolean; proposal?: NaturalIngestionProposal; error?: string };
       if (!response.ok || !payload.ok || payload.proposal?.kind !== "activity") throw new Error(payload.error || "analysis-failed");
-      setTonalPlanFile(file); setTonalPlanProposal(payload.proposal); setTonalPlanFeedback("Historical plan evidence ready for review. Nothing is saved until you approve it.");
+      setTonalPlanFile(image); setTonalPlanProposal(payload.proposal); setTonalPlanFeedback("Historical plan evidence ready for review. Nothing is saved until you approve it.");
     } catch (error) {
       setTonalPlanTargetOrder(null); setTonalPlanFile(null); setTonalPlanProposal(null);
-      setTonalPlanFeedback(error instanceof Error && error.message === "invalid-image" ? "Use a JPEG, PNG, WebP, or GIF no larger than 4 MB." : "Sterling could not read that historical plan screenshot. Nothing was saved.");
+      setTonalPlanFeedback(error instanceof Error && ["unsupported-format", "file-too-large", "conversion-failed"].includes(error.message) ? performanceImageMessage(error) : "Extraction failed. Sterling could not read that historical plan screenshot. Nothing was saved.");
     } finally { setTonalPlanBusy(false); }
   }
 
@@ -517,7 +513,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         programTitle: completion.tonalProgramTitle,
         workoutTitle: completion.workoutTitle,
         movements: completion.tonalMovements,
-      })) {
+      }, { allowCompletedEvidence: true })) {
         setTonalCompletionFeedback("This screenshot does not match the founder-selected Tonal session. Review the program, sequence position, title, and visible movements; nothing was saved.");
         return;
       }
@@ -526,15 +522,27 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     const idempotencyKey = digest ? `accept-activity-${digest}` : `accept-${intakeProposal.id}`; const at = new Date().toISOString();
     const activityId = digest ? `activity-${digest.slice(0, 32)}` : uid("activity");
     const originals = intakeProposal.activities?.length ? intakeProposal.activities : [intakeProposal.activity];
-    const activities = facts.map((activityFacts, index) => buildAcceptedActivity({ proposal: intakeProposal, originalFacts: originals[index], facts: activityFacts, occurredOn, timestamp: at, id: index === 0 ? activityId : `${activityId}-${index + 1}`, idempotencyKey, dateConflictConfirmed, source: intakeFile ? { name: intakeFile.name, type: intakeFile.type, size: intakeFile.size } : undefined, targets: state.nutritionTargets }));
+    const activities = facts.map((activityFacts, index) => buildAcceptedActivity({ proposal: intakeProposal, originalFacts: originals[index], facts: activityFacts, occurredOn, timestamp: at, id: index === 0 ? activityId : `${activityId}-${index + 1}`, idempotencyKey, dateConflictConfirmed, source: intakeFile ? { name: intakeFile.name, type: intakeFile.type, size: intakeFile.size } : undefined, targets: state.nutritionTargets, scheduledWorkoutId: index === 0 ? completionWorkoutId ?? undefined : undefined }));
+    const targetedTonalSession = tonalCompletionTargetOrder === null ? undefined : state.tonal.enrollment.sessions.find((session) => session.order === tonalCompletionTargetOrder);
+    const existingCompletion = targetedTonalSession?.completedActivityId ? state.activities.find((activity) => activity.id === targetedTonalSession.completedActivityId) : undefined;
+    if (existingCompletion && digest && intakeFile) {
+      const enriched = { ...activities[0]!, id: existingCompletion.id, idempotencyKey: existingCompletion.idempotencyKey, scheduledWorkoutId: existingCompletion.scheduledWorkoutId ?? completionWorkoutId ?? targetedTonalSession?.scheduledWorkoutId, corrections: [...existingCompletion.corrections, ...activities[0]!.corrections] };
+      const enrichedState = { ...state, activities: state.activities.map((activity) => activity.id === existingCompletion.id ? enriched : activity) };
+      try {
+        const saved = await persistStateMutation(enrichedState, { idempotencyKey: `enrich-activity-${existingCompletion.id}-${digest}`, action: "edit_activity", entryId: existingCompletion.id, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: enriched, corrections: enriched.corrections }, intakeFile);
+        setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setTonalCompletionTargetOrder(null); setCompletionWorkoutId(null); setTonalCompletionFeedback(saved.duplicate ? "Completion evidence already recorded" : "Completion evidence added without creating another completed session");
+      } catch (error) { setTonalCompletionFeedback(error instanceof Error && error.message.includes("source-upload") ? performanceImageMessage(new Error("upload-failed")) : "The reviewed completion evidence was not saved. Existing history remains unchanged."); }
+      return;
+    }
     const acceptedState = acceptActivityProposal(state, intakeProposal, activities);
-    const next = activities.reduce((current, activity) => markTonalSessionCompletedFromActivity(current, { activityId: activity.id, sequencePosition: activity.facts.tonalSessionOrder?.value, programTitle: activity.facts.tonalProgramTitle, workoutTitle: activity.facts.workoutTitle, movements: activity.facts.tonalMovements, at }), acceptedState);
+    const tonalState = activities.reduce((current, activity) => markTonalSessionCompletedFromActivity(current, { activityId: activity.id, sequencePosition: activity.facts.tonalSessionOrder?.value, programTitle: activity.facts.tonalProgramTitle, workoutTitle: activity.facts.workoutTitle, movements: activity.facts.tonalMovements, at }), acceptedState);
+    const next = completionWorkoutId && tonalCompletionTargetOrder === null ? completeScheduledWorkoutFromActivity(tonalState, { workoutId: completionWorkoutId, activityId, at }) : tonalState;
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_activity", entryId: activityId, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: activities, corrections: activities.flatMap((activity) => activity.corrections) }, intakeFile ?? undefined);
-      setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false); setTonalCompletionTargetOrder(null);
+      setState(saved.state); setIntakeProposal(null); setIntakeFile(null); setMealError(""); setPastActivityOpen(false); setTonalCompletionTargetOrder(null); setCompletionWorkoutId(null);
       if (tonalCompletionTargetOrder !== null) setTonalCompletionFeedback(saved.duplicate ? "Completed workout already logged" : "Completed workout logged and matched to the approved session");
       setActivityFeedback(saved.duplicate ? "Activity already logged" : activities.length === 1 ? "Activity logged successfully" : `${activities.length} activities logged successfully`);
-    } catch { setMealError("The reviewed activity was not saved. Nothing was added; retry when private persistence is available."); }
+    } catch (error) { setMealError(error instanceof Error && error.message.includes("source-upload") ? performanceImageMessage(new Error("upload-failed")) : "The reviewed activity was not saved. Nothing was added; retry when private persistence is available."); }
   }
 
   async function correctActivityDate(activityId: string, occurredOn: string) {
@@ -679,43 +687,40 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     </section> : null}
 
     {view === "today" ? <div className={styles.stack}>
-      {state.program.status === "active" && upcomingTonalSession ? <section className={styles.card}>
-        <p className={styles.kicker}>Prepare Upcoming Workout</p>
-        <h2>Prepare session {upcomingTonalSession.order}</h2>
-        <p>Upload the upcoming workout screen. Sterling will propose only the visible title, movements, sets, reps, resistance, and details for your review.</p>
-        <div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD UPCOMING TONAL WORKOUT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseUpcomingTonalScreenshot} disabled={tonalPlanBusy} /></label></div>
-        {tonalPlanBusy ? <p aria-live="polite">Sterling is reading the visible Tonal plan…</p> : null}
-        {tonalPlanFeedback && tonalPlanTargetOrder === upcomingTonalSession.order ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}
-        {tonalPlanProposal && tonalPlanTargetOrder === upcomingTonalSession.order ? <TonalPlanReview sequencePosition={upcomingTonalSession.order} proposal={tonalPlanProposal} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}
-      </section> : null}
-      {state.program.status === "active" ? <section className={styles.card} data-tonal-history>
-        <p className={styles.kicker}>Workout History</p>
-        <h2>Record / Complete Previous Workout</h2>
-        <p>Select the exact Tonal sequence position. This does not reopen, reassign, or complete anything until you approve matching screenshot evidence.</p>
-        <label className={styles.sessionPicker}>Previous session
-          <select value={selectedTonalSessionOrder ?? ""} onChange={(event) => { const order = Number(event.target.value) || null; setSelectedTonalSessionOrder(order); setTonalCompletionTargetOrder(null); setTonalCompletionFeedback(""); setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback(""); }}>
-            <option value="">Choose a session</option>
-            {historicalTonalSessions.map((session) => { const workout = state.schedule.find((candidate) => candidate.id === session.scheduledWorkoutId); return <option key={session.order} value={session.order}>Session {session.order} · {workout ? prettyDate(workout.date) : "date unavailable"} · {tonalSessionOutcome(state, session)}</option>; })}
-          </select>
-        </label>
-        {selectedTonalSession && selectedTonalWorkout ? <div className={styles.inlineEditor}>
-          <strong>Session {selectedTonalSession.order} · {tonalSessionOutcome(state, selectedTonalSession)}</strong>
-          <p>{prettyDate(selectedTonalWorkout.date)} · {selectedTonalSession.title ?? `Fit Over 40 session ${selectedTonalSession.order}`}</p>
-          <p className={styles.provenance}>{selectedTonalSession.plannedAt && selectedTonalSession.plannedSource ? "Approved plan evidence is attached." : "No approved pre-workout plan is attached."} {selectedTonalSession.completedActivityId ? "Approved completion evidence is attached." : "Post-workout metrics are not attached."}</p>
-          {selectedTonalSession.completedActivityId ? <p className={styles.warning}>This session already has an approved completion activity. Additional uploads cannot create a duplicate completion.</p> : selectedTonalSession.plannedAt && selectedTonalSession.plannedSource ? <label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD COMPLETION SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy} /></label> : <><p className={styles.warning}>Completion matching is blocked until you review actual plan evidence for this session. No workout details will be fabricated.</p><label className={styles.photoAction}>UPLOAD HISTORICAL PLAN SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseHistoricalTonalPlanScreenshot} disabled={tonalPlanBusy} /></label></>}
-          {["deferred", "skipped"].includes(tonalSessionStatus(state, selectedTonalSession)) ? <p className={styles.warning}>The recorded outcome is {tonalSessionOutcome(state, selectedTonalSession)}. Approving exact completion evidence will append an audited correction and change only this session to Completed.</p> : null}
+      {state.program.status === "active" ? <section className={styles.card} data-unified-workout-cards>
+        <p className={styles.kicker}>Today · upcoming · history</p>
+        <h2>Training schedule</h2>
+        <p>Select one activity. Its plan, outcome, and evidence stay attached to that exact scheduled occurrence.</p>
+        <div className={styles.workoutCards} role="list" aria-label="Scheduled activities">
+          {selectableWorkouts.map((workout) => <button type="button" role="listitem" className={selectedWorkout?.id === workout.id ? styles.workoutCardSelected : styles.workoutCard} key={workout.id} onClick={() => { const tonal = state.tonal.enrollment.sessions.find((session) => session.scheduledWorkoutId === workout.id); setSelectedWorkoutId(workout.id); setSelectedTonalSessionOrder(tonal?.order ?? null); setTonalCompletionTargetOrder(null); setCompletionWorkoutId(null); setModifyOpen(false); setTonalCompletionFeedback(""); setTonalPlanFeedback(""); }}>
+            <span>{workout.date === today ? "Today" : prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.status === "completed" ? "Completed" : workout.status === "deferred" ? "Deferred" : workout.status === "skipped" ? "Skipped" : workout.status === "in_progress" ? "In progress" : "Pending"}</small>
+          </button>)}
+        </div>
+        {selectedWorkout ? <div className={styles.workoutDetail}>
+          <div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(selectedWorkout.date)} · {selectedWorkout.status.replace("_", " ")}</p><h3>{selectedWorkout.prescription.name}</h3></div><span>{selectedWorkout.prescription.durationMinutes} min</span></div>
+          <p>{selectedWorkout.prescription.notes}</p>
+          {selectedWorkoutTonalSession ? <p className={styles.provenance}>Fit Over 40 · Session {selectedWorkoutTonalSession.order} · {selectedWorkoutTonalSession.plannedSource ? "approved before evidence" : "before evidence not attached"} · {selectedWorkoutTonalSession.completedActivityId ? "approved after evidence" : "after evidence not attached"}</p> : <p className={styles.provenance}>{selectedWorkout.prescription.mode} · {state.activities.some((activity) => activity.scheduledWorkoutId === selectedWorkout.id) ? "approved completion evidence attached" : "completion evidence not attached"}</p>}
+          {selectedWorkoutTonalSession?.movements.length ? <div className={styles.proposalGrid}>{selectedWorkoutTonalSession.movements.map((movement) => <div key={movement.name}><strong>{movement.name}</strong><small>{[movement.sets ? `${movement.sets} sets` : "", movement.reps ?? "", movement.prescribedResistance ?? ""].filter(Boolean).join(" · ") || "Details unknown"}</small></div>)}</div> : null}
+          <div className={styles.workoutControls}>
+            {selectedWorkoutTonalSession ? <label className={styles.photoAction}>Add Before Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={selectedWorkoutTonalSession.order === upcomingTonalSession?.order ? chooseUpcomingTonalScreenshot : chooseHistoricalTonalPlanScreenshot} disabled={tonalPlanBusy || Boolean(selectedWorkoutTonalSession.completedActivityId)} /></label> : <button type="button" disabled title="Before photos are optional and not needed for this activity type">Add Before Photo · optional</button>}
+            {selectedWorkoutTonalSession ? <label className={`${styles.photoAction} ${styles.primary}`}>Add After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || selectedWorkout.date > today} /></label> : <label className={`${styles.photoAction} ${styles.primary}`}>Add After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseSelectedWorkoutCompletion} disabled={intakeBusy || selectedWorkout.date > today || ["deferred", "skipped", "replaced"].includes(selectedWorkout.status)} /></label>}
+            <button type="button" onClick={() => setModifyOpen((open) => !open)} disabled={["completed", "deferred", "skipped", "replaced"].includes(selectedWorkout.status)}>Edit Workout</button>
+            <button type="button" onClick={() => selectedWorkout.status === "planned" || selectedWorkout.status === "unresolved" ? startWorkout(selectedWorkout) : setActivityFeedback(`Reviewing ${selectedWorkout.prescription.name}: ${selectedWorkout.status.replace("_", " ")}.`)}>Review / Complete Workout</button>
+          </div>
+          {modifyOpen ? <form className={styles.editPanel} onSubmit={saveModification}><label>Name<input name="name" defaultValue={selectedWorkout.prescription.name} /></label><label>Minutes<input name="duration" type="number" min="5" max="180" defaultValue={selectedWorkout.prescription.durationMinutes} /></label><label>Notes<textarea name="notes" defaultValue={selectedWorkout.prescription.notes} /></label><button className={styles.primary}>Save reviewed edit</button></form> : null}
+          {selectedWorkoutTonalSession && !selectedWorkoutTonalSession.plannedSource ? <p className={styles.warning}>A Tonal completion remains blocked until the matching Before Photo is reviewed. No plan details will be fabricated.</p> : null}
+          {selectedWorkoutTonalSession && ["deferred", "skipped"].includes(tonalSessionStatus(state, selectedWorkoutTonalSession)) ? <p className={styles.warning}>This outcome remains {tonalSessionOutcome(state, selectedWorkoutTonalSession)} until its existing reviewed correction path is approved.</p> : null}
         </div> : null}
-        {intakeBusy && tonalCompletionFeedback ? <p aria-live="polite">Sterling is reading the visible Tonal completion…</p> : null}
+        {tonalPlanBusy ? <p aria-live="polite">Sterling is reading the visible planned workout…</p> : null}
+        {intakeBusy && (tonalCompletionFeedback || completionWorkoutId) ? <p aria-live="polite">Sterling is reading visible completion facts…</p> : null}
+        {tonalPlanFeedback ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}
         {tonalCompletionFeedback ? <p aria-live="polite" className={styles.warning}>{tonalCompletionFeedback}</p> : null}
-        {tonalPlanBusy && tonalPlanTargetOrder === selectedTonalSessionOrder ? <p aria-live="polite">Sterling is reading the historical plan evidence…</p> : null}
-        {tonalPlanFeedback && tonalPlanTargetOrder === selectedTonalSessionOrder ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}
-        {tonalPlanProposal && tonalPlanTargetOrder === selectedTonalSessionOrder && selectedTonalSession ? <TonalPlanReview sequencePosition={selectedTonalSession.order} proposal={tonalPlanProposal} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}
+        {tonalPlanProposal && selectedWorkoutTonalSession && tonalPlanTargetOrder === selectedWorkoutTonalSession.order ? <TonalPlanReview sequencePosition={selectedWorkoutTonalSession.order} proposal={tonalPlanProposal} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}
       </section> : null}
       <section className={`${styles.card} ${styles.hero}`}>
         <div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(today)} · {state.program.status === "setup" ? "setup" : todayWorkout?.status.replace("_", " ") ?? "no planned session"}</p><h2>{state.program.status === "setup" ? "No training session is active yet" : todayWorkout ? `${todayWorkout.prescription.name} · ${todayWorkout.status === "completed" ? "Completed" : todayWorkout.status === "deferred" ? "Deferred" : todayWorkout.status === "skipped" ? "Skipped" : "Pending"}` : "No planned session today"}</h2></div>{todayWorkout && state.program.status === "active" ? <span>{todayWorkout.prescription.durationMinutes} min</span> : null}</div>
         {activeToday && state.program.status === "active" ? <><p>{activeToday.prescription.notes}</p><p className={styles.provenance}>Planned by {activeToday.prescription.trainingBlock} · {activeToday.provenance.join(" · ")}</p>
-          {activeSession ? <WorkoutLogger workout={activeToday} session={activeSession} onSet={updateSet} onComplete={completeWorkout} /> : <div className={styles.actions}><button className={styles.primary} onClick={() => startWorkout(activeToday)}>Start</button><button onClick={() => setModifyOpen((open) => !open)}>Modify today</button><button onClick={() => setDeferOpen((open) => !open)}>Defer</button><button onClick={skipWorkout}>Skip</button>{activeToday.prescription.alternative ? <button onClick={() => swapWorkout(activeToday.id)}>Swap equivalent</button> : null}</div>}
-          {modifyOpen ? <form className={styles.editPanel} onSubmit={saveModification}><label>Name<input name="name" defaultValue={activeToday.prescription.name} /></label><label>Minutes<input name="duration" type="number" min="5" max="180" defaultValue={activeToday.prescription.durationMinutes} /></label><label>Notes<textarea name="notes" defaultValue={activeToday.prescription.notes} /></label><button className={styles.primary}>Save today’s modification</button></form> : null}
+          {activeSession ? <WorkoutLogger workout={activeToday} session={activeSession} onSet={updateSet} onComplete={completeWorkout} /> : <div className={styles.actions}><button className={styles.primary} onClick={() => startWorkout(activeToday)}>Start</button><button onClick={() => setDeferOpen((open) => !open)}>Defer</button><button onClick={skipWorkout}>Skip</button>{activeToday.prescription.alternative ? <button onClick={() => swapWorkout(activeToday.id)}>Swap equivalent</button> : null}</div>}
           {deferOpen ? <form className={styles.editPanel} onSubmit={deferWorkout}><label>Move to<input name="date" type="date" min={shiftDate(today, 1)} defaultValue={shiftDate(today, 1)} /></label><p>Later sessions will reflow; this workout keeps its prescription and history.</p><button className={styles.primary}>Confirm defer</button></form> : null}
         </> : <p>{state.program.status === "setup" ? "Use Performance for nutrition and completed activity testing. Training begins only after explicit activation above." : "Completed, deferred, or consciously skipped sessions remain in the week history."}</p>}
       </section>
@@ -723,7 +728,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         {sterlingError ? <p role="alert" className={styles.warning}>{sterlingError}</p> : null}
         {sterlingProposal ? <div className={styles.proposal}><strong>Proposed — nothing has changed yet</strong><p>{sterlingProposal.summary}</p>{sterlingProposal.warnings.map((warning) => <p key={warning} className={styles.warning}>{warning}</p>)}{sterlingProposal.sourceWorkoutId && sterlingProposal.targetDate ? <label>Move selected workout to<input type="date" min={shiftDate(state.schedule.find((item) => item.id === sterlingProposal.sourceWorkoutId)?.date ?? today, 1)} value={sterlingProposal.targetDate} onChange={(event) => changeSterlingTarget(event.target.value)} disabled={sterlingBusy} /></label> : null}{sterlingProposal.displacedWorkouts?.length ? <div className={styles.warning}><strong>Other planned sessions that will move</strong>{sterlingProposal.displacedWorkouts.map((workout) => <p key={workout.workoutId}>{workout.name}: {prettyDate(workout.fromDate)} → {prettyDate(workout.toDate)}</p>)}</div> : null}<div className={styles.proposalGrid}>{sterlingProposal.nextSchedule.filter((item) => item.date >= today && item.status !== "deferred").slice(0, 5).map((item) => <div key={`${item.id}-${item.date}`}><span>{prettyDate(item.date)}</span><strong>{item.prescription.name}</strong><small>{item.prescription.intent} · {item.prescription.durationMinutes} min</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmSterling()} disabled={sterlingBusy}>{sterlingBusy ? "Saving…" : "Confirm changes"}</button><button onClick={() => { setSterlingProposal(null); setSterlingError(""); }} disabled={sterlingBusy}>Reject</button></div></div> : null}
       </section> : null}
-      <section className={styles.card}><div className={styles.cardTop}><div><p className={styles.kicker}>Retrospective activity</p><h2>Log Past Activity</h2></div><button onClick={() => setPastActivityOpen((open) => !open)}>{pastActivityOpen ? "Close" : "Log Past Activity"}</button></div><p>Upload a WHOOP, Tonal, Peloton, golf, run, or ruck screenshot. This records completed history; it does not reschedule a planned workout.</p>{pastActivityOpen ? <div className={styles.editPanel}><label>Activity date<input type="date" max={shiftDate(today, -1)} value={pastActivityDate} onChange={(event) => setPastActivityDate(event.target.value)} /></label><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD ACTIVITY SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseActivityScreenshot} disabled={intakeBusy || !pastActivityDate} /></label>{intakeBusy ? <p aria-live="polite">Sterling is reading only the visible activity facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</div> : null}</section>
+      <section className={styles.card}><div className={styles.cardTop}><div><p className={styles.kicker}>Retrospective activity</p><h2>Log Past Activity</h2></div><button onClick={() => setPastActivityOpen((open) => !open)}>{pastActivityOpen ? "Close" : "Log Past Activity"}</button></div><p>Upload a WHOOP, Tonal, Peloton, golf, run, or ruck screenshot. This records completed history; it does not reschedule a planned workout.</p>{pastActivityOpen ? <div className={styles.editPanel}><label>Activity date<input type="date" max={shiftDate(today, -1)} value={pastActivityDate} onChange={(event) => setPastActivityDate(event.target.value)} /></label><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD ACTIVITY SCREENSHOT<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseActivityScreenshot} disabled={intakeBusy || !pastActivityDate} /></label>{intakeBusy ? <p aria-live="polite">Sterling is reading only the visible activity facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</div> : null}</section>
       {view === "today" && intakeProposal?.kind === "activity" ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Edit visible metrics before saving.</h2><ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={activityMaxDate} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></section> : null}
       {latestRecovery ? <section className={styles.card}><p className={styles.kicker}>Today’s recovery context</p><h2>{latestRecovery.sleepHours ? `${latestRecovery.sleepHours.value}h sleep` : "Recovery logged"}{latestRecovery.fatigue ? ` · ${latestRecovery.fatigue.value} fatigue` : ""}</h2><p>Only supplied values are recorded. Missing WHOOP metrics remain blank.</p></section> : null}
       {state.progressionProposals.some((proposal) => proposal.status === "pending" || proposal.status === "edited") ? <section className={styles.card}><p className={styles.kicker}>Next-session proposals</p><h2>Review before progression changes.</h2>{state.progressionProposals.filter((proposal) => proposal.status === "pending" || proposal.status === "edited").map((proposal) => <div className={styles.savedRow} key={proposal.id}><strong>{proposal.action.toUpperCase()}{proposal.proposedLoad !== undefined ? ` · ${proposal.proposedLoad} lb` : ""}</strong><span>{proposal.reason}</span><div className={styles.actions}><button className={styles.primary} onClick={() => resolveProgression(proposal.id, "accepted")}>Accept</button><button onClick={() => resolveProgression(proposal.id, "edited")}>Edit</button><button onClick={() => resolveProgression(proposal.id, "rejected")}>Reject</button></div></div>)}</section> : null}
@@ -733,7 +738,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
     {view === "nutrition" ? <div className={styles.stack}>
       <section className={styles.card}><p className={styles.kicker}>Today’s targets</p><h2>{nutrition.calories} / {state.nutritionTargets.calories} kcal · {nutrition.protein} / {state.nutritionTargets.protein}g protein</h2><p>{nutrition.carbs} / {state.nutritionTargets.carbs}g carbs · {nutrition.fat} / {state.nutritionTargets.fat}g fat</p></section>
-      <section className={`${styles.card} ${styles.quickLog}`}><p className={styles.kicker}>Natural intake</p><h2>Describe it, photograph it, or show Sterling the label.</h2><form className={styles.sterling} onSubmit={submitMealDescription}><textarea value={intakeText} onChange={(event) => setIntakeText(event.target.value)} placeholder="8 oz Dawg Food chicken blend, 1 tablespoon butter, 2 baby bok choy, and 1/2 cup Kevin's cauliflower puree." /><button className={styles.primary} disabled={intakeBusy || !intakeText.trim()}>Interpret meal</button></form><div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>TAKE MEAL PHOTO<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" capture="environment" onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>UPLOAD MEAL PHOTO<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>NUTRITION LABEL<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseNutritionLabel} disabled={intakeBusy} /></label></div>{mealBusy ? <p aria-live="polite">Sterling is interpreting the input…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>
+      <section className={`${styles.card} ${styles.quickLog}`}><p className={styles.kicker}>Natural intake</p><h2>Describe it, photograph it, or show Sterling the label.</h2><form className={styles.sterling} onSubmit={submitMealDescription}><textarea value={intakeText} onChange={(event) => setIntakeText(event.target.value)} placeholder="8 oz Dawg Food chicken blend, 1 tablespoon butter, 2 baby bok choy, and 1/2 cup Kevin's cauliflower puree." /><button className={styles.primary} disabled={intakeBusy || !intakeText.trim()}>Interpret meal</button></form><div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>TAKE MEAL PHOTO<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} capture="environment" onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>UPLOAD MEAL PHOTO<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>NUTRITION LABEL<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseNutritionLabel} disabled={intakeBusy} /></label></div>{mealBusy ? <p aria-live="polite">Sterling is interpreting the input…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>
       <section className={styles.card}><div className={styles.cardTop}><div><p className={styles.kicker}>Frequently Eaten</p><h2>{frequentlyEaten.length ? "Your regulars, ready in one tap." : "Regular meals will appear here."}</h2></div></div><p>Meals repeat automatically after two accepted logs. You can also pin any saved meal.</p>{frequentlyEaten.length ? <div className={styles.frequentGrid}>{frequentlyEaten.map((frequent) => <div className={styles.frequentCard} key={frequent.id}><button className={styles.frequentLog} onClick={() => oneTapLog(frequent)} aria-label={`Log ${frequent.name}`}><strong>{frequent.name}</strong><span>{frequent.items.map((item) => item.portion).filter(Boolean).join(" · ") || "Saved serving"}</span><small>{frequent.calories} kcal · {frequent.protein}P · {frequent.carbs}C · {frequent.fat}F{frequent.mealType ? ` · ${frequent.mealType}` : ""}</small></button><div className={styles.compactActions}><button onClick={() => storeFrequent(frequent, { pinned: !frequent.pinned })}>{frequent.pinned ? "Unpin" : "Pin"}</button><button onClick={() => setEditingFrequentId((id) => id === frequent.id ? null : frequent.id)}>Edit default</button><button onClick={() => storeFrequent(frequent, { hidden: true })}>Hide</button></div>{editingFrequentId === frequent.id ? <FrequentDefaultEditor frequent={frequent} onChange={(itemId, patch) => updateFrequentDefault(frequent, itemId, patch)} onDone={() => setEditingFrequentId(null)} /> : null}</div>)}</div> : null}</section>
       {lastAddedMealId && state.meals.some((meal) => meal.id === lastAddedMealId) ? <section className={`${styles.card} ${styles.undoBar}`} aria-live="polite"><div><p className={styles.kicker}>Logged</p><strong>{state.meals.find((meal) => meal.id === lastAddedMealId)?.items.map((item) => item.name).join(", ")}</strong></div><div className={styles.actions}><button onClick={() => setEditingMealId((id) => id === lastAddedMealId ? null : lastAddedMealId)}>Edit</button><button onClick={undoLastMeal}>Undo</button></div>{editingMealId === lastAddedMealId ? <MealOccurrenceEditor meal={state.meals.find((meal) => meal.id === lastAddedMealId)!} onChange={(itemId, patch) => updateMealOccurrence(lastAddedMealId, itemId, patch)} onDone={() => setEditingMealId(null)} /> : null}</section> : null}
       {mealEstimate ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Human input → Sterling proposal → your approval</h2><p>Nothing is saved until you accept the editable values below. The untouched Sterling estimate, assumptions, and your corrections are retained separately for provenance.</p>{intakeProposal?.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<MealReview estimate={mealEstimate} onChange={updateMealItem} onRemove={(id) => setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.filter((item) => item.id !== id) } : null)} onAdd={() => setMealEstimate((estimate) => estimate ? { ...estimate, items: [...estimate.items, { id: uid("meal-item"), name: "", portion: "", calories: 0, protein: 0, carbs: 0, fat: 0, confidence: "low" }] } : null)} onAccept={acceptMeal} onReject={() => void rejectIntake()} /></section> : null}
@@ -743,7 +748,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
     {view === "recovery" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Morning check-in</p><h2>Log only what you know.</h2><p>Every field is optional. Measured/manual numbers stay distinct from subjective ratings; absent WHOOP metrics remain absent.</p><RecoveryForm existing={latestRecovery} onSubmit={saveRecovery} /></section>{latestRecovery ? <section className={styles.card}><p className={styles.kicker}>Saved today</p><div className={styles.metricGrid}>{Object.entries(latestRecovery).filter(([, value]) => value && typeof value === "object" && "source" in value).map(([key, value]) => { const metric = value as { value: string | number; source: string }; return <div key={key}><span>{key}</span><strong>{metric.value}</strong><small>{metric.source}</small></div>; })}</div></section> : null}</div> : null}
 
-    {view === "week" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Completed activity intake</p><h2>Log Past Activity</h2><p>This adds completed history without changing planned workouts.</p><div className={styles.formGrid}><label>Activity date<input type="date" max={shiftDate(today, -1)} value={pastActivityDate} onChange={(event) => setPastActivityDate(event.target.value)} /></label><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD ACTIVITY SCREENSHOT<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseActivityScreenshot} disabled={intakeBusy || !pastActivityDate} /></label></div>{intakeBusy ? <p aria-live="polite">Sterling is reading the visible workout facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>{intakeProposal?.kind === "activity" ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Observed facts stay distinct from estimates.</h2><ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={shiftDate(today, -1)} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></section> : null}<section className={styles.week}>{week.map((workout) => <article className={styles.card} key={`${workout.id}-${workout.date}-${workout.status}`}><div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(workout.date)} · {workout.status.replace("_", " ")}</p><h3>{workout.prescription.name}</h3></div><span>{workout.prescription.domain}</span></div><p>{workout.prescription.notes}</p><small>{workout.history.at(-1)?.note}</small>{workout.prescription.alternative && workout.status === "planned" ? <div className={styles.actions}><button onClick={() => swapWorkout(workout.id)}>Swap equivalent</button></div> : null}</article>)}</section><section className={styles.card}><p className={styles.kicker}>Accepted activity history</p>{state.activities.length ? state.activities.slice(0, 12).map((activity) => <ActivityRow key={activity.id} activity={activity} maxDate={shiftDate(today, -1)} onCorrectDate={(date) => void correctActivityDate(activity.id, date)} />) : <p>No accepted activities yet.</p>}</section></div> : null}
+    {view === "week" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Completed activity intake</p><h2>Log Past Activity</h2><p>This adds completed history without changing planned workouts.</p><div className={styles.formGrid}><label>Activity date<input type="date" max={shiftDate(today, -1)} value={pastActivityDate} onChange={(event) => setPastActivityDate(event.target.value)} /></label><label className={`${styles.photoAction} ${styles.primary}`}>UPLOAD ACTIVITY SCREENSHOT<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseActivityScreenshot} disabled={intakeBusy || !pastActivityDate} /></label></div>{intakeBusy ? <p aria-live="polite">Sterling is reading the visible workout facts…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>{intakeProposal?.kind === "activity" ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Observed facts stay distinct from estimates.</h2><ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={shiftDate(today, -1)} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></section> : null}<section className={styles.week}>{week.map((workout) => <article className={styles.card} key={`${workout.id}-${workout.date}-${workout.status}`}><div className={styles.cardTop}><div><p className={styles.kicker}>{prettyDate(workout.date)} · {workout.status.replace("_", " ")}</p><h3>{workout.prescription.name}</h3></div><span>{workout.prescription.domain}</span></div><p>{workout.prescription.notes}</p><small>{workout.history.at(-1)?.note}</small><div className={styles.actions}><Link href="/executive-dashboard/concierge/personal">Open workout detail</Link>{workout.prescription.alternative && workout.status === "planned" ? <button onClick={() => swapWorkout(workout.id)}>Swap equivalent</button> : null}</div></article>)}</section><section className={styles.card}><p className={styles.kicker}>Accepted activity history</p>{state.activities.length ? state.activities.slice(0, 12).map((activity) => <ActivityRow key={activity.id} activity={activity} maxDate={shiftDate(today, -1)} onCorrectDate={(date) => void correctActivityDate(activity.id, date)} />) : <p>No accepted activities yet.</p>}</section></div> : null}
 
     {view === "progress" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Weekly signal</p><h2>Consistency without punishment.</h2><div className={styles.metricGrid}><div><span>Completed</span><strong>{state.schedule.filter((workout) => workout.date >= weekStart && workout.date <= weekEnd && workout.status === "completed").length}</strong><small>sessions this week</small></div><div><span>Unresolved</span><strong>{state.schedule.filter((workout) => workout.status === "unresolved").length}</strong><small>awaiting a decision</small></div><div><span>Nutrition</span><strong>{loggedDays}</strong><small>days logged</small></div><div><span>Average protein</span><strong>{loggedDays ? Math.round(weekNutrition.protein / loggedDays) : 0}g</strong><small>on logged days</small></div></div></section><section className={styles.card}><p className={styles.kicker}>Bodyweight trend</p><h2>{weights.at(-1)?.bodyweightLb?.value ? `${weights.at(-1)!.bodyweightLb!.value} lb` : "No bodyweight logged"}</h2>{weights.length ? weights.slice(-8).map((entry) => <div className={styles.savedRow} key={entry.id}><span>{prettyDate(entry.date)}</span><strong>{entry.bodyweightLb?.value} lb</strong><small>{entry.bodyweightLb?.source}</small></div>) : <p>Log bodyweight in the morning Recovery check-in.</p>}<p className={styles.provenance}>Apple Health is not connected. This web app does not claim direct HealthKit access.</p></section></div> : null}
   </main>;

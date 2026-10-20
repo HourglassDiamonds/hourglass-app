@@ -224,6 +224,7 @@ export type ActivityLog = {
   corrections: AuditFact[];
   guidance: string;
   idempotencyKey: string;
+  scheduledWorkoutId?: string;
   provenance: Provenance[];
 };
 
@@ -237,6 +238,7 @@ type ProposalBase = {
   summary: string;
   model: string;
   sourceDigest?: string;
+  normalizedSourceDigest?: string;
 };
 
 export type MealIngestionProposal = ProposalBase & {

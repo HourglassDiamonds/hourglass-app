@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { activityNutritionGuidance } from "./guidance";
-import { acceptProposal, buildAcceptedActivity, buildAcceptedMeal } from "./mutations";
-import { createInitialPersonalState } from "./program";
+import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, completeScheduledWorkoutFromActivity } from "./mutations";
+import { activateTrainingProgram, createInitialPersonalState } from "./program";
+import { configureTonalProgram } from "./tonal-programs";
 import { validateActivityLog, validateMealLog } from "./validation";
 import type { NaturalIngestionProposal } from "./types";
 
@@ -58,4 +59,26 @@ test("activity correction remains observed/user-supplied and guidance does not a
 test("light activity keeps targets unchanged without recommending calorie replacement", () => {
   const guidance = activityNutritionGuidance({ activityType: "Walk", durationMinutes: { value: 22, evidence: "observed" } }, { calories: 2400, protein: 190, carbs: 240, fat: 80 });
   assert.match(guidance, /no automatic calorie adjustment/i);
+});
+
+test("approved evidence completes the exact scheduled activity once and preserves completed history", () => {
+  const configured = configureTonalProgram({ state: createInitialPersonalState("2026-10-19"), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "now" }, founderVerifiedAt: "now" });
+  const active = activateTrainingProgram(configured, "2026-10-19", "2026-10-19T10:00:00Z");
+  const workoutId = active.schedule.find((workout) => workout.date === "2026-10-20")!.id;
+  const activity = buildAcceptedActivity({ proposal: activityProposal, facts: activityProposal.activity, occurredOn: "2026-10-20", timestamp: "2026-10-20T18:00:00Z", id: "activity-run", idempotencyKey: "activity-run-proof", scheduledWorkoutId: workoutId, targets: active.nutritionTargets });
+  const accepted = acceptActivityProposal(active, activityProposal, [activity]);
+  const completed = completeScheduledWorkoutFromActivity(accepted, { workoutId, activityId: activity.id, at: "2026-10-20T18:00:00Z" });
+  assert.equal(completed.schedule.find((workout) => workout.id === workoutId)?.status, "completed");
+  const historyCount = completed.schedule.find((workout) => workout.id === workoutId)!.history.length;
+  const duplicate = completeScheduledWorkoutFromActivity(completed, { workoutId, activityId: activity.id, at: "2026-10-20T18:05:00Z" });
+  assert.equal(duplicate.schedule.find((workout) => workout.id === workoutId)!.history.length, historyCount);
+});
+
+test("skipped or deferred sessions require reviewed correction before evidence changes outcome", () => {
+  const configured = configureTonalProgram({ state: createInitialPersonalState("2026-10-19"), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: "now" }, founderVerifiedAt: "now" });
+  const active = activateTrainingProgram(configured, "2026-10-19", "2026-10-19T10:00:00Z");
+  const workoutId = active.schedule.find((workout) => workout.date === "2026-10-20")!.id;
+  const activity = buildAcceptedActivity({ proposal: activityProposal, facts: activityProposal.activity, occurredOn: "2026-10-20", timestamp: "2026-10-20T18:00:00Z", id: "activity-run", idempotencyKey: "activity-run-proof", scheduledWorkoutId: workoutId, targets: active.nutritionTargets });
+  const accepted = acceptActivityProposal({ ...active, schedule: active.schedule.map((workout) => workout.id === workoutId ? { ...workout, status: "skipped" as const } : workout) }, activityProposal, [activity]);
+  assert.throws(() => completeScheduledWorkoutFromActivity(accepted, { workoutId, activityId: activity.id, at: "2026-10-20T18:00:00Z" }), /scheduled-workout-correction-required/);
 });

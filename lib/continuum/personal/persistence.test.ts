@@ -6,6 +6,9 @@ import { activateTrainingProgram, createInitialPersonalState } from "./program";
 import { createHash } from "node:crypto";
 import { correctActivityDate } from "./mutations";
 import type { NaturalIngestionProposal } from "./types";
+
+const jpegBytes = (...tail: number[]) => new Uint8Array([0xff, 0xd8, 0xff, ...tail]);
+const pngBytes = (...tail: number[]) => new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, ...tail]);
 import { configureTonalProgram, planTonalSessionFromScreenshot } from "./tonal-programs";
 
 function configuredState(today = "2026-10-15") {
@@ -58,7 +61,7 @@ function fakeSupabase() {
 test("state survives a reload, scopes rows by founder, and deduplicates a retry", async () => {
   const db = fakeSupabase(); const state = createInitialPersonalState("2026-10-12");
   const mutation = { idempotencyKey: "accept-proposal-1", action: "accept_meal" as const, entryId: "meal-1", sourceType: "meal_photo" as const };
-  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: new File([new Uint8Array([1, 2, 3])], "meal.jpg", { type: "image/jpeg" }), now: "2026-10-12T12:00:00Z" }, db.client);
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: new File([jpegBytes(1, 2, 3)], "meal.jpg", { type: "image/jpeg" }), now: "2026-10-12T12:00:00Z" }, db.client);
   assert.equal(first.duplicate, false); assert.equal(first.revision, 1);
   const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, now: "2026-10-12T12:01:00Z" }, db.client);
   assert.equal(retry.duplicate, true); assert.equal(retry.revision, 1);
@@ -133,7 +136,7 @@ test("founder-confirmed activation is an idempotent durable mutation", async () 
 
 test("Tonal program screenshot configuration preserves digest provenance and deduplicates", async () => {
   const db = fakeSupabase();
-  const bytes = new Uint8Array([9, 8, 7, 6]);
+  const bytes = pngBytes(9, 8, 7, 6);
   const digest = createHash("sha256").update(bytes).digest("hex");
   const state = configureTonalProgram({
     state: createInitialPersonalState("2026-10-17"), programId: "fit-over-40", weeklyFrequency: 3,
@@ -150,11 +153,12 @@ test("Tonal program screenshot configuration preserves digest provenance and ded
 });
 
 test("just-in-time Tonal plan upload is revisioned, source-bound, and idempotent", async () => {
-  const db = fakeSupabase(); const bytes = new Uint8Array([2, 4, 6, 8]); const digest = createHash("sha256").update(bytes).digest("hex");
+  const db = fakeSupabase(); const bytes = pngBytes(2, 4, 6, 8); const digest = createHash("sha256").update(bytes).digest("hex");
   const active = activateTrainingProgram(configuredState(), "2026-10-19", "2026-10-18T12:00:00Z");
   const source = { kind: "tonal_app_screenshot" as const, reference: `sha256:${digest}`, digest, reviewedAt: "2026-10-18T13:00:00Z", file: { name: "upcoming.png", type: "image/png", size: bytes.length } };
   const state = planTonalSessionFromScreenshot(active, { sequencePosition: 1, title: "Visible title", movements: [{ name: "Visible movement", reps: "8–10" }], source, approvedAt: source.reviewedAt });
-  const mutation = { idempotencyKey: `plan-tonal-1-${digest}`, action: "plan_strength_session" as const, entryId: `tonal-plan-1-${digest.slice(0, 32)}`, sourceType: "activity_screenshot" as const, accepted: { sourceDigest: digest, sequencePosition: 1 } };
+  const proposal: Extract<NaturalIngestionProposal, { kind: "activity" }> = { id: "plan-proposal", proposedAt: source.reviewedAt, sourceType: "activity_screenshot", confidence: "high", assumptions: [], summary: "Visible Tonal plan", model: "test", sourceDigest: digest, normalizedSourceDigest: digest, kind: "activity", activity: { activityType: "Tonal" }, guidance: "Review visible values." };
+  const mutation = { idempotencyKey: `plan-tonal-1-${digest}`, action: "plan_strength_session" as const, entryId: `tonal-plan-1-${digest.slice(0, 32)}`, sourceType: "activity_screenshot" as const, proposal, accepted: { sourceDigest: digest, sequencePosition: 1 } };
   const file = new File([bytes], "upcoming.png", { type: "image/png" });
   const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: file }, db.client);
   const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation, sourceFile: file }, db.client);
@@ -171,21 +175,22 @@ test("source uploads require an accepted entry and supported private image", asy
 test("founder-controlled source deletion removes the private object but retains the structured entry", async () => {
   const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-12");
   const state = { ...initial, meals: [{ id: "meal-delete-source", timestamp: "2026-10-12T12:00:00Z", occurredOn: "2026-10-12", items: [{ id: "item-1", name: "Chicken", portion: "8 oz", calories: 360, protein: 56, carbs: 0, fat: 12, confidence: "high" as const }], calories: 360, protein: 56, carbs: 0, fat: 12, photo: { name: "meal.jpg", type: "image/jpeg", size: 3 }, provenance: ["user_confirmed" as const] }] };
-  await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation: { idempotencyKey: "accept-for-delete", action: "accept_meal", entryId: "meal-delete-source", sourceType: "meal_photo" }, sourceFile: new File([new Uint8Array([1, 2, 3])], "meal.jpg", { type: "image/jpeg" }) }, db.client);
+  await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 0, state, mutation: { idempotencyKey: "accept-for-delete", action: "accept_meal", entryId: "meal-delete-source", sourceType: "meal_photo" }, sourceFile: new File([jpegBytes(1, 2, 3)], "meal.jpg", { type: "image/jpeg" }) }, db.client);
   const deleted = await deletePerformanceSourceWithClient({ founderKey: "founder-a", expectedRevision: 1, entryId: "meal-delete-source", kind: "meal", idempotencyKey: "delete-source-1" }, db.client);
   assert.equal(deleted.revision, 2); assert.equal(deleted.state.meals.length, 1);
   assert.equal(deleted.state.meals[0]?.photo?.storagePath, undefined); assert.equal(db.uploads.size, 0); assert.equal(db.audits.size, 2);
 });
 
-test("activity screenshot persistence binds dedupe identity to the exact source bytes", async () => {
+test("activity screenshot persistence keeps original-byte dedupe identity while verifying normalized upload bytes", async () => {
   const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-12");
-  const bytes = new Uint8Array([9, 8, 7, 6]);
+  const bytes = pngBytes(9, 8, 7, 6);
   const digest = createHash("sha256").update(bytes).digest("hex");
-  const idempotencyKey = `accept-activity-${digest}`;
-  const entryId = `activity-${digest.slice(0, 32)}`;
+  const originalDigest = createHash("sha256").update("original-iphone-image-bytes").digest("hex");
+  const idempotencyKey = `accept-activity-${originalDigest}`;
+  const entryId = `activity-${originalDigest.slice(0, 32)}`;
   const proposal: Extract<NaturalIngestionProposal, { kind: "activity" }> = {
     id: "proposal-a", proposedAt: "2026-10-13T12:00:00Z", sourceType: "activity_screenshot",
-    confidence: "high", assumptions: [], summary: "Visible golf activity", model: "test", sourceDigest: digest,
+    confidence: "high", assumptions: [], summary: "Visible golf activity", model: "test", sourceDigest: originalDigest, normalizedSourceDigest: digest,
     kind: "activity", activity: { activityType: "Golf", durationMinutes: { value: 90, evidence: "observed" } }, guidance: "Review visible values.",
   };
   const activity = {
@@ -206,18 +211,18 @@ test("activity screenshot persistence binds dedupe identity to the exact source 
   }, db.client), /source-dedupe-invalid/);
   await assert.rejects(() => savePerformanceStateWithClient({
     founderKey: "founder-a", expectedRevision: 1, state,
-    mutation: { ...mutation, proposal: { ...proposal, sourceDigest: "0".repeat(64) } }, sourceFile: source,
+    mutation: { ...mutation, proposal: { ...proposal, normalizedSourceDigest: "0".repeat(64) } }, sourceFile: source,
   }, db.client), /source-digest-invalid/);
 });
 
 test("one screenshot can persist distinct activities against one source and one audit mutation", async () => {
   const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-17");
-  const bytes = new Uint8Array([1, 3, 5, 7]);
+  const bytes = pngBytes(1, 3, 5, 7);
   const digest = createHash("sha256").update(bytes).digest("hex");
   const idempotencyKey = `accept-activity-${digest}`;
   const entryId = `activity-${digest.slice(0, 32)}`;
   const proposal: Extract<NaturalIngestionProposal, { kind: "activity" }> = {
-    id: "proposal-multi", proposedAt: "2026-10-17T12:00:00Z", sourceType: "activity_screenshot", confidence: "high", assumptions: [], summary: "Golf and Soccer", model: "test", sourceDigest: digest,
+    id: "proposal-multi", proposedAt: "2026-10-17T12:00:00Z", sourceType: "activity_screenshot", confidence: "high", assumptions: [], summary: "Golf and Soccer", model: "test", sourceDigest: digest, normalizedSourceDigest: digest,
     kind: "activity", activity: { activityType: "Golf" }, activities: [{ activityType: "Golf" }, { activityType: "Soccer" }], guidance: "Review visible values.",
   };
   const source = { name: "whoop.png", type: "image/png", size: bytes.length };

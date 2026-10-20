@@ -3,12 +3,12 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { parsePersonalState } from "./state";
 import type { NaturalIngestionProposal, PerformanceSourceType, PersonalState, SterlingProposal } from "./types";
 import { validatePersonalState } from "./validation";
+import { detectedImageType } from "./image-upload";
 
 export const PERFORMANCE_SOURCE_BUCKET = "continuum-performance-sources";
 const STATE_TABLE = "continuum_performance_state";
 const MAX_SOURCE_BYTES = 4 * 1024 * 1024;
 const SOURCE_RETENTION_DAYS = 90;
-const SOURCE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const MUTATION_ACTIONS = new Set(["bootstrap", "snapshot", "accept_meal", "accept_activity", "accept_adjustment", "configure_strength_program", "plan_strength_session", "activate_program", "transition_strength_program", "edit_meal", "edit_activity", "reject_proposal", "delete_source"]);
 
 export type PerformanceMutation = { idempotencyKey: string; action: "bootstrap" | "snapshot" | "accept_meal" | "accept_activity" | "accept_adjustment" | "configure_strength_program" | "plan_strength_session" | "activate_program" | "transition_strength_program" | "edit_meal" | "edit_activity" | "reject_proposal" | "delete_source"; entryId?: string; rawInput?: string; sourceType?: PerformanceSourceType; proposal?: NaturalIngestionProposal | SterlingProposal; accepted?: unknown; corrections?: unknown[]; sourceStoragePath?: string };
@@ -45,19 +45,28 @@ export async function loadPerformanceStateWithClient(founderKey: string, today: 
 export async function savePerformanceStateWithClient(input: SavePerformanceStateInput, db: SupabaseClient): Promise<SavedPerformanceState> {
   const now = input.now ?? new Date().toISOString();
   if (!input.founderKey.trim() || !Number.isSafeInteger(input.expectedRevision) || input.expectedRevision < 0 || !MUTATION_ACTIONS.has(input.mutation.action)) throw new Error("performance-mutation-invalid");
-  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "configure_strength_program", "plan_strength_session"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
+  if (input.sourceFile && (!input.mutation.entryId || !["accept_meal", "accept_activity", "configure_strength_program", "plan_strength_session", "edit_activity"].includes(input.mutation.action))) throw new Error("performance-source-ownership-invalid");
   let storagePath: string | undefined; let uploaded = false;
   if (input.sourceFile) {
-    if (!SOURCE_MIME_TYPES.has(input.sourceFile.type) || input.sourceFile.size <= 0 || input.sourceFile.size > MAX_SOURCE_BYTES) throw new Error("performance-source-invalid");
+    if (input.sourceFile.size <= 0 || input.sourceFile.size > MAX_SOURCE_BYTES) throw new Error("performance-source-invalid");
     const sourceBytes = Buffer.from(await input.sourceFile.arrayBuffer());
+    const sourceType = detectedImageType(sourceBytes);
+    if (!sourceType || !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(sourceType)) throw new Error("performance-source-invalid");
     if (input.mutation.action === "accept_activity") {
       const proposal = input.mutation.proposal;
       const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
-      if (!proposal || !("kind" in proposal) || proposal.kind !== "activity" || proposal.sourceDigest !== actualDigest) {
+      if (!proposal || !("kind" in proposal) || proposal.kind !== "activity" || proposal.normalizedSourceDigest !== actualDigest || !proposal.sourceDigest) {
         throw new Error("performance-source-digest-invalid");
       }
-      if (input.mutation.idempotencyKey !== `accept-activity-${actualDigest}` || input.mutation.entryId !== `activity-${actualDigest.slice(0, 32)}`) {
+      if (input.mutation.idempotencyKey !== `accept-activity-${proposal.sourceDigest}` || input.mutation.entryId !== `activity-${proposal.sourceDigest.slice(0, 32)}`) {
         throw new Error("performance-source-dedupe-invalid");
+      }
+    }
+    if (input.mutation.action === "edit_activity") {
+      const proposal = input.mutation.proposal;
+      const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
+      if (!proposal || !("kind" in proposal) || proposal.kind !== "activity" || proposal.normalizedSourceDigest !== actualDigest || !proposal.sourceDigest || input.mutation.idempotencyKey !== `enrich-activity-${input.mutation.entryId}-${proposal.sourceDigest}`) {
+        throw new Error("performance-source-digest-invalid");
       }
     }
     if (input.mutation.action === "configure_strength_program") {
@@ -70,13 +79,15 @@ export async function savePerformanceStateWithClient(input: SavePerformanceState
     if (input.mutation.action === "plan_strength_session") {
       const actualDigest = createHash("sha256").update(sourceBytes).digest("hex");
       const accepted = input.mutation.accepted as { sourceDigest?: unknown; sequencePosition?: unknown } | undefined;
+      const proposal = input.mutation.proposal;
       const order = Number(accepted?.sequencePosition);
-      if (accepted?.sourceDigest !== actualDigest || !Number.isSafeInteger(order) || order < 1 || input.mutation.idempotencyKey !== `plan-tonal-${order}-${actualDigest}` || input.mutation.entryId !== `tonal-plan-${order}-${actualDigest.slice(0, 32)}`) {
+      if (!proposal || !("normalizedSourceDigest" in proposal) || proposal.normalizedSourceDigest !== actualDigest || typeof accepted?.sourceDigest !== "string" || accepted.sourceDigest !== proposal.sourceDigest || !Number.isSafeInteger(order) || order < 1 || input.mutation.idempotencyKey !== `plan-tonal-${order}-${accepted.sourceDigest}` || input.mutation.entryId !== `tonal-plan-${order}-${accepted.sourceDigest.slice(0, 32)}`) {
         throw new Error("performance-source-digest-invalid");
       }
     }
-    storagePath = `${founderPath(input.founderKey)}/${input.mutation.entryId}.${safeExtension(input.sourceFile)}`;
-    const { error } = await db.storage.from(PERFORMANCE_SOURCE_BUCKET).upload(storagePath, sourceBytes, { contentType: input.sourceFile.type, upsert: false });
+    const storageKey = input.mutation.action === "edit_activity" ? `${input.mutation.entryId}-${createHash("sha256").update(sourceBytes).digest("hex").slice(0, 16)}` : input.mutation.entryId;
+    storagePath = `${founderPath(input.founderKey)}/${storageKey}.${safeExtension(input.sourceFile)}`;
+    const { error } = await db.storage.from(PERFORMANCE_SOURCE_BUCKET).upload(storagePath, sourceBytes, { contentType: sourceType, upsert: false });
     if (error && !/already exists|duplicate/i.test(error.message)) throw new Error(`performance-source-upload-failed:${error.message}`);
     uploaded = !error;
   }

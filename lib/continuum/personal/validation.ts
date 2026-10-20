@@ -91,6 +91,7 @@ export function validatePersonalState(state: PersonalState): string[] {
   }
   if (state.meals.length > 5_000 || state.activities.length > 5_000) errors.push("state-size");
   errors.push(...state.meals.flatMap(validateMealLog), ...state.activities.flatMap(validateActivityLog));
+  if (state.activities.some((activity) => activity.scheduledWorkoutId && !state.schedule.some((workout) => workout.id === activity.scheduledWorkoutId))) errors.push("activity-scheduled-workout");
   if (!finite(state.nutritionTargets.calories, 500, 10_000) || !finite(state.nutritionTargets.protein, 0, 500)) errors.push("nutrition-targets");
   return [...new Set(errors)];
 }

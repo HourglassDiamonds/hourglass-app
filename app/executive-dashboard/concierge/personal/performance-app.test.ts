@@ -9,7 +9,7 @@ const source = readFileSync(join(directory, "performance-app.tsx"), "utf8");
 const css = readFileSync(join(directory, "performance.module.css"), "utf8");
 
 test("Performance exposes explicit workout resolution controls and confirmation-gated Sterling changes", () => {
-  for (const label of ["Start", "Modify today", "Defer", "Skip", "Confirm changes", "Reject"]) assert.match(source, new RegExp(label));
+  for (const label of ["Start", "Edit Workout", "Defer", "Skip", "Confirm changes", "Reject"]) assert.match(source, new RegExp(label));
   assert.match(source, /nothing has changed yet/i);
   assert.match(source, /Other planned sessions that will move/);
   assert.match(source, /displacedWorkouts/);
@@ -65,29 +65,39 @@ test("program stays in setup until a reviewed Monday activation is explicitly pe
 });
 
 test("just-in-time Tonal plans and completion screenshots remain editable and exact", () => {
-  for (const label of ["UPLOAD UPCOMING TONAL WORKOUT", "Approve planned session", "Add visible movement", "Proposal rejected; nothing was saved", "plan_strength_session"]) assert.match(source, new RegExp(label));
+  for (const label of ["Add Before Photo", "Approve planned session", "Add visible movement", "Proposal rejected; nothing was saved", "plan_strength_session"]) assert.match(source, new RegExp(label));
   for (const label of ["Tonal workout title", "Tonal program", "Trainer", "Tonal volume", "Max resistance", "Completed sets", "Completed reps"]) assert.match(source, new RegExp(label));
   assert.match(source, /markTonalSessionCompletedFromActivity/);
   assert.match(source, /sequencePosition/);
 });
 
 test("mobile completion selection stays available while canonical completion remains match-gated", () => {
-  assert.match(source, /UPLOAD COMPLETION SCREENSHOT<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\} disabled=\{intakeBusy\}/);
-  assert.match(source, /Workout History/);
-  assert.match(source, /Record \/ Complete Previous Workout/);
-  assert.match(source, /Choose a session/);
-  assert.match(source, /selectedTonalSessionOrder/);
+  assert.match(source, /Add After Photo<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\}/);
+  assert.match(source, /Training schedule/);
+  assert.match(source, /Today · upcoming · history/);
+  assert.match(source, /data-unified-workout-cards/);
+  assert.match(source, /setSelectedTonalSessionOrder/);
   assert.match(source, /Completed \/ Deferred \/ Skipped \/ Pending|tonalSessionOutcome/);
   assert.match(source, /Completion screenshot selected\. Sterling is reading only the visible results/);
   assert.match(source, /Completion screenshot ready for review\. Nothing is saved until you approve it/);
   assert.match(source, /matchesTonalSessionCompletion/);
   assert.match(source, /does not match the founder-selected Tonal session/);
-  assert.match(source, /UPLOAD HISTORICAL PLAN SCREENSHOT/);
-  assert.match(source, /No workout details will be fabricated/);
-  assert.match(source, /already has an approved completion activity/);
-  assert.match(source, /append an audited correction and change only this session to Completed/);
-  assert.match(source, /Use a JPEG, PNG, WebP, or GIF no larger than 4 MB/);
-  assert.match(source, /UPLOAD UPCOMING TONAL WORKOUT<input type="file"[^>]+onChange=\{chooseUpcomingTonalScreenshot\}/);
-  assert.match(css, /\.sessionPicker select[^}]*min-height:48px/);
+  assert.match(source, /Add Before Photo/);
+  assert.match(source, /No plan details will be fabricated/);
+  assert.match(source, /Completion evidence added without creating another completed session/);
+  assert.match(source, /existing reviewed correction path is approved/);
+  assert.match(source, /PERFORMANCE_IMAGE_ACCEPT/);
+  assert.match(source, /preparePerformanceImage/);
+  assert.match(source, /Review \/ Complete Workout/);
+  assert.match(css, /\.workoutControls[^}]*grid-template-columns/);
+  assert.match(css, /\.workoutCardSelected/);
   assert.doesNotMatch(source, /Today is resolved/);
+});
+
+test("the unified card keeps Tonal and non-Tonal completion paths distinct", () => {
+  assert.match(source, /selectedWorkoutTonalSession \?/);
+  assert.match(source, /chooseSelectedWorkoutCompletion/);
+  assert.match(source, /completeScheduledWorkoutFromActivity/);
+  assert.match(source, /Before photos are optional and not needed for this activity type/);
+  assert.match(source, /completionWorkoutId/);
 });

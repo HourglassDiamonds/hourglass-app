@@ -4,10 +4,10 @@ import { createHash, randomUUID } from "node:crypto";
 import { getConciergeOpenAiApiKey } from "@/lib/continuum/concierge-sol/env";
 import { CONCIERGE_SOL_RESPONSES_ENDPOINT, conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import { activityNutritionGuidance } from "./guidance";
+import { detectedImageType } from "./image-upload";
 import type { ActivityFacts, ActivityMetric, EvidenceKind, MealItem, NaturalIngestionProposal, PerformanceSourceType, PersonalState, ProposalConfidence, TonalProgramMovement } from "./types";
 
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024;
-const IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 const ACTIVITY_FIELDS = ["workoutTitle", "trainer", "tonalProgramTitle", "tonalSessionOrder", "durationMinutes", "distanceMiles", "pace", "averageSpeedMph", "averageHeartRate", "maxHeartRate", "elevationFeet", "reportedCalories", "whoopStrain", "steps", "ruckWeightLb", "totalVolumeLb", "maxResistanceLb", "completedSets", "completedReps"] as const;
 const activityObjectSchema = {
   type: "object", additionalProperties: false,
@@ -64,11 +64,11 @@ function round(value: unknown): number { return Math.max(0, Math.round(typeof va
 function metric<T extends number | string>(value: T | null, evidence: EvidenceKind): ActivityMetric<T> | undefined { return value === null || value === "" ? undefined : { value, evidence }; }
 
 export async function interpretPerformanceIntake(input: {
-  text?: string; file?: File; sourceType: PerformanceSourceType; knownMeals?: string[]; nutritionTargets: PersonalState["nutritionTargets"]; intent?: "completed_activity" | "upcoming_tonal_session";
+  text?: string; file?: File; originalSourceDigest?: string; sourceType: PerformanceSourceType; knownMeals?: string[]; nutritionTargets: PersonalState["nutritionTargets"]; intent?: "completed_activity" | "upcoming_tonal_session";
 }): Promise<NaturalIngestionProposal> {
   const text = input.text?.trim().slice(0, 2_000) ?? "";
   if (!text && !input.file) throw new Error("intake-required");
-  if (input.file && (!IMAGE_TYPES.has(input.file.type) || input.file.size <= 0 || input.file.size > MAX_IMAGE_BYTES)) throw new Error("invalid-image");
+  if (input.file && (input.file.size <= 0 || input.file.size > MAX_IMAGE_BYTES)) throw new Error("invalid-image");
   const apiKey = getConciergeOpenAiApiKey();
   if (!apiKey) throw new Error("performance-analysis-unavailable");
   const model = conciergeForegroundModel(process.env.CONTINUUM_CONCIERGE_MODEL);
@@ -89,8 +89,11 @@ export async function interpretPerformanceIntake(input: {
   ].join("\n");
   const content: Array<Record<string, unknown>> = [{ type: "input_text", text: instructions }];
   const sourceBytes = input.file ? Buffer.from(await input.file.arrayBuffer()) : undefined;
-  const sourceDigest = sourceBytes ? createHash("sha256").update(sourceBytes).digest("hex") : undefined;
-  if (input.file && sourceBytes) content.push({ type: "input_image", image_url: `data:${input.file.type};base64,${sourceBytes.toString("base64")}`, detail: "high" });
+  const detectedType = sourceBytes ? detectedImageType(sourceBytes) : undefined;
+  if (input.file && !detectedType) throw new Error("invalid-image");
+  const normalizedSourceDigest = sourceBytes ? createHash("sha256").update(sourceBytes).digest("hex") : undefined;
+  const sourceDigest = normalizedSourceDigest && input.originalSourceDigest && /^[a-f0-9]{64}$/.test(input.originalSourceDigest) ? input.originalSourceDigest : normalizedSourceDigest;
+  if (input.file && sourceBytes && detectedType) content.push({ type: "input_image", image_url: `data:${detectedType};base64,${sourceBytes.toString("base64")}`, detail: "high" });
   const response = await fetch(CONCIERGE_SOL_RESPONSES_ENDPOINT, {
     method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
     body: JSON.stringify({ model, store: false, input: [{ role: "user", content }], text: { format: { type: "json_schema", name: "performance_intake", strict: true, schema: intakeSchema } } }),
@@ -100,7 +103,7 @@ export async function interpretPerformanceIntake(input: {
   const parsed = JSON.parse(outputText(await response.json())) as Record<string, unknown>;
   const confidence: ProposalConfidence = parsed.confidence === "low" || parsed.confidence === "high" ? parsed.confidence : "medium";
   const assumptions = Array.isArray(parsed.assumptions) ? parsed.assumptions.filter((value): value is string => typeof value === "string").map((value) => value.slice(0, 240)) : [];
-  const base = { id: randomUUID(), proposedAt: new Date().toISOString(), sourceType: input.sourceType, rawInput: text || undefined, confidence, assumptions, summary: String(parsed.summary ?? "Review Sterling's interpretation.").slice(0, 500), model, sourceDigest };
+  const base = { id: randomUUID(), proposedAt: new Date().toISOString(), sourceType: input.sourceType, rawInput: text || undefined, confidence, assumptions, summary: String(parsed.summary ?? "Review Sterling's interpretation.").slice(0, 500), model, sourceDigest, normalizedSourceDigest };
   if (parsed.kind === "meal" && parsed.meal && typeof parsed.meal === "object") {
     const rawMeal = parsed.meal as Record<string, unknown>;
     const items: MealItem[] = Array.isArray(rawMeal.items) ? rawMeal.items.flatMap((candidate, index) => {

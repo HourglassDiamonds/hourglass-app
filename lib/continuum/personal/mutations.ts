@@ -49,6 +49,7 @@ export function buildAcceptedActivity(input: {
   source?: SourceReference;
   targets: PersonalState["nutritionTargets"];
   dateConflictConfirmed?: boolean;
+  scheduledWorkoutId?: string;
 }): ActivityLog {
   const dateConflict = compareActivityDate(input.proposal.sourceDate, input.occurredOn) === "conflict";
   if (dateConflict && !input.dateConflictConfirmed) throw new Error("activity-date-confirmation-required");
@@ -60,8 +61,24 @@ export function buildAcceptedActivity(input: {
     rawInput: input.proposal.rawInput, sourceType: input.proposal.sourceType, source: input.source,
     sterlingProposal: input.proposal, assumptions: input.proposal.assumptions,
     corrections: [...corrections(input.originalFacts ?? input.proposal.activity, input.facts), ...dateCorrection],
-    guidance: activityNutritionGuidance(input.facts, input.targets), idempotencyKey: input.idempotencyKey,
+    guidance: activityNutritionGuidance(input.facts, input.targets), idempotencyKey: input.idempotencyKey, scheduledWorkoutId: input.scheduledWorkoutId,
     provenance: ["sterling", "user_confirmed"],
+  };
+}
+
+export function completeScheduledWorkoutFromActivity(state: PersonalState, input: { workoutId: string; activityId: string; at: string }): PersonalState {
+  const activity = state.activities.find((candidate) => candidate.id === input.activityId && candidate.scheduledWorkoutId === input.workoutId);
+  const workout = state.schedule.find((candidate) => candidate.id === input.workoutId);
+  if (!activity || !workout) throw new Error("scheduled-activity-match-required");
+  if (["deferred", "skipped", "replaced"].includes(workout.status)) throw new Error("scheduled-workout-correction-required");
+  if (workout.status === "completed") return state;
+  return {
+    ...state,
+    schedule: state.schedule.map((candidate) => candidate.id === input.workoutId ? {
+      ...candidate,
+      status: "completed" as const,
+      history: [...candidate.history, { at: input.at, action: "completed" as const, actor: "user" as const, note: "Founder approved completion evidence for this exact scheduled activity." }],
+    } : candidate),
   };
 }
 
