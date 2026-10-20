@@ -721,7 +721,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
             <span><b>{prettyDate(day.date)}</b><small>{isToday ? "Today" : day.date < today ? "History" : "Planned"}</small></span>
             <span><b>{day.consumed.calories} / {day.targets.calories}</b><small>kcal</small></span>
             <span><b>{day.consumed.protein} / {day.targets.protein}g</b><small>protein</small></span>
-            <span><b>{day.workouts.length + day.activities.filter((activity) => !activity.scheduledWorkoutId).length}</b><small>activities</small></span>
+            <span><b>{day.activityCount}</b><small>activities</small></span>
             <span aria-hidden="true">{expanded ? "−" : "+"}</span>
           </button>
           {expanded ? <div id={`performance-day-${day.date}`} className={styles.dayBody}>

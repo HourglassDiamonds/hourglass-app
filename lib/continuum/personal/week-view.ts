@@ -35,13 +35,16 @@ export function targetsForDate(state: PersonalState, date: string): MacroTotals 
 
 export function dayRecord(state: PersonalState, date: string) {
   const meals = state.meals.filter((meal) => mealDate(meal) === date);
+  const workouts = state.schedule.filter((workout) => workout.date === date && workout.status !== "replaced");
+  const activities = state.activities.filter((activity) => activity.occurredOn === date);
   const consumed = sumMealItems(meals.flatMap((meal) => meal.items));
   const targets = targetsForDate(state, date);
   return {
     date,
     meals,
-    workouts: state.schedule.filter((workout) => workout.date === date && workout.status !== "replaced"),
-    activities: state.activities.filter((activity) => activity.occurredOn === date),
+    workouts,
+    activities,
+    activityCount: workouts.length + activities.filter((activity) => !activity.scheduledWorkoutId).length,
     recovery: state.recoveryEntries.find((entry) => entry.date === date),
     consumed,
     targets,
