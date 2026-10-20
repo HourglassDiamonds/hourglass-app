@@ -330,10 +330,16 @@ async function fetchProvider(
       url.searchParams.append("facets[seriesId][]", "BREPUUS");
     }
     if (provider === "EIA_ELECTRICITY") {
+      const end = new Date(checkedAt);
+      const start = new Date(end);
+      start.setUTCDate(start.getUTCDate() - 45);
       url.searchParams.set("frequency", "daily");
       url.searchParams.append("facets[respondent][]", "US48");
       url.searchParams.append("facets[type][]", "D");
       url.searchParams.append("facets[timezone][]", "Eastern");
+      url.searchParams.set("start", start.toISOString().slice(0, 10));
+      url.searchParams.set("end", end.toISOString().slice(0, 10));
+      url.searchParams.set("length", "5");
     }
     payload = await request(url, options, "json");
     return { parsed: parseEia(payload), sourceUrl: redactUrl(url) };
@@ -341,7 +347,9 @@ async function fetchProvider(
 
   if (provider === "TREASURY_YIELD_CURVE") {
     url.searchParams.set("data", "daily_treasury_yield_curve");
-    url.searchParams.set("field_tdr_date_value", String(new Date(checkedAt).getUTCFullYear()));
+    const checked = new Date(checkedAt);
+    const month = `${checked.getUTCFullYear()}${String(checked.getUTCMonth() + 1).padStart(2, "0")}`;
+    url.searchParams.set("field_tdr_date_value_month", month);
     payload = await request(url, options, "xml");
     return { parsed: parseTreasury(payload), sourceUrl: url.toString() };
   }

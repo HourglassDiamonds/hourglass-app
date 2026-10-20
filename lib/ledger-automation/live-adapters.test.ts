@@ -152,6 +152,21 @@ describe("Ledger Automation V1.1 live adapters", () => {
     assert.equal(requestedUrl?.searchParams.get("facets[respondent][]"), "US48");
     assert.equal(requestedUrl?.searchParams.get("facets[type][]"), "D");
     assert.equal(requestedUrl?.searchParams.get("facets[timezone][]"), "Eastern");
+    assert.equal(requestedUrl?.searchParams.get("start"), "2026-08-18");
+    assert.equal(requestedUrl?.searchParams.get("end"), "2026-10-02");
+    assert.equal(requestedUrl?.searchParams.get("length"), "5");
+  });
+
+  it("bounds Treasury XML retrieval to the checked month", async () => {
+    let requestedUrl: URL | null = null;
+    const xml = "<feed><entry><content><m:properties><d:NEW_DATE>2026-10-01T00:00:00</d:NEW_DATE><d:BC_10YEAR>4.25</d:BC_10YEAR></m:properties></content></entry></feed>";
+    const result = await check(source("TREASURY_YIELD_CURVE"), async (input) => {
+      requestedUrl = new URL(String(input));
+      return new Response(xml, { status: 200, headers: { "content-type": "application/xml" } });
+    });
+    assert.equal(result.failure, null);
+    assert.equal(requestedUrl?.searchParams.get("field_tdr_date_value_month"), "202610");
+    assert.equal(requestedUrl?.searchParams.has("field_tdr_date_value"), false);
   });
 
   it("captures the fixed STLFSI4 observation with its timestamp and freshness", async () => {
