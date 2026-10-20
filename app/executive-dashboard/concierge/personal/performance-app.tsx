@@ -11,6 +11,7 @@ import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcc
 import { compareActivityDate, visibleActivityDateLabel } from "@/lib/continuum/personal/activity-date";
 import { PERFORMANCE_IMAGE_ACCEPT, performanceImageMessage, preparePerformanceImage, type PreparedPerformanceImage } from "@/lib/continuum/personal/image-upload";
 import { configureTonalProgram, FIT_OVER_40_WEEKLY_FREQUENCY, markTonalSessionCompletedFromActivity, matchesTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, tonalSessionOutcome, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
+import { mondayFor, weekRecords } from "@/lib/continuum/personal/week-view";
 import type { ActivityFacts, ActivityLog, FrequentMeal, MealEstimate, MealItem, MealLog, NaturalIngestionProposal, PerformedSet, PerformanceSourceType, PersonalState, RecoveryEntry, ScheduledWorkout, SterlingProposal, TonalProgramMovement, WorkoutSession } from "@/lib/continuum/personal/types";
 import styles from "./performance.module.css";
 
@@ -33,7 +34,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [today, setToday] = useState(localToday);
   const [state, setState] = useState<PersonalState>(() => createInitialPersonalState(localToday()));
   const [ready, setReady] = useState(false);
-  const view = initialView;
+  const view = String(initialView) as View;
   const [sterlingText, setSterlingText] = useState("");
   const [sterlingProposal, setSterlingProposal] = useState<SterlingProposal | null>(null);
   const [sterlingBusy, setSterlingBusy] = useState(false);
@@ -47,6 +48,12 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [lastAddedMealId, setLastAddedMealId] = useState<string | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [editingFrequentId, setEditingFrequentId] = useState<string | null>(null);
+  const [mealTargetDate, setMealTargetDate] = useState(localToday);
+  const [mealEntryOpen, setMealEntryOpen] = useState(false);
+  const [recoveryTargetDate, setRecoveryTargetDate] = useState(localToday);
+  const [recoveryEntryOpen, setRecoveryEntryOpen] = useState(false);
+  const [displayWeekStart, setDisplayWeekStart] = useState(() => mondayFor(localToday()));
+  const [expandedDays, setExpandedDays] = useState<Set<string>>(() => new Set([localToday()]));
   const [intakeText, setIntakeText] = useState("");
   const [intakeProposal, setIntakeProposal] = useState<NaturalIngestionProposal | null>(null);
   const [intakeFile, setIntakeFile] = useState<File | null>(null);
@@ -106,9 +113,10 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const latestRecovery = state.recoveryEntries.find((entry) => entry.date === today);
   const todayMeals = state.meals.filter((meal) => (meal.occurredOn ?? meal.timestamp.slice(0, 10)) === today);
   const nutrition = totals(todayMeals.flatMap((meal) => meal.items));
+  const visibleDays = weekRecords(state, displayWeekStart);
   const week = state.schedule.filter((workout) => workout.date >= shiftDate(today, -6) && workout.date <= shiftDate(today, 8));
   const weights = state.recoveryEntries.filter((entry) => entry.bodyweightLb).sort((a, b) => a.recordedAt.localeCompare(b.recordedAt));
-  const weekStart = shiftDate(today, -((new Date(`${today}T12:00:00`).getDay() + 6) % 7));
+  const weekStart = mondayFor(today);
   const weekEnd = shiftDate(weekStart, 6);
   const thisWeekMeals = state.meals.filter((meal) => (meal.occurredOn ?? meal.timestamp.slice(0, 10)) >= weekStart && (meal.occurredOn ?? meal.timestamp.slice(0, 10)) <= weekEnd);
   const loggedDays = new Set(thisWeekMeals.map((meal) => meal.occurredOn ?? meal.timestamp.slice(0, 10))).size;
@@ -263,14 +271,14 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   }
 
   function deferWorkout(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (!activeToday) return;
-    const target = String(new FormData(event.currentTarget).get("date") || shiftDate(today, 1));
-    setState((current) => ({ ...current, schedule: deferAndReflow(current.schedule, activeToday.id, target) })); setDeferOpen(false);
+    event.preventDefault(); if (!selectedWorkout) return;
+    const target = String(new FormData(event.currentTarget).get("date") || shiftDate(selectedWorkout.date, 1));
+    setState((current) => ({ ...current, schedule: deferAndReflow(current.schedule, selectedWorkout.id, target) })); setDeferOpen(false);
   }
 
   function skipWorkout() {
-    if (!activeToday) return; const at = new Date().toISOString();
-    updateWorkout(activeToday.id, (workout) => ({ ...workout, status: "skipped", provenance: [...new Set([...workout.provenance, "user" as const])], history: [...workout.history, { at, action: "skipped", actor: "user", note: "This occurrence was consciously skipped; it is retained in history and not treated as an accidental failure." }] }));
+    if (!selectedWorkout) return; const at = new Date().toISOString();
+    updateWorkout(selectedWorkout.id, (workout) => ({ ...workout, status: "skipped", provenance: [...new Set([...workout.provenance, "user" as const])], history: [...workout.history, { at, action: "skipped", actor: "user", note: "This occurrence was consciously skipped; it is retained in history and not treated as an accidental failure." }] }));
   }
 
   function swapWorkout(workoutId: string) {
@@ -354,7 +362,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     event.preventDefault(); const data = new FormData(event.currentTarget); const at = new Date().toISOString();
     const metric = <T,>(value: T | undefined, source: "manual" | "subjective") => value === undefined || value === "" ? undefined : { value, source };
     const entry: RecoveryEntry = {
-      id: uid("recovery"), date: today, recordedAt: at,
+      id: uid("recovery"), date: recoveryTargetDate, recordedAt: at,
       sleepHours: metric(numberOrUndefined(data.get("sleepHours")), "manual"), sleepQuality: metric(numberOrUndefined(data.get("sleepQuality")), "subjective"),
       recoveryScore: metric(numberOrUndefined(data.get("recoveryScore")), "manual"), strain: metric(numberOrUndefined(data.get("strain")), "manual"),
       restingHeartRate: metric(numberOrUndefined(data.get("restingHeartRate")), "manual"), hrvMs: metric(numberOrUndefined(data.get("hrvMs")), "manual"),
@@ -364,7 +372,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       pain: metric((String(data.get("pain") || "") || undefined) as "none" | "mild" | "moderate" | "high" | undefined, "subjective"),
       notes: String(data.get("notes") || "").trim().slice(0, 600) || undefined, provenance: ["manual_recovery", "user_confirmed"],
     };
-    setState((current) => ({ ...current, recoveryEntries: [entry, ...current.recoveryEntries.filter((item) => item.date !== today)] }));
+    setState((current) => ({ ...current, recoveryEntries: [entry, ...current.recoveryEntries.filter((item) => item.date !== recoveryTargetDate)] }));
   }
 
   async function analyzeIntake(input: { text?: string; file?: File; sourceType: PerformanceSourceType }) {
@@ -496,7 +504,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   async function acceptMeal(mealType?: MealLog["mealType"]) {
     if (!mealEstimate || intakeProposal?.kind !== "meal") return;
     const idempotencyKey = `accept-${intakeProposal.id}`; const at = new Date().toISOString();
-    const meal = buildAcceptedMeal({ proposal: intakeProposal, items: mealEstimate.items, mealType, occurredOn: today, timestamp: at, id: uid("meal"), idempotencyKey, source: mealPhoto ?? undefined });
+    const meal = buildAcceptedMeal({ proposal: intakeProposal, items: mealEstimate.items, mealType, occurredOn: mealTargetDate, timestamp: at, id: uid("meal"), idempotencyKey, source: mealPhoto ?? undefined });
     const next = acceptProposal(state, intakeProposal, meal);
     try {
       const saved = await persistStateMutation(next, { idempotencyKey, action: "accept_meal", entryId: meal.id, rawInput: intakeProposal.rawInput, sourceType: intakeProposal.sourceType, proposal: intakeProposal, accepted: meal, corrections: meal.corrections }, intakeFile ?? undefined);
@@ -586,12 +594,16 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     finally { persistInFlight.current = false; }
   }
 
-  function saveManualMeal(event: FormEvent<HTMLFormElement>) {
+  async function saveManualMeal(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = event.currentTarget; const data = new FormData(form);
     const name = String(data.get("name") || "").trim(); if (!name) return;
     const item: MealItem = { id: uid("manual-item"), name, portion: String(data.get("portion") || "").trim(), calories: Number(data.get("calories")) || 0, protein: Number(data.get("protein")) || 0, carbs: Number(data.get("carbs")) || 0, fat: Number(data.get("fat")) || 0, confidence: "high" };
-    const meal: MealLog = { id: uid("meal"), timestamp: new Date().toISOString(), mealType: (String(data.get("mealType") || "") || undefined) as MealLog["mealType"], items: [item], calories: item.calories, protein: item.protein, carbs: item.carbs, fat: item.fat, provenance: ["user_confirmed"] };
-    setState((current) => ({ ...current, meals: [meal, ...current.meals] })); form.reset();
+    const meal: MealLog = { id: uid("meal"), timestamp: new Date().toISOString(), occurredOn: mealTargetDate, mealType: (String(data.get("mealType") || "") || undefined) as MealLog["mealType"], items: [item], calories: item.calories, protein: item.protein, carbs: item.carbs, fat: item.fat, provenance: ["user_confirmed"] };
+    const next = { ...state, meals: [meal, ...state.meals] };
+    try {
+      const saved = await persistStateMutation(next, { idempotencyKey: `manual-meal-${meal.id}`, action: "accept_meal", entryId: meal.id, sourceType: "text", accepted: meal });
+      setState(saved.state); setLastAddedMealId(meal.id); form.reset();
+    } catch { setMealError("The reviewed manual meal was not saved. Nothing was added."); }
   }
 
   function saveAsFrequent(meal: MealLog) {
@@ -616,21 +628,35 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     });
   }
 
-  function oneTapLog(frequent: FrequentMealCandidate) {
-    const id = uid("meal"); const meal = logFrequentMeal(frequent, new Date().toISOString(), id);
-    setState((current) => ({ ...current, meals: [meal, ...current.meals] })); setLastAddedMealId(id); setEditingMealId(null);
+  async function oneTapLog(frequent: FrequentMealCandidate) {
+    const id = uid("meal"); const meal = { ...logFrequentMeal(frequent, new Date().toISOString(), id), occurredOn: mealTargetDate };
+    try {
+      const saved = await persistStateMutation({ ...state, meals: [meal, ...state.meals] }, { idempotencyKey: `frequent-meal-${id}`, action: "accept_meal", entryId: id, sourceType: "text", accepted: meal });
+      setState(saved.state); setLastAddedMealId(id); setEditingMealId(null);
+    } catch { setMealError("The frequent meal was not saved. Nothing was added."); }
   }
 
   function undoLastMeal() {
     if (!lastAddedMealId) return;
-    setState((current) => ({ ...current, meals: current.meals.filter((meal) => meal.id !== lastAddedMealId) })); setLastAddedMealId(null); setEditingMealId(null);
+    void voidMeal(lastAddedMealId); setLastAddedMealId(null); setEditingMealId(null);
   }
 
-  function updateMealOccurrence(mealId: string, itemId: string, patch: Partial<MealItem>) {
-    setState((current) => ({ ...current, meals: current.meals.map((meal) => {
-      if (meal.id !== mealId) return meal;
-      const items = meal.items.map((item) => item.id === itemId ? { ...item, ...patch } : item); return { ...meal, items, ...totals(items) };
-    }) }));
+  async function saveMealCorrection(mealId: string, items: MealItem[]) {
+    const current = state.meals.find((meal) => meal.id === mealId); if (!current) return;
+    const corrected = { ...current, items, ...totals(items), corrections: [...(current.corrections ?? []), { field: "items", from: current.items, to: items }] };
+    const next = { ...state, meals: state.meals.map((meal) => meal.id === mealId ? corrected : meal) };
+    try {
+      const saved = await persistStateMutation(next, { idempotencyKey: `edit-meal-${mealId}-${Date.now()}`, action: "edit_meal", entryId: mealId, sourceType: current.sourceType ?? "text", accepted: corrected, corrections: corrected.corrections });
+      setState(saved.state); setEditingMealId(null);
+    } catch { setMealError("The meal correction was not saved. Existing nutrition remains unchanged."); }
+  }
+
+  async function voidMeal(mealId: string) {
+    const current = state.meals.find((meal) => meal.id === mealId); if (!current || !window.confirm("Void this meal entry? Its audit history and source evidence remain preserved.")) return;
+    try {
+      const saved = await persistStateMutation({ ...state, meals: state.meals.filter((meal) => meal.id !== mealId) }, { idempotencyKey: `void-meal-${mealId}`, action: "edit_meal", entryId: mealId, sourceType: current.sourceType ?? "text", accepted: { voided: true, prior: current }, corrections: [{ field: "status", from: "accepted", to: "voided" }] });
+      setState(saved.state); setEditingMealId(null);
+    } catch { setMealError("The meal was not voided. Existing nutrition remains unchanged."); }
   }
 
   function updateFrequentDefault(frequent: FrequentMealCandidate, itemId: string, patch: Partial<MealItem>) {
@@ -654,13 +680,100 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   }
 
   const tabs: { id: View; label: string; href: string }[] = [
-    { id: "today", label: "Today", href: "/executive-dashboard/concierge/personal" },
-    { id: "week", label: "Workouts", href: "/executive-dashboard/concierge/personal/workouts" },
-    { id: "nutrition", label: "Nutrition", href: "/executive-dashboard/concierge/personal/food" },
-    { id: "recovery", label: "Recovery", href: "/executive-dashboard/concierge/personal/recovery" },
+    { id: "today", label: "Week", href: "/executive-dashboard/concierge/personal" },
     { id: "progress", label: "Progress", href: "/executive-dashboard/concierge/personal/progress" },
   ];
   if (!ready) return <main className={styles.app}><section className={styles.card}>Opening Performance…</section></main>;
+
+  if (initialView !== "progress") return <main className={styles.app} data-personal-performance data-weekly-performance>
+    <header className={styles.header}><div><p className={styles.eyebrow}>Personal / Performance</p><h1>Your week, one day at a time.</h1><p>Meals, training, recovery, evidence, and corrections stay with the day they happened.</p></div><span className={styles.private}>Private · {state.program.status === "setup" ? "program not started" : `active since ${state.program.anchorDate}`} · {persistStatus === "saved" ? "saved" : persistStatus === "saving" ? "saving…" : persistStatus === "browser" ? "browser fallback" : persistStatus === "conflict" ? "refreshed after conflict" : persistStatus}</span></header>
+    {activityFeedback ? <p aria-live="polite" className={styles.warning}>{activityFeedback}</p> : null}
+    {mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}
+    <nav className={styles.tabs} aria-label="Performance sections">{tabs.map((tab) => <Link key={tab.id} href={tab.href} aria-current={tab.id === "today" ? "page" : undefined}>{tab.label}</Link>)}</nav>
+
+    {state.program.status === "setup" ? <section className={`${styles.card} ${styles.hero}`} data-program-status="setup">
+      <p className={styles.kicker}>Training program · not started / setup</p>
+      <h2>Fit Over 40 begins only when you approve the start.</h2>
+      <p>Three weekly Tonal slots, two run/walk days, protected recovery, and Sunday hard rest. Future workout titles arrive from Tonal screenshots just in time and are never invented.</p>
+      <div className={styles.actions}><button className={styles.primary} onClick={() => void configureTonalSequence()} disabled={tonalConfigBusy}>{tonalConfigBusy ? "Saving…" : "Confirm Fit Over 40 enrollment"}</button></div>
+      {tonalConfigFeedback ? <p aria-live="polite" className={styles.warning}>{tonalConfigFeedback}</p> : null}
+      {tonalEnrollmentReady(state.tonal) ? <p className={styles.provenance}>Enrollment saved · 3 weekly sessions · 4 weeks · 12 prescribed sessions · activation remains separate.</p> : <p className={styles.provenance}>Activation is blocked until program identity and cadence are founder-confirmed.</p>}
+      <div className={styles.formGrid}><label>Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div>
+      <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review Week 1</button></div>
+      {activationError ? <p role="alert" className={styles.warning}>{activationError}</p> : null}
+      {activationReview ? <div className={styles.proposal}><strong>Proposed — the program is still not started</strong><p>Week 1 begins {prettyDate(programStartDate)}. Existing accepted history stays unchanged.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min · {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy || !tonalEnrollmentReady(state.tonal)}>{activationBusy ? "Activating…" : "Confirm and activate"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
+    </section> : null}
+
+    <section className={styles.weekNavigator} aria-label="Week navigation">
+      <button type="button" onClick={() => { const prior = shiftDate(displayWeekStart, -7); setDisplayWeekStart(prior); setExpandedDays(new Set([prior])); }}>← Previous</button>
+      <div><p className={styles.kicker}>Selected week</p><strong>{prettyDate(displayWeekStart)} – {prettyDate(shiftDate(displayWeekStart, 6))}</strong></div>
+      <button type="button" onClick={() => { const current = mondayFor(today); setDisplayWeekStart(current); setExpandedDays(new Set([today])); }}>This week</button>
+      <button type="button" onClick={() => { const next = shiftDate(displayWeekStart, 7); setDisplayWeekStart(next); setExpandedDays(new Set([next])); }}>Next →</button>
+    </section>
+
+    <div className={styles.dayList}>
+      {visibleDays.map((day) => {
+        const expanded = expandedDays.has(day.date);
+        const isToday = day.date === today;
+        const daySelectedWorkout = selectedWorkout?.date === day.date ? selectedWorkout : undefined;
+        return <section className={`${styles.dayPanel} ${isToday ? styles.dayToday : ""}`} key={day.date} data-day={day.date}>
+          <button type="button" className={styles.daySummary} aria-expanded={expanded} aria-controls={`performance-day-${day.date}`} onClick={() => setExpandedDays((current) => { const next = new Set(current); if (next.has(day.date)) next.delete(day.date); else next.add(day.date); return next; })}>
+            <span><b>{prettyDate(day.date)}</b><small>{isToday ? "Today" : day.date < today ? "History" : "Planned"}</small></span>
+            <span><b>{day.consumed.calories} / {day.targets.calories}</b><small>kcal</small></span>
+            <span><b>{day.consumed.protein} / {day.targets.protein}g</b><small>protein</small></span>
+            <span><b>{day.workouts.length + day.activities.filter((activity) => !activity.scheduledWorkoutId).length}</b><small>activities</small></span>
+            <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+          </button>
+          {expanded ? <div id={`performance-day-${day.date}`} className={styles.dayBody}>
+            <section className={styles.daySection} aria-labelledby={`nutrition-${day.date}`}>
+              <div className={styles.daySectionHeading}><div><p className={styles.kicker}>Nutrition</p><h2 id={`nutrition-${day.date}`}>Daily balance</h2></div><button type="button" onClick={() => { setMealTargetDate(day.date); setMealEntryOpen((open) => mealTargetDate === day.date ? !open : true); setIntakeText(""); setMealError(""); }}>Add Meal</button></div>
+              <div className={styles.dailyTotals}>
+                {(["calories", "protein", "carbs", "fat"] as const).map((key) => <div key={key} className={day.remaining[key] < 0 ? styles.overTarget : ""}><span>{key}</span><strong>{day.consumed[key]} / {day.targets[key]}{key === "calories" ? "" : "g"}</strong><small>{day.remaining[key] >= 0 ? `${day.remaining[key]}${key === "calories" ? "" : "g"} remaining` : `${Math.abs(day.remaining[key])}${key === "calories" ? "" : "g"} over`}</small></div>)}
+              </div>
+              {day.meals.length ? <div className={styles.dayEntries}>{day.meals.map((meal) => <article className={styles.savedRow} key={meal.id}><span>{meal.mealType ?? "Meal"} · {meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "Sterling estimate reviewed" : meal.frequentMealId ? "Frequently Eaten" : "Founder entered"}{meal.photo ? " · source photo preserved" : ""}</small><div className={styles.compactActions}><button type="button" onClick={() => setEditingMealId((id) => id === meal.id ? null : meal.id)}>Edit</button><button type="button" onClick={() => saveAsFrequent(meal)}>Save as frequent</button><button type="button" onClick={() => void voidMeal(meal.id)}>Void</button>{meal.photo?.storagePath ? <button type="button" onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div>{editingMealId === meal.id ? <MealOccurrenceEditor meal={meal} onSave={(items) => void saveMealCorrection(meal.id, items)} onDone={() => setEditingMealId(null)} /> : null}</article>)}</div> : <p className={styles.emptyState}>No accepted meals for this date.</p>}
+              {mealEntryOpen && mealTargetDate === day.date ? <div className={styles.entryPanel}>
+                <p className={styles.provenance}>New meal will be saved to {prettyDate(day.date)} after review.</p>
+                <form className={styles.sterling} onSubmit={submitMealDescription}><textarea value={intakeText} onChange={(event) => setIntakeText(event.target.value)} placeholder="Describe the meal and portions." /><button className={styles.primary} disabled={intakeBusy || !intakeText.trim()}>Interpret meal</button></form>
+                <div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>Take Meal Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} capture="environment" onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>Upload Meal Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>Nutrition Label<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseNutritionLabel} disabled={intakeBusy} /></label></div>
+                {frequentlyEaten.length ? <div className={styles.frequentGrid}>{frequentlyEaten.slice(0, 6).map((frequent) => <button type="button" className={styles.frequentLog} key={frequent.id} onClick={() => void oneTapLog(frequent)}><strong>{frequent.name}</strong><small>{frequent.calories} kcal · {frequent.protein}P</small></button>)}</div> : null}
+                {mealEstimate && intakeProposal?.kind === "meal" ? <div className={styles.proposal}><p className={styles.kicker}>Review required</p><MealReview estimate={mealEstimate} onChange={updateMealItem} onRemove={(id) => setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.filter((item) => item.id !== id) } : null)} onAdd={() => setMealEstimate((estimate) => estimate ? { ...estimate, items: [...estimate.items, { id: uid("meal-item"), name: "", portion: "", calories: 0, protein: 0, carbs: 0, fat: 0, confidence: "low" }] } : null)} onAccept={acceptMeal} onReject={() => void rejectIntake()} /></div> : null}
+                <details><summary>Log manually</summary><form className={styles.recoveryForm} onSubmit={(event) => void saveManualMeal(event)}><div className={styles.formGrid}><label>Food<input name="name" required /></label><label>Portion<input name="portion" /></label><label>Meal type<select name="mealType"><option value="">Not supplied</option><option>breakfast</option><option>lunch</option><option>dinner</option><option>snack</option></select></label></div><div className={styles.formGrid}><label>Calories<input name="calories" type="number" min="0" required /></label><label>Protein<input name="protein" type="number" min="0" required /></label><label>Carbs<input name="carbs" type="number" min="0" required /></label><label>Fat<input name="fat" type="number" min="0" required /></label></div><button className={styles.primary}>Review and save manual meal</button></form></details>
+              </div> : null}
+            </section>
+
+            <section className={styles.daySection} aria-labelledby={`training-${day.date}`}>
+              <div className={styles.daySectionHeading}><div><p className={styles.kicker}>Training</p><h2 id={`training-${day.date}`}>Plan and actuals</h2></div>{day.date <= today ? <label className={styles.photoAction}>Log unplanned activity<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onClick={() => { setPastActivityDate(day.date); setActivityDefaultDate(day.date); setActivityMaxDate(today); setPastActivityOpen(true); }} onChange={chooseActivityScreenshot} disabled={intakeBusy} /></label> : null}</div>
+              {day.workouts.length ? <div className={styles.dayEntries}>{day.workouts.map((workout) => <article className={styles.workoutDetail} key={workout.id}>
+                <button type="button" className={styles.workoutSelect} onClick={() => { const tonal = state.tonal.enrollment.sessions.find((session) => session.scheduledWorkoutId === workout.id); setSelectedWorkoutId(workout.id); setSelectedTonalSessionOrder(tonal?.order ?? null); setModifyOpen(false); setDeferOpen(false); }}><span>{workout.prescription.domain}</span><strong>{workout.prescription.name}</strong><small>{workout.status.replace("_", " ")} · {workout.prescription.durationMinutes} min</small></button>
+                {daySelectedWorkout?.id === workout.id ? <div className={styles.workoutExpanded}>
+                  <p>{workout.prescription.notes}</p>
+                  {selectedWorkoutTonalSession ? <p className={styles.provenance}>Fit Over 40 · Session {selectedWorkoutTonalSession.order} · {selectedWorkoutTonalSession.plannedSource ? "approved Before Photo" : "Before Photo not attached"} · {selectedWorkoutTonalSession.completedActivityId ? "approved After Photo" : "After Photo not attached"}</p> : <p className={styles.provenance}>{workout.prescription.mode} · {day.activities.some((activity) => activity.scheduledWorkoutId === workout.id) ? "approved completion attached" : "completion not attached"}</p>}
+                  {selectedWorkoutTonalSession?.movements.length ? <div className={styles.proposalGrid}>{selectedWorkoutTonalSession.movements.map((movement) => <div key={movement.name}><strong>{movement.name}</strong><small>{[movement.sets ? `${movement.sets} sets` : "", movement.reps ?? "", movement.prescribedResistance ?? ""].filter(Boolean).join(" · ") || "Details unknown"}</small></div>)}</div> : null}
+                  <div className={styles.workoutControls}>{selectedWorkoutTonalSession ? <label className={styles.photoAction}>Before Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={selectedWorkoutTonalSession.order === upcomingTonalSession?.order ? chooseUpcomingTonalScreenshot : chooseHistoricalTonalPlanScreenshot} disabled={tonalPlanBusy || Boolean(selectedWorkoutTonalSession.completedActivityId)} /></label> : <button type="button" disabled title="Before photos are optional and not needed for this activity type">Before Photo · optional</button>}{selectedWorkoutTonalSession ? <label className={`${styles.photoAction} ${styles.primary}`}>After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || day.date > today} /></label> : <label className={`${styles.photoAction} ${styles.primary}`}>After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseSelectedWorkoutCompletion} disabled={intakeBusy || day.date > today || ["deferred", "skipped", "replaced"].includes(workout.status)} /></label>}<button type="button" onClick={() => setModifyOpen((open) => !open)} disabled={["completed", "deferred", "skipped", "replaced"].includes(workout.status)}>Edit</button><button type="button" onClick={() => workout.status === "planned" || workout.status === "unresolved" ? startWorkout(workout) : setActivityFeedback(`Reviewing ${workout.prescription.name}: ${workout.status.replace("_", " ")}.`)}>Review / Complete</button>{["planned", "unresolved", "in_progress"].includes(workout.status) ? <><button type="button" onClick={() => setDeferOpen((open) => !open)}>Defer</button><button type="button" onClick={skipWorkout}>Skip</button></> : null}</div>
+                  {modifyOpen ? <form className={styles.editPanel} onSubmit={saveModification}><label>Name<input name="name" defaultValue={workout.prescription.name} /></label><label>Minutes<input name="duration" type="number" min="5" max="180" defaultValue={workout.prescription.durationMinutes} /></label><label>Notes<textarea name="notes" defaultValue={workout.prescription.notes} /></label><button className={styles.primary}>Save reviewed edit</button></form> : null}
+                  {deferOpen ? <form className={styles.editPanel} onSubmit={deferWorkout}><label>Move to<input name="date" type="date" min={shiftDate(workout.date, 1)} defaultValue={shiftDate(workout.date, 1)} /></label><p>Later sessions reflow; this occurrence keeps its identity and history.</p><button className={styles.primary}>Confirm defer</button></form> : null}
+                  {selectedWorkoutTonalSession && !selectedWorkoutTonalSession.plannedSource ? <p className={styles.warning}>A Tonal completion remains blocked until the matching Before Photo is reviewed. No plan details will be fabricated.</p> : null}
+                </div> : null}
+              </article>)}</div> : <p className={styles.emptyState}>No scheduled workout for this date.</p>}
+              {day.activities.length ? <div className={styles.dayEntries}>{day.activities.map((activity) => <ActivityRow key={activity.id} activity={activity} maxDate={today} onCorrectDate={(date) => void correctActivityDate(activity.id, date)} onDeleteSource={activity.source?.storagePath ? () => void deleteSource("activity", activity.id) : undefined} />)}</div> : null}
+              {pastActivityOpen && activityDefaultDate === day.date && intakeProposal?.kind === "activity" ? <div className={styles.proposal}><p className={styles.kicker}>Review completed activity</p><ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={activityMaxDate} onAccept={acceptActivity} onReject={() => void rejectIntake()} /></div> : null}
+              {tonalPlanBusy || intakeBusy && (tonalCompletionFeedback || completionWorkoutId) ? <p aria-live="polite">Sterling is reading visible workout evidence…</p> : null}
+              {tonalPlanFeedback ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}{tonalCompletionFeedback ? <p aria-live="polite" className={styles.warning}>{tonalCompletionFeedback}</p> : null}
+              {tonalPlanProposal && selectedWorkoutTonalSession && tonalPlanTargetOrder === selectedWorkoutTonalSession.order ? <TonalPlanReview sequencePosition={selectedWorkoutTonalSession.order} proposal={tonalPlanProposal} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}
+            </section>
+
+            <section className={styles.daySection} aria-labelledby={`recovery-${day.date}`}>
+              <div className={styles.daySectionHeading}><div><p className={styles.kicker}>Recovery</p><h2 id={`recovery-${day.date}`}>{day.recovery ? "Accepted context" : "No recovery entry"}</h2></div><button type="button" onClick={() => { setRecoveryTargetDate(day.date); setRecoveryEntryOpen((open) => recoveryTargetDate === day.date ? !open : true); }}>{day.recovery ? "Edit recovery" : "Add recovery"}</button></div>
+              {day.recovery ? <div className={styles.metricGrid}>{Object.entries(day.recovery).filter(([, value]) => value && typeof value === "object" && "source" in value).map(([key, value]) => { const metric = value as { value: string | number; source: string }; return <div key={key}><span>{key === "strain" ? "Daily strain" : key}</span><strong>{metric.value}</strong><small>{metric.source}{key === "strain" ? " · not activity-specific" : ""}</small></div>; })}</div> : <p className={styles.emptyState}>Unknown values remain unknown.</p>}
+              {recoveryEntryOpen && recoveryTargetDate === day.date ? <RecoveryForm existing={day.recovery} onSubmit={(event) => { saveRecovery(event); setRecoveryEntryOpen(false); }} /> : null}
+            </section>
+          </div> : null}
+        </section>;
+      })}
+    </div>
+
+    {state.program.status === "active" ? <section className={styles.card}><p className={styles.kicker}>Adaptive Coach · week-level adjustment</p><h2>What changed in real life?</h2><form className={styles.sterling} onSubmit={askSterling}><textarea value={sterlingText} onChange={(event) => setSterlingText(event.target.value)} placeholder="I’m golfing Thursday. Move Thursday’s planned workout to Friday." required /><button className={styles.primary} disabled={sterlingBusy}>{sterlingBusy ? "Reviewing…" : "Review adjustment"}</button></form>{sterlingError ? <p role="alert" className={styles.warning}>{sterlingError}</p> : null}{sterlingProposal ? <div className={styles.proposal}><strong>Proposed — nothing has changed yet</strong><p>{sterlingProposal.summary}</p>{sterlingProposal.warnings.map((warning) => <p key={warning} className={styles.warning}>{warning}</p>)}{sterlingProposal.displacedWorkouts?.length ? <div className={styles.warning}><strong>Other planned sessions that will move</strong>{sterlingProposal.displacedWorkouts.map((workout) => <p key={workout.workoutId}>{workout.name}: {prettyDate(workout.fromDate)} → {prettyDate(workout.toDate)}</p>)}</div> : null}<div className={styles.actions}><button className={styles.primary} onClick={() => void confirmSterling()} disabled={sterlingBusy}>Confirm changes</button><button onClick={() => setSterlingProposal(null)} disabled={sterlingBusy}>Reject</button></div></div> : null}</section> : null}
+  </main>;
 
   return <main className={styles.app} data-personal-performance>
     <header className={styles.header}><div><p className={styles.eyebrow}>Personal / Performance</p><h1>Tell Sterling what happened. Keep the plan alive.</h1><p>Daily training, recovery, and nutrition with explicit decisions and durable context.</p></div><span className={styles.private}>Private · {state.program.status === "setup" ? "program not started" : `active since ${state.program.anchorDate}`} · {persistStatus === "saved" ? "saved" : persistStatus === "saving" ? "saving…" : persistStatus === "browser" ? "browser fallback" : persistStatus === "conflict" ? "refreshed after conflict" : persistStatus}</span></header>
@@ -740,7 +853,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       <section className={styles.card}><p className={styles.kicker}>Today’s targets</p><h2>{nutrition.calories} / {state.nutritionTargets.calories} kcal · {nutrition.protein} / {state.nutritionTargets.protein}g protein</h2><p>{nutrition.carbs} / {state.nutritionTargets.carbs}g carbs · {nutrition.fat} / {state.nutritionTargets.fat}g fat</p></section>
       <section className={`${styles.card} ${styles.quickLog}`}><p className={styles.kicker}>Natural intake</p><h2>Describe it, photograph it, or show Sterling the label.</h2><form className={styles.sterling} onSubmit={submitMealDescription}><textarea value={intakeText} onChange={(event) => setIntakeText(event.target.value)} placeholder="8 oz Dawg Food chicken blend, 1 tablespoon butter, 2 baby bok choy, and 1/2 cup Kevin's cauliflower puree." /><button className={styles.primary} disabled={intakeBusy || !intakeText.trim()}>Interpret meal</button></form><div className={styles.photoActions}><label className={`${styles.photoAction} ${styles.primary}`}>TAKE MEAL PHOTO<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} capture="environment" onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>UPLOAD MEAL PHOTO<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseMealPhoto} disabled={intakeBusy} /></label><label className={styles.photoAction}>NUTRITION LABEL<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseNutritionLabel} disabled={intakeBusy} /></label></div>{mealBusy ? <p aria-live="polite">Sterling is interpreting the input…</p> : null}{mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}</section>
       <section className={styles.card}><div className={styles.cardTop}><div><p className={styles.kicker}>Frequently Eaten</p><h2>{frequentlyEaten.length ? "Your regulars, ready in one tap." : "Regular meals will appear here."}</h2></div></div><p>Meals repeat automatically after two accepted logs. You can also pin any saved meal.</p>{frequentlyEaten.length ? <div className={styles.frequentGrid}>{frequentlyEaten.map((frequent) => <div className={styles.frequentCard} key={frequent.id}><button className={styles.frequentLog} onClick={() => oneTapLog(frequent)} aria-label={`Log ${frequent.name}`}><strong>{frequent.name}</strong><span>{frequent.items.map((item) => item.portion).filter(Boolean).join(" · ") || "Saved serving"}</span><small>{frequent.calories} kcal · {frequent.protein}P · {frequent.carbs}C · {frequent.fat}F{frequent.mealType ? ` · ${frequent.mealType}` : ""}</small></button><div className={styles.compactActions}><button onClick={() => storeFrequent(frequent, { pinned: !frequent.pinned })}>{frequent.pinned ? "Unpin" : "Pin"}</button><button onClick={() => setEditingFrequentId((id) => id === frequent.id ? null : frequent.id)}>Edit default</button><button onClick={() => storeFrequent(frequent, { hidden: true })}>Hide</button></div>{editingFrequentId === frequent.id ? <FrequentDefaultEditor frequent={frequent} onChange={(itemId, patch) => updateFrequentDefault(frequent, itemId, patch)} onDone={() => setEditingFrequentId(null)} /> : null}</div>)}</div> : null}</section>
-      {lastAddedMealId && state.meals.some((meal) => meal.id === lastAddedMealId) ? <section className={`${styles.card} ${styles.undoBar}`} aria-live="polite"><div><p className={styles.kicker}>Logged</p><strong>{state.meals.find((meal) => meal.id === lastAddedMealId)?.items.map((item) => item.name).join(", ")}</strong></div><div className={styles.actions}><button onClick={() => setEditingMealId((id) => id === lastAddedMealId ? null : lastAddedMealId)}>Edit</button><button onClick={undoLastMeal}>Undo</button></div>{editingMealId === lastAddedMealId ? <MealOccurrenceEditor meal={state.meals.find((meal) => meal.id === lastAddedMealId)!} onChange={(itemId, patch) => updateMealOccurrence(lastAddedMealId, itemId, patch)} onDone={() => setEditingMealId(null)} /> : null}</section> : null}
+      {lastAddedMealId && state.meals.some((meal) => meal.id === lastAddedMealId) ? <section className={`${styles.card} ${styles.undoBar}`} aria-live="polite"><div><p className={styles.kicker}>Logged</p><strong>{state.meals.find((meal) => meal.id === lastAddedMealId)?.items.map((item) => item.name).join(", ")}</strong></div><div className={styles.actions}><button onClick={() => setEditingMealId((id) => id === lastAddedMealId ? null : lastAddedMealId)}>Edit</button><button onClick={undoLastMeal}>Undo</button></div>{editingMealId === lastAddedMealId ? <MealOccurrenceEditor meal={state.meals.find((meal) => meal.id === lastAddedMealId)!} onSave={(items) => void saveMealCorrection(lastAddedMealId, items)} onDone={() => setEditingMealId(null)} /> : null}</section> : null}
       {mealEstimate ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Human input → Sterling proposal → your approval</h2><p>Nothing is saved until you accept the editable values below. The untouched Sterling estimate, assumptions, and your corrections are retained separately for provenance.</p>{intakeProposal?.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<MealReview estimate={mealEstimate} onChange={updateMealItem} onRemove={(id) => setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.filter((item) => item.id !== id) } : null)} onAdd={() => setMealEstimate((estimate) => estimate ? { ...estimate, items: [...estimate.items, { id: uid("meal-item"), name: "", portion: "", calories: 0, protein: 0, carbs: 0, fat: 0, confidence: "low" }] } : null)} onAccept={acceptMeal} onReject={() => void rejectIntake()} /></section> : null}
       <section className={styles.card}><p className={styles.kicker}>Manual meal</p><h2>Log without a photo.</h2><form className={styles.recoveryForm} onSubmit={saveManualMeal}><div className={styles.formGrid}><label>Food<input name="name" placeholder="Chicken, rice, greens" required /></label><label>Portion<input name="portion" placeholder="6 oz / 1 cup" /></label><label>Meal type<select name="mealType"><option value="">Not supplied</option><option>breakfast</option><option>lunch</option><option>dinner</option><option>snack</option></select></label></div><div className={styles.formGrid}><label>Calories<input name="calories" type="number" min="0" required /></label><label>Protein<input name="protein" type="number" min="0" required /></label><label>Carbs<input name="carbs" type="number" min="0" required /></label><label>Fat<input name="fat" type="number" min="0" required /></label></div><button className={styles.primary}>Save manual meal</button></form></section>
       <section className={styles.card}><p className={styles.kicker}>Saved meals · canonical</p>{state.meals.length ? state.meals.slice(0, 10).map((meal) => <div className={styles.savedRow} key={meal.id}><span>{meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "AI estimate retained · user-approved values canonical" : meal.frequentMealId ? "one-tap relog" : "manual"}</small><div className={styles.compactActions}><button onClick={() => saveAsFrequent(meal)}>{state.frequentMeals.some((item) => item.signature === mealSignature(meal)) ? "Update frequent" : "Save as frequent"}</button>{meal.photo?.storagePath ? <button onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div></div>) : <p>No meals saved yet.</p>}</section>
@@ -776,8 +889,9 @@ function FrequentDefaultEditor({ frequent, onChange, onDone }: { frequent: Frequ
   return <div className={styles.inlineEditor}><strong>Edit saved default</strong><p>Future one-tap logs use these values. Existing meal occurrences stay unchanged.</p>{frequent.items.map((item) => <MacroItemEditor key={item.id} item={item} onChange={(patch) => onChange(item.id, patch)} />)}<button className={styles.primary} onClick={onDone}>Done</button></div>;
 }
 
-function MealOccurrenceEditor({ meal, onChange, onDone }: { meal: MealLog; onChange: (itemId: string, patch: Partial<MealItem>) => void; onDone: () => void }) {
-  return <div className={styles.inlineEditor}><strong>Edit this occurrence</strong><p>Your saved frequent default will not change.</p>{meal.items.map((item) => <MacroItemEditor key={item.id} item={item} onChange={(patch) => onChange(item.id, patch)} />)}<button className={styles.primary} onClick={onDone}>Done</button></div>;
+function MealOccurrenceEditor({ meal, onSave, onDone }: { meal: MealLog; onSave: (items: MealItem[]) => void; onDone: () => void }) {
+  const [items, setItems] = useState(() => meal.items.map((item) => ({ ...item })));
+  return <div className={styles.inlineEditor}><strong>Edit this occurrence</strong><p>Nothing changes until you save. The prior accepted values remain in the audit history, and your frequent default will not change.</p>{items.map((item) => <MacroItemEditor key={item.id} item={item} onChange={(patch) => setItems((current) => current.map((candidate) => candidate.id === item.id ? { ...candidate, ...patch } : candidate))} />)}<div className={styles.actions}><button className={styles.primary} onClick={() => onSave(items)}>Save audited correction</button><button onClick={onDone}>Cancel</button></div></div>;
 }
 
 function TonalPlanReview({ sequencePosition, proposal, onAccept, onReject }: { sequencePosition: number; proposal: Extract<NaturalIngestionProposal, { kind: "activity" }>; onAccept: (input: { title?: string; movements: TonalProgramMovement[] }) => void | Promise<void>; onReject: () => void }) {

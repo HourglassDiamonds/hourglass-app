@@ -36,10 +36,11 @@ test("nutrition preserves the review gate and exposes frequent one-tap controls"
   assert.match(source, /performance-revision-conflict/);
 });
 
-test("route navigation and legacy browser data migration remain available", () => {
-  for (const route of ["/personal/workouts", "/personal/food", "/personal/recovery", "/personal/progress"]) {
-    assert.match(source, new RegExp(route));
-  }
+test("weekly navigation and legacy browser data migration remain available", () => {
+  assert.match(source, /label: "Week"/);
+  assert.match(source, /\/personal\/progress/);
+  assert.match(source, /← Previous/);
+  assert.match(source, /Next →/);
   assert.match(source, /continuum\.personal\.performance\.v3/);
   assert.match(source, /continuum\.personal\.performance\.v2/);
   assert.match(source, /continuum\.personal\.v1/);
@@ -100,4 +101,36 @@ test("the unified card keeps Tonal and non-Tonal completion paths distinct", () 
   assert.match(source, /completeScheduledWorkoutFromActivity/);
   assert.match(source, /Before photos are optional and not needed for this activity type/);
   assert.match(source, /completionWorkoutId/);
+});
+
+test("the primary mobile experience is a Monday through Sunday day-centered week", () => {
+  assert.match(source, /data-weekly-performance/);
+  assert.match(source, /weekRecords\(state, displayWeekStart\)/);
+  assert.match(source, /Previous/);
+  assert.match(source, /This week/);
+  assert.match(source, /Next →/);
+  assert.match(source, /expandedDays/);
+  assert.match(source, /aria-expanded=\{expanded\}/);
+  assert.match(source, /Meals, training, recovery, evidence, and corrections stay with the day/);
+  assert.match(css, /\.daySummary/);
+  assert.match(css, /\.dayBody/);
+  assert.match(css, /@media\(max-width:390px\)[\s\S]*\.dailyTotals/);
+});
+
+test("daily nutrition shows exact remaining values and audited historical corrections", () => {
+  assert.match(source, /day\.remaining\[key\] >= 0/);
+  assert.match(source, /over/);
+  assert.match(source, /New meal will be saved to/);
+  assert.match(source, /occurredOn: mealTargetDate/);
+  assert.match(source, /action: "edit_meal"/);
+  assert.match(source, /Save audited correction/);
+  assert.match(source, /Void this meal entry/);
+  assert.match(source, /action: "accept_meal"/);
+});
+
+test("daily training and recovery keep evidence semantics distinct", () => {
+  for (const label of ["Before Photo", "After Photo", "Review / Complete", "Log unplanned activity", "Daily strain", "not activity-specific"]) assert.match(source, new RegExp(label));
+  assert.match(source, /scheduledWorkoutId/);
+  assert.match(source, /No plan details will be fabricated/);
+  assert.match(source, /Unknown values remain unknown/);
 });

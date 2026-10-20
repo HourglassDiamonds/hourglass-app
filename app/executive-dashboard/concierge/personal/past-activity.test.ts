@@ -13,7 +13,7 @@ test("past activity has explicit date-first review and never reschedules a plann
   assert.match(app, /Log Past Activity/);
   assert.match(app, /max=\{shiftDate\(today, -1\)\}/);
   assert.match(app, /does not reschedule a planned workout/);
-  assert.match(app, /input\.sourceType === "activity_screenshot" \? input\.file/);
+  assert.match(app, /input\.file \? await prepareUpload\(input\.file, input\.sourceType === "activity_screenshot"/);
   assert.match(app, /setIntakeFile\(image \?\? null\)/);
   assert.match(app, /ActivityReview/);
   assert.match(app, /Accept \{activities\.length === 1 \? "activity"/);
@@ -23,7 +23,8 @@ test("screenshot provenance uses a byte digest for server-enforced dedupe withou
   assert.match(ai, /createHash\("sha256"\)/);
   assert.match(ai, /Null absent values/);
   assert.match(persistence, /performance-source-digest-invalid/);
-  assert.match(persistence, /accept-activity-\$\{actualDigest\}/);
+  assert.match(persistence, /proposal\.normalizedSourceDigest !== actualDigest/);
+  assert.match(persistence, /accept-activity-\$\{proposal\.sourceDigest\}/);
   assert.match(persistence, /upsert:\s*false/);
 });
 

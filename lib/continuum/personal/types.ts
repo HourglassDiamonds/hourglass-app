@@ -379,4 +379,11 @@ export type PersonalState = {
   frequentMeals: FrequentMeal[];
   progressionProposals: ProgressionProposal[];
   nutritionTargets: { calories: number; protein: number; carbs: number; fat: number };
+  nutritionTargetHistory?: Array<{
+    effectiveOn: string;
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  }>;
 };
