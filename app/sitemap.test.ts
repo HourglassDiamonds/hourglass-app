@@ -30,6 +30,7 @@ describe("public search discovery", () => {
       "/diamond-intelligence",
       "/concierge",
       "/our-approach",
+      "/continuum",
       "/privacy",
       "/terms",
       "/accessibility",
@@ -41,7 +42,6 @@ describe("public search discovery", () => {
     }
     assert.equal(urls.includes(`${ORIGIN}/executive-dashboard/concierge/local-authority`), false);
     assert.equal(urls.includes(`${ORIGIN}/api/cron/review-velocity`), false);
-    assert.equal(urls.includes(`${ORIGIN}/continuum`), false);
   });
 
   it("does not claim a fresh modification time for every static URL", () => {

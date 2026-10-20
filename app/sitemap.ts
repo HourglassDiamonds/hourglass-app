@@ -24,6 +24,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/diamond-guide/all`, priority: 0.82 },
     { url: `${SITE_URL}/whispered-praise`, priority: 0.85 },
     { url: `${SITE_URL}/ledger`, priority: 0.75 },
+    { url: `${SITE_URL}/continuum`, priority: 0.4 },
     { url: `${SITE_URL}/privacy`, priority: 0.4 },
     { url: `${SITE_URL}/terms`, priority: 0.4 },
     { url: `${SITE_URL}/accessibility`, priority: 0.4 },
