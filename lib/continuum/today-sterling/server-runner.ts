@@ -6,7 +6,6 @@ import { collectPagedRows } from "@/lib/continuum/candidates/page";
 import { rowToCandidate } from "@/lib/continuum/candidates/rows";
 import { CONTINUUM_CANDIDATES_TABLE } from "@/lib/continuum/candidates/activation";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
-import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
 import { SupabaseProjectDeskReader } from "@/lib/continuum/client-memory/project-desk/supabase";
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
@@ -31,8 +30,10 @@ import { buildSterlingTodayWorkingSet } from "./working-set";
 import { requestSterlingTodayProposal } from "./request";
 import { validateSterlingTodayProposal } from "./validate";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
+import { evaluateOctober21Acceptance } from "./october-19-acceptance";
 import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from "./evidence-load";
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
+import { selectSterlingPortfolio } from "./portfolio-scope";
 import {
   buildSterlingEvidenceReadyWorkingSet,
   evaluateSterlingEvidenceCompleteness,
@@ -48,8 +49,6 @@ import type {
 import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
   acceptanceIdentifiers,
-  acceptanceThreadIds,
-  candidateScopeText,
   isDurablyScopedFounderCorrection,
   scopeDefinition,
   scopeMatchesIdentifierText,
@@ -101,6 +100,7 @@ export type SterlingTodaySemanticCompletion = {
   proposal: SterlingTodayProposal | null;
   validation: SterlingTodayValidationResult | null;
   acceptance: ReturnType<typeof evaluateSterlingTodayAcceptance> | null;
+  operationalAcceptance: ReturnType<typeof evaluateOctober21Acceptance> | null;
   verdict: "PASS" | "TARGET_VALID" | "BLOCK" | "EVIDENCE_BLOCKED";
   performance: SterlingTodayAssembly["performance"] & {
     modelLatencyMs: number | null;
@@ -120,6 +120,13 @@ export type SterlingTodaySafeResult = {
   gmail: null | Pick<TodayLiveEnrichmentDiagnostics, "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
   performance: null | SterlingTodaySemanticCompletion["performance"];
   validation: null | { accepted: boolean; errorCount: number; mutationProposalCount: number };
+  acceptance: null | {
+    originalTenPassed: boolean;
+    october21Passed: boolean;
+    passCount: number;
+    failCount: number;
+    unverifiedCount: number;
+  };
   safeErrors: readonly string[];
 };
 
@@ -195,16 +202,6 @@ function projectText(project: { title: string; specs?: readonly { value: string 
   return `${project.title} ${(project.specs ?? []).map((row) => row.value).join(" ")}`;
 }
 
-function candidateProjectId(candidate: ContinuumCandidate): string | null {
-  const target = candidate.founderEditedTarget ?? candidate.proposedTarget;
-  return "projectId" in target ? target.projectId : null;
-}
-
-function definitionMatchesStableInput(definition: SterlingTodayScopeDefinition, text: string): boolean {
-  if (definition.founderCorrectionOnly) return false;
-  return scopeMatchesIdentifierText(definition, text);
-}
-
 function matchingUnits(
   workingSet: SterlingTodayWorkingSet,
   definition: SterlingTodayScopeDefinition,
@@ -222,7 +219,7 @@ function matchingUnits(
           scopeMatchesText(definition, `${unit.label} ${row.excerpt ?? ""}`);
       });
     }
-    return scopeMatchesText(definition, [unit.label, ...unit.observedIdentifiers].join(" "));
+    return false;
   });
 }
 
@@ -269,56 +266,25 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     calendarDiagnostic(input.client),
   ]);
 
-  const anchoredCorrections = corrections.filter((event) =>
-    STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) => isDurablyScopedFounderCorrection(definition, event)),
-  );
-  const anchoredProjectIds = new Set(anchoredCorrections.flatMap((event) => event.projectId ? [event.projectId] : []));
-  const exactProjectIds = new Set(STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((definition) => [...(definition.exactProjectIds ?? [])]));
-  const scopedProjects = projects.filter((project) => exactProjectIds.has(project.projectId) || anchoredProjectIds.has(project.projectId) ||
-    STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) => definitionMatchesStableInput(definition, projectText(project))));
-  const scopedProjectIds = new Set(scopedProjects.map((project) => project.projectId));
+  const portfolio = selectSterlingPortfolio({ projects, jobs: jobs ?? [], candidates, corrections, calendar, previousToday });
   const canonicalProjectIdsByKey = new Map<string, ReadonlySet<string>>(
     STERLING_TODAY_ACCEPTANCE_SCOPE.map((definition) => [definition.key, new Set([
-      ...scopedProjects.filter((project) => definitionMatchesStableInput(definition, projectText(project)))
+      ...portfolio.projects.filter((project) => scopeMatchesIdentifierText(definition, projectText(project)))
         .map((project) => project.projectId),
-      ...scopedProjects.filter((project) => (definition.exactProjectIds ?? []).includes(project.projectId))
+      ...portfolio.projects.filter((project) => (definition.exactProjectIds ?? []).includes(project.projectId))
         .map((project) => project.projectId),
-      ...anchoredCorrections.filter((event) => isDurablyScopedFounderCorrection(definition, event))
+      ...portfolio.corrections.filter((event) => isDurablyScopedFounderCorrection(definition, event))
         .flatMap((event) => event.projectId ? [event.projectId] : []),
     ])]),
   );
-  const scopedCandidates = candidates.filter((candidate) => {
-    const projectId = candidateProjectId(candidate);
-    const ids = collectExactGmailIds([candidate]);
-    const exactThreadMatch = STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
-      ids.threadIds.some((threadId) => (definition.exactThreadIds ?? []).includes(threadId)));
-    return exactThreadMatch || projectId != null && scopedProjectIds.has(projectId) || STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
-      definitionMatchesStableInput(definition, candidateScopeText(candidate)));
-  });
-  const exactJobIds = new Set(STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((definition) => [...(definition.exactJobIds ?? [])]));
-  const scopedJobs = (jobs ?? []).filter((job) => exactJobIds.has(job.jobId) || job.projectId != null && scopedProjectIds.has(job.projectId) ||
-    STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
-      definitionMatchesStableInput(definition, `${job.subject} ${job.detail ?? ""}`)));
-  const scopedPeopleIds = new Set([
-    ...scopedProjects.flatMap((project) => project.people.map((person) => person.personId)),
-    ...STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((definition) => [...(definition.exactPersonIds ?? [])]),
-  ]);
-  const scopedPeople = people.filter((person) => scopedPeopleIds.has(person.personId));
-  const scopedCorrections = corrections.filter((event) => anchoredCorrections.includes(event) ||
-    event.projectId != null && scopedProjectIds.has(event.projectId));
-  const scopedCalendar = calendar.filter((row) => STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) =>
-    definitionMatchesStableInput(definition, `${row.title} ${row.location ?? ""}`)));
-  const scopedPreviousToday = previousToday.filter((row) =>
-    row.projectId != null && scopedProjectIds.has(row.projectId) ||
-    STERLING_TODAY_ACCEPTANCE_SCOPE.some((definition) => definitionMatchesStableInput(definition, row.summary)));
 
-  const projectEvidenceThreads = await loadSterlingProjectThreadIds(input.client as never, scopedProjects);
+  const projectEvidenceThreads = await loadSterlingProjectThreadIds(input.client as never, portfolio.projects);
   const projectThreadIds = projectEvidenceThreads.trustedByProject;
   const trustedProjectThreads = [...new Set([...projectThreadIds.values()].flat())];
   const indexed = await expandSterlingIndexedThreadContext(
     input.client as never,
-    await loadIndexedTodayThreadContext(scopedCandidates),
-    [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds, ...acceptanceThreadIds()],
+    await loadIndexedTodayThreadContext(portfolio.candidates, { client: input.client as never }),
+    [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds],
   );
   const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
   let gmailDiagnostics: TodayLiveEnrichmentDiagnostics | null = null;
@@ -327,28 +293,34 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
     onDiagnostics: (diagnostics) => { gmailDiagnostics = diagnostics; },
   });
+  const referencedEmailHashes = new Set([...threadContext.values()].flatMap((thread) =>
+    (thread.messages ?? []).flatMap((message) => {
+      const hash = message.fromEmailHash?.trim().toLowerCase();
+      return hash ? [hash] : [];
+    })));
+  const relevantPersonIds = new Set([
+    ...portfolio.projects.flatMap((project) => project.people.map((person) => person.personId)),
+    ...people.filter((person) => referencedEmailHashes.has(person.emailHash.toLowerCase()))
+      .map((person) => person.personId),
+  ]);
+  const portfolioPeople = people.filter((person) => relevantPersonIds.has(person.personId));
   const workingSet = buildSterlingTodayWorkingSet({
     sourceWatermark: watermark,
     generatedAt: now.toISOString(),
-    projects: scopedProjects,
-    jobs: scopedJobs,
-    candidates: scopedCandidates,
+    projects: portfolio.projects,
+    jobs: portfolio.jobs,
+    candidates: portfolio.candidates,
     threadContext,
-    knownPeople: scopedPeople,
-    founderCorrections: scopedCorrections,
-    calendar: scopedCalendar,
+    knownPeople: portfolioPeople,
+    founderCorrections: portfolio.corrections,
+    calendar: portfolio.calendar,
     calendarAvailability: {
       status: calendarStatus.diagnosis === "live_read_eligible" ? "available"
         : calendarStatus.diagnosis === "read_disabled" ? "disabled" : "unavailable",
       reason: calendarStatus.diagnosis,
     },
-    previousToday: scopedPreviousToday,
+    previousToday: portfolio.previousToday,
     projectThreadIds,
-    explicitEvidenceGroups: STERLING_TODAY_ACCEPTANCE_SCOPE
-      .filter((definition) => (definition.exactThreadIds?.length ?? 0) > 0)
-      .map((definition) => ({ groupId: definition.key, label: definition.publicId,
-        identifiers: definition.identifiers, threadIds: definition.exactThreadIds ?? [],
-        jobIds: definition.exactJobIds ?? [] })),
   });
   const completeness = evaluateSterlingEvidenceCompleteness({ workingSet, threadOutcomes: liveThreadOutcomes });
   const coverage = scopeCoverage(workingSet, canonicalProjectIdsByKey);
@@ -433,9 +405,11 @@ export async function executeSterlingTodaySemantic(input: {
   }
   const validation = validateSterlingTodayProposal(gated.workingSet, gated.result.proposal);
   const acceptance = input.assembly.target ? null : evaluateSterlingTodayAcceptance(gated.workingSet, gated.result.proposal);
+  const operationalAcceptance = input.assembly.target ? null : evaluateOctober21Acceptance(gated.workingSet, gated.result.proposal);
   const verdict = input.assembly.target
     ? validation.accepted ? "TARGET_VALID" : "BLOCK"
-    : validation.accepted && acceptance?.passed && gated.blockedWorkUnitIds.length === 0 ? "PASS" : "BLOCK";
+    : validation.accepted && acceptance?.passed && operationalAcceptance?.passed && gated.blockedWorkUnitIds.length === 0
+      ? "PASS" : "BLOCK";
   return {
     assembly: input.assembly,
     called: true,
@@ -443,6 +417,7 @@ export async function executeSterlingTodaySemantic(input: {
     proposal: gated.result.proposal,
     validation,
     acceptance,
+    operationalAcceptance,
     verdict,
     performance: {
       ...input.assembly.performance,
@@ -467,6 +442,7 @@ function blockedCompletion(
     proposal: null,
     validation: null,
     acceptance: null,
+    operationalAcceptance: null,
     verdict,
     performance: { ...assembly.performance, modelLatencyMs: null, inputBytes: null, outputBytes: null,
       tokenUsage: null, totalLatencyMs: Date.now() - startedAt + assembly.performance.totalLatencyMs },
@@ -500,12 +476,14 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
     } : null,
     performance: { ...assembly.performance, modelLatencyMs: null, inputBytes: null, outputBytes: null, tokenUsage: null },
     validation: null,
+    acceptance: null,
     safeErrors,
   };
 }
 
 export function safeSemanticResult(completion: SterlingTodaySemanticCompletion): SterlingTodaySafeResult {
   const validation = completion.validation;
+  const cases = completion.operationalAcceptance?.cases ?? [];
   return {
     ...safeAssemblyResult(completion.assembly),
     ok: completion.verdict === "PASS" || completion.verdict === "TARGET_VALID",
@@ -516,6 +494,13 @@ export function safeSemanticResult(completion: SterlingTodaySemanticCompletion):
       accepted: validation.accepted,
       errorCount: validation.errors.length,
       mutationProposalCount: completion.proposal?.proposedCanonicalMutations.length ?? 0,
+    } : null,
+    acceptance: completion.acceptance && completion.operationalAcceptance ? {
+      originalTenPassed: completion.acceptance.passed,
+      october21Passed: completion.operationalAcceptance.passed,
+      passCount: cases.filter((row) => row.status === "pass").length,
+      failCount: cases.filter((row) => row.status === "fail").length,
+      unverifiedCount: cases.filter((row) => row.status === "unverified").length,
     } : null,
   };
 }

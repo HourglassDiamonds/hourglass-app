@@ -178,9 +178,11 @@ describe("Sterling server execution boundaries", () => {
     assert.match(source, /evaluateSterlingEvidenceCompleteness/);
     assert.match(source, /executeSterlingEvidenceGatedRequest/);
     assert.match(source, /validateSterlingTodayProposal/);
-    assert.match(source, /scopeMatchesIdentifierText/);
-    assert.match(source, /acceptanceThreadIds\(\)/);
-    assert.match(source, /explicitEvidenceGroups/);
+    assert.match(source, /selectSterlingPortfolio/);
+    assert.match(source, /loadIndexedTodayThreadContext\(portfolio\.candidates/);
+    assert.doesNotMatch(source, /acceptanceThreadIds\(\)/);
+    assert.doesNotMatch(source, /scopedProjects|scopedCandidates|scopedJobs/);
+    assert.doesNotMatch(source, /explicitEvidenceGroups:/);
     assert.doesNotMatch(source, /definitionMatchesStableInput\(definition, person\.displayName\)/);
   });
 

@@ -107,6 +107,7 @@ async function main() {
     gmail: assembly.gmail,
     scopeCoverage: assembly.scopeCoverage,
     acceptance: completion.acceptance,
+    operationalAcceptance: completion.operationalAcceptance,
     portfolio: proposal?.portfolioAssessments.map((item) => ({
       workUnitId: item.workUnitId,
       projectId: item.projectId,

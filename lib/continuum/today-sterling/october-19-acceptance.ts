@@ -1,7 +1,9 @@
 import type { SterlingPortfolioAssessment, SterlingTodayProposal, SterlingTodayWorkingSet } from "./types";
+import { scopeDefinition } from "./scope";
 
 export type October19AcceptanceCase = {
   id: string;
+  status: "pass" | "fail" | "unverified";
   passed: boolean;
   actual: string;
   failures: readonly string[];
@@ -24,8 +26,8 @@ export type October19AcceptanceReport = {
 
 type Definition = {
   id: string;
+  scopeKey: string;
   identifiers: readonly string[];
-  label: string;
   check: (context: CaseContext) => string[];
 };
 
@@ -52,49 +54,64 @@ const presented = (context: CaseContext): string[] => !context.assessment
   : context.assessment.todayDisposition !== "presented" || !context.recommendation ? ["not-presented"] : [];
 
 const DEFINITIONS: readonly Definition[] = [
-  { id: "ZANE/C026732", identifiers: ["C026732"], label: "ZANE/C026732", check: (context) => [
+  { id: "ZANE/C026732", scopeKey: "zane", identifiers: ["C026732"], check: (context) => [
     ...presented(context),
     context.recommendation?.category !== "founder_actions" ? "wrong-category" : "",
     context.assessment?.nextStepOwner !== "founder" ? "wrong-owner" : "",
-    !context.assessment?.obligations.some((row) => row.status === "open" && row.responsibleParty === "founder" && /pric|follow/i.test(row.description))
-      ? "missing-founder-pricing-obligation" : "",
+    !/oct(?:ober)?\s*22|10[/-]22/i.test(text(context)) || !/meet/i.test(text(context)) ? "october-22-meeting-missing" : "",
+    !/pric|5,?700/i.test(text(context)) ? "latest-pricing-missing" : "",
+    context.assessment?.obligations.some((row) => row.status === "open" && /cad/i.test(row.description))
+      ? "stale-cad-obligation" : "",
+  ] },
+  { id: "ABBEY/C026137", scopeKey: "abbey", identifiers: ["C026137"], check: (context) => [
+    ...presented(context),
+    !/stone/i.test(text(context)) ? "stones-received-evidence-missing" : "",
     !context.assessment?.obligations.some((row) => (row.status === "open" || row.status === "ambiguous") &&
-      row.responsibleParty === "vendor_shop" && /quot|pric/i.test(row.description)) ? "missing-vendor-quote-obligation" : "",
+      /deposit|paperwork/i.test(row.description)) ? "deposit-paperwork-not-retained" : "",
   ] },
-  { id: "JACKIE-PADDY", identifiers: [], label: "JACKIE-PADDY", check: (context) => [
-    ...presented(context),
-    context.assessment?.nextStepOwner !== "founder" ? "wrong-owner" : "",
+  { id: "NATHAN/C026176", scopeKey: "nathan", identifiers: ["C026176"], check: (context) => [
+    !context.assessment ? "missing-assessment" : "",
+    !/production|authoriz/i.test(text(context)) ? "production-authorization-missing" : "",
+    context.assessment?.obligations.some((row) => row.status === "open" && /authoriz|paperwork/i.test(row.description))
+      ? "completed-authorization-still-open" : "",
+  ] },
+  { id: "JACKIE-PADDY", scopeKey: "jackie", identifiers: [], check: (context) => [
     !/label/i.test(text(context)) ? "missing-label-commitment" : "",
-    (context.assessment?.ambiguities.length ?? 0) === 0 ? "missing-date-ambiguity" : "",
+    !context.assessment?.obligations.some((row) => /label/i.test(row.description) && row.status === "fulfilled")
+      ? "label-fulfillment-unverified" : "",
+    context.assessment?.obligations.some((row) => /label/i.test(row.description) && row.status === "open" && row.responsibleParty === "founder")
+      ? "fulfilled-label-still-open" : "",
   ] },
-  { id: "JAMES-RETURNING", identifiers: [], label: "JAMES-RETURNING", check: (context) => [
+  { id: "JAMES-RETURNING", scopeKey: "jamesReturning", identifiers: [], check: (context) => [
     ...presented(context),
+    !/design|commission/i.test(text(context)) ? "new-commission-missing" : "",
+    !/supplier|vendor|quote/i.test(text(context)) ? "supplier-request-missing" : "",
     !context.proposal.relationshipProposals.some((row) => row.workUnitId === context.unit.workUnitId &&
       row.kind === "associate_existing_person" && row.basis === "historical_thread_continuity")
       ? "missing-existing-person-review-proposal" : "",
     context.proposal.proposedCanonicalMutations.some((row) => row.personId != null) ? "unsupported-person-mutation" : "",
   ] },
-  { id: "SARAH/C026143", identifiers: ["C026143"], label: "SARAH/C026143", check: (context) => [
+  { id: "SARAH/C026143", scopeKey: "sarah", identifiers: ["C026143"], check: (context) => [
     ...presented(context),
-    !/mod\s*8/i.test(text(context)) ? "latest-mod-version-missing" : "",
+    !/mod\s*9/i.test(text(context)) ? "latest-mod-version-missing" : "",
     context.assessment?.nextStepOwner !== "founder" ? "wrong-owner" : "",
   ] },
-  { id: "AUDREY/C026401", identifiers: ["C026401"], label: "AUDREY/C026401", check: (context) => [
+  { id: "AUDREY/C026401", scopeKey: "audrey", identifiers: ["C026401"], check: (context) => [
     ...presented(context),
     context.recommendation?.category !== "waiting_on_client" ? "wrong-category" : "",
     context.assessment?.nextStepOwner !== "client" ? "wrong-owner" : "",
     context.assessment?.obligations.some((row) => row.status === "open" && row.responsibleParty === "founder" && /cad|review|send/i.test(row.description))
       ? "stale-founder-cad-obligation" : "",
   ] },
-  { id: "NOISE/NEWSLETTER", identifiers: [], label: "NOISE/NEWSLETTER", check: (context) => [
+  { id: "NOISE/NEWSLETTER", scopeKey: "noiseNewsletter", identifiers: [], check: (context) => [
     context.assessment?.todayDisposition !== "suppressed" ? "noise-not-suppressed" : "",
     context.recommendation ? "noise-recommendation-created" : "",
   ] },
-  { id: "NOISE/SOLICITATION", identifiers: [], label: "NOISE/SOLICITATION", check: (context) => [
+  { id: "NOISE/SOLICITATION", scopeKey: "noiseSolicitation", identifiers: [], check: (context) => [
     context.assessment?.todayDisposition !== "suppressed" ? "closed-solicitation-not-suppressed" : "",
     context.recommendation ? "closed-solicitation-recommendation-created" : "",
   ] },
-  { id: "NIVODA/RETURN", identifiers: ["LG819625099", "NIV-2609-13392551-2", "413451"], label: "NIVODA/RETURN", check: (context) => [
+  { id: "NIVODA/RETURN", scopeKey: "nivodaReturn", identifiers: ["LG819625099", "NIV-2609-13392551-2", "413451"], check: (context) => [
     ...presented(context),
     !["founder_actions", "waiting_on_shop"].includes(context.recommendation?.category ?? "") ? "wrong-category" : "",
     !/ship|track|return/i.test(text(context)) ? "shipping-verification-missing" : "",
@@ -105,16 +122,18 @@ const DEFINITIONS: readonly Definition[] = [
   ] },
 ] as const;
 
-export function evaluateOctober19Acceptance(
+export function evaluateOctober21Acceptance(
   workingSet: SterlingTodayWorkingSet,
   proposal: SterlingTodayProposal,
 ): October19AcceptanceReport {
   const assessments = new Map(proposal.portfolioAssessments.map((row) => [row.workUnitId, row]));
   const recommendations = new Map(proposal.recommendations.map((row) => [row.itemId, row]));
   const cases = DEFINITIONS.map((definition): October19AcceptanceCase => {
+    const exactThreadIds = scopeDefinition(definition.scopeKey)?.exactThreadIds ?? [];
     const matches = workingSet.workUnits.filter((unit) =>
-      unit.label === definition.label || definition.identifiers.some((identifier) => unit.observedIdentifiers.includes(identifier)));
-    if (matches.length !== 1) return { id: definition.id, passed: false,
+      definition.identifiers.some((identifier) => unit.observedIdentifiers.includes(identifier)) ||
+      exactThreadIds.some((threadId) => unit.threadIds.includes(threadId)));
+    if (matches.length !== 1) return { id: definition.id, status: matches.length === 0 ? "unverified" : "fail", passed: false,
       actual: matches.length === 0 ? "missing-work-unit" : `ambiguous-work-units:${matches.length}`,
       failures: [matches.length === 0 ? "missing-work-unit" : "ambiguous-work-unit"],
       workUnitIds: matches.map((row) => row.workUnitId) };
@@ -124,7 +143,7 @@ export function evaluateOctober19Acceptance(
       ? recommendations.get(assessment.recommendationItemId) ?? null : null;
     const context = { unit, assessment, recommendation, proposal };
     const failures = definition.check(context).filter(Boolean);
-    return { id: definition.id, passed: failures.length === 0,
+    return { id: definition.id, status: failures.length === 0 ? "pass" : "fail", passed: failures.length === 0,
       actual: `disposition=${assessment?.todayDisposition ?? "missing"};category=${recommendation?.category ?? "none"};owner=${assessment?.nextStepOwner ?? "missing"}`,
       failures, workUnitIds: [unit.workUnitId] };
   });
@@ -134,7 +153,7 @@ export function evaluateOctober19Acceptance(
   const recommendedUnits = new Set(proposal.recommendations.map((row) => row.workUnitId));
   const noiseIds = new Set(["NOISE/NEWSLETTER", "NOISE/SOLICITATION"]);
   return {
-    passed: cases.every((row) => row.passed),
+    passed: cases.every((row) => row.status === "pass"),
     cases,
     comparison: {
       priorItemCount: workingSet.previousToday.length,
@@ -149,3 +168,6 @@ export function evaluateOctober19Acceptance(
     },
   };
 }
+
+/** @deprecated Retained for the reviewed October 19 foundation API. */
+export const evaluateOctober19Acceptance = evaluateOctober21Acceptance;

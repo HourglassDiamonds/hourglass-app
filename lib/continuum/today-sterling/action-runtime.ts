@@ -34,6 +34,7 @@ function safeFailure(
     gmail: null,
     performance: null,
     validation: null,
+    acceptance: null,
     safeErrors: [safeError],
   };
 }

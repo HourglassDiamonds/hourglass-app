@@ -6,5 +6,6 @@ export * from "./request";
 export * from "./validate";
 export * from "./acceptance";
 export * from "./october-19-acceptance";
+export * from "./portfolio-scope";
 export * from "./target";
 export * from "./evidence-completeness";

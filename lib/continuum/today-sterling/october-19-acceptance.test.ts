@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { evaluateOctober19Acceptance } from "./october-19-acceptance";
+import { evaluateOctober21Acceptance } from "./october-19-acceptance";
+import { scopeDefinition } from "./scope";
 import {
   STERLING_TODAY_PROPOSAL_VERSION,
   STERLING_TODAY_WORKING_SET_VERSION,
@@ -10,18 +11,20 @@ import {
 } from "./types";
 
 const cases = [
-  ["zane", "ZANE/C026732", ["C026732"]],
-  ["jackie", "JACKIE-PADDY", []],
-  ["james", "JAMES-RETURNING", []],
-  ["sarah", "SARAH/C026143", ["C026143"]],
-  ["audrey", "AUDREY/C026401", ["C026401"]],
-  ["newsletter", "NOISE/NEWSLETTER", []],
-  ["solicitation", "NOISE/SOLICITATION", []],
-  ["nivoda", "NIVODA/RETURN", ["LG819625099", "NIV-2609-13392551-2", "413451"]],
+  ["zane", "zane", "ZANE/C026732", ["C026732"]],
+  ["abbey", "abbey", "ABBEY/C026137", ["C026137"]],
+  ["nathan", "nathan", "NATHAN/C026176", ["C026176"]],
+  ["jackie", "jackie", "JACKIE-PADDY", []],
+  ["james", "jamesReturning", "JAMES-RETURNING", []],
+  ["sarah", "sarah", "SARAH/C026143", ["C026143"]],
+  ["audrey", "audrey", "AUDREY/C026401", ["C026401"]],
+  ["newsletter", "noiseNewsletter", "NOISE/NEWSLETTER", []],
+  ["solicitation", "noiseSolicitation", "NOISE/SOLICITATION", []],
+  ["nivoda", "nivodaReturn", "NIVODA/RETURN", ["LG819625099", "NIV-2609-13392551-2", "413451"]],
 ] as const;
 
 function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTodayProposal } {
-  const workUnits = cases.map(([id, label, identifiers]) => ({
+  const workUnits = cases.map(([id, scopeKey, label, identifiers]) => ({
     workUnitId: `provisional:${id}`,
     kind: "provisional_evidence" as const,
     identityBasis: "scoped_evidence_group" as const,
@@ -33,7 +36,7 @@ function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTod
       { kind: "order" as const, value: "NIV-2609-13392551-2" },
       { kind: "request" as const, value: "413451" },
     ] : identifiers.map((value) => ({ kind: "project" as const, value })),
-    threadIds: [`thread:${id}`],
+    threadIds: [scopeDefinition(scopeKey)?.exactThreadIds?.[0] ?? `thread:${id}`],
     sourceRefs: [`source:${id}`],
     evidenceRefs: [`evidence:${id}`],
   }));
@@ -44,9 +47,10 @@ function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTod
     people: [{ personId: "3c845863-81c3-4391-9346-1dd18091c0af", displayName: "Existing person",
       roles: ["client"], organizationName: null, emailHashes: ["a".repeat(64)] }],
     projects: [], jobs: [], workUnits,
-    evidence: cases.map(([id]) => ({ evidenceId: `evidence:${id}`, sourceType: "gmail" as const,
+    evidence: cases.map(([id, scopeKey]) => ({ evidenceId: `evidence:${id}`, sourceType: "gmail" as const,
       sourceRef: `source:${id}`, timestamp: "2026-10-18T12:00:00.000Z", direction: "inbound" as const,
-      subject: null, excerpt: null, attachmentFilenames: [], messageId: `message:${id}`, threadId: `thread:${id}`,
+      subject: null, excerpt: null, attachmentFilenames: [], messageId: `message:${id}`,
+      threadId: scopeDefinition(scopeKey)?.exactThreadIds?.[0] ?? `thread:${id}`,
       projectIds: [], personIds: [], provenance: "live_quote_stripped_current_message" })),
     calendarAvailability: { status: "unavailable", reason: "not-required" }, calendar: [],
     previousToday: [{ itemId: "old", category: "queued", projectId: null, summary: "Deterministic item" }],
@@ -65,12 +69,12 @@ function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTod
     status: "open" | "fulfilled" | "superseded" | "ambiguous" = "open") => ({ obligationId: `${id}:${description}`,
       description, status, responsibleParty, confidence: "high" as const, evidenceRefs: [`evidence:${id}`] });
   const portfolioAssessments = [
-    assessment("zane", "founder", "presented", [obligation("zane", "Check natural-diamond pricing", "founder"),
-      obligation("zane", "Vendor quote remains pending", "vendor_shop")]),
-    assessment("jackie", "founder", "presented", [obligation("jackie", "Send the promised return label", "founder")],
-      ["The relative Monday date is unresolved from the available context."]),
-    assessment("james", "founder", "presented", [obligation("james", "Review returning-client design inquiry", "founder")]),
-    assessment("sarah", "founder", "presented", [obligation("sarah", "Review updated Mod 8 CAD", "founder")]),
+    assessment("zane", "founder", "presented", [obligation("zane", "Prepare for the October 22 meeting with latest $5,700 pricing", "founder")]),
+    assessment("abbey", "founder", "presented", [obligation("abbey", "Verify deposit paperwork after stones were received", "founder")]),
+    assessment("nathan", "vendor_shop", "suppressed", [obligation("nathan", "Production authorization completed", "founder", "fulfilled")]),
+    assessment("jackie", "client", "suppressed", [obligation("jackie", "Shipping label sent to client", "founder", "fulfilled")]),
+    assessment("james", "founder", "presented", [obligation("james", "Review new commission design and supplier quote request", "founder")]),
+    assessment("sarah", "founder", "presented", [obligation("sarah", "Review updated Mod 9 CAD and STL", "founder")]),
     assessment("audrey", "client", "presented", [obligation("audrey", "Respond to delivered CAD", "client")]),
     assessment("newsletter", "unknown", "suppressed"),
     assessment("solicitation", "unknown", "suppressed"),
@@ -98,14 +102,25 @@ function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTod
   return { workingSet, proposal };
 }
 
-describe("October 19 Sterling acceptance diagnostics", () => {
+describe("October 21 Sterling acceptance diagnostics", () => {
   it("distinguishes actionable work, identity review, ambiguity, and noise suppression", () => {
     const { workingSet, proposal } = fixture();
-    const report = evaluateOctober19Acceptance(workingSet, proposal);
+    const report = evaluateOctober21Acceptance(workingSet, proposal);
     assert.equal(report.passed, true);
-    assert.equal(report.cases.length, 8);
+    assert.equal(report.cases.length, 10);
     assert.equal(report.comparison.suppressedNoiseWorkUnitIds.length, 2);
     assert.equal(report.comparison.relationshipProposalCount, 1);
+  });
+
+  it("marks absent noise sources unverified instead of passing suppression without evidence", () => {
+    const { workingSet, proposal } = fixture();
+    workingSet.workUnits = workingSet.workUnits.filter((row) => !row.workUnitId.endsWith("newsletter"));
+    proposal.portfolioAssessments = proposal.portfolioAssessments.filter((row) => !row.workUnitId.endsWith("newsletter"));
+    proposal.recommendations = proposal.recommendations.filter((row) => !row.workUnitId.endsWith("newsletter"));
+    const report = evaluateOctober21Acceptance(workingSet, proposal);
+    const newsletter = report.cases.find((row) => row.id === "NOISE/NEWSLETTER");
+    assert.equal(newsletter?.status, "unverified");
+    assert.equal(newsletter?.passed, false);
   });
 
   it("does not count schema-valid stale obligations or surfaced noise as semantic passes", () => {
@@ -121,7 +136,7 @@ describe("October 19 Sterling acceptance diagnostics", () => {
       category: "founder_actions", projectId: null, personId: null, relationshipRole: "unknown", title: "Newsletter",
       summary: "Forward this email", confidence: "low", explanation: "Noise", evidenceRefs: ["evidence:newsletter"],
       ambiguities: [], obligations: [] }];
-    const report = evaluateOctober19Acceptance(workingSet, proposal);
+    const report = evaluateOctober21Acceptance(workingSet, proposal);
     assert.equal(report.passed, false);
     assert.ok(report.cases.find((row) => row.id === "AUDREY/C026401")?.failures.includes("stale-founder-cad-obligation"));
     assert.ok(report.cases.find((row) => row.id === "NOISE/NEWSLETTER")?.failures.includes("noise-not-suppressed"));
