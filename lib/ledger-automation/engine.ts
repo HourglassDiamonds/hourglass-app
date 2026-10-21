@@ -43,6 +43,7 @@ const MONITOR_ORDER = Object.keys(MONITOR_BASELINES) as Exclude<LedgerIndexId, "
 export type RunEngineInput = {
   runType: LedgerRunType;
   scheduledDate: string;
+  runKey?: string;
   startedAt: string;
   completedAt?: string;
   registry: readonly LedgerSourceDefinition[];
@@ -242,7 +243,7 @@ function classify(
 }
 
 export async function runLedgerAutomation(input: RunEngineInput): Promise<LedgerAutomationRunRecord> {
-  const runKey = buildRunKey(input.scheduledDate, input.runType);
+  const runKey = input.runKey ?? buildRunKey(input.scheduledDate, input.runType);
   const runId = runKey.replaceAll(":", "-");
   const allChecks = await Promise.all(
     input.registry.map((source) => input.adapter.check(source, {

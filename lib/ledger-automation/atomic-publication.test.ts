@@ -5,7 +5,7 @@ import {
   OCTOBER_10_LEDGER_PUBLICATION_ID,
 } from "./baseline-publication";
 import { createFixtureAdapter } from "./adapters";
-import { runLedgerAutomation } from "./engine";
+import { buildRunKey, runLedgerAutomation } from "./engine";
 import { buildCanonicalPublication } from "./publication-factory";
 import { MemoryLedgerPublicationStore } from "./publication-store";
 import { evaluateSafeUpdateAutoPublish } from "./auto-publish-policy";
@@ -13,7 +13,7 @@ import { publishLedgerPublication } from "./publication-writer";
 import { validateLedgerPublication } from "./publication-validation";
 import { evaluateLedgerSchedule } from "./schedule";
 import { LEDGER_SOURCE_REGISTRY } from "./source-registry";
-import { decideLedgerPublication, executeScheduledLedgerRun } from "./service";
+import { decideLedgerPublication, executeManualFullLedgerRun, executeScheduledLedgerRun, reviewLedgerRun } from "./service";
 import { MemoryLedgerAutomationStore } from "./store";
 import { validatePublishedLedger } from "./post-publication-acceptance";
 import type { LedgerPublication, LedgerPublicationPointer } from "./publication-types";
@@ -195,6 +195,45 @@ describe("Ledger Automation V2 atomic writer and history", () => {
 });
 
 describe("Ledger Automation V2 policy and decisions", () => {
+  it("keeps superseded evidence immutable and isolates a manual full run key", async () => {
+    const runs = new MemoryLedgerAutomationStore();
+    const original = await runLedgerAutomation({
+      runType: "TUESDAY_FULL",
+      scheduledDate: "2026-10-20",
+      startedAt: "2026-10-20T10:30:00.000Z",
+      registry: LEDGER_SOURCE_REGISTRY,
+      adapter: createFixtureAdapter({
+        [LEDGER_SOURCE_REGISTRY[0]!.sourceId]: {
+          normalizedObservation: {
+            ...LEDGER_SOURCE_REGISTRY[0]!.baselineNormalizedObservation,
+            significance: "MATERIAL",
+          },
+        },
+      }),
+    });
+    await runs.appendRun(original);
+    const before = structuredClone((await runs.getRun(original.runKey))!.evidencePacket);
+    const decision = await reviewLedgerRun({
+      runKey: original.runKey,
+      decision: "NEEDS_REVISION",
+      decidedAt: "2026-10-21T12:00:00.000Z",
+      decidedBy: "founder",
+      note: "Superseded by newer review.",
+      store: runs,
+    });
+    const manual = await executeManualFullLedgerRun({
+      reviewDate: "2026-10-21",
+      now: new Date("2026-10-21T12:00:00.000Z"),
+      store: runs,
+      publicationStore: store(),
+      acceptance: false,
+    });
+    assert.equal(decision.resultingState, "NEEDS_REVISION");
+    assert.deepEqual((await runs.getRun(original.runKey))!.evidencePacket, before);
+    assert.equal(manual.run.runKey, "ledger:2026-10-21:manual-full");
+    assert.notEqual(manual.run.runKey, buildRunKey("2026-10-21", "TUESDAY_FULL"));
+  });
+
   it("allows only an interpretation-preserving SAFE_UPDATE", () => {
     assert.deepEqual(evaluateSafeUpdateAutoPublish(OCTOBER_10_LEDGER_PUBLICATION, candidate()), { eligible: true, reasons: [] });
   });

@@ -3,7 +3,13 @@ export { APPROVED_LIVE_SOURCE_URLS, createLiveLedgerAdapter, liveLedgerAdapter }
 export { LEDGER_SMOKE_PROVIDERS, runLedgerProviderSmoke } from "./provider-smoke";
 export { buildRunKey, runLedgerAutomation } from "./engine";
 export { LEDGER_SOURCE_REGISTRY } from "./source-registry";
-export { decideLedgerPublication, executeScheduledLedgerRun, ledgerScheduledDate, reviewLedgerRun } from "./service";
+export {
+  decideLedgerPublication,
+  executeManualFullLedgerRun,
+  executeScheduledLedgerRun,
+  ledgerScheduledDate,
+  reviewLedgerRun,
+} from "./service";
 export { evaluateLedgerSchedule } from "./schedule";
 export { evaluateSafeUpdateAutoPublish } from "./auto-publish-policy";
 export { buildCanonicalPublication } from "./publication-factory";

@@ -39,6 +39,11 @@ export type ExecuteScheduledRunInput = {
   acceptance?: ((publication: import("./publication-types").LedgerPublication) => Promise<AcceptanceResult>) | false;
 };
 
+export type ExecuteManualFullRunInput = Omit<ExecuteScheduledRunInput, "runType"> & {
+  reviewDate: string;
+  runKey?: string;
+};
+
 export function ledgerScheduledDate(now: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: LEDGER_TIME_ZONE,
@@ -54,20 +59,21 @@ function tuesdayDateForFriday(scheduledDate: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-export async function executeScheduledLedgerRun(input: ExecuteScheduledRunInput) {
-  const now = input.now ?? new Date();
-  const scheduledDate = ledgerScheduledDate(now);
-  const runKey = buildRunKey(scheduledDate, input.runType);
+async function executeLedgerRun(
+  input: ExecuteScheduledRunInput,
+  scheduledDate: string,
+  runKey: string,
+  previousReview: Awaited<ReturnType<LedgerAutomationStore["getRun"]>> = null,
+) {
   const existing = await input.store.getRun(runKey);
   if (existing) return { created: false, run: existing };
 
-  const previousReview = input.runType === "FRIDAY_DELTA"
-    ? await input.store.getRun(buildRunKey(tuesdayDateForFriday(scheduledDate), "TUESDAY_FULL"))
-    : null;
+  const now = input.now ?? new Date();
   const timestamp = now.toISOString();
   const proposed = await runLedgerAutomation({
     runType: input.runType,
     scheduledDate,
+    runKey,
     startedAt: timestamp,
     completedAt: timestamp,
     registry: input.registry ?? LEDGER_SOURCE_REGISTRY,
@@ -148,6 +154,28 @@ export async function executeScheduledLedgerRun(input: ExecuteScheduledRunInput)
   }
   const appended = await input.store.appendRun(finalRun);
   return { created: appended.created, run: appended.value };
+}
+
+export async function executeScheduledLedgerRun(input: ExecuteScheduledRunInput) {
+  const now = input.now ?? new Date();
+  const scheduledDate = ledgerScheduledDate(now);
+  const runKey = buildRunKey(scheduledDate, input.runType);
+  const previousReview = input.runType === "FRIDAY_DELTA"
+    ? await input.store.getRun(buildRunKey(tuesdayDateForFriday(scheduledDate), "TUESDAY_FULL"))
+    : null;
+  return executeLedgerRun({ ...input, now }, scheduledDate, runKey, previousReview);
+}
+
+export async function executeManualFullLedgerRun(input: ExecuteManualFullRunInput) {
+  const runKey = input.runKey ?? `ledger:${input.reviewDate}:manual-full`;
+  if (runKey !== `ledger:${input.reviewDate}:manual-full`) {
+    throw new Error("Manual full Ledger run key must match its review date.");
+  }
+  return executeLedgerRun(
+    { ...input, runType: "TUESDAY_FULL" },
+    input.reviewDate,
+    runKey,
+  );
 }
 
 export type ReviewRunInput = {
