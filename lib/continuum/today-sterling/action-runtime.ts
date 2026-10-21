@@ -31,6 +31,7 @@ function safeFailure(
     counts: null,
     completeness: null,
     scope: null,
+    candidateCoverage: null,
     gmail: null,
     performance: null,
     validation: null,

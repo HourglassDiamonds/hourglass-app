@@ -28,9 +28,9 @@ const candidate = (candidateId: string, projectId: string | null, state: "active
   sourceTimestamp: "2026-10-21T12:00:00.000Z",
   candidateType: "follow_up",
   proposedTarget: { kind: "project", projectId },
-  payload: { kind: "follow_up", text: "Evidence-backed work", dueAt: null, sourceTimestamp: "2026-10-21T12:00:00.000Z" },
+  payload: { kind: "follow_up", text: "I will send CAD to Sarah Monday", dueAt: null, sourceTimestamp: "2026-10-21T12:00:00.000Z" },
   confidence: "medium",
-  evidenceBasis: { ruleIds: ["fixture"], matchedText: "Evidence-backed work" },
+  evidenceBasis: { ruleIds: ["explicit_follow_up"], matchedText: "I will send CAD to Sarah Monday" },
   candidateState: state,
   reviewStatus,
   lastReviewAction: null,
@@ -83,5 +83,64 @@ describe("Sterling portfolio-first scope", () => {
     });
     assert.equal(result.projects.length, 1);
     assert.equal(result.candidates.length, 1);
+  });
+
+  it("keeps historical rows out of the active frontier while reporting every suppression", () => {
+    const current = candidate("current", null);
+    const deferred = candidate("deferred", null, "active", "deferred");
+    const discarded = candidate("discarded", null, "active", "discarded");
+    const historical = {
+      ...candidate("historical", null),
+      candidateType: "project_context" as const,
+      payload: { kind: "project_context" as const, topic: "design_basis", value: "old context" },
+      evidenceBasis: { ruleIds: ["historical_context"], matchedText: "old context" },
+    };
+    const result = selectSterlingPortfolio({
+      projects: [], jobs: [], candidates: [current, deferred, discarded, historical],
+      corrections: [], calendar: [], previousToday: [],
+    }, "2026-10-21T12:00:00.000Z");
+    assert.deepEqual(result.candidates.map((row) => row.candidateId), ["current"]);
+    assert.deepEqual(result.candidateCoverage, {
+      total: 4,
+      selected: 1,
+      suppressed: 3,
+      suppressedByReason: {
+        superseded_or_discarded: 1,
+        deferred_or_quoted_historical: 1,
+        historical_context_outside_active_frontier: 1,
+      },
+    });
+  });
+
+  it("retains same-thread chronology for an actionable provisional anchor", () => {
+    const actionable = candidate("action", null);
+    const context = {
+      ...candidate("context", null),
+      sourceRef: actionable.sourceRef.replace("message-action", "message-context"),
+      candidateType: "note" as const,
+      payload: { kind: "note" as const, text: "platinum", contextLayer: null },
+      evidenceBasis: { ruleIds: ["explicit_spec"], matchedText: "platinum" },
+    };
+    const result = selectSterlingPortfolio({
+      projects: [], jobs: [], candidates: [actionable, context], corrections: [], calendar: [], previousToday: [],
+    }, "2026-10-21T12:00:00.000Z");
+    assert.deepEqual(result.candidates.map((row) => row.candidateId), ["action", "context"]);
+  });
+
+  it("bounds a large historical candidate portfolio without erasing coverage", () => {
+    const historical = Array.from({ length: 500 }, (_, index) => ({
+      ...candidate(`history-${index}`, null),
+      candidateType: "project_context" as const,
+      payload: { kind: "project_context" as const, topic: "design_basis", value: `history ${index}` },
+      evidenceBasis: { ruleIds: ["historical_context"], matchedText: `history ${index}` },
+    }));
+    const result = selectSterlingPortfolio({
+      projects: [], jobs: [], candidates: [...historical, candidate("current", null)],
+      corrections: [], calendar: [], previousToday: [],
+    }, "2026-10-21T12:00:00.000Z");
+    assert.deepEqual(result.candidates.map((row) => row.candidateId), ["current"]);
+    assert.equal(result.candidateCoverage.total, 501);
+    assert.equal(result.candidateCoverage.suppressed, 500);
+    assert.equal(result.candidateCoverage.suppressedByReason.historical_context_outside_active_frontier, 500);
   });
 });

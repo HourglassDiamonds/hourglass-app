@@ -34,6 +34,7 @@ import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-ev
 const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
 const LIVE_FACT_CONCURRENCY = 4;
+export const TODAY_LIVE_THREAD_REQUEST_BUDGET = 48;
 const INDEX_SELECT =
   "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
 
@@ -43,6 +44,7 @@ export type TodayLiveEnrichmentDiagnostics = {
   failedThreadCount: number;
   missingIndexedThreadCount: number;
   missingLiveMessageThreadCount: number;
+  budgetDeferredThreadCount: number;
   threadFetches: number;
   durationMs: number;
   failuresByCode: Readonly<Record<string, number>>;
@@ -395,6 +397,7 @@ export async function loadLiveTodayOperationalFacts(
     threadIds?: readonly string[];
     onDiagnostics?: (diagnostics: TodayLiveEnrichmentDiagnostics) => void;
     onThreadOutcome?: (outcome: TodayLiveThreadOutcome) => void;
+    maxThreadFetches?: number;
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
@@ -414,6 +417,7 @@ export async function loadLiveTodayOperationalFacts(
   let failedThreadCount = 0;
   let missingIndexedThreadCount = 0;
   let missingLiveMessageThreadCount = 0;
+  let budgetDeferredThreadCount = 0;
   const recordOutcome = (
     current: TodayGmailThreadContext | undefined,
     completed: boolean,
@@ -441,6 +445,7 @@ export async function loadLiveTodayOperationalFacts(
         failedThreadCount,
         missingIndexedThreadCount,
         missingLiveMessageThreadCount,
+        budgetDeferredThreadCount,
         threadFetches,
         durationMs: Date.now() - startedAt,
         failuresByCode,
@@ -463,9 +468,23 @@ export async function loadLiveTodayOperationalFacts(
     emitDiagnostics(0);
     return out;
   }
+  const budget = Math.max(0, Math.floor(options.maxThreadFetches ?? TODAY_LIVE_THREAD_REQUEST_BUDGET));
+  const attemptedThreadIds = threadIds.slice(0, budget);
+  for (const threadId of threadIds.slice(budget)) {
+    const current = out.get(threadId);
+    budgetDeferredThreadCount += 1;
+    recordOutcome(current, false, "not-requested-budget-exhausted");
+    emitThreadOutcome({
+      threadId,
+      status: "unavailable",
+      indexedMessageCount: current?.messages?.length ?? 0,
+      liveMessageCount: 0,
+      safeErrorCategory: "not-requested-budget-exhausted",
+    });
+  }
   const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
   if (!batch) {
-    for (const threadId of threadIds) {
+    for (const threadId of attemptedThreadIds) {
       const current = out.get(threadId);
       recordOutcome(current, false, "batch-unavailable");
       emitThreadOutcome({
@@ -484,8 +503,8 @@ export async function loadLiveTodayOperationalFacts(
   let cursor = 0;
   let incomplete = false;
   const worker = async () => {
-    while (cursor < threadIds.length) {
-      const threadId = threadIds[cursor++]!;
+    while (cursor < attemptedThreadIds.length) {
+      const threadId = attemptedThreadIds[cursor++]!;
       const current = out.get(threadId);
       if (!current?.messages?.length) {
         incomplete = true;
@@ -593,7 +612,7 @@ export async function loadLiveTodayOperationalFacts(
     }
   };
   await Promise.all(
-    Array.from({ length: Math.min(LIVE_FACT_CONCURRENCY, threadIds.length) }, () => worker()),
+    Array.from({ length: Math.min(LIVE_FACT_CONCURRENCY, attemptedThreadIds.length) }, () => worker()),
   );
   emitDiagnostics(batch.metrics?.threadFetches ?? threadIds.length);
   if (options.requireComplete && incomplete) {

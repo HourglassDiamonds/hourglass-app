@@ -51,6 +51,37 @@ function unique(values: readonly (string | null | undefined)[]): string[] {
 }
 
 /**
+ * Plans exact live reads only for units that cannot be established from
+ * canonical facts or founder corrections. Newest operational evidence is
+ * attempted first; acceptance fixtures never influence this ordering.
+ */
+export function collectSterlingRequiredLiveThreadIds(
+  workingSet: SterlingTodayWorkingSet,
+): string[] {
+  const evidenceById = new Map(workingSet.evidence.map((row) => [row.evidenceId, row]));
+  const priorities = new Map<string, { canonical: boolean; timestamp: string }>();
+  for (const unit of workingSet.workUnits) {
+    const evidence = unit.evidenceRefs.flatMap((ref) => {
+      const row = evidenceById.get(ref);
+      return row ? [row] : [];
+    });
+    if (evidence.some((row) => row.sourceType === "founder_directive")) continue;
+    const nonCanonical = evidence.some((row) => row.sourceType !== "canonical");
+    if (evidence.some((row) => row.sourceType === "canonical") && !nonCanonical) continue;
+    const timestamp = evidence.reduce((latest, row) => row.timestamp > latest ? row.timestamp : latest, "");
+    for (const threadId of unique([...unit.threadIds, ...evidence.map((row) => row.threadId)])) {
+      const prior = priorities.get(threadId);
+      const next = { canonical: unit.kind === "canonical_project", timestamp };
+      if (!prior || Number(next.canonical) > Number(prior.canonical) ||
+        (next.canonical === prior.canonical && next.timestamp > prior.timestamp)) priorities.set(threadId, next);
+    }
+  }
+  return [...priorities].sort((a, b) =>
+    Number(b[1].canonical) - Number(a[1].canonical) ||
+    b[1].timestamp.localeCompare(a[1].timestamp) || a[0].localeCompare(b[0])).map(([threadId]) => threadId);
+}
+
+/**
  * Identifies required Gmail evidence only from existing exact work-unit
  * associations. Founder corrections take precedence, while canonical-only
  * units remain eligible without manufacturing a Gmail dependency.

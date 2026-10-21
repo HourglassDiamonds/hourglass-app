@@ -4,6 +4,12 @@ import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/type
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { TodayUpcomingItem } from "@/lib/continuum/calendar/today-upcoming";
 import type { SterlingPreviousTodayItem } from "./types";
+import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import {
+  isFounderAttentionWorthy,
+  type FounderAttentionContext,
+} from "@/lib/continuum/candidates/founder-attention";
+import { isCandidateQuietForToday } from "@/lib/continuum/chief-of-staff/operating-loop/quiet";
 
 export type SterlingPortfolioInputs = {
   projects: readonly ProjectDeskSummary[];
@@ -12,6 +18,20 @@ export type SterlingPortfolioInputs = {
   corrections: readonly SourceCommunicationEvent[];
   calendar: readonly TodayUpcomingItem[];
   previousToday: readonly SterlingPreviousTodayItem[];
+};
+
+export type SterlingPortfolioSuppressionReason =
+  | "superseded_or_discarded"
+  | "deferred_or_quoted_historical"
+  | "historical_context_outside_active_frontier";
+
+export type SterlingPortfolioSelection = SterlingPortfolioInputs & {
+  candidateCoverage: {
+    total: number;
+    selected: number;
+    suppressed: number;
+    suppressedByReason: Readonly<Record<SterlingPortfolioSuppressionReason, number>>;
+  };
 };
 
 function candidateProjectId(candidate: ContinuumCandidate): string | null {
@@ -23,18 +43,52 @@ function candidateProjectId(candidate: ContinuumCandidate): string | null {
  * Selects the bounded operational portfolio before acceptance evaluation.
  * Acceptance cases never participate in this selection.
  */
-export function selectSterlingPortfolio(input: SterlingPortfolioInputs): SterlingPortfolioInputs {
-  const candidates = input.candidates.filter((candidate) =>
-    candidate.candidateState !== "superseded" && candidate.reviewStatus !== "discarded");
+export function selectSterlingPortfolio(
+  input: SterlingPortfolioInputs,
+  nowIso = new Date().toISOString(),
+): SterlingPortfolioSelection {
   const openProjectIds = new Set(input.jobs.flatMap((job) =>
     job.projectId && (job.state === "open" || job.state === "snoozed") ? [job.projectId] : []));
-  const evidencedProjectIds = new Set([
-    ...candidates.flatMap((candidate) => candidateProjectId(candidate) ? [candidateProjectId(candidate)!] : []),
+  const durableProjectIds = new Set([
     ...input.corrections.flatMap((event) => event.projectId ? [event.projectId] : []),
     ...input.previousToday.flatMap((item) => item.projectId ? [item.projectId] : []),
   ]);
-  const projects = input.projects.filter((project) =>
-    project.lifecycleStage !== "completed" || openProjectIds.has(project.projectId) || evidencedProjectIds.has(project.projectId));
+  const initiallyActiveProjectIds = new Set(input.projects.flatMap((project) =>
+    project.lifecycleStage !== "completed" || openProjectIds.has(project.projectId) || durableProjectIds.has(project.projectId)
+      ? [project.projectId]
+      : []));
+  const context: FounderAttentionContext = {
+    jobs: input.jobs,
+    nowIso,
+    currentProjectIds: initiallyActiveProjectIds,
+    lifecycleByProject: new Map(input.projects.map((project) => [project.projectId, project.lifecycleStage])),
+    specByProject: new Map(input.projects.map((project) => [
+      project.projectId,
+      new Map((project.specs ?? []).map((spec) => [spec.fieldName, spec.value])),
+    ])),
+  };
+  const baseEligible = input.candidates.filter((candidate) =>
+    candidate.candidateState !== "superseded" &&
+    candidate.reviewStatus !== "discarded" &&
+    !isCandidateQuietForToday(candidate, nowIso));
+  const frontierAnchors = baseEligible.filter((candidate) => {
+    const projectId = candidateProjectId(candidate);
+    return (projectId != null && initiallyActiveProjectIds.has(projectId)) ||
+      isFounderAttentionWorthy(candidate, context);
+  });
+  const frontierThreadIds = new Set(collectExactGmailIds(frontierAnchors).threadIds);
+  const frontierProjectIds = new Set([
+    ...initiallyActiveProjectIds,
+    ...frontierAnchors.flatMap((candidate) => candidateProjectId(candidate) ? [candidateProjectId(candidate)!] : []),
+  ]);
+  const candidates = baseEligible.filter((candidate) => {
+    const projectId = candidateProjectId(candidate);
+    if (projectId && frontierProjectIds.has(projectId)) return true;
+    const ids = collectExactGmailIds([candidate]);
+    if (ids.threadIds.some((threadId) => frontierThreadIds.has(threadId))) return true;
+    return candidate.sourceSystem !== "gmail" && isFounderAttentionWorthy(candidate, context);
+  });
+  const projects = input.projects.filter((project) => frontierProjectIds.has(project.projectId));
   const projectIds = new Set(projects.map((project) => project.projectId));
   const jobs = input.jobs.filter((job) =>
     job.projectId === null || projectIds.has(job.projectId));
@@ -46,5 +100,18 @@ export function selectSterlingPortfolio(input: SterlingPortfolioInputs): Sterlin
     corrections: [...input.corrections],
     calendar: [...input.calendar],
     previousToday: [...input.previousToday],
+    candidateCoverage: {
+      total: input.candidates.length,
+      selected: candidates.length,
+      suppressed: input.candidates.length - candidates.length,
+      suppressedByReason: {
+        superseded_or_discarded: input.candidates.filter((candidate) =>
+          candidate.candidateState === "superseded" || candidate.reviewStatus === "discarded").length,
+        deferred_or_quoted_historical: input.candidates.filter((candidate) =>
+          candidate.candidateState !== "superseded" && candidate.reviewStatus !== "discarded" &&
+          isCandidateQuietForToday(candidate, nowIso)).length,
+        historical_context_outside_active_frontier: baseEligible.length - candidates.length,
+      },
+    },
   };
 }

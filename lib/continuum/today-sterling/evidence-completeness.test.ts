@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import {
+  collectSterlingRequiredLiveThreadIds,
   buildSterlingEvidenceReadyWorkingSet,
   evaluateSterlingEvidenceCompleteness,
   executeSterlingEvidenceGatedRequest,
@@ -109,6 +110,29 @@ function unavailable(threadId: string, safeErrorCategory = "thread-inaccessible"
 }
 
 describe("Sterling permanent evidence completeness gate", () => {
+  it("plans one deduplicated newest-first live frontier and skips independent evidence", () => {
+    const base = baseWorkingSet();
+    const founderEvidence = {
+      ...base.evidence[0]!,
+      evidenceId: "founder-1",
+      sourceType: "founder_directive" as const,
+      sourceRef: "founder:correction:1",
+      timestamp: "2026-10-11T12:00:00.000Z",
+      messageId: null,
+      threadId: null,
+      provenance: "founder_correction",
+    };
+    const workingSet: SterlingTodayWorkingSet = {
+      ...base,
+      evidence: [...base.evidence, founderEvidence],
+      workUnits: [
+        { ...base.workUnits[0]!, threadIds: ["shared", "thread-1"] },
+        { ...base.workUnits[1]!, threadIds: ["shared", "thread-2"], evidenceRefs: [...base.workUnits[1]!.evidenceRefs, "founder-1"] },
+      ],
+    };
+    assert.deepEqual(collectSterlingRequiredLiveThreadIds(workingSet), ["shared", "thread-1"]);
+  });
+
   it("allows every work unit when all required threads are live", () => {
     const workingSet = baseWorkingSet();
     const report = evaluateSterlingEvidenceCompleteness({

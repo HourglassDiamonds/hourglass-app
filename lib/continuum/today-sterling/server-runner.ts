@@ -36,6 +36,7 @@ import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage
 import { selectSterlingPortfolio } from "./portfolio-scope";
 import {
   buildSterlingEvidenceReadyWorkingSet,
+  collectSterlingRequiredLiveThreadIds,
   evaluateSterlingEvidenceCompleteness,
   executeSterlingEvidenceGatedRequest,
   type SterlingEvidenceCompletenessReport,
@@ -90,6 +91,7 @@ export type SterlingTodayAssembly = {
   calendar: SterlingCalendarDiagnostic & { todayItemsBeforeAcceptanceScope: number; scopedTodayItems: number };
   gmail: TodayLiveEnrichmentDiagnostics | null;
   counts: { people: number; projects: number; jobs: number; evidence: number; workUnits: number; gmailThreads: number; calendar: number };
+  candidateCoverage: ReturnType<typeof selectSterlingPortfolio>["candidateCoverage"];
   performance: { assemblyLatencyMs: number; serializedInputBytes: number; totalLatencyMs: number };
 };
 
@@ -117,7 +119,9 @@ export type SterlingTodaySafeResult = {
   counts: SterlingTodayAssembly["counts"] | null;
   completeness: SterlingEvidenceCompletenessReport["aggregate"] | null;
   scope: { total: number; resolved: number; unresolved: number } | null;
-  gmail: null | Pick<TodayLiveEnrichmentDiagnostics, "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
+  candidateCoverage: SterlingTodayAssembly["candidateCoverage"] | null;
+  gmail: null | Pick<TodayLiveEnrichmentDiagnostics, "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" |
+    "budgetDeferredThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
   performance: null | SterlingTodaySemanticCompletion["performance"];
   validation: null | { accepted: boolean; errorCount: number; mutationProposalCount: number };
   acceptance: null | {
@@ -266,7 +270,10 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     calendarDiagnostic(input.client),
   ]);
 
-  const portfolio = selectSterlingPortfolio({ projects, jobs: jobs ?? [], candidates, corrections, calendar, previousToday });
+  const portfolio = selectSterlingPortfolio(
+    { projects, jobs: jobs ?? [], candidates, corrections, calendar, previousToday },
+    now.toISOString(),
+  );
   const canonicalProjectIdsByKey = new Map<string, ReadonlySet<string>>(
     STERLING_TODAY_ACCEPTANCE_SCOPE.map((definition) => [definition.key, new Set([
       ...portfolio.projects.filter((project) => scopeMatchesIdentifierText(definition, projectText(project)))
@@ -286,9 +293,38 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     await loadIndexedTodayThreadContext(portfolio.candidates, { client: input.client as never }),
     [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds],
   );
+  const indexedEmailHashes = new Set([...indexed.values()].flatMap((thread) =>
+    (thread.messages ?? []).flatMap((message) => {
+      const hash = message.fromEmailHash?.trim().toLowerCase();
+      return hash ? [hash] : [];
+    })));
+  const preliminaryPersonIds = new Set([
+    ...portfolio.projects.flatMap((project) => project.people.map((person) => person.personId)),
+    ...people.filter((person) => indexedEmailHashes.has(person.emailHash.toLowerCase())).map((person) => person.personId),
+  ]);
+  const preliminaryWorkingSet = buildSterlingTodayWorkingSet({
+    sourceWatermark: watermark,
+    generatedAt: now.toISOString(),
+    projects: portfolio.projects,
+    jobs: portfolio.jobs,
+    candidates: portfolio.candidates,
+    threadContext: indexed,
+    knownPeople: people.filter((person) => preliminaryPersonIds.has(person.personId)),
+    founderCorrections: portfolio.corrections,
+    calendar: portfolio.calendar,
+    calendarAvailability: {
+      status: calendarStatus.diagnosis === "live_read_eligible" ? "available"
+        : calendarStatus.diagnosis === "read_disabled" ? "disabled" : "unavailable",
+      reason: calendarStatus.diagnosis,
+    },
+    previousToday: portfolio.previousToday,
+    projectThreadIds,
+  });
+  const requiredLiveThreadIds = collectSterlingRequiredLiveThreadIds(preliminaryWorkingSet);
   const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
   let gmailDiagnostics: TodayLiveEnrichmentDiagnostics | null = null;
   const threadContext = await loadLiveTodayOperationalFacts(indexed, {
+    threadIds: requiredLiveThreadIds,
     ...(input.createGmailBatch ? { createBatch: input.createGmailBatch } : {}),
     onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
     onDiagnostics: (diagnostics) => { gmailDiagnostics = diagnostics; },
@@ -360,6 +396,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     scopeCoverage: coverage,
     calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
     gmail: gmailDiagnostics,
+    candidateCoverage: portfolio.candidateCoverage,
     counts: {
       people: workingSet.people.length,
       projects: workingSet.projects.length,
@@ -466,10 +503,12 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
       resolved: assembly.scopeCoverage.filter((row) => row.resolved).length,
       unresolved: assembly.scopeCoverage.filter((row) => !row.resolved).length,
     },
+    candidateCoverage: assembly.candidateCoverage,
     gmail: assembly.gmail ? {
       requestedThreadCount: assembly.gmail.requestedThreadCount,
       completedThreadCount: assembly.gmail.completedThreadCount,
       failedThreadCount: assembly.gmail.failedThreadCount,
+      budgetDeferredThreadCount: assembly.gmail.budgetDeferredThreadCount,
       threadFetches: assembly.gmail.threadFetches,
       durationMs: assembly.gmail.durationMs,
       failuresByCode: assembly.gmail.failuresByCode,

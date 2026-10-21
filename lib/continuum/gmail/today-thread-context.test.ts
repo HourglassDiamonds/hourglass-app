@@ -4,6 +4,10 @@ import { before, describe, it } from "node:test";
 import type { TodayGmailThreadContext } from "@/lib/continuum/candidates/founder-attention";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { LiveSourceViewerBatch } from "./source-viewer-run";
+import type {
+  TodayLiveEnrichmentDiagnostics,
+  TodayLiveThreadOutcome,
+} from "./today-thread-context";
 
 const require = createRequire(import.meta.url);
 const nodeModule = require("module") as {
@@ -552,5 +556,73 @@ describe("Today live Gmail rebuild batch", () => {
     assert.deepEqual(result.get("persisted-thread")?.attachmentFilenames, [
       "persisted-cad.pdf",
     ]);
+  });
+
+  it("deduplicates exact threads and reports budget-deferred work without calling Gmail", async () => {
+    const base = new Map<string, TodayGmailThreadContext>(["a", "b", "c"].map((threadId) => [
+      threadId,
+      { messages: [{ messageId: `message-${threadId}`, sentAt: "2026-10-21T12:00:00.000Z", direction: "inbound" as const }] },
+    ]));
+    const fetched: string[] = [];
+    const outcomes: TodayLiveThreadOutcome[] = [];
+    let diagnostics: TodayLiveEnrichmentDiagnostics | null = null;
+    await loadLiveTodayOperationalFacts(base, {
+      threadIds: ["a", "a", "b", "c"],
+      maxThreadFetches: 2,
+      onThreadOutcome: (outcome) => outcomes.push(outcome),
+      onDiagnostics: (value) => { diagnostics = value; },
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 2 },
+        async fetchThread({ threadId, indexed }) {
+          fetched.push(threadId);
+          return {
+            ok: true, safeErrorCode: null, threadId, indexedSubject: null,
+            messages: indexed.map((message) => ({
+              ...message, fromRaw: "Client <client@example.test>", fromEmail: "client@example.test",
+              to: [], cc: [], plainText: "Current evidence", snippet: "", attachments: [],
+            })),
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+          } as const;
+        },
+      }),
+    });
+    assert.deepEqual(fetched, ["a", "b"]);
+    assert.equal(diagnostics?.requestedThreadCount, 3);
+    assert.equal(diagnostics?.budgetDeferredThreadCount, 1);
+    assert.equal(diagnostics?.failuresByCode["not-requested-budget-exhausted"], 1);
+    assert.equal(outcomes.find((row) => row.threadId === "c")?.safeErrorCategory, "not-requested-budget-exhausted");
+  });
+
+  it("isolates a provider failure to one exact thread and performs no hidden retry", async () => {
+    const base = new Map<string, TodayGmailThreadContext>(["good", "failed"].map((threadId) => [
+      threadId,
+      { messages: [{ messageId: `message-${threadId}`, sentAt: "2026-10-21T12:00:00.000Z", direction: "inbound" as const }] },
+    ]));
+    const calls = new Map<string, number>();
+    const outcomes: TodayLiveThreadOutcome[] = [];
+    await loadLiveTodayOperationalFacts(base, {
+      threadIds: ["good", "failed"],
+      onThreadOutcome: (outcome) => outcomes.push(outcome),
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 2 },
+        async fetchThread({ threadId, indexed }) {
+          calls.set(threadId, (calls.get(threadId) ?? 0) + 1);
+          if (threadId === "failed") return { ok: false, safeErrorCode: "rate_limited" } as const;
+          return {
+            ok: true, safeErrorCode: null, threadId, indexedSubject: null,
+            messages: indexed.map((message) => ({
+              ...message, fromRaw: "Client <client@example.test>", fromEmail: "client@example.test",
+              to: [], cc: [], plainText: "Current evidence", snippet: "", attachments: [],
+            })),
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+          } as const;
+        },
+      }),
+    });
+    assert.deepEqual(Object.fromEntries(calls), { failed: 1, good: 1 });
+    assert.equal(outcomes.find((row) => row.threadId === "good")?.status, "complete_live");
+    assert.equal(outcomes.find((row) => row.threadId === "failed")?.safeErrorCategory, "rate_limited");
   });
 });
