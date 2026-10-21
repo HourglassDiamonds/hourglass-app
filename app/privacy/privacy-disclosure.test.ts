@@ -11,6 +11,21 @@ import { describe, it } from "node:test";
 const root = dirname(fileURLToPath(import.meta.url));
 const privacy = readFileSync(join(root, "page.tsx"), "utf8");
 
+function normalizeWhitespace(value: string) {
+  return value.replace(/\s+/g, " ");
+}
+
+function assertOcrDisclosure(value: string) {
+  assert.match(normalizeWhitespace(value), /optical character recognition/);
+}
+
+function assertModelTrainingDisclosure(value: string) {
+  assert.match(
+    normalizeWhitespace(value),
+    /Hourglass does not use your uploaded reports or photos to train a public AI model/,
+  );
+}
+
 describe("Privacy Policy current-system disclosures", () => {
   it("names consultation HubSpot handling", () => {
     assert.match(privacy, /Consultation information/);
@@ -32,7 +47,7 @@ describe("Privacy Policy current-system disclosures", () => {
 
   it("names Analyze Sparkle files, OCR text, listing URLs, and 30-day deletion", () => {
     assert.match(privacy, /Analyze Sparkle/);
-    assert.match(privacy, /optical character recognition/);
+    assertOcrDisclosure(privacy);
     assert.match(privacy, /source filename/);
     assert.match(privacy, /listing or report URLs/);
     assert.match(privacy, /eligible[\s\S]*automatic deletion after 30 days/);
@@ -73,9 +88,28 @@ describe("Privacy Policy current-system disclosures", () => {
       privacy,
       /share information with service\s+providers only as needed/,
     );
-    assert.match(
-      privacy,
-      /Hourglass does not use\s+your uploaded reports or photos to train a public AI model/,
+    assertModelTrainingDisclosure(privacy);
+  });
+
+  it("fails when the required OCR disclosure is removed", () => {
+    const withoutOcrDisclosure = privacy.replace(
+      /optical\s+character\s+recognition/,
+      "",
+    );
+
+    assert.notEqual(withoutOcrDisclosure, privacy);
+    assert.throws(() => assertOcrDisclosure(withoutOcrDisclosure));
+  });
+
+  it("fails when the required model-training disclosure is removed", () => {
+    const withoutModelTrainingDisclosure = privacy.replace(
+      /Hourglass\s+does\s+not\s+use\s+your\s+uploaded\s+reports\s+or\s+photos\s+to\s+train\s+a\s+public\s+AI\s+model/,
+      "",
+    );
+
+    assert.notEqual(withoutModelTrainingDisclosure, privacy);
+    assert.throws(() =>
+      assertModelTrainingDisclosure(withoutModelTrainingDisclosure),
     );
   });
 });
