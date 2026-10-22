@@ -76,7 +76,8 @@ function fixture(): SterlingTodayAssembly {
       founderMailboxConfigured: false, connectionStoreReadable: true, connectionPresent: false, connectionStatus: null,
       refreshTokenPresent: false, grantedReadonlyScope: false, lastReadPresent: false, connectionErrorPresent: false,
       todayItemsBeforeAcceptanceScope: 0, scopedTodayItems: 0 },
-    gmail: { requestedThreadCount: 2, completedThreadCount: 1, failedThreadCount: 1,
+    gmail: { requiredThreadCount: 2, scheduledThreadCount: 1,
+      requestedThreadCount: 1, completedThreadCount: 1, failedThreadCount: 0,
       providerRateLimitedThreadCount: 0, otherProviderErrorThreadCount: 0, missingIndexedThreadCount: 0,
       missingLiveMessageThreadCount: 0, budgetDeferredThreadCount: 1, threadFetches: 1, durationMs: 10,
       failuresByCode: { "not-requested-budget-exhausted": 1 },
@@ -113,7 +114,8 @@ describe("Sterling privacy-safe coverage diagnostics", () => {
     const assembly = fixture();
     assembly.targetDiagnostics = { selectedWorkUnitId: "provisional:private-0",
       secondaryWorkUnitIds: ["provisional:private-1"], requiredThreadCount: 1,
-      successfullyLiveRetrievedThreadCount: 1, missingOrFailedThreadCount: 0, complete: true };
+      scheduledThreadCount: 1, successfullyLiveRetrievedThreadCount: 1, missingOrFailedThreadCount: 0,
+      latestVerifiedSourceAt: "2026-10-21T10:00:00.000Z", complete: true };
     const serialized = JSON.stringify(safeAssemblyResult(assembly));
     for (const forbidden of ["Private client name", "private Gmail body", "private subject", "private-file.pdf",
       "private-message", "private-thread", "gmail:private", "provisional:private"]) {

@@ -630,6 +630,37 @@ describe("Today live Gmail rebuild batch", () => {
     assert.equal(outcomes.find((row) => row.threadId === "c")?.safeErrorCategory, "not-requested-budget-exhausted");
   });
 
+  it("preserves an explicitly ordered Sterling request set across deduplication and truncation", async () => {
+    const base = new Map<string, TodayGmailThreadContext>(["target", "aardvark", "zulu"].map((threadId) => [
+      threadId,
+      { messages: [{ messageId: `message-${threadId}`, sentAt: "2026-10-21T12:00:00.000Z",
+        direction: "inbound" as const }] },
+    ]));
+    const fetched: string[] = [];
+    await loadLiveTodayOperationalFacts(base, {
+      threadIds: ["target", "aardvark", "target", "zulu"],
+      preserveThreadOrder: true,
+      maxThreadFetches: 2,
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 2 },
+        async fetchThread({ threadId, indexed }) {
+          fetched.push(threadId);
+          return {
+            ok: true, safeErrorCode: null, threadId, indexedSubject: null,
+            messages: indexed.map((message) => ({
+              ...message, fromRaw: "Client <client@example.test>", fromEmail: "client@example.test",
+              to: [], cc: [], plainText: "Current evidence", snippet: "", attachments: [],
+            })),
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+          } as const;
+        },
+      }),
+    });
+
+    assert.deepEqual(fetched, ["target", "aardvark"]);
+  });
+
   it("isolates a provider failure to one exact thread and performs no hidden retry", async () => {
     const base = new Map<string, TodayGmailThreadContext>(["good", "failed"].map((threadId) => [
       threadId,

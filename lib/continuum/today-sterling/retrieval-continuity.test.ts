@@ -6,6 +6,7 @@ import {
   sterlingThreadKeyDigest,
   type SterlingThreadVerificationMetadata,
 } from "./retrieval-continuity";
+import { finalizeSterlingGmailExecution } from "./retrieval-execution";
 import { STERLING_TODAY_WORKING_SET_VERSION, type SterlingTodayWorkingSet } from "./types";
 import { InMemorySterlingThreadVerificationStore } from "./retrieval-continuity-store";
 
@@ -70,6 +71,35 @@ function checkpoint(set: SterlingTodayWorkingSet, threadId: string): SterlingThr
 }
 
 describe("Sterling bounded retrieval continuity planning", () => {
+  it("keeps the selected target first and never recombines deferred identifiers", () => {
+    const execution = finalizeSterlingGmailExecution({
+      selectedLiveThreadIds: ["target-thread", "alpha-unrelated", "target-thread"],
+      budgetDeferredThreadIds: ["aardvark-deferred", "alpha-unrelated", "zulu-deferred"],
+      targetThreadIds: ["target-thread"],
+      requestBudget: 2,
+    });
+    assert.deepEqual(execution.scheduledThreadIds, ["target-thread", "alpha-unrelated"]);
+    assert.deepEqual(execution.budgetDeferredThreadIds, ["aardvark-deferred", "zulu-deferred"]);
+  });
+
+  it("fails before retrieval when a target is deferred or exceeds the budget", () => {
+    assert.throws(() => finalizeSterlingGmailExecution({
+      selectedLiveThreadIds: ["unrelated-thread"],
+      budgetDeferredThreadIds: ["target-thread"],
+      targetThreadIds: ["target-thread"],
+      requestBudget: 1,
+    }), /sterling-target-required-thread-not-scheduled/);
+    const threads = Array.from({ length: 49 }, (_, index) => `thread-${index}`);
+    assert.throws(() => finalizeSterlingGmailExecution({
+      selectedLiveThreadIds: threads,
+      budgetDeferredThreadIds: [],
+    }), /sterling-gmail-selected-set-exceeds-budget/);
+    assert.throws(() => finalizeSterlingGmailExecution({
+      selectedLiveThreadIds: [],
+      budgetDeferredThreadIds: [],
+      targetThreadIds: threads,
+    }), /sterling-target-required-evidence-exceeds-budget/);
+  });
   it("does not request an unchanged recently verified thread again", () => {
     const set = workingSet(["thread-a", "thread-b"]);
     const plan = planSterlingThreadVerificationContinuity({

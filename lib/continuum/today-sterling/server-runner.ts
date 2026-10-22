@@ -36,6 +36,7 @@ import { evaluateOctober21Acceptance } from "./october-19-acceptance";
 import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from "./evidence-load";
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
 import { resolveSterlingTarget } from "./target-resolution";
+import { finalizeSterlingGmailExecution, STERLING_GMAIL_REQUEST_BUDGET } from "./retrieval-execution";
 import { excludeSterlingSuppressedWorkUnits, sterlingPreModelSuppressions,
   type SterlingPreModelSuppressionReason } from "./pre-model-suppression";
 import { selectSterlingPortfolio } from "./portfolio-scope";
@@ -104,20 +105,27 @@ export type SterlingTodayAssembly = {
     selectedWorkUnitId: string | null;
     secondaryWorkUnitIds: readonly string[];
     requiredThreadCount: number;
+    scheduledThreadCount: number;
     successfullyLiveRetrievedThreadCount: number;
     missingOrFailedThreadCount: number;
+    latestVerifiedSourceAt: string | null;
     complete: boolean;
   };
   targetPackage: ReturnType<typeof summarizeSterlingTodayTargetPackage> | null;
   completeness: SterlingEvidenceCompletenessReport;
   scopeCoverage: readonly SterlingScopeCoverage[];
   calendar: SterlingCalendarDiagnostic & { todayItemsBeforeAcceptanceScope: number; scopedTodayItems: number };
-  gmail: TodayLiveEnrichmentDiagnostics | null;
+  gmail: SterlingGmailDiagnostics | null;
   continuity: SterlingContinuityDiagnostics;
   counts: { people: number; projects: number; jobs: number; evidence: number; workUnits: number; gmailThreads: number; calendar: number };
   candidateCoverage: ReturnType<typeof selectSterlingPortfolio>["candidateCoverage"];
   suppressionByWorkUnitId: Readonly<Record<string, SterlingPreModelSuppressionReason>>;
   performance: { assemblyLatencyMs: number; serializedInputBytes: number; totalLatencyMs: number };
+};
+
+export type SterlingGmailDiagnostics = TodayLiveEnrichmentDiagnostics & {
+  requiredThreadCount: number;
+  scheduledThreadCount: number;
 };
 
 export type SterlingContinuityDiagnostics = {
@@ -162,13 +170,16 @@ export type SterlingTodaySafeResult = {
     selectedWorkUnitRef: string | null;
     secondaryWorkUnitRefs: readonly string[];
     requiredThreadCount: number;
+    scheduledThreadCount: number;
     successfullyLiveRetrievedThreadCount: number;
     missingOrFailedThreadCount: number;
+    latestVerifiedSourceAt: string | null;
     complete: boolean;
   };
   candidateCoverage: SterlingTodayAssembly["candidateCoverage"] | null;
   continuity: SterlingContinuityDiagnostics | null;
-  gmail: null | Pick<TodayLiveEnrichmentDiagnostics, "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" |
+  gmail: null | Pick<SterlingGmailDiagnostics, "requiredThreadCount" | "scheduledThreadCount" |
+    "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" |
     "providerRateLimitedThreadCount" | "otherProviderErrorThreadCount" | "missingIndexedThreadCount" |
     "budgetDeferredThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
   performance: null | SterlingTodaySemanticCompletion["performance"];
@@ -457,7 +468,10 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     persistenceFailureCount: 0,
     semanticEvidenceReusable: false,
   };
-  let liveRequestThreadIds = preliminaryTargetResolution?.blockedReason ? [] : prioritizedRequiredLiveThreadIds;
+  let selectedLiveThreadIds = preliminaryTargetResolution?.blockedReason
+    ? [] : prioritizedRequiredLiveThreadIds.slice(0, STERLING_GMAIL_REQUEST_BUDGET);
+  let budgetDeferredThreadIds = preliminaryTargetResolution?.blockedReason
+    ? [] : prioritizedRequiredLiveThreadIds.slice(STERLING_GMAIL_REQUEST_BUDGET);
   let priorVerifications = new Map<string, SterlingThreadVerificationMetadata>();
   if (input.continuity && !preliminaryTargetResolution?.blockedReason) {
     try {
@@ -473,7 +487,8 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
           priorityThreadIds: targetThreadIdsForPlanning,
           forceLiveThreadIds: targetThreadIdsForPlanning,
         });
-        liveRequestThreadIds = [...plan.liveRequestThreadIds, ...plan.budgetDeferredThreadIds];
+        selectedLiveThreadIds = [...plan.liveRequestThreadIds];
+        budgetDeferredThreadIds = [...plan.budgetDeferredThreadIds];
         continuity = {
           ...continuity,
           status: "available",
@@ -499,18 +514,46 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     } catch {
       // Fail closed: no checkpoint is trusted and the normal bounded live frontier is used.
       continuity = { ...continuity, status: "unavailable" };
-      liveRequestThreadIds = prioritizedRequiredLiveThreadIds;
+      selectedLiveThreadIds = prioritizedRequiredLiveThreadIds.slice(0, STERLING_GMAIL_REQUEST_BUDGET);
+      budgetDeferredThreadIds = prioritizedRequiredLiveThreadIds.slice(STERLING_GMAIL_REQUEST_BUDGET);
       priorVerifications = new Map();
     }
   }
-  let gmailDiagnostics: TodayLiveEnrichmentDiagnostics | null = null;
+  const execution = finalizeSterlingGmailExecution({
+    selectedLiveThreadIds,
+    budgetDeferredThreadIds,
+    targetThreadIds: targetThreadIdsForPlanning,
+    requestBudget: STERLING_GMAIL_REQUEST_BUDGET,
+  });
+  for (const threadId of execution.budgetDeferredThreadIds) {
+    const current = sterlingIndexedThreadFingerprint(preliminaryWorkingSet, threadId);
+    liveThreadOutcomes.push({
+      threadId,
+      status: "unavailable",
+      indexedMessageCount: current.indexedMessageCount,
+      liveMessageCount: 0,
+      safeErrorCategory: "not-requested-budget-exhausted",
+      latestIndexedMessageAt: current.latestIndexedMessageAt,
+      latestLiveMessageAt: null,
+    });
+  }
+  const loaderDiagnostics: { value: TodayLiveEnrichmentDiagnostics | null } = { value: null };
   const threadContext = preliminaryTargetResolution?.blockedReason ? indexed
     : await loadLiveTodayOperationalFacts(indexed, {
-      threadIds: liveRequestThreadIds,
+      threadIds: execution.scheduledThreadIds,
+      preserveThreadOrder: true,
+      maxThreadFetches: STERLING_GMAIL_REQUEST_BUDGET,
       ...(input.createGmailBatch ? { createBatch: input.createGmailBatch } : {}),
       onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
-      onDiagnostics: (diagnostics) => { gmailDiagnostics = diagnostics; },
+      onDiagnostics: (diagnostics) => { loaderDiagnostics.value = diagnostics; },
     });
+  const rawGmailDiagnostics = loaderDiagnostics.value;
+  const gmailDiagnostics: SterlingGmailDiagnostics | null = rawGmailDiagnostics ? {
+    ...rawGmailDiagnostics,
+    requiredThreadCount: requiredLiveThreadIds.length,
+    scheduledThreadCount: execution.scheduledThreadIds.length,
+    budgetDeferredThreadCount: execution.budgetDeferredThreadIds.length,
+  } : null;
   if (input.continuity && continuity.status === "available") {
     const verifiedAt = new Date().toISOString();
     const expiresAt = new Date(Date.parse(verifiedAt) + STERLING_THREAD_VERIFICATION_MAX_AGE_MS).toISOString();
@@ -589,6 +632,12 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     const targetOutcomes = resolution.requiredThreadIds.map((threadId) =>
       liveThreadOutcomes.find((outcome) => outcome.threadId === threadId));
     const successful = targetOutcomes.filter((outcome) => outcome?.status === "complete_live").length;
+    const scheduled = resolution.requiredThreadIds.filter((threadId) =>
+      execution.scheduledThreadIds.includes(threadId)).length;
+    const latestVerifiedSourceAt = targetOutcomes
+      .flatMap((outcome) => outcome?.status === "complete_live" && outcome.latestLiveMessageAt
+        ? [outcome.latestLiveMessageAt] : [])
+      .sort().at(-1) ?? null;
     if (!targetBlockedReason && successful !== resolution.requiredThreadIds.length) {
       targetBlockedReason = "target-required-evidence-incomplete";
     }
@@ -596,8 +645,10 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       selectedWorkUnitId: selected?.workUnitId ?? null,
       secondaryWorkUnitIds: resolution.secondary.map((unit) => unit.workUnitId),
       requiredThreadCount: resolution.requiredThreadIds.length,
+      scheduledThreadCount: scheduled,
       successfullyLiveRetrievedThreadCount: successful,
       missingOrFailedThreadCount: resolution.requiredThreadIds.length - successful,
+      latestVerifiedSourceAt,
       complete: targetBlockedReason === null,
     };
     if (selected) {
@@ -798,13 +849,17 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
         ? opaqueWorkUnitRef(assembly.targetDiagnostics.selectedWorkUnitId) : null,
       secondaryWorkUnitRefs: assembly.targetDiagnostics.secondaryWorkUnitIds.map(opaqueWorkUnitRef).sort(),
       requiredThreadCount: assembly.targetDiagnostics.requiredThreadCount,
+      scheduledThreadCount: assembly.targetDiagnostics.scheduledThreadCount,
       successfullyLiveRetrievedThreadCount: assembly.targetDiagnostics.successfullyLiveRetrievedThreadCount,
       missingOrFailedThreadCount: assembly.targetDiagnostics.missingOrFailedThreadCount,
+      latestVerifiedSourceAt: assembly.targetDiagnostics.latestVerifiedSourceAt,
       complete: assembly.targetDiagnostics.complete,
     } : null,
     candidateCoverage: assembly.candidateCoverage,
     continuity: assembly.continuity,
     gmail: assembly.gmail ? {
+      requiredThreadCount: assembly.gmail.requiredThreadCount,
+      scheduledThreadCount: assembly.gmail.scheduledThreadCount,
       requestedThreadCount: assembly.gmail.requestedThreadCount,
       completedThreadCount: assembly.gmail.completedThreadCount,
       failedThreadCount: assembly.gmail.failedThreadCount,

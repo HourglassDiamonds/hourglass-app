@@ -238,6 +238,9 @@ describe("Sterling server execution boundaries", () => {
     assert.match(runner, /preliminaryTargetResolution\?\.blockedReason \? indexed\s*: await loadLiveTodayOperationalFacts/);
     assert.match(runner, /targetThreadIdsForPlanning = preliminaryTargetResolution/);
     assert.doesNotMatch(runner, /targetUnitsForPlanning\.flatMap\(\(unit\) => unit\.threadIds\)/);
+    assert.match(runner, /threadIds: execution\.scheduledThreadIds/);
+    assert.match(runner, /preserveThreadOrder: true/);
+    assert.doesNotMatch(runner, /\[\.\.\.plan\.liveRequestThreadIds, \.\.\.plan\.budgetDeferredThreadIds\]/);
     assert.match(runner, /target-required-evidence-exceeds-budget/);
     assert.match(runner, /target-required-evidence-missing/);
   });

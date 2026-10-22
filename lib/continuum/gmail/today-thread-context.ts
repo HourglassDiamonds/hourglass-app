@@ -466,12 +466,14 @@ export async function loadLiveTodayOperationalFacts(
     onDiagnostics?: (diagnostics: TodayLiveEnrichmentDiagnostics) => void;
     onThreadOutcome?: (outcome: TodayLiveThreadOutcome) => void;
     maxThreadFetches?: number;
+    preserveThreadOrder?: boolean;
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
-  const threadIds = [
+  const uniqueThreadIds = [
     ...new Set((options.threadIds ?? [...base.keys()]).map((threadId) => threadId.trim()).filter(Boolean)),
-  ].sort();
+  ];
+  const threadIds = options.preserveThreadOrder ? uniqueThreadIds : uniqueThreadIds.sort();
   const startedAt = Date.now();
   const failuresByCode: Record<string, number> = {};
   const sizeBuckets = {

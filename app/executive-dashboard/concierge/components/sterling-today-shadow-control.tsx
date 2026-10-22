@@ -89,7 +89,8 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
         <Count label="Blocked" value={state.completeness?.blockedWorkUnitCount} />
         <Count label="Scoped" value={state.scope?.total} />
         <Count label="Scope unresolved" value={state.scope?.unresolved} />
-        <Count label="Gmail required" value={state.gmail?.requestedThreadCount} />
+        <Count label="Gmail required" value={state.gmail?.requiredThreadCount} />
+        <Count label="Gmail scheduled" value={state.gmail?.scheduledThreadCount} />
         <Count label="Successfully retrieved" value={state.gmail?.completedThreadCount} />
         <Count label="Provider rate-limited" value={state.gmail?.providerRateLimitedThreadCount} />
         <Count label="Other provider errors" value={state.gmail?.otherProviderErrorThreadCount} />
@@ -107,10 +108,12 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
           <p className="mt-2 text-[#efe8de]">{state.target.selectedWorkUnitRef ?? "No trusted target selected"}</p>
           <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
             <Count label="Required target threads" value={state.target.requiredThreadCount} />
+            <Count label="Scheduled target threads" value={state.target.scheduledThreadCount} />
             <Count label="Live retrieved" value={state.target.successfullyLiveRetrievedThreadCount} />
             <Count label="Missing or failed" value={state.target.missingOrFailedThreadCount} />
             <Count label="Secondary matches" value={state.target.secondaryWorkUnitRefs.length} />
           </dl>
+          <p className="mt-3">Latest verified source: {state.target.latestVerifiedSourceAt ?? "Unavailable"}</p>
           <p className="mt-3">Target completeness: {state.target.complete ? "complete" : "blocked"}</p>
         </div>
       ) : null}
