@@ -57,6 +57,7 @@ export const STERLING_TODAY_ACCEPTANCE_SCOPE: readonly SterlingTodayScopeDefinit
 ] as const;
 
 export type SterlingTodayScopeKey = (typeof STERLING_TODAY_ACCEPTANCE_SCOPE)[number]["key"];
+export const STERLING_TODAY_SARAH_TARGET = "SARAH/C026143" as const;
 
 function fold(value: string): string {
   return value.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase("en-US");
@@ -75,7 +76,7 @@ function hasExactLabel(text: string, label: string): boolean {
 }
 
 export function scopeDefinition(key: string): SterlingTodayScopeDefinition | null {
-  return STERLING_TODAY_ACCEPTANCE_SCOPE.find((row) => row.key === key) ?? null;
+  return STERLING_TODAY_ACCEPTANCE_SCOPE.find((row) => row.key === key || row.publicId === key) ?? null;
 }
 
 export function scopeMatchesText(definition: SterlingTodayScopeDefinition, text: string): boolean {

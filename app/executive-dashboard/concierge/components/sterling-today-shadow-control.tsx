@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   runSterlingTodayAssemblyAction,
+  runSterlingTodaySarahAssemblyAction,
   runSterlingTodaySemanticAction,
   type SterlingTodayActionState,
 } from "../sterling-today-actions";
@@ -135,7 +136,9 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
 
 export function SterlingTodayShadowControl({ semanticAvailable }: { semanticAvailable: boolean }) {
   const [assembly, assemblyAction, assemblyPending] = useActionState(runSterlingTodayAssemblyAction, null);
+  const [sarahAssembly, sarahAssemblyAction, sarahAssemblyPending] = useActionState(runSterlingTodaySarahAssemblyAction, null);
   const [semantic, semanticAction, semanticPending] = useActionState(runSterlingTodaySemanticAction, null);
+  const executionPending = assemblyPending || sarahAssemblyPending || semanticPending;
   return (
     <section className="mt-8 max-w-2xl rounded-3xl border border-[#ad9164]/25 bg-[#17130f] p-6 md:p-8">
       <p className="text-[10px] uppercase tracking-[0.24em] text-[#ad9164]">Founder shadow execution</p>
@@ -145,8 +148,21 @@ export function SterlingTodayShadowControl({ semanticAvailable }: { semanticAvai
       <p className="mt-3 text-[14px] leading-relaxed text-[#a99c90]">
         Read-only acceptance. This control does not publish Today or apply canonical changes.
       </p>
+      <div className="mt-7 rounded-2xl border border-[#ad9164]/25 bg-black/20 p-5">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">Sarah / C026143</p>
+        <p className="mt-2 text-[12px] leading-relaxed text-[#9d9084]">
+          Fixed server-owned scope. Sarah&apos;s required threads are retrieved live in this request or the result remains blocked.
+        </p>
+        <form action={sarahAssemblyAction} className="mt-4">
+          <button type="submit" disabled={executionPending}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">
+            {sarahAssemblyPending ? "Assembling Sarah evidence…" : "Run Sarah Evidence Assembly"}
+          </button>
+        </form>
+      </div>
+      {sarahAssembly ? <SafeResult state={sarahAssembly} /> : null}
       <form action={assemblyAction} className="mt-7">
-        <button type="submit" disabled={assemblyPending || semanticPending}
+        <button type="submit" disabled={executionPending}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">
           {assemblyPending ? "Assembling…" : "Run evidence assembly"}
         </button>
@@ -154,7 +170,7 @@ export function SterlingTodayShadowControl({ semanticAvailable }: { semanticAvai
       {assembly ? <SafeResult state={assembly} /> : null}
       <div className="mt-8 border-t border-white/10 pt-7">
         <form action={semanticAction}>
-          <button type="submit" disabled={!semanticAvailable || assemblyPending || semanticPending}
+          <button type="submit" disabled={!semanticAvailable || executionPending}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">
             {semanticPending ? "Reasoning…" : "Run semantic shadow"}
           </button>

@@ -4,6 +4,7 @@ import "server-only";
 
 import {
   runAuthenticatedSterlingTodayAssembly,
+  runAuthenticatedSterlingTodaySarahAssembly,
   runAuthenticatedSterlingTodaySemantic,
 } from "@/lib/continuum/today-sterling/action-runtime";
 import type { SterlingTodaySafeResult } from "@/lib/continuum/today-sterling/server-runner";
@@ -18,6 +19,16 @@ export async function runSterlingTodayAssemblyAction(
   void _previousState;
   void _formData;
   return runAuthenticatedSterlingTodayAssembly();
+}
+
+/** Fixed Sarah/C026143 founder-only assembly. Submitted form fields are intentionally ignored. */
+export async function runSterlingTodaySarahAssemblyAction(
+  _previousState: SterlingTodayActionState,
+  _formData: FormData,
+): Promise<SterlingTodaySafeResult> {
+  void _previousState;
+  void _formData;
+  return runAuthenticatedSterlingTodaySarahAssembly();
 }
 
 /**

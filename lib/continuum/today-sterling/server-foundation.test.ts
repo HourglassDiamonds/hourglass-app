@@ -59,6 +59,7 @@ describe("Sterling server-owned acceptance scope", () => {
     assert.equal(scopeMatchesText(scopeDefinition("audrey")!, "Audreyy"), false);
     assert.equal(scopeMatchesIdentifierText(scopeDefinition("audrey")!, "Audrey"), false);
     assert.equal(scopeMatchesIdentifierText(scopeDefinition("audrey")!, "CAD C026401"), true);
+    assert.equal(scopeDefinition("SARAH/C026143")?.key, "sarah");
     assert.deepEqual(scopeDefinition("zane")?.exactThreadIds,
       ["1a1212396a8ac111", "1a13660ae3fdb7ac", "1a13cc2c1f3d5951"]);
   });
@@ -203,11 +204,33 @@ describe("Sterling server execution boundaries", () => {
     assert.doesNotMatch(action, /getSupabaseAdmin|SUPABASE_SERVICE_ROLE_KEY/);
     assert.doesNotMatch(action, /threadId|projectId|targetCase|request\.json/);
     assert.match(control, /<form action=\{assemblyAction\}/);
+    assert.match(control, /<form action=\{sarahAssemblyAction\}/);
+    assert.match(control, /Run Sarah Evidence Assembly/);
     assert.match(control, /<form action=\{semanticAction\}/);
     assert.doesNotMatch(control, /fetch\(|axios|XMLHttpRequest/);
     assert.match(page, /isSterlingTodaySemanticFeatureEnabled/);
     assert.match(page, /export const maxDuration = 300/);
     assert.equal(existsSync(join(ROOT, "app/api/sterling-today/route.ts")), false);
+  });
+
+  it("keeps Sarah as a fixed authenticated target with no caller-owned scope", () => {
+    const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
+    const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
+    const control = read("app/executive-dashboard/concierge/components/sterling-today-shadow-control.tsx");
+    const sarahAction = action.slice(action.indexOf("export async function runSterlingTodaySarahAssemblyAction"),
+      action.indexOf("export async function runSterlingTodaySemanticAction"));
+    const sarahRuntime = runtime.slice(runtime.indexOf("export async function runAuthenticatedSterlingTodaySarahAssembly"),
+      runtime.indexOf("export async function runAuthenticatedSterlingTodaySemantic"));
+    assert.match(sarahAction, /void _formData/);
+    assert.match(sarahAction, /runAuthenticatedSterlingTodaySarahAssembly\(\)/);
+    assert.doesNotMatch(sarahAction, /\.get\(|Object\.fromEntries|threadId|projectId|targetCase/);
+    assert.match(runtime, /const client = await authenticatedReadClient\(\)/);
+    assert.match(sarahRuntime, /STERLING_TODAY_SARAH_TARGET/);
+    assert.doesNotMatch(sarahRuntime, /executeSterlingTodaySemantic|getConciergeOpenAiApiKey/);
+    const sarahForm = control.slice(control.indexOf("<form action={sarahAssemblyAction}"),
+      control.indexOf("</form>", control.indexOf("<form action={sarahAssemblyAction}")));
+    assert.doesNotMatch(sarahForm, /<input|<select|<textarea|name=/);
+    assert.match(control, /disabled=\{executionPending\}/);
   });
 
   it("fails semantic execution closed before evidence assembly", () => {

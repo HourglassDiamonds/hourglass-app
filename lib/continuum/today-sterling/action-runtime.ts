@@ -20,6 +20,7 @@ import {
   safeSemanticResult,
   type SterlingTodaySafeResult,
 } from "./server-runner";
+import { STERLING_TODAY_SARAH_TARGET } from "./scope";
 
 function safeFailure(
   mode: "assembly" | "semantic",
@@ -51,13 +52,16 @@ async function authenticatedReadClient(): Promise<ReturnType<typeof getSupabaseA
   return getSupabaseAdmin();
 }
 
-export async function runAuthenticatedSterlingTodayAssembly(): Promise<SterlingTodaySafeResult> {
+async function runAuthenticatedSterlingTodayAssemblyForTarget(
+  targetCase?: typeof STERLING_TODAY_SARAH_TARGET,
+): Promise<SterlingTodaySafeResult> {
   const client = await authenticatedReadClient();
   if (!client) return safeFailure("assembly", "UNAVAILABLE", "unauthorized-or-unavailable");
   try {
     const hmacKey = getSterlingTodayContinuityHmacKey();
     return safeAssemblyResult(await assembleSterlingTodayShadow({
       client,
+      ...(targetCase ? { targetCase } : {}),
       ...(hmacKey ? {
         continuity: {
           mode: "assembly_planning_only" as const,
@@ -69,6 +73,15 @@ export async function runAuthenticatedSterlingTodayAssembly(): Promise<SterlingT
   } catch {
     return safeFailure("assembly", "UNAVAILABLE", "assembly-unavailable");
   }
+}
+
+export async function runAuthenticatedSterlingTodayAssembly(): Promise<SterlingTodaySafeResult> {
+  return runAuthenticatedSterlingTodayAssemblyForTarget();
+}
+
+/** Fixed founder-only Sarah acceptance path. No caller-owned scope is accepted. */
+export async function runAuthenticatedSterlingTodaySarahAssembly(): Promise<SterlingTodaySafeResult> {
+  return runAuthenticatedSterlingTodayAssemblyForTarget(STERLING_TODAY_SARAH_TARGET);
 }
 
 /**
