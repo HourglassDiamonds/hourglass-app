@@ -166,4 +166,33 @@ describe("Sterling bounded retrieval continuity planning", () => {
     assert.deepEqual(second.liveRequestThreadIds, ["thread-a"]);
     assert.equal(second.semanticEvidenceReusable, false);
   });
+
+  it("prioritizes a reviewed target inside the bounded portfolio without filtering other work", () => {
+    const set = workingSet(["target-thread", "ordinary-a", "ordinary-b"]);
+    const plan = planSterlingThreadVerificationContinuity({
+      workingSet: set,
+      threadKeyHmacKey: HMAC_KEY,
+      requestBudget: 2,
+      priorityThreadIds: ["target-thread"],
+    });
+    assert.equal(plan.requiredThreadCount, 3);
+    assert.deepEqual(plan.liveRequestThreadIds, ["target-thread", "ordinary-b"]);
+    assert.deepEqual(plan.budgetDeferredThreadIds, ["ordinary-a"]);
+  });
+
+  it("requires a fresh live read for a semantic target even when planning metadata is reusable", () => {
+    const set = workingSet(["target-thread", "ordinary"]);
+    const plan = planSterlingThreadVerificationContinuity({
+      workingSet: set,
+      priorVerifications: [checkpoint(set, "target-thread")],
+      now: new Date("2026-10-21T12:10:00.000Z"),
+      requestBudget: 1,
+      threadKeyHmacKey: HMAC_KEY,
+      priorityThreadIds: ["target-thread"],
+      forceLiveThreadIds: ["target-thread"],
+    });
+    assert.equal(plan.reusableVerificationCount, 0);
+    assert.deepEqual(plan.liveRequestThreadIds, ["target-thread"]);
+    assert.equal(plan.semanticEvidenceReusable, false);
+  });
 });

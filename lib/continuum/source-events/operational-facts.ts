@@ -6,7 +6,7 @@
 import { authorOwnedText } from "@/lib/continuum/gmail/candidates/spec-provenance";
 
 const OPERATIONAL =
-  /\b(?:CAD|STL|render|revision|revise|approved|approval|order confirmation|SP\d{4,}|RN\d{4,}|workshop|production|ready|complete|completed|deliver(?:y|ed)?|ship(?:ped|ping)?|tracking|dependency|waiting on|sent to|received|I should have it|I(?:'ll| will) (?:have|send|deliver)|business days?|tomorrow|by \d{1,2}[/-]\d{1,2})\b/i;
+  /\b(?:CAD|STL|render|revision|revise|approved|approval|order confirmation|SP\d{4,}|RN\d{4,}|workshop|production|ready|complete|completed|deliver(?:y|ed)?|ship(?:ped|ping)?|shipping label|return label|tracking|return(?:ed|ing)?|resize|resizing|design|commission|supplier|quote|dependency|waiting on|sent to|received|I should have it|I(?:'ll| will) (?:have|send|deliver)|business days?|tomorrow|next (?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)|by \d{1,2}[/-]\d{1,2})\b/i;
 
 function compact(value: string): string {
   return value.replace(/\s+/g, " ").trim();
@@ -19,6 +19,7 @@ function operationalPriority(unit: string): number {
   if (/\bwaiting (?:on|for)|dependency|pearl|center stone|finger size\b/i.test(unit)) return 85;
   if (/\b(?:tomorrow|business days?|delivery by|deliver by|expected|due|promise)\b/i.test(unit)) return 80;
   if (/\b(?:CAD|STL|render|revision|revise|approved|approval)\b/i.test(unit)) return 70;
+  if (/\b(?:shipping label|return label|return(?:ed|ing)?|resize|resizing|design|commission|supplier|quote)\b/i.test(unit)) return 70;
   return 10;
 }
 

@@ -127,6 +127,28 @@ describe("Sterling portfolio-first scope", () => {
     assert.deepEqual(result.candidates.map((row) => row.candidateId), ["action", "context"]);
   });
 
+  it("keeps a recent operational job anchor even when it waits on the client", () => {
+    const waiting = { ...candidate("waiting", null), candidateType: "open_job" as const,
+      payload: { kind: "open_job" as const, jobKind: "request" as const, subject: "Shipping label requested", detail: null,
+        waitingOnActor: "client" as const, dueAt: null, createJob: false as const },
+      sourceTimestamp: "2026-10-20T12:00:00.000Z",
+      evidenceBasis: { ruleIds: ["explicit_client_request"], matchedText: "Please send the shipping label." } };
+    const result = selectSterlingPortfolio({ projects: [], jobs: [], candidates: [waiting], corrections: [],
+      calendar: [], previousToday: [] }, "2026-10-22T12:00:00.000Z");
+    assert.deepEqual(result.candidates.map((row) => row.candidateId), ["waiting"]);
+  });
+
+  it("does not reopen a historical operational job outside the bounded frontier", () => {
+    const old = { ...candidate("old", null), candidateType: "open_job" as const,
+      payload: { kind: "open_job" as const, jobKind: "request" as const, subject: "Old request", detail: null,
+        waitingOnActor: "founder" as const, dueAt: null, createJob: false as const },
+      sourceTimestamp: "2024-01-01T00:00:00.000Z",
+      evidenceBasis: { ruleIds: ["historical_context"], matchedText: "Old request" } };
+    const result = selectSterlingPortfolio({ projects: [], jobs: [], candidates: [old], corrections: [],
+      calendar: [], previousToday: [] }, "2026-10-22T12:00:00.000Z");
+    assert.deepEqual(result.candidates, []);
+  });
+
   it("bounds a large historical candidate portfolio without erasing coverage", () => {
     const historical = Array.from({ length: 500 }, (_, index) => ({
       ...candidate(`history-${index}`, null),

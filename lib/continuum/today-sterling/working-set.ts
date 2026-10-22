@@ -82,6 +82,17 @@ function unique(values: readonly (string | null | undefined)[]): string[] {
   return [...new Set(values.map(v => v?.trim() ?? "").filter(Boolean))];
 }
 
+function operationalIdentifiers(value: string): string[] {
+  const explicit = [
+    ...strictProjectNumbers(value),
+    ...(value.match(/(?<![A-Za-z0-9])NIV-[A-Za-z0-9-]{6,}(?![A-Za-z0-9])/gi) ?? []),
+    ...(value.match(/(?<![A-Za-z0-9])LG\d{6,}(?![A-Za-z0-9])/gi) ?? []),
+  ];
+  const requests = [...value.matchAll(/\b(?:request|return|rma)(?:\s+(?:id|number))?\s*#?:?\s*(\d{6})\b/gi)]
+    .map((match) => match[1] ?? "");
+  return unique([...explicit, ...requests].map((token) => token.toUpperCase()));
+}
+
 function digest(value: unknown): string {
   return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
@@ -101,7 +112,17 @@ function projectIdentifiers(value: string): string[] {
 }
 
 export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSetInput): SterlingTodayWorkingSet {
-  const knownByHash = new Map(input.knownPeople.map(person => [person.emailHash.toLowerCase(), person.personId]));
+  const personIdsByHash = new Map<string, Set<string>>();
+  for (const person of input.knownPeople) {
+    const key = person.emailHash.trim().toLowerCase();
+    if (!key) continue;
+    const ids = personIdsByHash.get(key) ?? new Set<string>();
+    ids.add(person.personId); personIdsByHash.set(key, ids);
+  }
+  const knownPersonId = (hash: string | null | undefined): string | null => {
+    const ids = personIdsByHash.get(hash?.trim().toLowerCase() ?? "");
+    return ids?.size === 1 ? [...ids][0]! : null;
+  };
   const peopleById = new Map<string, typeof input.knownPeople[number][]>()
   for (const person of input.knownPeople) peopleById.set(person.personId, [...(peopleById.get(person.personId) ?? []), person]);
 
@@ -153,7 +174,10 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
         direction: message.direction, subject: message.subject ?? thread.subject ?? null, excerpt,
         attachmentFilenames: unique(message.attachmentFilenames ?? []), messageId: message.messageId, threadId,
         projectIds: unique([...projectIds, ...related.map(targetProjectId)]),
-        personIds: unique([knownByHash.get(message.fromEmailHash?.toLowerCase() ?? "")]),
+        personIds: unique([
+          knownPersonId(message.fromEmailHash),
+          ...(message.toEmailHashes ?? []).map(knownPersonId),
+        ]),
         provenance: message.operationalText ? "indexed_gmail+live_quote_stripped_current_message" : "indexed_gmail+candidate_excerpt",
       });
     }
@@ -223,7 +247,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     status: "unavailable" as const,
     reason: "calendar-availability-not-supplied",
   };
-  const workUnits = buildWorkUnits(projects, evidence, input.explicitEvidenceGroups ?? []);
+  const workUnits = buildWorkUnits(projects, jobs, evidence, input.explicitEvidenceGroups ?? []);
   const snapshotMaterial = { sourceWatermark: input.sourceWatermark, projects, jobs, evidence, workUnits,
     calendarAvailability, calendar, previousToday: input.previousToday ?? [] };
   return { contractVersion: STERLING_TODAY_WORKING_SET_VERSION, runId: input.runId ?? randomUUID(),
@@ -234,6 +258,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
 
 function buildWorkUnits(
   projects: SterlingTodayWorkingSet["projects"],
+  jobs: SterlingTodayWorkingSet["jobs"],
   evidence: readonly SterlingEvidence[],
   explicitEvidenceGroups: NonNullable<BuildSterlingTodayWorkingSetInput["explicitEvidenceGroups"]>,
 ): SterlingTodayWorkingSet["workUnits"] {
@@ -258,6 +283,27 @@ function buildWorkUnits(
     identifiers: string[]; threadIds: string[]; sourceRefs: string[]; evidenceRefs: string[];
   };
   const assignedEvidence = new Set<string>();
+  const seenProjectlessJobIds = new Set<string>();
+  const projectlessJobs: ProvisionalGroup[] = jobs.flatMap((job) => {
+    if (job.projectId !== null || (job.state !== "open" && job.state !== "snoozed")) return [];
+    if (seenProjectlessJobIds.has(job.jobId)) return [];
+    seenProjectlessJobIds.add(job.jobId);
+    const canonicalEvidenceId = `canonical:job:${job.jobId}`;
+    const rows = evidence.filter((row) => row.evidenceId === canonicalEvidenceId ||
+      (job.associatedPersonId != null && row.personIds.includes(job.associatedPersonId)));
+    for (const row of rows) assignedEvidence.add(row.evidenceId);
+    const identifiers = unique(rows.flatMap((row) => operationalIdentifiers(
+      [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "))));
+    return [{
+      key: `job:${job.jobId}`,
+      identityBasis: "source_record",
+      label: job.subject || "Founder-owned projectless work",
+      identifiers,
+      threadIds: unique(rows.map((row) => row.threadId)),
+      sourceRefs: unique([job.sourceRef, ...rows.map((row) => row.sourceRef)]),
+      evidenceRefs: unique(rows.map((row) => row.evidenceId)),
+    }];
+  });
   const explicit = explicitEvidenceGroups.flatMap((group): ProvisionalGroup[] => {
     const threadIds = new Set(group.threadIds);
     const jobEvidenceIds = new Set((group.jobIds ?? []).map((jobId) => `canonical:job:${jobId}`));
@@ -286,7 +332,7 @@ function buildWorkUnits(
     evidenceBySource.set(key, [...(evidenceBySource.get(key) ?? []), row]);
   }
   const identifiersBySource = new Map([...evidenceBySource].map(([sourceKey, rows]) => [sourceKey,
-    unique(rows.flatMap(row => projectIdentifiers(
+    unique(rows.flatMap(row => operationalIdentifiers(
       [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" ")))),
   ]));
   const identifierSourceCounts = new Map<string, number>();
@@ -313,7 +359,7 @@ function buildWorkUnits(
     current.evidenceRefs = unique([...current.evidenceRefs, ...rows.map(row => row.evidenceId)]);
     provisional.set(key, current);
   }
-  const provisionalUnits = [...explicit, ...provisional.values()].map(group => ({
+  const provisionalUnits = [...projectlessJobs, ...explicit, ...provisional.values()].map(group => ({
     workUnitId: `provisional:${digest(group.key).slice(0, 24)}`,
     kind: "provisional_evidence" as const,
     identityBasis: group.identityBasis,

@@ -39,6 +39,15 @@ function candidateProjectId(candidate: ContinuumCandidate): string | null {
   return "projectId" in target ? target.projectId : null;
 }
 
+function isCurrentOperationalJob(candidate: ContinuumCandidate, nowIso: string): boolean {
+  const payload = candidate.founderEditedPayload ?? candidate.payload;
+  if (payload.kind !== "open_job") return false;
+  const sourceAt = Date.parse(candidate.sourceTimestamp);
+  const now = Date.parse(nowIso);
+  if (!Number.isFinite(sourceAt) || !Number.isFinite(now)) return false;
+  return sourceAt <= now && now - sourceAt <= 30 * 86_400_000;
+}
+
 /**
  * Selects the bounded operational portfolio before acceptance evaluation.
  * Acceptance cases never participate in this selection.
@@ -74,6 +83,7 @@ export function selectSterlingPortfolio(
   const frontierAnchors = baseEligible.filter((candidate) => {
     const projectId = candidateProjectId(candidate);
     return (projectId != null && initiallyActiveProjectIds.has(projectId)) ||
+      isCurrentOperationalJob(candidate, nowIso) ||
       isFounderAttentionWorthy(candidate, context);
   });
   const frontierThreadIds = new Set(collectExactGmailIds(frontierAnchors).threadIds);

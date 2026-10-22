@@ -70,8 +70,16 @@ export function planSterlingThreadVerificationContinuity(input: {
   maxAgeMs?: number;
   requestBudget?: number;
   threadKeyHmacKey: string;
+  /** Reviewed target threads move within, but never expand, the portfolio frontier. */
+  priorityThreadIds?: readonly string[];
+  /** Targeted semantic assembly must live-read these even when planning metadata is fresh. */
+  forceLiveThreadIds?: readonly string[];
 }): SterlingThreadVerificationPlan {
-  const required = collectSterlingRequiredLiveThreadIds(input.workingSet);
+  const requiredSet = new Set(collectSterlingRequiredLiveThreadIds(input.workingSet));
+  const priority = [...new Set(input.priorityThreadIds ?? [])].filter((threadId) => requiredSet.has(threadId));
+  const prioritySet = new Set(priority);
+  const required = [...priority, ...[...requiredSet].filter((threadId) => !prioritySet.has(threadId))];
+  const forceLive = new Set(input.forceLiveThreadIds ?? []);
   const prior = new Map((input.priorVerifications ?? []).map((row) => [row.threadKeyDigest, row]));
   const now = (input.now ?? new Date()).getTime();
   const maxAgeMs = Math.max(0, input.maxAgeMs ?? STERLING_THREAD_VERIFICATION_MAX_AGE_MS);
@@ -92,7 +100,7 @@ export function planSterlingThreadVerificationContinuity(input: {
       checkpoint.latestIndexedMessageAt === current.latestIndexedMessageAt;
     const fresh = Number.isFinite(verifiedAt) && Number.isFinite(expiresAt) &&
       now <= expiresAt && now - verifiedAt <= maxAgeMs;
-    const reusable = checkpoint?.outcome === "complete_live" &&
+    const reusable = !forceLive.has(threadId) && checkpoint?.outcome === "complete_live" &&
       chronologyMatches && fresh;
     if (reusable) {
       reusableVerificationCount += 1;

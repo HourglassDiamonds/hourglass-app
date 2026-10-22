@@ -115,6 +115,56 @@ describe("Sterling-native Today", () => {
     assert.equal(set.workUnits[0]?.evidenceRefs.length, 2);
   });
 
+  it("keeps active projectless jobs visible and links indexed replies only by a unique exact email hash", () => {
+    const intakeJob = { ...job(), jobId: "intake-job", projectId: null, associatedPersonId: personId,
+      subject: "Website inquiry", sourceSystem: "human-intake" as const, sourceRef: "website-intake:intake-1" };
+    const set = buildSterlingTodayWorkingSet({ runId: "run-intake", sourceWatermark: "wm",
+      generatedAt: "2026-10-22T12:00:00.000Z", projects: [], jobs: [intakeJob], candidates: [],
+      knownPeople: [{ personId, displayName: "Prospect", roles: ["prospect"], organizationName: null,
+        emailHash: "a".repeat(64) }],
+      threadContext: new Map([["reply-thread", { subject: "Reply", messages: [{ messageId: "reply-1",
+        sentAt: "2026-10-21T18:22:00.000Z", direction: "outbound", fromEmailHash: "f".repeat(64),
+        toEmailHashes: ["a".repeat(64)], operationalText: "Founder first contact.", attachmentFilenames: [] }] }]]),
+    });
+    const unit = set.workUnits.find((row) => row.sourceRefs.includes("website-intake:intake-1"));
+    assert.equal(unit?.kind, "provisional_evidence");
+    assert.equal(unit?.identityBasis, "source_record");
+    assert.deepEqual(unit?.threadIds, ["reply-thread"]);
+    assert.ok(unit?.evidenceRefs.includes("canonical:job:intake-job"));
+    assert.ok(unit?.evidenceRefs.includes("gmail:reply-thread:reply-1"));
+    assert.equal(unit?.projectId, null);
+  });
+
+  it("does not join projectless work through an ambiguous email hash", () => {
+    const intakeJob = { ...job(), jobId: "intake-job", projectId: null, associatedPersonId: personId,
+      subject: "Website inquiry", sourceRef: "website-intake:intake-1" };
+    const sharedHash = "a".repeat(64);
+    const set = buildSterlingTodayWorkingSet({ runId: "run-intake-conflict", sourceWatermark: "wm",
+      generatedAt: "2026-10-22T12:00:00.000Z", projects: [], jobs: [intakeJob], candidates: [],
+      knownPeople: [
+        { personId, displayName: "First", roles: ["prospect"], organizationName: null, emailHash: sharedHash },
+        { personId: otherPersonId, displayName: "Second", roles: ["prospect"], organizationName: null, emailHash: sharedHash },
+      ], threadContext: new Map([["conflict-thread", { subject: "Reply", messages: [{ messageId: "m1",
+        sentAt: "2026-10-21T18:22:00.000Z", direction: "inbound", fromEmailHash: sharedHash,
+        operationalText: "Conflicting identity.", attachmentFilenames: [] }] }]]) });
+    const unit = set.workUnits.find((row) => row.sourceRefs.includes("website-intake:intake-1"));
+    assert.deepEqual(unit?.threadIds, []);
+    assert.equal(set.workUnits.some((row) => row.threadIds.includes("conflict-thread")), true);
+  });
+
+  it("keeps an uncontacted intake visible and deduplicates repeated webhook delivery by exact job identity", () => {
+    const intakeJob = { ...job(), jobId: "intake-job", projectId: null, associatedPersonId: null,
+      subject: "Website inquiry", sourceRef: "website-intake:intake-1" };
+    const set = buildSterlingTodayWorkingSet({ runId: "run-intake-duplicate", sourceWatermark: "wm",
+      generatedAt: "2026-10-22T12:00:00.000Z", projects: [], jobs: [intakeJob, { ...intakeJob }],
+      candidates: [], knownPeople: [], threadContext: new Map() });
+    const units = set.workUnits.filter((row) => row.sourceRefs.includes("website-intake:intake-1"));
+    assert.equal(units.length, 1);
+    assert.equal(units[0]?.identityBasis, "source_record");
+    assert.deepEqual(units[0]?.threadIds, []);
+    assert.ok(units[0]?.evidenceRefs.includes("canonical:job:intake-job"));
+  });
+
   it("groups only server-scoped exact threads without claiming canonical identity", () => {
     const thread = (messageId: string, subject: string) => ({ subject, messages: [{ messageId,
       sentAt: "2026-10-17T13:00:00.000Z", direction: "inbound" as const, fromEmailHash: null,
@@ -153,6 +203,23 @@ describe("Sterling-native Today", () => {
       { kind: "request", value: "413451" },
     ]);
     assert.equal(unit.identityBasis, "scoped_evidence_group");
+  });
+
+  it("types supplier identifiers from ordinary evidence without creating a canonical project", () => {
+    const set = buildSterlingTodayWorkingSet({ runId: "run-nivoda-generic", sourceWatermark: "wm",
+      generatedAt: "2026-10-22T12:00:00.000Z", projects: [], jobs: [], candidates: [], knownPeople: [],
+      threadContext: new Map([["nivoda", { subject: "Return NIV-2609-13392551-2", messages: [{
+        messageId: "n1", sentAt: "2026-10-21T12:00:00.000Z", direction: "inbound", fromEmailHash: null,
+        operationalText: "Certificate LG819625099 request 413451.", attachmentFilenames: [],
+      }] }]]) });
+    const unit = set.workUnits[0]!;
+    assert.equal(unit.kind, "provisional_evidence");
+    assert.equal(unit.projectId, null);
+    assert.deepEqual(unit.typedIdentifiers, [
+      { kind: "order", value: "NIV-2609-13392551-2" },
+      { kind: "certificate", value: "LG819625099" },
+      { kind: "request", value: "413451" },
+    ]);
   });
 
   it("joins a multi-identifier source to one repeated exact identifier without using a name", () => {

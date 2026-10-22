@@ -13,6 +13,7 @@ import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-k
 import { loadFounderCorrectionEvents } from "@/lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
 import {
   loadIndexedTodayThreadContext,
+  loadIndexedTodayThreadContextByEmailHashes,
   loadLiveTodayOperationalFacts,
   type TodayLiveEnrichmentDiagnostics,
   type TodayLiveThreadOutcome,
@@ -85,7 +86,7 @@ export type SterlingCalendarDiagnostic = {
 export type SterlingScopeCoverage = {
   publicId: string;
   resolved: boolean;
-  resolution: "exact_identifier" | "exact_thread_scope" | "canonical_project" | "founder_correction" | "unresolved";
+  resolution: "exact_identifier" | "exact_thread_scope" | "exact_source_record" | "canonical_project" | "founder_correction" | "unresolved";
   workUnitIds: readonly string[];
 };
 
@@ -276,6 +277,7 @@ function matchingUnits(
   const evidence = new Map(workingSet.evidence.map((row) => [row.evidenceId, row]));
   return workingSet.workUnits.filter((unit) => {
     if ((definition.exactThreadIds ?? []).some((threadId) => unit.threadIds.includes(threadId))) return true;
+    if ((definition.exactJobIds ?? []).some((jobId) => unit.evidenceRefs.includes(`canonical:job:${jobId}`))) return true;
     if (scopeMatchesOperationalIdentifier(definition, unit.observedIdentifiers)) return true;
     if (unit.projectId && canonicalProjectIds.has(unit.projectId)) return true;
     if (definition.founderCorrectionOnly) {
@@ -298,18 +300,22 @@ function scopeCoverage(
     const units = matchingUnits(workingSet, definition, canonicalProjectIds);
     const exact = units.filter((unit) => scopeMatchesOperationalIdentifier(definition, unit.observedIdentifiers));
     const exactThread = units.filter((unit) => (definition.exactThreadIds ?? []).some((threadId) => unit.threadIds.includes(threadId)));
+    const exactSourceRecord = units.filter((unit) => (definition.exactJobIds ?? [])
+      .some((jobId) => unit.evidenceRefs.includes(`canonical:job:${jobId}`)));
     const founderCorrection = units.filter((unit) => unit.evidenceRefs.some((ref) => {
       const evidence = workingSet.evidence.find((row) => row.evidenceId === ref);
       return evidence?.sourceType === "founder_directive" && evidence.sourceRef.startsWith("founder-note:");
     }));
     const canonical = units.filter((unit) => unit.kind === "canonical_project");
-    const selected = exact.length === 1 ? exact : exactThread.length === 1 ? exactThread : founderCorrection.length === 1 ? founderCorrection
+    const selected = exact.length === 1 ? exact : exactThread.length === 1 ? exactThread : exactSourceRecord.length === 1 ? exactSourceRecord
+      : founderCorrection.length === 1 ? founderCorrection
       : canonical.length === 1 ? canonical : [];
     return {
       publicId: definition.publicId,
       resolved: selected.length === 1,
       resolution: exact.length === 1 ? "exact_identifier"
         : exactThread.length === 1 ? "exact_thread_scope"
+          : exactSourceRecord.length === 1 ? "exact_source_record"
           : founderCorrection.length === 1 ? "founder_correction"
           : canonical.length === 1 ? "canonical_project" : "unresolved",
       workUnitIds: units.map((row) => row.workUnitId),
@@ -350,9 +356,24 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   const projectEvidenceThreads = await loadSterlingProjectThreadIds(input.client as never, portfolio.projects);
   const projectThreadIds = projectEvidenceThreads.trustedByProject;
   const trustedProjectThreads = [...new Set([...projectThreadIds.values()].flat())];
+  const activeProjectlessJobs = portfolio.jobs.filter((job) =>
+    job.projectId === null && (job.state === "open" || job.state === "snoozed") && job.associatedPersonId);
+  const activeProjectlessPersonIds = new Set(activeProjectlessJobs.flatMap((job) => job.associatedPersonId ? [job.associatedPersonId] : []));
+  const boundedIdentitySince = new Date(Math.max(
+    now.getTime() - 90 * 86_400_000,
+    Math.min(...activeProjectlessJobs.map((job) => Date.parse(job.createdAt)).filter(Number.isFinite), now.getTime()),
+  )).toISOString();
+  const projectlessIdentityContext = await loadIndexedTodayThreadContextByEmailHashes(
+    people.filter((person) => activeProjectlessPersonIds.has(person.personId)).map((person) => person.emailHash),
+    { client: input.client as never, sinceIso: boundedIdentitySince },
+  );
+  const candidateContext = await loadIndexedTodayThreadContext(portfolio.candidates, { client: input.client as never });
+  for (const [threadId, context] of projectlessIdentityContext) {
+    if (!candidateContext.has(threadId)) candidateContext.set(threadId, context);
+  }
   const indexed = await expandSterlingIndexedThreadContext(
     input.client as never,
-    await loadIndexedTodayThreadContext(portfolio.candidates, { client: input.client as never }),
+    candidateContext,
     [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds],
   );
   const indexedEmailHashes = new Set([...indexed.values()].flatMap((thread) =>
@@ -383,6 +404,21 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     projectThreadIds,
   });
   const requiredLiveThreadIds = collectSterlingRequiredLiveThreadIds(preliminaryWorkingSet);
+  const targetDefinitionForPlanning = input.targetCase ? scopeDefinition(input.targetCase) : null;
+  const targetUnitsForPlanning = targetDefinitionForPlanning ? matchingUnits(
+    preliminaryWorkingSet,
+    targetDefinitionForPlanning,
+    canonicalProjectIdsByKey.get(targetDefinitionForPlanning.key) ?? new Set<string>(),
+  ) : [];
+  const targetThreadIdsForPlanning = [...new Set([
+    ...(targetDefinitionForPlanning?.exactThreadIds ?? []),
+    ...targetUnitsForPlanning.flatMap((unit) => unit.threadIds),
+  ])].filter((threadId) => requiredLiveThreadIds.includes(threadId));
+  const targetPlanningSet = new Set(targetThreadIdsForPlanning);
+  const prioritizedRequiredLiveThreadIds = [
+    ...targetThreadIdsForPlanning,
+    ...requiredLiveThreadIds.filter((threadId) => !targetPlanningSet.has(threadId)),
+  ];
   const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
   let continuity: SterlingContinuityDiagnostics = {
     status: input.continuity ? "unavailable" : "disabled",
@@ -395,7 +431,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     persistenceFailureCount: 0,
     semanticEvidenceReusable: false,
   };
-  let liveRequestThreadIds = requiredLiveThreadIds;
+  let liveRequestThreadIds = prioritizedRequiredLiveThreadIds;
   let priorVerifications = new Map<string, SterlingThreadVerificationMetadata>();
   if (input.continuity) {
     try {
@@ -408,6 +444,8 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
           workingSet: preliminaryWorkingSet,
           priorVerifications: loaded.rows,
           threadKeyHmacKey: input.continuity.hmacKey,
+          priorityThreadIds: targetThreadIdsForPlanning,
+          forceLiveThreadIds: targetThreadIdsForPlanning,
         });
         liveRequestThreadIds = [...plan.liveRequestThreadIds, ...plan.budgetDeferredThreadIds];
         continuity = {
@@ -435,7 +473,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     } catch {
       // Fail closed: no checkpoint is trusted and the normal bounded live frontier is used.
       continuity = { ...continuity, status: "unavailable" };
-      liveRequestThreadIds = requiredLiveThreadIds;
+      liveRequestThreadIds = prioritizedRequiredLiveThreadIds;
       priorVerifications = new Map();
     }
   }
@@ -517,8 +555,11 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     );
     const exact = matching.filter((unit) => scopeMatchesOperationalIdentifier(definition, unit.observedIdentifiers));
     const exactThread = matching.filter((unit) => (definition.exactThreadIds ?? []).some((threadId) => unit.threadIds.includes(threadId)));
+    const exactSourceRecord = matching.filter((unit) => (definition.exactJobIds ?? [])
+      .some((jobId) => unit.evidenceRefs.includes(`canonical:job:${jobId}`)));
     const canonical = matching.filter((unit) => unit.kind === "canonical_project");
-    const selected = exact.length === 1 ? exact[0] : exactThread.length === 1 ? exactThread[0] : canonical.length === 1 ? canonical[0]
+    const selected = exact.length === 1 ? exact[0] : exactThread.length === 1 ? exactThread[0]
+      : exactSourceRecord.length === 1 ? exactSourceRecord[0] : canonical.length === 1 ? canonical[0]
       : matching.length === 1 ? matching[0] : null;
     if (!selected) targetBlockedReason = matching.length === 0 ? "no-matching-work-unit" : "ambiguous-work-unit";
     else {

@@ -1596,6 +1596,13 @@ const COMMERCIAL = new Set([
   "sapphire",
   "file",
   "files",
+  "label",
+  "shipping",
+  "return",
+  "resize",
+  "resizing",
+  "commission",
+  "supplier",
 ]);
 
 const COMMITMENT_RULES = new Set([

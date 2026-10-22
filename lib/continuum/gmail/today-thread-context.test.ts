@@ -21,9 +21,11 @@ nodeModule._load = function (request: string, parent: unknown, isMain: boolean) 
 
 let loadLiveTodayOperationalFacts: typeof import("./today-thread-context").loadLiveTodayOperationalFacts;
 let loadIndexedTodayThreadContext: typeof import("./today-thread-context").loadIndexedTodayThreadContext;
+let loadIndexedTodayThreadContextByEmailHashes: typeof import("./today-thread-context").loadIndexedTodayThreadContextByEmailHashes;
 
 before(async () => {
-  ({ loadIndexedTodayThreadContext, loadLiveTodayOperationalFacts } = await import("./today-thread-context"));
+  ({ loadIndexedTodayThreadContext, loadIndexedTodayThreadContextByEmailHashes,
+    loadLiveTodayOperationalFacts } = await import("./today-thread-context"));
 });
 
 function candidate(
@@ -65,6 +67,8 @@ function pagedClient(
       const rows = table === "continuum_gmail_attachments" ? attachments : messages;
       let filterColumn = "";
       let filterValues: readonly string[] = [];
+      let overlap = false;
+      let sinceIso: string | null = null;
       const query = {
         select() {
           return query;
@@ -72,23 +76,34 @@ function pagedClient(
         in(column: string, values: readonly string[]) {
           filterColumn = column;
           filterValues = values;
+          overlap = false;
+          return query;
+        },
+        overlaps(column: string, values: readonly string[]) {
+          filterColumn = column;
+          filterValues = values;
+          overlap = true;
+          return query;
+        },
+        gte(column: string, value: string) {
+          if (column === "sent_at") sinceIso = value;
           return query;
         },
         order() {
           return query;
         },
         async range(from: number, to: number) {
-          const filtered = rows.filter((row) =>
-            filterValues.includes(String(row[filterColumn] ?? "")),
-          );
+          const filtered = rows.filter((row) => (!sinceIso || String(row.sent_at ?? "") >= sinceIso) && (overlap
+            ? Array.isArray(row[filterColumn]) && (row[filterColumn] as unknown[]).some((value) => filterValues.includes(String(value)))
+            : filterValues.includes(String(row[filterColumn] ?? ""))));
           return { data: filtered.slice(from, to + 1), error: null };
         },
         then(
           resolve: (value: { data: readonly Record<string, unknown>[]; error: null }) => unknown,
         ) {
-          const filtered = rows.filter((row) =>
-            filterValues.includes(String(row[filterColumn] ?? "")),
-          );
+          const filtered = rows.filter((row) => (!sinceIso || String(row.sent_at ?? "") >= sinceIso) && (overlap
+            ? Array.isArray(row[filterColumn]) && (row[filterColumn] as unknown[]).some((value) => filterValues.includes(String(value)))
+            : filterValues.includes(String(row[filterColumn] ?? ""))));
           return Promise.resolve(resolve({ data: filtered, error: null }));
         },
       };
@@ -98,6 +113,23 @@ function pagedClient(
 }
 
 describe("Today live Gmail rebuild batch", () => {
+  it("discovers incoming and sent chronology only through an exact indexed email hash", async () => {
+    const hash = "a".repeat(64);
+    const messages = [{ thread_id: "inbound", message_id: "m-in", sent_at: "2026-10-21T12:00:00.000Z",
+      direction: "inbound", subject: "Inquiry", label_ids: [], from_email_hash: hash, to_email_hashes: [], has_attachments: false },
+    { thread_id: "outbound", message_id: "m-out", sent_at: "2026-10-21T13:00:00.000Z",
+      direction: "outbound", subject: "First contact", label_ids: [], from_email_hash: "f".repeat(64),
+      to_email_hashes: [hash], has_attachments: false },
+    { thread_id: "similar-name", message_id: "m-other", sent_at: "2026-10-21T14:00:00.000Z",
+      direction: "inbound", subject: "Same display name", label_ids: [], from_email_hash: "b".repeat(64),
+      to_email_hashes: [], has_attachments: false }];
+    const result = await loadIndexedTodayThreadContextByEmailHashes([hash], {
+      client: pagedClient(messages, []) as never,
+    });
+    assert.deepEqual([...result.keys()].sort(), ["inbound", "outbound"]);
+    assert.equal(result.has("similar-name"), false);
+  });
+
   it("pages indexed evidence so Sarah and Tim survive the 1,000-row response boundary", async () => {
     const fillerThread = "aaaaaaaaaa";
     const sarahThread = "bbbbbbbbbb";

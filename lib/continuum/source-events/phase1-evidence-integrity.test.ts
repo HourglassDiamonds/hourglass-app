@@ -274,6 +274,21 @@ describe("Phase 1 production-shaped evidence integrity", () => {
     assert.equal(isOperationalSourceEvent(row), false);
   });
 
+  it("retains current-message shipping-label and new-design obligations while stripping quoted history", () => {
+    assert.equal(
+      extractCurrentMessageOperationalFacts(
+        "I will send the shipping label next Monday.\n\nOn Oct 17, Client wrote:\nPlease resize both rings.",
+      ),
+      "I will send the shipping label next Monday.",
+    );
+    assert.equal(
+      extractCurrentMessageOperationalFacts(
+        "I have a new design commission. Please ask the supplier for a quote.\n\nOn Jan 2, 2024, Studio wrote:\nDelivered.",
+      ),
+      "I have a new design commission. Please ask the supplier for a quote.",
+    );
+  });
+
   it("H: an inherited RN/SP/CAD subject does not reclassify an acknowledgment", () => {
     const row = events("inherited-thread", {
       subject: "RE: HGD x Duane-C026350-SP13530-RN08318",

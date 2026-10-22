@@ -299,6 +299,65 @@ export async function loadIndexedTodayThreadContext(
   return out;
 }
 
+/**
+ * Finds already-indexed chronology for an exact, server-resolved identity hash.
+ * This is not name matching and it does not list or retrieve live mailbox data.
+ */
+export async function loadIndexedTodayThreadContextByEmailHashes(
+  emailHashes: readonly string[],
+  options: { client?: NonNullable<ReturnType<typeof getSupabaseAdmin>>; sinceIso?: string } = {},
+): Promise<Map<string, TodayGmailThreadContext>> {
+  const hashes = [...new Set(emailHashes.map((value) => value.trim().toLowerCase()).filter(Boolean))].sort();
+  const out = new Map<string, TodayGmailThreadContext>();
+  if (hashes.length === 0) return out;
+  const client = options.client ?? getSupabaseAdmin();
+  if (!client) return out;
+  const founderHashes = founderEmailHashes();
+  const rows: Record<string, unknown>[] = [];
+  for (let index = 0; index < hashes.length; index += THREAD_QUERY_CHUNK) {
+    const chunk = hashes.slice(index, index + THREAD_QUERY_CHUNK);
+    for (const query of [
+      () => {
+        const query = client.from("continuum_gmail_messages").select(INDEX_SELECT).in("from_email_hash", chunk);
+        return options.sinceIso ? query.gte("sent_at", options.sinceIso) : query;
+      },
+      () => {
+        const query = client.from("continuum_gmail_messages").select(INDEX_SELECT).overlaps("to_email_hashes", chunk);
+        return options.sinceIso ? query.gte("sent_at", options.sinceIso) : query;
+      },
+    ]) {
+      try {
+        const { data, error } = await query();
+        if (!error) rows.push(...((data ?? []) as Record<string, unknown>[]));
+      } catch {
+        // A failed identity-side lookup supplies no evidence and never broadens scope.
+      }
+    }
+  }
+  const threadIds = ingestIndexedRows(out, rows.sort((a, b) =>
+    String(b.sent_at ?? "").localeCompare(String(a.sent_at ?? "")) ||
+    String(a.message_id ?? "").localeCompare(String(b.message_id ?? ""))), founderHashes);
+  if (threadIds.length > 0) {
+    for (let index = 0; index < threadIds.length; index += THREAD_QUERY_CHUNK) {
+      const chunk = threadIds.slice(index, index + THREAD_QUERY_CHUNK);
+      try {
+        const data = await collectPagedRows(async (from, to) => {
+          const { data: page, error } = await client.from("continuum_gmail_messages").select(INDEX_SELECT)
+            .in("thread_id", chunk).order("sent_at", { ascending: false }).order("message_id", { ascending: true })
+            .range(from, to);
+          if (error) throw new Error(error.message);
+          return (page ?? []) as Record<string, unknown>[];
+        });
+        ingestIndexedRows(out, data, founderHashes);
+      } catch {
+        continue;
+      }
+    }
+    await loadIndexedAttachmentFilenames(client, out);
+  }
+  return out;
+}
+
 async function loadIndexedAttachmentFilenames(
   client: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
   out: Map<string, TodayGmailThreadContext>,
