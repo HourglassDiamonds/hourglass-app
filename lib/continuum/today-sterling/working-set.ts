@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
-import { collectExactGmailIds } from "@/lib/continuum/candidates/exact-gmail-ids";
+import { collectExactGmailIds, exactGmailIdsFromPointer, isExactGmailHexId } from "@/lib/continuum/candidates/exact-gmail-ids";
 import type { TodayGmailThreadContext, TodayKnownPerson } from "@/lib/continuum/candidates/founder-attention";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
@@ -109,6 +109,14 @@ function typedIdentifiers(values: readonly string[]) {
 
 function projectIdentifiers(value: string): string[] {
   return strictProjectNumbers(value).filter((identifier) => !/^LG\d+$/i.test(identifier) && !/^NIV-/i.test(identifier));
+}
+
+function exactSourceThreadId(sourceRef: string | null | undefined): string | null {
+  const ref = sourceRef?.trim() ?? "";
+  const parsed = exactGmailIdsFromPointer(ref).threadId;
+  if (parsed && isExactGmailHexId(parsed)) return parsed;
+  return ref.match(/^gmail:thread:([0-9a-f]{10,})(?::|$)/i)?.[1] ??
+    ref.match(/^gmail-thread:([0-9a-f]{10,})$/i)?.[1] ?? null;
 }
 
 export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSetInput): SterlingTodayWorkingSet {
@@ -289,8 +297,19 @@ function buildWorkUnits(
     if (seenProjectlessJobIds.has(job.jobId)) return [];
     seenProjectlessJobIds.add(job.jobId);
     const canonicalEvidenceId = `canonical:job:${job.jobId}`;
-    const rows = evidence.filter((row) => row.evidenceId === canonicalEvidenceId ||
-      (job.associatedPersonId != null && row.personIds.includes(job.associatedPersonId)));
+    const sourceThreadId = exactSourceThreadId(job.sourceRef);
+    const jobIdentifiers = new Set(operationalIdentifiers(
+      [job.subject, job.detail, job.sourceRef].filter(Boolean).join(" "),
+    ));
+    const rows = evidence.filter((row) => {
+      if (row.evidenceId === canonicalEvidenceId) return true;
+      if (sourceThreadId && row.threadId === sourceThreadId) return true;
+      if (jobIdentifiers.size === 0) return false;
+      const rowIdentifiers = operationalIdentifiers(
+        [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "),
+      );
+      return rowIdentifiers.some((identifier) => jobIdentifiers.has(identifier));
+    });
     for (const row of rows) assignedEvidence.add(row.evidenceId);
     const identifiers = unique(rows.flatMap((row) => operationalIdentifiers(
       [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "))));

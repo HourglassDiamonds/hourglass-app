@@ -233,6 +233,15 @@ describe("Sterling server execution boundaries", () => {
     assert.match(control, /disabled=\{executionPending\}/);
   });
 
+  it("blocks an unsafe fixed target before the Gmail loader and never expands it from secondary matches", () => {
+    const runner = read("lib/continuum/today-sterling/server-runner.ts");
+    assert.match(runner, /preliminaryTargetResolution\?\.blockedReason \? indexed\s*: await loadLiveTodayOperationalFacts/);
+    assert.match(runner, /targetThreadIdsForPlanning = preliminaryTargetResolution/);
+    assert.doesNotMatch(runner, /targetUnitsForPlanning\.flatMap\(\(unit\) => unit\.threadIds\)/);
+    assert.match(runner, /target-required-evidence-exceeds-budget/);
+    assert.match(runner, /target-required-evidence-missing/);
+  });
+
   it("fails semantic execution closed before evidence assembly", () => {
     const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
     const semantic = runtime.slice(runtime.indexOf("export async function runAuthenticatedSterlingTodaySemantic"));

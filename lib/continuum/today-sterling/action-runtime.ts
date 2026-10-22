@@ -36,6 +36,7 @@ function safeFailure(
     scope: null,
     workUnitCoverage: [],
     namedCaseCoverage: [],
+    target: null,
     candidateCoverage: null,
     continuity: null,
     gmail: null,

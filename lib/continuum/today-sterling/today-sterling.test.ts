@@ -115,7 +115,7 @@ describe("Sterling-native Today", () => {
     assert.equal(set.workUnits[0]?.evidenceRefs.length, 2);
   });
 
-  it("keeps active projectless jobs visible and links indexed replies only by a unique exact email hash", () => {
+  it("keeps active projectless jobs visible without linking replies by Person or email identity alone", () => {
     const intakeJob = { ...job(), jobId: "intake-job", projectId: null, associatedPersonId: personId,
       subject: "Website inquiry", sourceSystem: "human-intake" as const, sourceRef: "website-intake:intake-1" };
     const set = buildSterlingTodayWorkingSet({ runId: "run-intake", sourceWatermark: "wm",
@@ -129,10 +129,43 @@ describe("Sterling-native Today", () => {
     const unit = set.workUnits.find((row) => row.sourceRefs.includes("website-intake:intake-1"));
     assert.equal(unit?.kind, "provisional_evidence");
     assert.equal(unit?.identityBasis, "source_record");
-    assert.deepEqual(unit?.threadIds, ["reply-thread"]);
+    assert.deepEqual(unit?.threadIds, []);
     assert.ok(unit?.evidenceRefs.includes("canonical:job:intake-job"));
-    assert.ok(unit?.evidenceRefs.includes("gmail:reply-thread:reply-1"));
+    assert.equal(unit?.evidenceRefs.includes("gmail:reply-thread:reply-1"), false);
     assert.equal(unit?.projectId, null);
+    assert.equal(set.workUnits.some((row) => row.threadIds.includes("reply-thread")), true);
+  });
+
+  it("attaches a projectless job only to its exact canonical source thread", () => {
+    const threadId = "1a1234567890abcd";
+    const intakeJob = { ...job(), jobId: "intake-job", projectId: null, associatedPersonId: personId,
+      subject: "Website inquiry", sourceRef: `gc1|${threadId}|1b1234567890abcd` };
+    const set = buildSterlingTodayWorkingSet({ runId: "run-exact-source", sourceWatermark: "wm",
+      generatedAt: "2026-10-22T12:00:00.000Z", projects: [], jobs: [intakeJob], candidates: [], knownPeople: [],
+      threadContext: new Map([[threadId, { subject: "Reply", messages: [{ messageId: "1b1234567890abcd",
+        sentAt: "2026-10-21T18:22:00.000Z", direction: "outbound", fromEmailHash: null,
+        operationalText: "Founder first contact.", attachmentFilenames: [] }] }]]) });
+    const unit = set.workUnits.find((row) => row.sourceRefs.includes(intakeJob.sourceRef));
+    assert.deepEqual(unit?.threadIds, [threadId]);
+  });
+
+  it("does not let a shared vendor Person merge unrelated client conversations", () => {
+    const vendorPersonId = personId;
+    const projectless = { ...job(), jobId: "vendor-job", projectId: null, associatedPersonId: vendorPersonId,
+      subject: "Check vendor pricing", sourceRef: "manual:vendor-job" };
+    const set = buildSterlingTodayWorkingSet({ runId: "run-vendor-isolation", sourceWatermark: "wm",
+      generatedAt: "2026-10-22T12:00:00.000Z", projects: [], jobs: [projectless], candidates: [],
+      knownPeople: [{ personId: vendorPersonId, displayName: "Shared Vendor", roles: ["vendor"],
+        organizationName: "Vendor", emailHash: "a".repeat(64) }],
+      threadContext: new Map([
+        ["client-a", { subject: "C026143", messages: [{ messageId: "ma", sentAt: "2026-10-21T10:00:00.000Z",
+          direction: "inbound", fromEmailHash: "a".repeat(64), operationalText: "C026143 update", attachmentFilenames: [] }] }],
+        ["client-b", { subject: "C010841", messages: [{ messageId: "mb", sentAt: "2026-10-21T11:00:00.000Z",
+          direction: "inbound", fromEmailHash: "a".repeat(64), operationalText: "C010841 update", attachmentFilenames: [] }] }],
+      ]) });
+    const unit = set.workUnits.find((row) => row.sourceRefs.includes(projectless.sourceRef));
+    assert.deepEqual(unit?.threadIds, []);
+    assert.equal(set.workUnits.filter((row) => row.threadIds.length > 0).length, 2);
   });
 
   it("does not join projectless work through an ambiguous email hash", () => {

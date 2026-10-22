@@ -101,6 +101,19 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
         <Count label="Output tokens" value={state.performance?.tokenUsage?.outputTokens} />
         <Count label="Validation errors" value={state.validation?.errorCount} />
       </dl>
+      {state.target ? (
+        <div className="mt-5 rounded-xl border border-[#ad9164]/30 p-4 text-[12px] text-[#b8aa9d]">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">Selected target evidence</p>
+          <p className="mt-2 text-[#efe8de]">{state.target.selectedWorkUnitRef ?? "No trusted target selected"}</p>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+            <Count label="Required target threads" value={state.target.requiredThreadCount} />
+            <Count label="Live retrieved" value={state.target.successfullyLiveRetrievedThreadCount} />
+            <Count label="Missing or failed" value={state.target.missingOrFailedThreadCount} />
+            <Count label="Secondary matches" value={state.target.secondaryWorkUnitRefs.length} />
+          </dl>
+          <p className="mt-3">Target completeness: {state.target.complete ? "complete" : "blocked"}</p>
+        </div>
+      ) : null}
       {state.continuity ? (
         <div className="mt-5 rounded-xl border border-white/10 p-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
