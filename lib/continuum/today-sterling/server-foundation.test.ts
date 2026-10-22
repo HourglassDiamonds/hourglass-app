@@ -219,6 +219,7 @@ describe("Sterling server execution boundaries", () => {
     assert.ok(semantic.indexOf("durable-lease-unavailable") < semantic.indexOf("assembleSterlingTodayShadow"));
     assert.match(semantic, /claim === "unavailable"/);
     assert.ok(semantic.indexOf("claim === \"unavailable\"") < semantic.indexOf("assembleSterlingTodayShadow"));
+    assert.doesNotMatch(semantic, /assembly_planning_only|createSupabaseSterlingThreadVerificationStore/);
   });
 
   it("returns privacy-safe aggregate and opaque per-unit diagnostics", () => {
@@ -234,6 +235,11 @@ describe("Sterling server execution boundaries", () => {
     assert.match(control, /Named-case acceptance coverage/);
     assert.match(control, /Not requested — budget exhausted/);
     assert.match(control, /Provider rate-limited/);
+    assert.match(control, /Retrieval continuity/);
+    assert.match(control, /Verification reused/);
+    assert.match(control, /Verification expired/);
+    assert.match(control, /Verification invalidated/);
+    assert.match(control, /never substitutes for semantic source evidence/);
     assert.doesNotMatch(control, /threadId|messageId|sourceRef|evidenceRef|excerpt/);
   });
 });

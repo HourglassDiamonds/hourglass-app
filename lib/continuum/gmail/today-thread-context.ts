@@ -63,6 +63,7 @@ export type TodayLiveThreadOutcome = {
   safeErrorCategory: string | null;
   latestIndexedMessageAt?: string | null;
   latestLiveMessageAt?: string | null;
+  verifiedAt?: string | null;
 };
 
 function latestTimestamp(values: readonly (string | null | undefined)[]): string | null {

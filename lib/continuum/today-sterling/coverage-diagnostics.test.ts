@@ -78,6 +78,9 @@ function fixture(): SterlingTodayAssembly {
       failuresByCode: { "not-requested-budget-exhausted": 1 },
       sizeBuckets: { small: { completed: 1, failed: 1 }, medium: { completed: 0, failed: 0 }, large: { completed: 0, failed: 0 } },
       attachmentThreads: { completed: 0, failed: 0 }, nonAttachmentThreads: { completed: 1, failed: 1 } },
+    continuity: { status: "available", requiredThreadCount: 2, reusedVerificationCount: 0,
+      expiredVerificationCount: 0, invalidatedVerificationCount: 0, persistedVerificationCount: 1,
+      persistenceConflictCount: 0, persistenceFailureCount: 0, semanticEvidenceReusable: false },
     counts: { people: 0, projects: 0, jobs: 0, evidence: 2, workUnits: 2, gmailThreads: 2, calendar: 0 },
     candidateCoverage: { total: 2, selected: 2, suppressed: 0,
       suppressedByReason: { superseded_or_discarded: 0, deferred_or_quoted_historical: 0,
@@ -97,6 +100,8 @@ describe("Sterling privacy-safe coverage diagnostics", () => {
       ["ZANE/C026732", "eligible"],
       ["UNRESOLVED", "unresolved"],
     ]);
+    assert.equal(result.continuity?.persistedVerificationCount, 1);
+    assert.equal(result.continuity?.semanticEvidenceReusable, false);
   });
 
   it("does not expose raw Gmail or private work-unit material", () => {

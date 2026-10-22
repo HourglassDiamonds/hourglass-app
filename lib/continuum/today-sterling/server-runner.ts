@@ -36,6 +36,14 @@ import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
 import { selectSterlingPortfolio } from "./portfolio-scope";
 import {
+  planSterlingThreadVerificationContinuity,
+  sterlingIndexedThreadFingerprint,
+  sterlingThreadKeyDigest,
+  STERLING_THREAD_VERIFICATION_MAX_AGE_MS,
+  type SterlingThreadVerificationMetadata,
+} from "./retrieval-continuity";
+import type { SterlingThreadVerificationStore } from "./retrieval-continuity-store";
+import {
   buildSterlingEvidenceReadyWorkingSet,
   collectSterlingRequiredLiveThreadIds,
   evaluateSterlingEvidenceCompleteness,
@@ -91,9 +99,22 @@ export type SterlingTodayAssembly = {
   scopeCoverage: readonly SterlingScopeCoverage[];
   calendar: SterlingCalendarDiagnostic & { todayItemsBeforeAcceptanceScope: number; scopedTodayItems: number };
   gmail: TodayLiveEnrichmentDiagnostics | null;
+  continuity: SterlingContinuityDiagnostics;
   counts: { people: number; projects: number; jobs: number; evidence: number; workUnits: number; gmailThreads: number; calendar: number };
   candidateCoverage: ReturnType<typeof selectSterlingPortfolio>["candidateCoverage"];
   performance: { assemblyLatencyMs: number; serializedInputBytes: number; totalLatencyMs: number };
+};
+
+export type SterlingContinuityDiagnostics = {
+  status: "disabled" | "available" | "degraded" | "unavailable";
+  requiredThreadCount: number;
+  reusedVerificationCount: number;
+  expiredVerificationCount: number;
+  invalidatedVerificationCount: number;
+  persistedVerificationCount: number;
+  persistenceConflictCount: number;
+  persistenceFailureCount: number;
+  semanticEvidenceReusable: false;
 };
 
 export type SterlingTodaySemanticCompletion = {
@@ -123,6 +144,7 @@ export type SterlingTodaySafeResult = {
   workUnitCoverage: readonly SterlingSafeWorkUnitCoverage[];
   namedCaseCoverage: readonly SterlingSafeNamedCaseCoverage[];
   candidateCoverage: SterlingTodayAssembly["candidateCoverage"] | null;
+  continuity: SterlingContinuityDiagnostics | null;
   gmail: null | Pick<TodayLiveEnrichmentDiagnostics, "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" |
     "providerRateLimitedThreadCount" | "otherProviderErrorThreadCount" | "missingIndexedThreadCount" |
     "budgetDeferredThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
@@ -154,6 +176,8 @@ export type SterlingSafeWorkUnitCoverage = {
   indexedOnlyThreadCount: number;
   latestIndexedEvidenceAt: string | null;
   latestLiveVerifiedEvidenceAt: string | null;
+  lastSuccessfulVerificationAt: string | null;
+  reusedVerificationThreadCount: number;
   blockReason: string | null;
   suppressionReason: string | null;
 };
@@ -172,6 +196,11 @@ type AssembleInput = {
   now?: Date;
   targetCase?: string | null;
   createGmailBatch?: () => Promise<LiveSourceViewerBatch | null>;
+  continuity?: {
+    mode: "assembly_planning_only";
+    hmacKey: string;
+    store: SterlingThreadVerificationStore;
+  };
 };
 
 async function loadCandidates(client: SupabaseClient): Promise<ContinuumCandidate[]> {
@@ -355,13 +384,94 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   });
   const requiredLiveThreadIds = collectSterlingRequiredLiveThreadIds(preliminaryWorkingSet);
   const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
+  let continuity: SterlingContinuityDiagnostics = {
+    status: input.continuity ? "unavailable" : "disabled",
+    requiredThreadCount: requiredLiveThreadIds.length,
+    reusedVerificationCount: 0,
+    expiredVerificationCount: 0,
+    invalidatedVerificationCount: 0,
+    persistedVerificationCount: 0,
+    persistenceConflictCount: 0,
+    persistenceFailureCount: 0,
+    semanticEvidenceReusable: false,
+  };
+  let liveRequestThreadIds = requiredLiveThreadIds;
+  let priorVerifications = new Map<string, SterlingThreadVerificationMetadata>();
+  if (input.continuity) {
+    try {
+      const digests = requiredLiveThreadIds.map((threadId) =>
+        sterlingThreadKeyDigest(threadId, input.continuity!.hmacKey));
+      const loaded = await input.continuity.store.load(digests);
+      if (loaded.available) {
+        priorVerifications = new Map(loaded.rows.map((row) => [row.threadKeyDigest, row]));
+        const plan = planSterlingThreadVerificationContinuity({
+          workingSet: preliminaryWorkingSet,
+          priorVerifications: loaded.rows,
+          threadKeyHmacKey: input.continuity.hmacKey,
+        });
+        liveRequestThreadIds = [...plan.liveRequestThreadIds, ...plan.budgetDeferredThreadIds];
+        continuity = {
+          ...continuity,
+          status: "available",
+          reusedVerificationCount: plan.reusableVerificationCount,
+          expiredVerificationCount: plan.expiredVerificationCount,
+          invalidatedVerificationCount: plan.invalidatedVerificationCount,
+        };
+        for (const threadId of plan.reusedVerificationThreadIds) {
+          const current = sterlingIndexedThreadFingerprint(preliminaryWorkingSet, threadId);
+          const prior = priorVerifications.get(sterlingThreadKeyDigest(threadId, input.continuity.hmacKey));
+          liveThreadOutcomes.push({
+            threadId,
+            status: "indexed_excerpt_only",
+            indexedMessageCount: current.indexedMessageCount,
+            liveMessageCount: 0,
+            safeErrorCategory: "recently-verified-assembly-only",
+            latestIndexedMessageAt: current.latestIndexedMessageAt,
+            latestLiveMessageAt: prior?.latestIndexedMessageAt ?? null,
+            verifiedAt: prior?.verifiedAt ?? null,
+          });
+        }
+      }
+    } catch {
+      // Fail closed: no checkpoint is trusted and the normal bounded live frontier is used.
+      continuity = { ...continuity, status: "unavailable" };
+      liveRequestThreadIds = requiredLiveThreadIds;
+      priorVerifications = new Map();
+    }
+  }
   let gmailDiagnostics: TodayLiveEnrichmentDiagnostics | null = null;
   const threadContext = await loadLiveTodayOperationalFacts(indexed, {
-    threadIds: requiredLiveThreadIds,
+    threadIds: liveRequestThreadIds,
     ...(input.createGmailBatch ? { createBatch: input.createGmailBatch } : {}),
     onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
     onDiagnostics: (diagnostics) => { gmailDiagnostics = diagnostics; },
   });
+  if (input.continuity && continuity.status === "available") {
+    const verifiedAt = new Date().toISOString();
+    const expiresAt = new Date(Date.parse(verifiedAt) + STERLING_THREAD_VERIFICATION_MAX_AGE_MS).toISOString();
+    for (const outcome of liveThreadOutcomes.filter((row) => row.status === "complete_live")) {
+      outcome.verifiedAt = verifiedAt;
+      const current = sterlingIndexedThreadFingerprint(preliminaryWorkingSet, outcome.threadId);
+      const threadKeyDigest = sterlingThreadKeyDigest(outcome.threadId, input.continuity.hmacKey);
+      const prior = priorVerifications.get(threadKeyDigest);
+      const save = await input.continuity.store.save({
+        threadKeyDigest,
+        indexedFingerprint: current.fingerprint,
+        verifiedAt,
+        expiresAt,
+        latestIndexedMessageAt: current.latestIndexedMessageAt,
+        indexedMessageCount: current.indexedMessageCount,
+        outcome: "complete_live",
+        revision: prior?.revision ?? 1,
+      }, prior?.revision ?? null);
+      if (save === "stored") continuity.persistedVerificationCount += 1;
+      else if (save === "conflict") continuity.persistenceConflictCount += 1;
+      else continuity.persistenceFailureCount += 1;
+    }
+    if (continuity.persistenceFailureCount > 0 || continuity.persistenceConflictCount > 0) {
+      continuity.status = "degraded";
+    }
+  }
   const referencedEmailHashes = new Set([...threadContext.values()].flatMap((thread) =>
     (thread.messages ?? []).flatMap((message) => {
       const hash = message.fromEmailHash?.trim().toLowerCase();
@@ -429,6 +539,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     scopeCoverage: coverage,
     calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
     gmail: gmailDiagnostics,
+    continuity,
     candidateCoverage: portfolio.candidateCoverage,
     counts: {
       people: workingSet.people.length,
@@ -548,6 +659,8 @@ function safeWorkUnitCoverage(assembly: SterlingTodayAssembly): SterlingSafeWork
       indexedOnlyThreadCount: row.indexedOnlyThreadCount,
       latestIndexedEvidenceAt: row.latestIndexedEvidenceAt,
       latestLiveVerifiedEvidenceAt: row.latestLiveVerifiedEvidenceAt,
+      lastSuccessfulVerificationAt: row.lastSuccessfulVerificationAt,
+      reusedVerificationThreadCount: row.reusedVerificationThreadCount,
       blockReason: row.blockReason,
       suppressionReason: null,
     }];
@@ -593,6 +706,7 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
     workUnitCoverage: safeWorkUnitCoverage(assembly),
     namedCaseCoverage: safeNamedCaseCoverage(assembly),
     candidateCoverage: assembly.candidateCoverage,
+    continuity: assembly.continuity,
     gmail: assembly.gmail ? {
       requestedThreadCount: assembly.gmail.requestedThreadCount,
       completedThreadCount: assembly.gmail.completedThreadCount,

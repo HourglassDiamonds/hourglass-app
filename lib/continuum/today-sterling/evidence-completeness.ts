@@ -29,6 +29,8 @@ export type SterlingWorkUnitEvidenceCompleteness = {
   missingIndexedThreadCount: number;
   latestIndexedEvidenceAt: string | null;
   latestLiveVerifiedEvidenceAt: string | null;
+  lastSuccessfulVerificationAt: string | null;
+  reusedVerificationThreadCount: number;
   blockReason: string | null;
   safeErrorCategories: readonly string[];
   basis:
@@ -68,6 +70,8 @@ const EMPTY_THREAD_COUNTS = {
   missingIndexedThreadCount: 0,
   latestIndexedEvidenceAt: null,
   latestLiveVerifiedEvidenceAt: null,
+  lastSuccessfulVerificationAt: null,
+  reusedVerificationThreadCount: 0,
   blockReason: null,
 } as const;
 
@@ -83,8 +87,12 @@ function isMissingIndexed(code: string | null | undefined): boolean {
   return code === "missing-indexed-context";
 }
 
+function isAssemblyReuse(code: string | null | undefined): boolean {
+  return code === "recently-verified-assembly-only";
+}
+
 function isProviderFailure(code: string | null | undefined): boolean {
-  return Boolean(code) && !isBudgetDeferred(code) && !isMissingIndexed(code);
+  return Boolean(code) && !isBudgetDeferred(code) && !isMissingIndexed(code) && !isAssemblyReuse(code);
 }
 
 /**
@@ -195,6 +203,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
     let otherProviderErrorThreadCount = 0;
     let budgetDeferredThreadCount = 0;
     let missingIndexedThreadCount = 0;
+    let reusedVerificationThreadCount = 0;
     const safeErrorCategories = new Set<string>();
     for (const threadId of requiredThreadIds) {
       const outcome = outcomes.get(threadId);
@@ -212,6 +221,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         if (outcome.safeErrorCategory) safeErrorCategories.add(outcome.safeErrorCategory);
       } else {
         indexedOnlyThreadCount += 1;
+        if (isAssemblyReuse(outcome?.safeErrorCategory)) reusedVerificationThreadCount += 1;
         if (outcome?.safeErrorCategory) safeErrorCategories.add(outcome.safeErrorCategory);
       }
     }
@@ -223,12 +233,14 @@ export function evaluateSterlingEvidenceCompleteness(input: {
       const outcome = outcomes.get(threadId);
       return outcome?.status === "complete_live" ? outcome.latestLiveMessageAt : null;
     }));
+    const lastSuccessfulVerificationAt = latest(requiredThreadIds.map((threadId) => outcomes.get(threadId)?.verifiedAt));
     const missingExactThreadCount = requiredThreadIds.length - completeLiveThreadCount;
     const blockReason = missingIndexedThreadCount > 0 ? "required-thread-missing-indexed-evidence"
       : providerRateLimitedThreadCount > 0 ? "required-live-evidence-rate-limited"
         : otherProviderErrorThreadCount > 0 ? "required-live-evidence-provider-error"
           : budgetDeferredThreadCount > 0 ? "required-live-evidence-budget-deferred"
-            : indexedOnlyThreadCount > 0 ? "required-live-evidence-incomplete" : null;
+            : reusedVerificationThreadCount > 0 ? "required-live-evidence-reused-for-planning-only"
+              : indexedOnlyThreadCount > 0 ? "required-live-evidence-incomplete" : null;
     if (unavailableThreadCount > 0) {
       return {
         workUnitId: unit.workUnitId,
@@ -246,6 +258,8 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         missingIndexedThreadCount,
         latestIndexedEvidenceAt,
         latestLiveVerifiedEvidenceAt,
+        lastSuccessfulVerificationAt,
+        reusedVerificationThreadCount,
         blockReason,
         safeErrorCategories: [...safeErrorCategories].sort(),
         basis: "unavailable_required",
@@ -268,6 +282,8 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         missingIndexedThreadCount,
         latestIndexedEvidenceAt,
         latestLiveVerifiedEvidenceAt,
+        lastSuccessfulVerificationAt,
+        reusedVerificationThreadCount,
         blockReason,
         safeErrorCategories: [...safeErrorCategories].sort(),
         basis: "indexed_excerpt",
@@ -289,6 +305,8 @@ export function evaluateSterlingEvidenceCompleteness(input: {
       missingIndexedThreadCount: 0,
       latestIndexedEvidenceAt,
       latestLiveVerifiedEvidenceAt,
+      lastSuccessfulVerificationAt,
+      reusedVerificationThreadCount: 0,
       blockReason: null,
       safeErrorCategories: [],
       basis: "live_gmail",

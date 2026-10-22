@@ -241,6 +241,23 @@ describe("Sterling permanent evidence completeness gate", () => {
     assert.equal(report.workUnits[0]?.modelEligible, false);
   });
 
+  it("uses recent verification only for planning and keeps semantic evidence blocked", () => {
+    const report = evaluateSterlingEvidenceCompleteness({
+      workingSet: baseWorkingSet(),
+      threadOutcomes: [
+        { threadId: "thread-1", status: "indexed_excerpt_only", indexedMessageCount: 1,
+          liveMessageCount: 0, safeErrorCategory: "recently-verified-assembly-only",
+          latestIndexedMessageAt: "2026-10-10T10:00:00.000Z",
+          latestLiveMessageAt: "2026-10-10T10:00:00.000Z", verifiedAt: "2026-10-22T12:00:00.000Z" },
+        live("thread-2"),
+      ],
+    });
+    assert.equal(report.workUnits[0]?.modelEligible, false);
+    assert.equal(report.workUnits[0]?.reusedVerificationThreadCount, 1);
+    assert.equal(report.workUnits[0]?.blockReason, "required-live-evidence-reused-for-planning-only");
+    assert.equal(report.workUnits[0]?.lastSuccessfulVerificationAt, "2026-10-22T12:00:00.000Z");
+  });
+
   it("preserves explicit ambiguity when non-canonical evidence has no exact live thread", () => {
     const base = baseWorkingSet();
     const candidate = {

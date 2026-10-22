@@ -8,9 +8,11 @@ import {
   createSupabaseSterlingRunLeaseStore,
 } from "./run-lease";
 import {
+  getSterlingTodayContinuityHmacKey,
   isSterlingTodayDurableLeaseAvailable,
   isSterlingTodaySemanticFeatureEnabled,
 } from "./server-config";
+import { createSupabaseSterlingThreadVerificationStore } from "./retrieval-continuity-store";
 import {
   assembleSterlingTodayShadow,
   executeSterlingTodaySemantic,
@@ -34,6 +36,7 @@ function safeFailure(
     workUnitCoverage: [],
     namedCaseCoverage: [],
     candidateCoverage: null,
+    continuity: null,
     gmail: null,
     performance: null,
     validation: null,
@@ -52,7 +55,17 @@ export async function runAuthenticatedSterlingTodayAssembly(): Promise<SterlingT
   const client = await authenticatedReadClient();
   if (!client) return safeFailure("assembly", "UNAVAILABLE", "unauthorized-or-unavailable");
   try {
-    return safeAssemblyResult(await assembleSterlingTodayShadow({ client }));
+    const hmacKey = getSterlingTodayContinuityHmacKey();
+    return safeAssemblyResult(await assembleSterlingTodayShadow({
+      client,
+      ...(hmacKey ? {
+        continuity: {
+          mode: "assembly_planning_only" as const,
+          hmacKey,
+          store: createSupabaseSterlingThreadVerificationStore(client),
+        },
+      } : {}),
+    }));
   } catch {
     return safeFailure("assembly", "UNAVAILABLE", "assembly-unavailable");
   }

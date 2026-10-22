@@ -7,6 +7,9 @@ import {
   type SterlingThreadVerificationMetadata,
 } from "./retrieval-continuity";
 import { STERLING_TODAY_WORKING_SET_VERSION, type SterlingTodayWorkingSet } from "./types";
+import { InMemorySterlingThreadVerificationStore } from "./retrieval-continuity-store";
+
+const HMAC_KEY = "test-only-sterling-continuity-key-32-bytes-minimum";
 
 function workingSet(threadIds: readonly string[]): SterlingTodayWorkingSet {
   return {
@@ -55,12 +58,14 @@ function workingSet(threadIds: readonly string[]): SterlingTodayWorkingSet {
 function checkpoint(set: SterlingTodayWorkingSet, threadId: string): SterlingThreadVerificationMetadata {
   const current = sterlingIndexedThreadFingerprint(set, threadId);
   return {
-    threadKeyDigest: sterlingThreadKeyDigest(threadId),
+    threadKeyDigest: sterlingThreadKeyDigest(threadId, HMAC_KEY),
     indexedFingerprint: current.fingerprint,
     verifiedAt: "2026-10-21T12:05:00.000Z",
+    expiresAt: "2026-10-21T12:20:00.000Z",
     latestIndexedMessageAt: current.latestIndexedMessageAt,
     indexedMessageCount: current.indexedMessageCount,
     outcome: "complete_live",
+    revision: 1,
   };
 }
 
@@ -72,6 +77,7 @@ describe("Sterling bounded retrieval continuity planning", () => {
       priorVerifications: [checkpoint(set, "thread-a")],
       now: new Date("2026-10-21T12:10:00.000Z"),
       requestBudget: 48,
+      threadKeyHmacKey: HMAC_KEY,
     });
     assert.equal(plan.reusableVerificationCount, 1);
     assert.deepEqual(plan.liveRequestThreadIds, ["thread-b"]);
@@ -94,6 +100,7 @@ describe("Sterling bounded retrieval continuity planning", () => {
       workingSet: after,
       priorVerifications: [checkpoint(before, "thread-a")],
       now: new Date("2026-10-21T12:10:00.000Z"),
+      threadKeyHmacKey: HMAC_KEY,
     });
     assert.equal(plan.invalidatedVerificationCount, 1);
     assert.deepEqual(plan.liveRequestThreadIds, ["thread-a"]);
@@ -101,8 +108,10 @@ describe("Sterling bounded retrieval continuity planning", () => {
 
   it("keeps a stable bounded frontier and records overflow separately", () => {
     const set = workingSet(["thread-c", "thread-a", "thread-b"]);
-    const first = planSterlingThreadVerificationContinuity({ workingSet: set, requestBudget: 2 });
-    const second = planSterlingThreadVerificationContinuity({ workingSet: set, requestBudget: 2 });
+    const first = planSterlingThreadVerificationContinuity({ workingSet: set, requestBudget: 2,
+      threadKeyHmacKey: HMAC_KEY });
+    const second = planSterlingThreadVerificationContinuity({ workingSet: set, requestBudget: 2,
+      threadKeyHmacKey: HMAC_KEY });
     assert.deepEqual(first.liveRequestThreadIds, second.liveRequestThreadIds);
     assert.equal(first.liveRequestThreadIds.length, 2);
     assert.equal(first.budgetDeferredThreadIds.length, 1);
@@ -114,9 +123,47 @@ describe("Sterling bounded retrieval continuity planning", () => {
       workingSet: set,
       priorVerifications: [checkpoint(set, "thread-a")],
       now: new Date("2026-10-21T13:00:00.000Z"),
+      threadKeyHmacKey: HMAC_KEY,
     });
     assert.equal(plan.reusableVerificationCount, 0);
-    assert.equal(plan.invalidatedVerificationCount, 1);
+    assert.equal(plan.expiredVerificationCount, 1);
+    assert.equal(plan.invalidatedVerificationCount, 0);
     assert.deepEqual(plan.liveRequestThreadIds, ["thread-a"]);
+  });
+
+  it("uses a server-held HMAC so raw or unsalted thread identifiers are not stored", () => {
+    const digest = sterlingThreadKeyDigest("guessable-thread-123", HMAC_KEY);
+    assert.match(digest, /^[a-f0-9]{64}$/);
+    assert.notEqual(digest, "guessable-thread-123");
+    assert.notEqual(digest, sterlingThreadKeyDigest("guessable-thread-123", `${HMAC_KEY}-different`));
+    assert.throws(() => sterlingThreadKeyDigest("thread", "short"), /hmac-key-invalid/);
+  });
+
+  it("advances the bounded frontier across runs without making semantic evidence reusable", async () => {
+    const set = workingSet(["thread-a", "thread-b", "thread-c"]);
+    const store = new InMemorySterlingThreadVerificationStore();
+    const first = planSterlingThreadVerificationContinuity({
+      workingSet: set,
+      threadKeyHmacKey: HMAC_KEY,
+      requestBudget: 2,
+      now: new Date("2026-10-21T12:10:00.000Z"),
+    });
+    assert.deepEqual(first.liveRequestThreadIds, ["thread-c", "thread-b"]);
+    for (const threadId of first.liveRequestThreadIds) {
+      await store.save(checkpoint(set, threadId), null);
+    }
+    const loaded = await store.load(["thread-a", "thread-b", "thread-c"].map((threadId) =>
+      sterlingThreadKeyDigest(threadId, HMAC_KEY)));
+    assert.equal(loaded.available, true);
+    const second = planSterlingThreadVerificationContinuity({
+      workingSet: set,
+      priorVerifications: loaded.rows,
+      threadKeyHmacKey: HMAC_KEY,
+      requestBudget: 2,
+      now: new Date("2026-10-21T12:10:00.000Z"),
+    });
+    assert.equal(second.reusableVerificationCount, 2);
+    assert.deepEqual(second.liveRequestThreadIds, ["thread-a"]);
+    assert.equal(second.semanticEvidenceReusable, false);
   });
 });

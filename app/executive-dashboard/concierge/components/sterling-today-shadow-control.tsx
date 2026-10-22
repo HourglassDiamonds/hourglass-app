@@ -44,9 +44,11 @@ function WorkUnitCoverage({ state }: { state: NonNullable<SterlingTodayActionSta
               <Count label="Budget-deferred" value={row.budgetDeferredThreadCount} />
               <Count label="Missing indexed" value={row.missingIndexedThreadCount} />
               <Count label="Indexed only" value={row.indexedOnlyThreadCount} />
+              <Count label="Verification reused" value={row.reusedVerificationThreadCount} />
             </dl>
             <p className="mt-3">Indexed freshness: <Timestamp value={row.latestIndexedEvidenceAt} /></p>
             <p>Live-verified freshness: <Timestamp value={row.latestLiveVerifiedEvidenceAt} /></p>
+            <p>Last successful verification: <Timestamp value={row.lastSuccessfulVerificationAt} /></p>
             {row.blockReason ? <p className="mt-2 text-[#d5a98c]">Block: {row.blockReason}</p> : null}
             {row.suppressionReason ? <p className="mt-1">Suppressed: {row.suppressionReason}</p> : null}
           </div>
@@ -98,6 +100,24 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
         <Count label="Output tokens" value={state.performance?.tokenUsage?.outputTokens} />
         <Count label="Validation errors" value={state.validation?.errorCount} />
       </dl>
+      {state.continuity ? (
+        <div className="mt-5 rounded-xl border border-white/10 p-4">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
+            Retrieval continuity · {state.continuity.status}
+          </p>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[12px] text-[#b8aa9d] sm:grid-cols-4">
+            <Count label="Verification reused" value={state.continuity.reusedVerificationCount} />
+            <Count label="Verification expired" value={state.continuity.expiredVerificationCount} />
+            <Count label="Verification invalidated" value={state.continuity.invalidatedVerificationCount} />
+            <Count label="Verification persisted" value={state.continuity.persistedVerificationCount} />
+            <Count label="Persistence conflicts" value={state.continuity.persistenceConflictCount} />
+            <Count label="Persistence failures" value={state.continuity.persistenceFailureCount} />
+          </dl>
+          <p className="mt-3 text-[12px] text-[#9d9084]">
+            Continuity metadata is assembly planning only and never substitutes for semantic source evidence.
+          </p>
+        </div>
+      ) : null}
       {state.safeErrors.length ? (
         <p className="mt-4 text-[12px] text-[#9d9084]">Safe status: {state.safeErrors.join(", ")}</p>
       ) : null}
