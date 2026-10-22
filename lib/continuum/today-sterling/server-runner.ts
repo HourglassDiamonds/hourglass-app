@@ -1,6 +1,7 @@
 /** Read-only Sterling-native Today assembly and semantic orchestration. */
 import "server-only";
 
+import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { collectPagedRows } from "@/lib/continuum/candidates/page";
 import { rowToCandidate } from "@/lib/continuum/candidates/rows";
@@ -119,8 +120,11 @@ export type SterlingTodaySafeResult = {
   counts: SterlingTodayAssembly["counts"] | null;
   completeness: SterlingEvidenceCompletenessReport["aggregate"] | null;
   scope: { total: number; resolved: number; unresolved: number } | null;
+  workUnitCoverage: readonly SterlingSafeWorkUnitCoverage[];
+  namedCaseCoverage: readonly SterlingSafeNamedCaseCoverage[];
   candidateCoverage: SterlingTodayAssembly["candidateCoverage"] | null;
   gmail: null | Pick<TodayLiveEnrichmentDiagnostics, "requestedThreadCount" | "completedThreadCount" | "failedThreadCount" |
+    "providerRateLimitedThreadCount" | "otherProviderErrorThreadCount" | "missingIndexedThreadCount" |
     "budgetDeferredThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
   performance: null | SterlingTodaySemanticCompletion["performance"];
   validation: null | { accepted: boolean; errorCount: number; mutationProposalCount: number };
@@ -132,6 +136,35 @@ export type SterlingTodaySafeResult = {
     unverifiedCount: number;
   };
   safeErrors: readonly string[];
+};
+
+export type SterlingSafeWorkUnitCoverage = {
+  workUnitRef: string;
+  classification: "canonical" | "provisional";
+  recordIdentifier: string | null;
+  evidenceStatus: SterlingEvidenceCompletenessReport["workUnits"][number]["status"];
+  modelEligible: boolean;
+  requiredThreadCount: number;
+  missingExactThreadCount: number;
+  providerFailedThreadCount: number;
+  providerRateLimitedThreadCount: number;
+  otherProviderErrorThreadCount: number;
+  budgetDeferredThreadCount: number;
+  missingIndexedThreadCount: number;
+  indexedOnlyThreadCount: number;
+  latestIndexedEvidenceAt: string | null;
+  latestLiveVerifiedEvidenceAt: string | null;
+  blockReason: string | null;
+  suppressionReason: string | null;
+};
+
+export type SterlingSafeNamedCaseCoverage = {
+  caseId: string;
+  resolved: boolean;
+  resolution: SterlingScopeCoverage["resolution"];
+  workUnitRefs: readonly string[];
+  evidenceStatus: "eligible" | "blocked" | "unresolved";
+  blockReasons: readonly string[];
 };
 
 type AssembleInput = {
@@ -486,6 +519,60 @@ function blockedCompletion(
   };
 }
 
+function opaqueWorkUnitRef(workUnitId: string): string {
+  return `wu_${createHash("sha256").update(workUnitId).digest("hex").slice(0, 16)}`;
+}
+
+function safeRecordIdentifier(unit: SterlingTodayWorkingSet["workUnits"][number]): string | null {
+  return unit.typedIdentifiers.find((row) => row.kind === "project" || row.kind === "request")?.value ?? null;
+}
+
+function safeWorkUnitCoverage(assembly: SterlingTodayAssembly): SterlingSafeWorkUnitCoverage[] {
+  const units = new Map(assembly.workingSet.workUnits.map((unit) => [unit.workUnitId, unit]));
+  return assembly.completeness.workUnits.flatMap((row) => {
+    const unit = units.get(row.workUnitId);
+    if (!unit) return [];
+    return [{
+      workUnitRef: opaqueWorkUnitRef(row.workUnitId),
+      classification: unit.kind === "canonical_project" ? "canonical" as const : "provisional" as const,
+      recordIdentifier: safeRecordIdentifier(unit),
+      evidenceStatus: row.status,
+      modelEligible: row.modelEligible,
+      requiredThreadCount: row.requiredThreadCount,
+      missingExactThreadCount: row.missingExactThreadCount,
+      providerFailedThreadCount: row.providerFailedThreadCount,
+      providerRateLimitedThreadCount: row.providerRateLimitedThreadCount,
+      otherProviderErrorThreadCount: row.otherProviderErrorThreadCount,
+      budgetDeferredThreadCount: row.budgetDeferredThreadCount,
+      missingIndexedThreadCount: row.missingIndexedThreadCount,
+      indexedOnlyThreadCount: row.indexedOnlyThreadCount,
+      latestIndexedEvidenceAt: row.latestIndexedEvidenceAt,
+      latestLiveVerifiedEvidenceAt: row.latestLiveVerifiedEvidenceAt,
+      blockReason: row.blockReason,
+      suppressionReason: null,
+    }];
+  }).sort((a, b) => a.workUnitRef.localeCompare(b.workUnitRef));
+}
+
+function safeNamedCaseCoverage(assembly: SterlingTodayAssembly): SterlingSafeNamedCaseCoverage[] {
+  const completeness = new Map(assembly.completeness.workUnits.map((row) => [row.workUnitId, row]));
+  return assembly.scopeCoverage.map((row) => {
+    const matches = row.workUnitIds.flatMap((workUnitId) => {
+      const result = completeness.get(workUnitId);
+      return result ? [result] : [];
+    });
+    return {
+      caseId: row.publicId,
+      resolved: row.resolved,
+      resolution: row.resolution,
+      workUnitRefs: row.workUnitIds.map(opaqueWorkUnitRef).sort(),
+      evidenceStatus: !row.resolved ? "unresolved" as const
+        : matches.length > 0 && matches.every((match) => match.modelEligible) ? "eligible" as const : "blocked" as const,
+      blockReasons: [...new Set(matches.flatMap((match) => match.blockReason ? [match.blockReason] : []))].sort(),
+    };
+  });
+}
+
 export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTodaySafeResult {
   const safeErrors = [...new Set([
     ...assembly.completeness.aggregate.safeErrorCategories,
@@ -503,11 +590,16 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
       resolved: assembly.scopeCoverage.filter((row) => row.resolved).length,
       unresolved: assembly.scopeCoverage.filter((row) => !row.resolved).length,
     },
+    workUnitCoverage: safeWorkUnitCoverage(assembly),
+    namedCaseCoverage: safeNamedCaseCoverage(assembly),
     candidateCoverage: assembly.candidateCoverage,
     gmail: assembly.gmail ? {
       requestedThreadCount: assembly.gmail.requestedThreadCount,
       completedThreadCount: assembly.gmail.completedThreadCount,
       failedThreadCount: assembly.gmail.failedThreadCount,
+      providerRateLimitedThreadCount: assembly.gmail.providerRateLimitedThreadCount,
+      otherProviderErrorThreadCount: assembly.gmail.otherProviderErrorThreadCount,
+      missingIndexedThreadCount: assembly.gmail.missingIndexedThreadCount,
       budgetDeferredThreadCount: assembly.gmail.budgetDeferredThreadCount,
       threadFetches: assembly.gmail.threadFetches,
       durationMs: assembly.gmail.durationMs,

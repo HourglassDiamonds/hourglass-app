@@ -21,6 +21,15 @@ export type SterlingWorkUnitEvidenceCompleteness = {
   completeLiveThreadCount: number;
   indexedOnlyThreadCount: number;
   unavailableThreadCount: number;
+  missingExactThreadCount: number;
+  providerFailedThreadCount: number;
+  providerRateLimitedThreadCount: number;
+  otherProviderErrorThreadCount: number;
+  budgetDeferredThreadCount: number;
+  missingIndexedThreadCount: number;
+  latestIndexedEvidenceAt: string | null;
+  latestLiveVerifiedEvidenceAt: string | null;
+  blockReason: string | null;
   safeErrorCategories: readonly string[];
   basis:
     | "live_gmail"
@@ -48,6 +57,34 @@ function digest(value: unknown): string {
 
 function unique(values: readonly (string | null | undefined)[]): string[] {
   return [...new Set(values.map((value) => value?.trim() ?? "").filter(Boolean))].sort();
+}
+
+const EMPTY_THREAD_COUNTS = {
+  missingExactThreadCount: 0,
+  providerFailedThreadCount: 0,
+  providerRateLimitedThreadCount: 0,
+  otherProviderErrorThreadCount: 0,
+  budgetDeferredThreadCount: 0,
+  missingIndexedThreadCount: 0,
+  latestIndexedEvidenceAt: null,
+  latestLiveVerifiedEvidenceAt: null,
+  blockReason: null,
+} as const;
+
+function latest(values: readonly (string | null | undefined)[]): string | null {
+  return values.filter((value): value is string => Boolean(value)).sort().at(-1) ?? null;
+}
+
+function isBudgetDeferred(code: string | null | undefined): boolean {
+  return code === "not-requested-budget-exhausted";
+}
+
+function isMissingIndexed(code: string | null | undefined): boolean {
+  return code === "missing-indexed-context";
+}
+
+function isProviderFailure(code: string | null | undefined): boolean {
+  return Boolean(code) && !isBudgetDeferred(code) && !isMissingIndexed(code);
 }
 
 /**
@@ -110,6 +147,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         completeLiveThreadCount: 0,
         indexedOnlyThreadCount: 0,
         unavailableThreadCount: 0,
+        ...EMPTY_THREAD_COUNTS,
         safeErrorCategories: [],
         basis: "founder_correction",
       };
@@ -123,6 +161,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         completeLiveThreadCount: 0,
         indexedOnlyThreadCount: 0,
         unavailableThreadCount: 0,
+        ...EMPTY_THREAD_COUNTS,
         safeErrorCategories: [],
         basis: "canonical_facts",
       };
@@ -141,6 +180,8 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         completeLiveThreadCount: 0,
         indexedOnlyThreadCount: 0,
         unavailableThreadCount: 0,
+        ...EMPTY_THREAD_COUNTS,
+        blockReason: "no-exact-thread-or-independent-evidence",
         safeErrorCategories: [],
         basis: "insufficient_evidence",
       };
@@ -149,6 +190,11 @@ export function evaluateSterlingEvidenceCompleteness(input: {
     let completeLiveThreadCount = 0;
     let indexedOnlyThreadCount = 0;
     let unavailableThreadCount = 0;
+    let providerFailedThreadCount = 0;
+    let providerRateLimitedThreadCount = 0;
+    let otherProviderErrorThreadCount = 0;
+    let budgetDeferredThreadCount = 0;
+    let missingIndexedThreadCount = 0;
     const safeErrorCategories = new Set<string>();
     for (const threadId of requiredThreadIds) {
       const outcome = outcomes.get(threadId);
@@ -156,12 +202,33 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         completeLiveThreadCount += 1;
       } else if (outcome?.status === "unavailable") {
         unavailableThreadCount += 1;
+        if (isBudgetDeferred(outcome.safeErrorCategory)) budgetDeferredThreadCount += 1;
+        else if (isMissingIndexed(outcome.safeErrorCategory)) missingIndexedThreadCount += 1;
+        else if (isProviderFailure(outcome.safeErrorCategory)) {
+          providerFailedThreadCount += 1;
+          if (outcome.safeErrorCategory === "rate_limited") providerRateLimitedThreadCount += 1;
+          else otherProviderErrorThreadCount += 1;
+        }
         if (outcome.safeErrorCategory) safeErrorCategories.add(outcome.safeErrorCategory);
       } else {
         indexedOnlyThreadCount += 1;
         if (outcome?.safeErrorCategory) safeErrorCategories.add(outcome.safeErrorCategory);
       }
     }
+    const latestIndexedEvidenceAt = latest([
+      ...evidence.filter((row) => row.threadId != null).map((row) => row.timestamp),
+      ...requiredThreadIds.map((threadId) => outcomes.get(threadId)?.latestIndexedMessageAt),
+    ]);
+    const latestLiveVerifiedEvidenceAt = latest(requiredThreadIds.map((threadId) => {
+      const outcome = outcomes.get(threadId);
+      return outcome?.status === "complete_live" ? outcome.latestLiveMessageAt : null;
+    }));
+    const missingExactThreadCount = requiredThreadIds.length - completeLiveThreadCount;
+    const blockReason = missingIndexedThreadCount > 0 ? "required-thread-missing-indexed-evidence"
+      : providerRateLimitedThreadCount > 0 ? "required-live-evidence-rate-limited"
+        : otherProviderErrorThreadCount > 0 ? "required-live-evidence-provider-error"
+          : budgetDeferredThreadCount > 0 ? "required-live-evidence-budget-deferred"
+            : indexedOnlyThreadCount > 0 ? "required-live-evidence-incomplete" : null;
     if (unavailableThreadCount > 0) {
       return {
         workUnitId: unit.workUnitId,
@@ -171,6 +238,15 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         completeLiveThreadCount,
         indexedOnlyThreadCount,
         unavailableThreadCount,
+        missingExactThreadCount,
+        providerFailedThreadCount,
+        providerRateLimitedThreadCount,
+        otherProviderErrorThreadCount,
+        budgetDeferredThreadCount,
+        missingIndexedThreadCount,
+        latestIndexedEvidenceAt,
+        latestLiveVerifiedEvidenceAt,
+        blockReason,
         safeErrorCategories: [...safeErrorCategories].sort(),
         basis: "unavailable_required",
       };
@@ -184,6 +260,15 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         completeLiveThreadCount,
         indexedOnlyThreadCount,
         unavailableThreadCount: 0,
+        missingExactThreadCount,
+        providerFailedThreadCount,
+        providerRateLimitedThreadCount,
+        otherProviderErrorThreadCount,
+        budgetDeferredThreadCount,
+        missingIndexedThreadCount,
+        latestIndexedEvidenceAt,
+        latestLiveVerifiedEvidenceAt,
+        blockReason,
         safeErrorCategories: [...safeErrorCategories].sort(),
         basis: "indexed_excerpt",
       };
@@ -196,6 +281,15 @@ export function evaluateSterlingEvidenceCompleteness(input: {
       completeLiveThreadCount,
       indexedOnlyThreadCount: 0,
       unavailableThreadCount: 0,
+      missingExactThreadCount: 0,
+      providerFailedThreadCount: 0,
+      providerRateLimitedThreadCount: 0,
+      otherProviderErrorThreadCount: 0,
+      budgetDeferredThreadCount: 0,
+      missingIndexedThreadCount: 0,
+      latestIndexedEvidenceAt,
+      latestLiveVerifiedEvidenceAt,
+      blockReason: null,
       safeErrorCategories: [],
       basis: "live_gmail",
     };

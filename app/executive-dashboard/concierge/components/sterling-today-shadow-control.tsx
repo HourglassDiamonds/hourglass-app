@@ -16,6 +16,66 @@ function Count({ label, value }: { label: string; value: number | null | undefin
   );
 }
 
+function Timestamp({ value }: { value: string | null }) {
+  return <span>{value ? new Date(value).toLocaleString() : "—"}</span>;
+}
+
+function WorkUnitCoverage({ state }: { state: NonNullable<SterlingTodayActionState> }) {
+  if (state.workUnitCoverage.length === 0) return null;
+  return (
+    <details className="mt-6 border-t border-white/10 pt-5">
+      <summary className="cursor-pointer text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
+        Per-work-unit evidence coverage ({state.workUnitCoverage.length})
+      </summary>
+      <div className="mt-4 space-y-3">
+        {state.workUnitCoverage.map((row) => (
+          <div key={row.workUnitRef} className="rounded-xl border border-white/10 p-4 text-[12px] text-[#b8aa9d]">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <code className="text-[#efe8de]">{row.workUnitRef}</code>
+              <span>{row.classification}{row.recordIdentifier ? ` · ${row.recordIdentifier}` : ""}</span>
+            </div>
+            <p className="mt-2 text-[#d3c7bb]">{row.evidenceStatus} · {row.modelEligible ? "eligible" : "blocked"}</p>
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1">
+              <Count label="Required threads" value={row.requiredThreadCount} />
+              <Count label="Missing exact" value={row.missingExactThreadCount} />
+              <Count label="Provider failed" value={row.providerFailedThreadCount} />
+              <Count label="Rate-limited" value={row.providerRateLimitedThreadCount} />
+              <Count label="Other provider" value={row.otherProviderErrorThreadCount} />
+              <Count label="Budget-deferred" value={row.budgetDeferredThreadCount} />
+              <Count label="Missing indexed" value={row.missingIndexedThreadCount} />
+              <Count label="Indexed only" value={row.indexedOnlyThreadCount} />
+            </dl>
+            <p className="mt-3">Indexed freshness: <Timestamp value={row.latestIndexedEvidenceAt} /></p>
+            <p>Live-verified freshness: <Timestamp value={row.latestLiveVerifiedEvidenceAt} /></p>
+            {row.blockReason ? <p className="mt-2 text-[#d5a98c]">Block: {row.blockReason}</p> : null}
+            {row.suppressionReason ? <p className="mt-1">Suppressed: {row.suppressionReason}</p> : null}
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
+function NamedCaseCoverage({ state }: { state: NonNullable<SterlingTodayActionState> }) {
+  if (state.namedCaseCoverage.length === 0) return null;
+  return (
+    <details className="mt-6 border-t border-white/10 pt-5">
+      <summary className="cursor-pointer text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
+        Named-case acceptance coverage ({state.namedCaseCoverage.length})
+      </summary>
+      <div className="mt-4 space-y-2 text-[12px] text-[#b8aa9d]">
+        {state.namedCaseCoverage.map((row) => (
+          <div key={row.caseId} className="rounded-xl border border-white/10 p-3">
+            <p className="text-[#efe8de]">{row.caseId}</p>
+            <p>{row.evidenceStatus} · {row.resolution} · {row.workUnitRefs.length} matching unit(s)</p>
+            {row.blockReasons.length ? <p className="mt-1 text-[#d5a98c]">{row.blockReasons.join(", ")}</p> : null}
+          </div>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> }) {
   return (
     <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5">
@@ -26,9 +86,12 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
         <Count label="Blocked" value={state.completeness?.blockedWorkUnitCount} />
         <Count label="Scoped" value={state.scope?.total} />
         <Count label="Scope unresolved" value={state.scope?.unresolved} />
-        <Count label="Gmail requested" value={state.gmail?.requestedThreadCount} />
-        <Count label="Gmail completed" value={state.gmail?.completedThreadCount} />
-        <Count label="Gmail failed" value={state.gmail?.failedThreadCount} />
+        <Count label="Gmail required" value={state.gmail?.requestedThreadCount} />
+        <Count label="Successfully retrieved" value={state.gmail?.completedThreadCount} />
+        <Count label="Provider rate-limited" value={state.gmail?.providerRateLimitedThreadCount} />
+        <Count label="Other provider errors" value={state.gmail?.otherProviderErrorThreadCount} />
+        <Count label="Not requested — budget exhausted" value={state.gmail?.budgetDeferredThreadCount} />
+        <Count label="Missing indexed evidence" value={state.gmail?.missingIndexedThreadCount} />
         <Count label="Assembly ms" value={state.performance?.assemblyLatencyMs} />
         <Count label="Model ms" value={state.performance?.modelLatencyMs} />
         <Count label="Input tokens" value={state.performance?.tokenUsage?.inputTokens} />
@@ -38,6 +101,14 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
       {state.safeErrors.length ? (
         <p className="mt-4 text-[12px] text-[#9d9084]">Safe status: {state.safeErrors.join(", ")}</p>
       ) : null}
+      {state.candidateCoverage ? (
+        <p className="mt-4 text-[12px] text-[#9d9084]">
+          Candidate frontier: {state.candidateCoverage.selected} selected; {state.candidateCoverage.suppressed} suppressed
+          ({Object.entries(state.candidateCoverage.suppressedByReason).map(([reason, count]) => `${reason}: ${count}`).join(", ")}).
+        </p>
+      ) : null}
+      <NamedCaseCoverage state={state} />
+      <WorkUnitCoverage state={state} />
     </div>
   );
 }

@@ -42,6 +42,8 @@ export type TodayLiveEnrichmentDiagnostics = {
   requestedThreadCount: number;
   completedThreadCount: number;
   failedThreadCount: number;
+  providerRateLimitedThreadCount: number;
+  otherProviderErrorThreadCount: number;
   missingIndexedThreadCount: number;
   missingLiveMessageThreadCount: number;
   budgetDeferredThreadCount: number;
@@ -59,7 +61,13 @@ export type TodayLiveThreadOutcome = {
   indexedMessageCount: number;
   liveMessageCount: number;
   safeErrorCategory: string | null;
+  latestIndexedMessageAt?: string | null;
+  latestLiveMessageAt?: string | null;
 };
+
+function latestTimestamp(values: readonly (string | null | undefined)[]): string | null {
+  return values.filter((value): value is string => Boolean(value)).sort().at(-1) ?? null;
+}
 
 function indexedDirection(
   value: unknown,
@@ -438,11 +446,18 @@ export async function loadLiveTodayOperationalFacts(
     }
   };
   const emitDiagnostics = (threadFetches: number) => {
+    const providerRateLimitedThreadCount = failuresByCode.rate_limited ?? 0;
+    const otherProviderErrorThreadCount = Object.entries(failuresByCode)
+      .filter(([code]) => code !== "rate_limited" && code !== "not-requested-budget-exhausted" &&
+        code !== "missing-indexed-context")
+      .reduce((total, [, count]) => total + count, 0);
     try {
       options.onDiagnostics?.({
         requestedThreadCount: threadIds.length,
         completedThreadCount,
         failedThreadCount,
+        providerRateLimitedThreadCount,
+        otherProviderErrorThreadCount,
         missingIndexedThreadCount,
         missingLiveMessageThreadCount,
         budgetDeferredThreadCount,
@@ -480,6 +495,8 @@ export async function loadLiveTodayOperationalFacts(
       indexedMessageCount: current?.messages?.length ?? 0,
       liveMessageCount: 0,
       safeErrorCategory: "not-requested-budget-exhausted",
+      latestIndexedMessageAt: latestTimestamp(current?.messages?.map((message) => message.sentAt) ?? []),
+      latestLiveMessageAt: null,
     });
   }
   const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
@@ -493,6 +510,8 @@ export async function loadLiveTodayOperationalFacts(
         indexedMessageCount: current?.messages?.length ?? 0,
         liveMessageCount: 0,
         safeErrorCategory: "batch-unavailable",
+        latestIndexedMessageAt: latestTimestamp(current?.messages?.map((message) => message.sentAt) ?? []),
+        latestLiveMessageAt: null,
       });
     }
     emitDiagnostics(0);
@@ -516,6 +535,8 @@ export async function loadLiveTodayOperationalFacts(
           indexedMessageCount: 0,
           liveMessageCount: 0,
           safeErrorCategory: "missing-indexed-context",
+          latestIndexedMessageAt: null,
+          latestLiveMessageAt: null,
         });
         continue;
       }
@@ -538,6 +559,8 @@ export async function loadLiveTodayOperationalFacts(
           indexedMessageCount: current.messages.length,
           liveMessageCount: 0,
           safeErrorCategory: fetched.safeErrorCode,
+          latestIndexedMessageAt: latestTimestamp(current.messages.map((message) => message.sentAt)),
+          latestLiveMessageAt: null,
         });
         continue;
       }
@@ -608,6 +631,8 @@ export async function loadLiveTodayOperationalFacts(
         indexedMessageCount: current.messages.length,
         liveMessageCount: fetched.messages.length,
         safeErrorCategory: missingLiveMessage ? "missing-live-message" : null,
+        latestIndexedMessageAt: latestTimestamp(current.messages.map((message) => message.sentAt)),
+        latestLiveMessageAt: latestTimestamp(fetched.messages.map((message) => message.sentAt)),
       });
     }
   };

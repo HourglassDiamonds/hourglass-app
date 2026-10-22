@@ -221,7 +221,7 @@ describe("Sterling server execution boundaries", () => {
     assert.ok(semantic.indexOf("claim === \"unavailable\"") < semantic.indexOf("assembleSterlingTodayShadow"));
   });
 
-  it("returns aggregate fields only and contains no sensitive diagnostics", () => {
+  it("returns privacy-safe aggregate and opaque per-unit diagnostics", () => {
     const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
     const control = read("app/executive-dashboard/concierge/components/sterling-today-shadow-control.tsx");
     for (const source of [action, control]) {
@@ -230,5 +230,10 @@ describe("Sterling server execution boundaries", () => {
     assert.match(control, /Work units/);
     assert.match(control, /Input tokens/);
     assert.match(control, /Validation errors/);
+    assert.match(control, /Per-work-unit evidence coverage/);
+    assert.match(control, /Named-case acceptance coverage/);
+    assert.match(control, /Not requested — budget exhausted/);
+    assert.match(control, /Provider rate-limited/);
+    assert.doesNotMatch(control, /threadId|messageId|sourceRef|evidenceRef|excerpt/);
   });
 });

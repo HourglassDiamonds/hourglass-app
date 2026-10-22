@@ -270,6 +270,8 @@ describe("Today live Gmail rebuild batch", () => {
       indexedMessageCount: 0,
       liveMessageCount: 0,
       safeErrorCategory: "batch-unavailable",
+      latestIndexedMessageAt: null,
+      latestLiveMessageAt: null,
     }]);
   });
 
@@ -590,6 +592,8 @@ describe("Today live Gmail rebuild batch", () => {
     assert.deepEqual(fetched, ["a", "b"]);
     assert.equal(diagnostics?.requestedThreadCount, 3);
     assert.equal(diagnostics?.budgetDeferredThreadCount, 1);
+    assert.equal(diagnostics?.providerRateLimitedThreadCount, 0);
+    assert.equal(diagnostics?.otherProviderErrorThreadCount, 0);
     assert.equal(diagnostics?.failuresByCode["not-requested-budget-exhausted"], 1);
     assert.equal(outcomes.find((row) => row.threadId === "c")?.safeErrorCategory, "not-requested-budget-exhausted");
   });
@@ -601,9 +605,11 @@ describe("Today live Gmail rebuild batch", () => {
     ]));
     const calls = new Map<string, number>();
     const outcomes: TodayLiveThreadOutcome[] = [];
+    let diagnostics: TodayLiveEnrichmentDiagnostics | null = null;
     await loadLiveTodayOperationalFacts(base, {
       threadIds: ["good", "failed"],
       onThreadOutcome: (outcome) => outcomes.push(outcome),
+      onDiagnostics: (value) => { diagnostics = value; },
       createBatch: async () => ({
         credentialLoads: 1,
         metrics: { threadFetches: 2 },
@@ -624,5 +630,7 @@ describe("Today live Gmail rebuild batch", () => {
     assert.deepEqual(Object.fromEntries(calls), { failed: 1, good: 1 });
     assert.equal(outcomes.find((row) => row.threadId === "good")?.status, "complete_live");
     assert.equal(outcomes.find((row) => row.threadId === "failed")?.safeErrorCategory, "rate_limited");
+    assert.equal(diagnostics?.providerRateLimitedThreadCount, 1);
+    assert.equal(diagnostics?.otherProviderErrorThreadCount, 0);
   });
 });
