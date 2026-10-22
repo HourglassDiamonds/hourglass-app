@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealSignature } from "./nutrition";
+import { deriveFrequentlyEaten, frequentFromMeal, frequentMealMutationKey, logFrequentMeal, mealSignature, saveMealAsFrequent } from "./nutrition";
 import type { MealLog } from "./types";
 
 function meal(id: string, timestamp: string, name = "Chicken Patties", portion = "2 patties", calories = 420): MealLog {
@@ -48,4 +48,29 @@ test("editing a one-tap occurrence never rewrites the derived frequent default",
   const frequent = deriveFrequentlyEaten([first, canonical, occurrence], [], "2026-10-06T13:00:00Z");
   assert.equal(frequent[0]?.useCount, 3);
   assert.equal(frequent[0]?.calories, 420);
+});
+
+test("a corrected historical meal becomes one reusable frequent template without changing history", () => {
+  const historical = {
+    ...meal("historical", "2026-10-18T12:00:00Z", "Chicken Bowl", "1 bowl", 515),
+    occurredOn: "2026-10-18",
+    protein: 48,
+    carbs: 42,
+    fat: 17,
+    items: [{ id: "corrected-item", name: "Chicken Bowl", portion: "1 bowl", calories: 515, protein: 48, carbs: 42, fat: 17, confidence: "high" as const }],
+    corrections: [{ field: "items", from: "estimated", to: "founder corrected" }],
+  };
+  const state = { meals: [historical], frequentMeals: [] };
+  const first = saveMealAsFrequent(state, historical.id, "2026-10-22T12:00:00Z");
+  const second = saveMealAsFrequent({ ...state, frequentMeals: first }, historical.id, "2026-10-22T12:01:00Z");
+
+  assert.equal(second.length, 1);
+  assert.equal(second[0]?.id, first[0]?.id);
+  assert.deepEqual(second[0]?.items.map(({ id: _id, ...item }) => item), historical.items.map(({ id: _id, ...item }) => item));
+  assert.deepEqual({ meals: state.meals }, { meals: [historical] }, "the source meal and its audited correction remain unchanged");
+  const reused = logFrequentMeal(second[0]!, "2026-10-23T12:00:00Z", "meal-reused");
+  assert.deepEqual({ calories: reused.calories, protein: reused.protein, carbs: reused.carbs, fat: reused.fat }, { calories: 515, protein: 48, carbs: 42, fat: 17 });
+  assert.equal(frequentMealMutationKey(historical), frequentMealMutationKey(structuredClone(historical)));
+  assert.notEqual(frequentMealMutationKey(historical), frequentMealMutationKey({ ...historical, calories: 516 }));
+  assert.ok(frequentMealMutationKey(historical).length < 200);
 });

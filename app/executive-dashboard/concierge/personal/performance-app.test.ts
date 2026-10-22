@@ -126,6 +126,10 @@ test("daily nutrition shows exact remaining values and audited historical correc
   assert.match(source, /Save audited correction/);
   assert.match(source, /Void this meal entry/);
   assert.match(source, /action: "accept_meal"/);
+  assert.match(source, /saveMealAsFrequent\(state, meal\.id\)/);
+  assert.match(source, /frequentMealMutationKey\(meal\)/);
+  assert.match(source, /action: "snapshot"/);
+  assert.match(source, /historical meal and daily totals remain unchanged/i);
 });
 
 test("daily training and recovery keep evidence semantics distinct", () => {
@@ -153,6 +157,11 @@ test("Tonal completion extraction exposes the exact historical-session review", 
   assert.match(source, /enrich-activity-/);
   assert.match(source, /does not create a second completion/);
   assert.doesNotMatch(source, /Completion screenshot ready for review/);
+  assert.match(source, /setTonalPlanProposal\(null\); setTonalPlanFile\(null\); setTonalPlanTargetOrder\(null\)/);
+  assert.match(source, /tonalPlanCommitInFlight\.current/);
+  assert.match(source, /Before photo already attached to this workout/);
+  assert.doesNotMatch(source, /Workout plan already saved/);
+  assert.match(source, /!selectedWorkoutTonalSession\.plannedSource/);
 });
 
 test("recovery screenshots have date-gated editable review and confirmed persistence feedback", () => {

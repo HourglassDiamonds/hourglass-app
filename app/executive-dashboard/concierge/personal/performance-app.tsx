@@ -6,7 +6,7 @@ import { applySterlingProposal, deferAndReflow, retargetSterlingScheduleAdjustme
 import { activateTrainingProgram, createInitialPersonalState, dateKey, previewTrainingWeek, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
-import { deriveFrequentlyEaten, frequentFromMeal, logFrequentMeal, mealName, mealSignature, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
+import { deriveFrequentlyEaten, frequentMealMutationKey, logFrequentMeal, mealName, mealSignature, saveMealAsFrequent, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
 import { acceptActivityProposal, acceptProposal, buildAcceptedActivity, buildAcceptedMeal, completeScheduledWorkoutFromActivity, correctActivityDate as correctActivityDateInState } from "@/lib/continuum/personal/mutations";
 import { compareActivityDate, visibleActivityDateLabel } from "@/lib/continuum/personal/activity-date";
 import { PERFORMANCE_IMAGE_ACCEPT, performanceImageMessage, preparePerformanceImage, type PreparedPerformanceImage } from "@/lib/continuum/personal/image-upload";
@@ -84,6 +84,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [tonalPlanFile, setTonalPlanFile] = useState<File | null>(null);
   const [tonalPlanTargetOrder, setTonalPlanTargetOrder] = useState<number | null>(null);
   const [tonalPlanBusy, setTonalPlanBusy] = useState(false);
+  const tonalPlanCommitInFlight = useRef(false);
   const [tonalPlanFeedback, setTonalPlanFeedback] = useState("");
   const [tonalCompletionFeedback, setTonalCompletionFeedback] = useState("");
   const [, setSelectedTonalSessionOrder] = useState<number | null>(null);
@@ -506,6 +507,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       setTonalCompletionFeedback("Screenshot selected, but this historical session needs reviewed plan evidence before completion can be matched. Nothing was uploaded or saved.");
       return;
     }
+    setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("");
     setMealBusy(true); setIntakeBusy(true); setMealError(""); setIntakeProposal(null);
     try {
       const prepared = await prepareUpload(file, setTonalCompletionFeedback); const image = prepared.file;
@@ -532,6 +534,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     const file = event.target.files?.[0]; event.target.value = "";
     const session = nextTonalSession(state);
     if (!file || !session || state.program.status !== "active") return;
+    setIntakeProposal(null); setIntakeFile(null); setTonalCompletionTargetOrder(null); setCompletionWorkoutId(null); setTonalCompletionFeedback("");
     setTonalPlanTargetOrder(session.order);
     setTonalPlanBusy(true); setTonalPlanFeedback(""); setMealError("");
     try {
@@ -551,6 +554,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     const file = event.target.files?.[0]; event.target.value = "";
     const session = selectedWorkoutTonalSession;
     if (!file || !session || session.completedActivityId || state.program.status !== "active") return;
+    setIntakeProposal(null); setIntakeFile(null); setTonalCompletionTargetOrder(null); setCompletionWorkoutId(null); setTonalCompletionFeedback("");
     setTonalPlanTargetOrder(session.order); setTonalPlanBusy(true); setTonalPlanFeedback(""); setMealError("");
     try {
       const prepared = await prepareUpload(file, setTonalPlanFeedback); const image = prepared.file;
@@ -569,17 +573,18 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   async function acceptUpcomingTonalPlan(input: { title?: string; movements: TonalProgramMovement[] }) {
     const session = tonalPlanTargetOrder === null ? undefined : state.tonal.enrollment.sessions.find((candidate) => candidate.order === tonalPlanTargetOrder); const proposal = tonalPlanProposal; const file = tonalPlanFile;
-    if (!session || !proposal || !file || !proposal.sourceDigest) return;
+    if (!session || !proposal || !file || !proposal.sourceDigest || tonalPlanCommitInFlight.current) return;
+    tonalPlanCommitInFlight.current = true; setTonalPlanBusy(true);
     const at = new Date().toISOString();
     const source = { kind: "tonal_app_screenshot" as const, reference: `sha256:${proposal.sourceDigest}`, digest: proposal.sourceDigest, reviewedAt: at, file: { name: file.name, type: file.type, size: file.size } };
     try {
       const next = planTonalSessionFromScreenshot(state, { sequencePosition: session.order, title: input.title, movements: input.movements, source, approvedAt: at });
       const idempotencyKey = `plan-tonal-${session.order}-${proposal.sourceDigest}`;
       const saved = await persistStateMutation(next, { idempotencyKey, action: "plan_strength_session", entryId: `tonal-plan-${session.order}-${proposal.sourceDigest.slice(0, 32)}`, sourceType: "activity_screenshot", proposal, accepted: { sequencePosition: session.order, sourceDigest: proposal.sourceDigest, title: input.title, movements: input.movements } }, file);
-      setState(saved.state); setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback(saved.duplicate ? "Workout plan already saved" : `Tonal session ${session.order} plan evidence saved successfully`);
+      setState(saved.state); setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback(saved.duplicate ? "Before photo already attached to this workout" : `Before photo attached to Tonal session ${session.order}`);
     } catch (error) {
       setTonalPlanFeedback(error instanceof Error && error.message === "performance-mutation-action-unavailable" ? "Preview cannot audit planned Tonal sessions yet. Nothing changed." : "The planned session was not saved. Review the current sequence and retry.");
-    }
+    } finally { tonalPlanCommitInFlight.current = false; setTonalPlanBusy(false); }
   }
 
   function updateMealItem(id: string, patch: Partial<MealItem>) { setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.map((item) => item.id === id ? { ...item, ...patch } : item) } : null); }
@@ -688,13 +693,12 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     } catch { setMealError("The reviewed manual meal was not saved. Nothing was added."); }
   }
 
-  function saveAsFrequent(meal: MealLog) {
-    const next = frequentFromMeal(meal);
-    setState((current) => {
-      const existing = current.frequentMeals.find((item) => item.signature === next.signature);
-      const saved = existing ? { ...next, id: existing.id, createdAt: existing.createdAt } : next;
-      return { ...current, frequentMeals: [saved, ...current.frequentMeals.filter((item) => item.signature !== next.signature)] };
-    });
+  async function saveAsFrequent(meal: MealLog) {
+    const next = { ...state, frequentMeals: saveMealAsFrequent(state, meal.id) };
+    try {
+      const saved = await persistStateMutation(next, { idempotencyKey: frequentMealMutationKey(meal), action: "snapshot", entryId: meal.id, accepted: next.frequentMeals[0] });
+      setState(saved.state); setMealError("");
+    } catch { setMealError("The frequent meal was not saved. The historical meal and daily totals remain unchanged."); }
   }
 
   function storeFrequent(frequent: FrequentMealCandidate, patch: Partial<FrequentMeal>) {
@@ -820,7 +824,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
               <div className={styles.dailyTotals}>
                 {(["calories", "protein", "carbs", "fat"] as const).map((key) => <div key={key} className={day.remaining[key] < 0 ? styles.overTarget : ""}><span>{key}</span><strong>{day.consumed[key]} / {day.targets[key]}{key === "calories" ? "" : "g"}</strong><small>{day.remaining[key] >= 0 ? `${day.remaining[key]}${key === "calories" ? "" : "g"} remaining` : `${Math.abs(day.remaining[key])}${key === "calories" ? "" : "g"} over`}</small></div>)}
               </div>
-              {day.meals.length ? <div className={styles.dayEntries}>{day.meals.map((meal) => <article className={styles.savedRow} key={meal.id}><span>{meal.mealType ?? "Meal"} · {meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "Sterling estimate reviewed" : meal.frequentMealId ? "Frequently Eaten" : "Founder entered"}{meal.photo ? " · source photo preserved" : ""}</small><div className={styles.compactActions}><button type="button" onClick={() => setEditingMealId((id) => id === meal.id ? null : meal.id)}>Edit</button><button type="button" onClick={() => saveAsFrequent(meal)}>Save as frequent</button><button type="button" onClick={() => void voidMeal(meal.id)}>Void</button>{meal.photo?.storagePath ? <button type="button" onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div>{editingMealId === meal.id ? <MealOccurrenceEditor meal={meal} onSave={(items) => void saveMealCorrection(meal.id, items)} onDone={() => setEditingMealId(null)} /> : null}</article>)}</div> : <p className={styles.emptyState}>No accepted meals for this date.</p>}
+              {day.meals.length ? <div className={styles.dayEntries}>{day.meals.map((meal) => <article className={styles.savedRow} key={meal.id}><span>{meal.mealType ?? "Meal"} · {meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "Sterling estimate reviewed" : meal.frequentMealId ? "Frequently Eaten" : "Founder entered"}{meal.photo ? " · source photo preserved" : ""}</small><div className={styles.compactActions}><button type="button" onClick={() => setEditingMealId((id) => id === meal.id ? null : meal.id)}>Edit</button><button type="button" onClick={() => void saveAsFrequent(meal)}>Save as frequent</button><button type="button" onClick={() => void voidMeal(meal.id)}>Void</button>{meal.photo?.storagePath ? <button type="button" onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div>{editingMealId === meal.id ? <MealOccurrenceEditor meal={meal} onSave={(items) => void saveMealCorrection(meal.id, items)} onDone={() => setEditingMealId(null)} /> : null}</article>)}</div> : <p className={styles.emptyState}>No accepted meals for this date.</p>}
             </section>
 
             <section className={styles.daySection} aria-labelledby={`training-${day.date}`}>
@@ -831,7 +835,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
                   <p>{workout.prescription.notes}</p>
                   {selectedWorkoutTonalSession ? <p className={styles.provenance}>Fit Over 40 · Session {selectedWorkoutTonalSession.order} · {selectedWorkoutTonalSession.plannedSource ? "approved Before Photo" : "Before Photo not attached"} · {selectedWorkoutTonalSession.completedActivityId ? "approved After Photo" : "After Photo not attached"}</p> : <p className={styles.provenance}>{workout.prescription.mode} · {day.activities.some((activity) => activity.scheduledWorkoutId === workout.id) ? "approved completion attached" : "completion not attached"}</p>}
                   {selectedWorkoutTonalSession?.movements.length ? <div className={styles.proposalGrid}>{selectedWorkoutTonalSession.movements.map((movement) => <div key={movement.name}><strong>{movement.name}</strong><small>{[movement.sets ? `${movement.sets} sets` : "", movement.reps ?? "", movement.prescribedResistance ?? ""].filter(Boolean).join(" · ") || "Details unknown"}</small></div>)}</div> : null}
-                  <div className={styles.workoutControls}>{selectedWorkoutTonalSession ? <label className={styles.photoAction}>Before Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={selectedWorkoutTonalSession.order === upcomingTonalSession?.order ? chooseUpcomingTonalScreenshot : chooseHistoricalTonalPlanScreenshot} disabled={tonalPlanBusy || Boolean(selectedWorkoutTonalSession.completedActivityId)} /></label> : <button type="button" disabled title="Before photos are optional and not needed for this activity type">Before Photo · optional</button>}{selectedWorkoutTonalSession ? <label className={`${styles.photoAction} ${styles.primary}`}>After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || day.date > today} /></label> : <label className={`${styles.photoAction} ${styles.primary}`}>After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseSelectedWorkoutCompletion} disabled={intakeBusy || day.date > today || ["deferred", "skipped", "replaced"].includes(workout.status)} /></label>}<button type="button" onClick={() => setModifyOpen((open) => !open)} disabled={["completed", "deferred", "skipped", "replaced"].includes(workout.status)}>Edit</button><button type="button" onClick={() => workout.status === "planned" || workout.status === "unresolved" ? startWorkout(workout) : setActivityFeedback(`Reviewing ${workout.prescription.name}: ${workout.status.replace("_", " ")}.`)}>Review / Complete</button>{["planned", "unresolved", "in_progress"].includes(workout.status) ? <><button type="button" onClick={() => setDeferOpen((open) => !open)}>Defer</button><button type="button" onClick={skipWorkout}>Skip</button></> : null}</div>
+                  <div className={styles.workoutControls}>{selectedWorkoutTonalSession ? <label className={styles.photoAction}>Before Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={selectedWorkoutTonalSession.order === upcomingTonalSession?.order ? chooseUpcomingTonalScreenshot : chooseHistoricalTonalPlanScreenshot} disabled={tonalPlanBusy || Boolean(selectedWorkoutTonalSession.completedActivityId)} /></label> : <button type="button" disabled title="Before photos are optional and not needed for this activity type">Before Photo · optional</button>}{selectedWorkoutTonalSession ? <label className={`${styles.photoAction} ${styles.primary}`} title={selectedWorkoutTonalSession.plannedSource ? undefined : "Approve the matching Before Photo first"}>After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || day.date > today || !selectedWorkoutTonalSession.plannedSource} /></label> : <label className={`${styles.photoAction} ${styles.primary}`}>After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseSelectedWorkoutCompletion} disabled={intakeBusy || day.date > today || ["deferred", "skipped", "replaced"].includes(workout.status)} /></label>}<button type="button" onClick={() => setModifyOpen((open) => !open)} disabled={["completed", "deferred", "skipped", "replaced"].includes(workout.status)}>Edit</button><button type="button" onClick={() => workout.status === "planned" || workout.status === "unresolved" ? startWorkout(workout) : setActivityFeedback(`Reviewing ${workout.prescription.name}: ${workout.status.replace("_", " ")}.`)}>Review / Complete</button>{["planned", "unresolved", "in_progress"].includes(workout.status) ? <><button type="button" onClick={() => setDeferOpen((open) => !open)}>Defer</button><button type="button" onClick={skipWorkout}>Skip</button></> : null}</div>
                   {modifyOpen ? <form className={styles.editPanel} onSubmit={saveModification}><label>Name<input name="name" defaultValue={workout.prescription.name} /></label><label>Minutes<input name="duration" type="number" min="5" max="180" defaultValue={workout.prescription.durationMinutes} /></label><label>Notes<textarea name="notes" defaultValue={workout.prescription.notes} /></label><button className={styles.primary}>Save reviewed edit</button></form> : null}
                   {deferOpen ? <form className={styles.editPanel} onSubmit={deferWorkout}><label>Move to<input name="date" type="date" min={shiftDate(workout.date, 1)} defaultValue={shiftDate(workout.date, 1)} /></label><p>Later sessions reflow; this occurrence keeps its identity and history.</p><button className={styles.primary}>Confirm defer</button></form> : null}
                   {selectedWorkoutTonalSession && !selectedWorkoutTonalSession.plannedSource ? <p className={styles.warning}>A Tonal completion remains blocked until the matching Before Photo is reviewed. No plan details will be fabricated.</p> : null}
@@ -899,7 +903,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
           {selectedWorkoutTonalSession?.movements.length ? <div className={styles.proposalGrid}>{selectedWorkoutTonalSession.movements.map((movement) => <div key={movement.name}><strong>{movement.name}</strong><small>{[movement.sets ? `${movement.sets} sets` : "", movement.reps ?? "", movement.prescribedResistance ?? ""].filter(Boolean).join(" · ") || "Details unknown"}</small></div>)}</div> : null}
           <div className={styles.workoutControls}>
             {selectedWorkoutTonalSession ? <label className={styles.photoAction}>Add Before Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={selectedWorkoutTonalSession.order === upcomingTonalSession?.order ? chooseUpcomingTonalScreenshot : chooseHistoricalTonalPlanScreenshot} disabled={tonalPlanBusy || Boolean(selectedWorkoutTonalSession.completedActivityId)} /></label> : <button type="button" disabled title="Before photos are optional and not needed for this activity type">Add Before Photo · optional</button>}
-            {selectedWorkoutTonalSession ? <label className={`${styles.photoAction} ${styles.primary}`}>Add After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || selectedWorkout.date > today} /></label> : <label className={`${styles.photoAction} ${styles.primary}`}>Add After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseSelectedWorkoutCompletion} disabled={intakeBusy || selectedWorkout.date > today || ["deferred", "skipped", "replaced"].includes(selectedWorkout.status)} /></label>}
+            {selectedWorkoutTonalSession ? <label className={`${styles.photoAction} ${styles.primary}`} title={selectedWorkoutTonalSession.plannedSource ? undefined : "Approve the matching Before Photo first"}>Add After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseTonalCompletionScreenshot} disabled={intakeBusy || selectedWorkout.date > today || !selectedWorkoutTonalSession.plannedSource} /></label> : <label className={`${styles.photoAction} ${styles.primary}`}>Add After Photo<input type="file" accept={PERFORMANCE_IMAGE_ACCEPT} onChange={chooseSelectedWorkoutCompletion} disabled={intakeBusy || selectedWorkout.date > today || ["deferred", "skipped", "replaced"].includes(selectedWorkout.status)} /></label>}
             <button type="button" onClick={() => setModifyOpen((open) => !open)} disabled={["completed", "deferred", "skipped", "replaced"].includes(selectedWorkout.status)}>Edit Workout</button>
             <button type="button" onClick={() => selectedWorkout.status === "planned" || selectedWorkout.status === "unresolved" ? startWorkout(selectedWorkout) : setActivityFeedback(`Reviewing ${selectedWorkout.prescription.name}: ${selectedWorkout.status.replace("_", " ")}.`)}>Review / Complete Workout</button>
           </div>

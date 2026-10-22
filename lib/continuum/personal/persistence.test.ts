@@ -240,6 +240,45 @@ test("one screenshot can persist distinct activities against one source and one 
   assert.equal(db.uploads.size, 0);
 });
 
+test("after evidence enriches the existing scheduled workout activity idempotently and a failed retry preserves it", async () => {
+  const db = fakeSupabase();
+  const active = activateTrainingProgram(configuredState("2026-10-19"), "2026-10-19", "2026-10-18T12:00:00Z");
+  const workoutId = active.schedule.find((workout) => workout.prescription.tonalSessionOrder === 1)!.id;
+  const existing = {
+    id: "activity-existing", timestamp: "2026-10-20T18:00:00Z", occurredOn: "2026-10-20", facts: { activityType: "Tonal" },
+    sourceType: "activity_screenshot" as const, assumptions: [], corrections: [], guidance: "Existing founder-confirmed completion.",
+    idempotencyKey: "accept-activity-existing", scheduledWorkoutId: workoutId, provenance: ["sterling" as const, "user_confirmed" as const],
+  };
+  const accepted = await savePerformanceStateWithClient({
+    founderKey: "founder-a", expectedRevision: 0, state: { ...active, activities: [existing] },
+    mutation: { idempotencyKey: existing.idempotencyKey, action: "accept_activity", entryId: existing.id, accepted: existing },
+  }, db.client);
+  const bytes = pngBytes(6, 2, 6, 4); const digest = createHash("sha256").update(bytes).digest("hex");
+  const proposal: Extract<NaturalIngestionProposal, { kind: "activity" }> = {
+    id: "after-proposal", proposedAt: "2026-10-20T18:05:00Z", sourceType: "activity_screenshot", confidence: "high", assumptions: [], summary: "Visible Tonal results", model: "test",
+    sourceDigest: digest, normalizedSourceDigest: digest, kind: "activity", activity: { activityType: "Tonal", reportedCalories: { value: 280, evidence: "observed" } }, guidance: "Review visible values.",
+  };
+  const enriched = { ...existing, facts: proposal.activity, source: { name: "after.png", type: "image/png", size: bytes.length }, sterlingProposal: proposal };
+  const enrichedState = { ...accepted.state, activities: accepted.state.activities.map((activity) => activity.id === existing.id ? enriched : activity) };
+  const mutation = { idempotencyKey: `enrich-activity-${existing.id}-${digest}`, action: "edit_activity" as const, entryId: existing.id, sourceType: "activity_screenshot" as const, proposal, accepted: enriched };
+  const source = new File([bytes], "after.png", { type: "image/png" });
+
+  const first = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 1, state: enrichedState, mutation, sourceFile: source }, db.client);
+  const retry = await savePerformanceStateWithClient({ founderKey: "founder-a", expectedRevision: 1, state: enrichedState, mutation, sourceFile: source }, db.client);
+  assert.equal(first.state.activities.length, 1);
+  assert.equal(first.state.activities[0]?.id, existing.id);
+  assert.equal(first.state.activities[0]?.scheduledWorkoutId, workoutId);
+  assert.equal(first.state.activities[0]?.source?.storagePath?.includes(existing.id), true);
+  assert.equal(retry.duplicate, true); assert.equal(retry.revision, 2); assert.equal(db.audits.size, 2); assert.equal(db.uploads.size, 1);
+
+  await assert.rejects(() => savePerformanceStateWithClient({
+    founderKey: "founder-a", expectedRevision: 2, state: enrichedState,
+    mutation: { ...mutation, idempotencyKey: `${mutation.idempotencyKey}-tampered`, proposal: { ...proposal, normalizedSourceDigest: "0".repeat(64) } }, sourceFile: source,
+  }, db.client), /source-digest-invalid/);
+  const reloaded = await loadPerformanceStateWithClient("founder-a", "2026-10-20", db.client);
+  assert.deepEqual(reloaded?.state.activities, first.state.activities, "failed after uploads must preserve the existing completion and evidence");
+});
+
 test("recovery screenshots preserve private provenance and original-byte idempotency", async () => {
   const db = fakeSupabase(); const initial = createInitialPersonalState("2026-10-20");
   const bytes = pngBytes(4, 8, 15, 16, 23, 42); const digest = createHash("sha256").update(bytes).digest("hex");

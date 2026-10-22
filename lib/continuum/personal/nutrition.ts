@@ -1,4 +1,4 @@
-import type { FrequentMeal, MealItem, MealLog } from "./types";
+import type { FrequentMeal, MealItem, MealLog, PersonalState } from "./types";
 
 const RECENT_WINDOW_MS = 45 * 86_400_000;
 
@@ -34,6 +34,22 @@ export function frequentFromMeal(meal: MealLog, now = new Date().toISOString()):
     createdAt: now,
     updatedAt: now,
   };
+}
+
+export function saveMealAsFrequent(state: Pick<PersonalState, "meals" | "frequentMeals">, mealId: string, now = new Date().toISOString()): FrequentMeal[] {
+  const meal = state.meals.find((candidate) => candidate.id === mealId);
+  if (!meal) throw new Error("frequent-source-meal-not-found");
+  const candidate = frequentFromMeal(meal, now);
+  const existing = state.frequentMeals.find((item) => item.signature === candidate.signature);
+  const saved = existing ? { ...candidate, id: existing.id, createdAt: existing.createdAt } : candidate;
+  return [saved, ...state.frequentMeals.filter((item) => item.signature !== candidate.signature)];
+}
+
+export function frequentMealMutationKey(meal: MealLog): string {
+  const value = JSON.stringify({ signature: mealSignature(meal), items: meal.items, mealType: meal.mealType, calories: meal.calories, protein: meal.protein, carbs: meal.carbs, fat: meal.fat });
+  let hash = 2_166_136_261;
+  for (let index = 0; index < value.length; index += 1) hash = Math.imul(hash ^ value.charCodeAt(index), 16_777_619);
+  return `save-frequent-${meal.id}-${(hash >>> 0).toString(36)}`;
 }
 
 export type FrequentMealCandidate = FrequentMeal & { useCount: number; lastUsedAt?: string; automatic: boolean };
