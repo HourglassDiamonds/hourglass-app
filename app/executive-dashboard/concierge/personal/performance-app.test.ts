@@ -3,6 +3,10 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import type { ReactElement, ReactNode } from "react";
+import { FrequentMealSaveControl } from "./frequent-meal-save-control";
+import { deriveFrequentlyEaten, saveMealAsFrequent } from "@/lib/continuum/personal/nutrition";
+import type { MealLog } from "@/lib/continuum/personal/types";
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const source = readFileSync(join(directory, "performance-app.tsx"), "utf8");
@@ -130,6 +134,48 @@ test("daily nutrition shows exact remaining values and audited historical correc
   assert.match(source, /frequentMealMutationKey\(meal\)/);
   assert.match(source, /action: "snapshot"/);
   assert.match(source, /historical meal and daily totals remain unchanged/i);
+});
+
+test("the exact historical-meal click shows durable success, exposes the reusable template, and ignores repeats", async () => {
+  const historical: MealLog = {
+    id: "meal-preview-oct-21",
+    timestamp: "2026-10-23T10:57:31.430Z",
+    occurredOn: "2026-10-21",
+    items: [
+      { id: "tenders", name: "Chicken tenders", portion: "3 medium breaded tenders", calories: 360, protein: 30, carbs: 24, fat: 16, confidence: "low" },
+      { id: "ranch", name: "Greek yogurt ranch", portion: "2 tbsp", calories: 35, protein: 2, carbs: 3, fat: 2, confidence: "low" },
+    ],
+    calories: 395, protein: 32, carbs: 27, fat: 18, provenance: ["user_confirmed"],
+  };
+  const original = structuredClone(historical);
+  let interactionCount = 0;
+  let frequentMeals = [] as ReturnType<typeof saveMealAsFrequent>;
+  type ButtonElement = ReactElement<{ children: ReactNode; disabled: boolean; onClick: () => Promise<void> }>;
+
+  const unsaved = FrequentMealSaveControl({
+    saved: false,
+    phase: "idle",
+    onSave: async () => {
+      interactionCount += 1;
+      frequentMeals = saveMealAsFrequent({ meals: [historical], frequentMeals }, historical.id, "2026-10-23T10:57:37.695Z");
+    },
+  }) as ButtonElement;
+  assert.equal(unsaved.props.children, "Save as frequent");
+  await unsaved.props.onClick();
+
+  const saved = FrequentMealSaveControl({
+    saved: true,
+    phase: "idle",
+    onSave: async () => { interactionCount += 1; },
+  }) as ButtonElement;
+  assert.equal(saved.props.children, "Saved as frequent");
+  assert.equal(saved.props.disabled, true);
+  await saved.props.onClick();
+  assert.equal(interactionCount, 1, "a repeated click must not issue another persistence action");
+  assert.equal(frequentMeals.length, 1);
+  assert.equal(deriveFrequentlyEaten([historical], frequentMeals, "2026-10-23T11:00:00Z")[0]?.name, "Chicken tenders, Greek yogurt ranch");
+  assert.deepEqual({ calories: frequentMeals[0]?.calories, protein: frequentMeals[0]?.protein, carbs: frequentMeals[0]?.carbs, fat: frequentMeals[0]?.fat }, { calories: 395, protein: 32, carbs: 27, fat: 18 });
+  assert.deepEqual(historical, original, "the original historical meal and portions remain unchanged");
 });
 
 test("daily training and recovery keep evidence semantics distinct", () => {

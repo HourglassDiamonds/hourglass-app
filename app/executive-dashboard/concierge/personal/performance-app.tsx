@@ -13,6 +13,7 @@ import { PERFORMANCE_IMAGE_ACCEPT, performanceImageMessage, preparePerformanceIm
 import { configureTonalProgram, FIT_OVER_40_WEEKLY_FREQUENCY, markTonalSessionCompletedFromActivity, matchesTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, syncTonalProgramCompletion, tonalEnrollmentReady, tonalSessionOutcome, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "@/lib/continuum/personal/tonal-programs";
 import { mondayFor, weekRecords } from "@/lib/continuum/personal/week-view";
 import type { ActivityFacts, ActivityLog, AuditFact, FrequentMeal, MealEstimate, MealItem, MealLog, NaturalIngestionProposal, PerformedSet, PerformanceSourceType, PersonalState, RecoveryEntry, RecoveryProposalFacts, ScheduledWorkout, SterlingProposal, TonalProgramMovement, WorkoutSession } from "@/lib/continuum/personal/types";
+import { FrequentMealSaveControl, type FrequentMealSavePhase } from "./frequent-meal-save-control";
 import styles from "./performance.module.css";
 
 const STORAGE_KEY = "continuum.personal.performance.v3";
@@ -45,6 +46,9 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const [mealPhoto, setMealPhoto] = useState<{ name: string; type: string; size: number } | null>(null);
   const [mealBusy, setMealBusy] = useState(false);
   const [mealError, setMealError] = useState("");
+  const [frequentSaveFeedback, setFrequentSaveFeedback] = useState("");
+  const [frequentSavePhases, setFrequentSavePhases] = useState<Record<string, FrequentMealSavePhase>>({});
+  const frequentSaveInFlight = useRef(new Set<string>());
   const [lastAddedMealId, setLastAddedMealId] = useState<string | null>(null);
   const [editingMealId, setEditingMealId] = useState<string | null>(null);
   const [editingFrequentId, setEditingFrequentId] = useState<string | null>(null);
@@ -694,11 +698,36 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   }
 
   async function saveAsFrequent(meal: MealLog) {
+    const alreadySaved = state.frequentMeals.some((item) => item.signature === mealSignature(meal));
+    if (alreadySaved) {
+      setFrequentSaveFeedback(`${mealName(meal.items)} is already saved in Frequently Eaten.`);
+      return;
+    }
+    if (frequentSaveInFlight.current.has(meal.id)) return;
+    frequentSaveInFlight.current.add(meal.id);
+    setFrequentSavePhases((current) => ({ ...current, [meal.id]: "saving" }));
+    setFrequentSaveFeedback(""); setMealError("");
     const next = { ...state, frequentMeals: saveMealAsFrequent(state, meal.id) };
     try {
       const saved = await persistStateMutation(next, { idempotencyKey: frequentMealMutationKey(meal), action: "snapshot", entryId: meal.id, accepted: next.frequentMeals[0] });
-      setState(saved.state); setMealError("");
-    } catch { setMealError("The frequent meal was not saved. The historical meal and daily totals remain unchanged."); }
+      setState(saved.state);
+      setFrequentSavePhases((current) => ({ ...current, [meal.id]: "idle" }));
+      setFrequentSaveFeedback(saved.duplicate
+        ? `${mealName(meal.items)} was already saved in Frequently Eaten. No duplicate was created.`
+        : `${mealName(meal.items)} saved as frequent. It is now available in Frequently Eaten.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "performance-save-failed";
+      setFrequentSavePhases((current) => ({ ...current, [meal.id]: "error" }));
+      setMealError(message === "performance-revision-conflict"
+        ? "Performance changed in another session. The latest state was loaded; retry Save as frequent."
+        : message === "unauthorized"
+          ? "Your founder session expired. Sign in again, then retry Save as frequent."
+          : message === "performance-persistence-unavailable"
+            ? "Private Preview persistence is unavailable. Retry when the Preview database is reachable."
+            : "The frequent meal was not saved. Retry; the historical meal and daily totals remain unchanged.");
+    } finally {
+      frequentSaveInFlight.current.delete(meal.id);
+    }
   }
 
   function storeFrequent(frequent: FrequentMealCandidate, patch: Partial<FrequentMeal>) {
@@ -774,6 +803,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   if (initialView !== "progress") return <main className={styles.app} data-personal-performance data-weekly-performance>
     <header className={styles.header}><div><p className={styles.eyebrow}>Personal / Performance</p><h1>Your week, one day at a time.</h1><p>Meals, training, recovery, evidence, and corrections stay with the day they happened.</p></div><span className={styles.private}>Private · {state.program.status === "setup" ? "program not started" : `active since ${state.program.anchorDate}`} · {persistStatus === "saved" ? "saved" : persistStatus === "saving" ? "saving…" : persistStatus === "browser" ? "browser fallback" : persistStatus === "conflict" ? "refreshed after conflict" : persistStatus}</span></header>
     {activityFeedback ? <p aria-live="polite" className={styles.warning}>{activityFeedback}</p> : null}
+    {frequentSaveFeedback ? <p role="status" aria-live="polite" className={styles.provenance}>{frequentSaveFeedback} <Link href="/executive-dashboard/concierge/personal/food">Open Frequently Eaten</Link></p> : null}
     {mealError ? <p role="alert" className={styles.warning}>{mealError}</p> : null}
     <nav className={styles.tabs} aria-label="Performance sections">{tabs.map((tab) => <Link key={tab.id} href={tab.href} aria-current={tab.id === "today" ? "page" : undefined}>{tab.label}</Link>)}</nav>
 
@@ -824,7 +854,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
               <div className={styles.dailyTotals}>
                 {(["calories", "protein", "carbs", "fat"] as const).map((key) => <div key={key} className={day.remaining[key] < 0 ? styles.overTarget : ""}><span>{key}</span><strong>{day.consumed[key]} / {day.targets[key]}{key === "calories" ? "" : "g"}</strong><small>{day.remaining[key] >= 0 ? `${day.remaining[key]}${key === "calories" ? "" : "g"} remaining` : `${Math.abs(day.remaining[key])}${key === "calories" ? "" : "g"} over`}</small></div>)}
               </div>
-              {day.meals.length ? <div className={styles.dayEntries}>{day.meals.map((meal) => <article className={styles.savedRow} key={meal.id}><span>{meal.mealType ?? "Meal"} · {meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "Sterling estimate reviewed" : meal.frequentMealId ? "Frequently Eaten" : "Founder entered"}{meal.photo ? " · source photo preserved" : ""}</small><div className={styles.compactActions}><button type="button" onClick={() => setEditingMealId((id) => id === meal.id ? null : meal.id)}>Edit</button><button type="button" onClick={() => void saveAsFrequent(meal)}>Save as frequent</button><button type="button" onClick={() => void voidMeal(meal.id)}>Void</button>{meal.photo?.storagePath ? <button type="button" onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div>{editingMealId === meal.id ? <MealOccurrenceEditor meal={meal} onSave={(items) => void saveMealCorrection(meal.id, items)} onDone={() => setEditingMealId(null)} /> : null}</article>)}</div> : <p className={styles.emptyState}>No accepted meals for this date.</p>}
+              {day.meals.length ? <div className={styles.dayEntries}>{day.meals.map((meal) => <article className={styles.savedRow} key={meal.id}><span>{meal.mealType ?? "Meal"} · {meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "Sterling estimate reviewed" : meal.frequentMealId ? "Frequently Eaten" : "Founder entered"}{meal.photo ? " · source photo preserved" : ""}</small><div className={styles.compactActions}><button type="button" onClick={() => setEditingMealId((id) => id === meal.id ? null : meal.id)}>Edit</button><FrequentMealSaveControl saved={state.frequentMeals.some((item) => item.signature === mealSignature(meal))} phase={frequentSavePhases[meal.id] ?? "idle"} onSave={() => saveAsFrequent(meal)} /><button type="button" onClick={() => void voidMeal(meal.id)}>Void</button>{meal.photo?.storagePath ? <button type="button" onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div>{editingMealId === meal.id ? <MealOccurrenceEditor meal={meal} onSave={(items) => void saveMealCorrection(meal.id, items)} onDone={() => setEditingMealId(null)} /> : null}</article>)}</div> : <p className={styles.emptyState}>No accepted meals for this date.</p>}
             </section>
 
             <section className={styles.daySection} aria-labelledby={`training-${day.date}`}>
@@ -865,6 +895,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   return <main className={styles.app} data-personal-performance>
     <header className={styles.header}><div><p className={styles.eyebrow}>Personal / Performance</p><h1>Tell Sterling what happened. Keep the plan alive.</h1><p>Daily training, recovery, and nutrition with explicit decisions and durable context.</p></div><span className={styles.private}>Private · {state.program.status === "setup" ? "program not started" : `active since ${state.program.anchorDate}`} · {persistStatus === "saved" ? "saved" : persistStatus === "saving" ? "saving…" : persistStatus === "browser" ? "browser fallback" : persistStatus === "conflict" ? "refreshed after conflict" : persistStatus}</span></header>
     {activityFeedback ? <p aria-live="polite" className={styles.warning}>{activityFeedback}</p> : null}
+    {frequentSaveFeedback ? <p role="status" aria-live="polite" className={styles.provenance}>{frequentSaveFeedback} <Link href="/executive-dashboard/concierge/personal/food">Open Frequently Eaten</Link></p> : null}
     <nav className={styles.tabs} aria-label="Performance sections">{tabs.map((tab) => <Link key={tab.id} href={tab.href} aria-current={view === tab.id ? "page" : undefined}>{tab.label}</Link>)}</nav>
 
     {state.program.status === "setup" ? <section className={`${styles.card} ${styles.hero}`} data-program-status="setup">
@@ -943,7 +974,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       {lastAddedMealId && state.meals.some((meal) => meal.id === lastAddedMealId) ? <section className={`${styles.card} ${styles.undoBar}`} aria-live="polite"><div><p className={styles.kicker}>Logged</p><strong>{state.meals.find((meal) => meal.id === lastAddedMealId)?.items.map((item) => item.name).join(", ")}</strong></div><div className={styles.actions}><button onClick={() => setEditingMealId((id) => id === lastAddedMealId ? null : lastAddedMealId)}>Edit</button><button onClick={undoLastMeal}>Undo</button></div>{editingMealId === lastAddedMealId ? <MealOccurrenceEditor meal={state.meals.find((meal) => meal.id === lastAddedMealId)!} onSave={(items) => void saveMealCorrection(lastAddedMealId, items)} onDone={() => setEditingMealId(null)} /> : null}</section> : null}
       {mealEstimate ? <section className={styles.card}><p className={styles.kicker}>Review required</p><h2>Human input → Sterling proposal → your approval</h2><p>Nothing is saved until you accept the editable values below. The untouched Sterling estimate, assumptions, and your corrections are retained separately for provenance.</p>{intakeProposal?.assumptions.map((assumption) => <p key={assumption} className={styles.provenance}>Assumption · {assumption}</p>)}<MealReview estimate={mealEstimate} onChange={updateMealItem} onRemove={(id) => setMealEstimate((estimate) => estimate ? { ...estimate, items: estimate.items.filter((item) => item.id !== id) } : null)} onAdd={() => setMealEstimate((estimate) => estimate ? { ...estimate, items: [...estimate.items, { id: uid("meal-item"), name: "", portion: "", calories: 0, protein: 0, carbs: 0, fat: 0, confidence: "low" }] } : null)} onAccept={acceptMeal} onReject={() => void rejectIntake()} /></section> : null}
       <section className={styles.card}><p className={styles.kicker}>Manual meal</p><h2>Log without a photo.</h2><form className={styles.recoveryForm} onSubmit={saveManualMeal}><div className={styles.formGrid}><label>Food<input name="name" placeholder="Chicken, rice, greens" required /></label><label>Portion<input name="portion" placeholder="6 oz / 1 cup" /></label><label>Meal type<select name="mealType"><option value="">Not supplied</option><option>breakfast</option><option>lunch</option><option>dinner</option><option>snack</option></select></label></div><div className={styles.formGrid}><label>Calories<input name="calories" type="number" min="0" required /></label><label>Protein<input name="protein" type="number" min="0" required /></label><label>Carbs<input name="carbs" type="number" min="0" required /></label><label>Fat<input name="fat" type="number" min="0" required /></label></div><button className={styles.primary}>Save manual meal</button></form></section>
-      <section className={styles.card}><p className={styles.kicker}>Saved meals · canonical</p>{state.meals.length ? state.meals.slice(0, 10).map((meal) => <div className={styles.savedRow} key={meal.id}><span>{meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "AI estimate retained · user-approved values canonical" : meal.frequentMealId ? "one-tap relog" : "manual"}</small><div className={styles.compactActions}><button onClick={() => saveAsFrequent(meal)}>{state.frequentMeals.some((item) => item.signature === mealSignature(meal)) ? "Update frequent" : "Save as frequent"}</button>{meal.photo?.storagePath ? <button onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div></div>) : <p>No meals saved yet.</p>}</section>
+      <section className={styles.card}><p className={styles.kicker}>Saved meals · canonical</p>{state.meals.length ? state.meals.slice(0, 10).map((meal) => <div className={styles.savedRow} key={meal.id}><span>{meal.items.map((item) => item.name).join(", ")}</span><strong>{meal.calories} kcal · {meal.protein}P · {meal.carbs}C · {meal.fat}F</strong><small>{meal.aiEstimate ? "AI estimate retained · user-approved values canonical" : meal.frequentMealId ? "one-tap relog" : "manual"}</small><div className={styles.compactActions}><FrequentMealSaveControl saved={state.frequentMeals.some((item) => item.signature === mealSignature(meal))} phase={frequentSavePhases[meal.id] ?? "idle"} onSave={() => saveAsFrequent(meal)} />{meal.photo?.storagePath ? <button onClick={() => void deleteSource("meal", meal.id)}>Delete source image</button> : null}</div></div>) : <p>No meals saved yet.</p>}</section>
     </div> : null}
 
     {view === "recovery" ? <div className={styles.stack}><section className={styles.card}><p className={styles.kicker}>Morning check-in</p><h2>Log only what you know.</h2><p>Every field is optional. Measured/manual numbers stay distinct from subjective ratings; absent WHOOP metrics remain absent.</p><RecoveryForm existing={latestRecovery} onSubmit={saveRecovery} /></section>{latestRecovery ? <section className={styles.card}><p className={styles.kicker}>Saved today</p><div className={styles.metricGrid}>{Object.entries(latestRecovery).filter(([, value]) => value && typeof value === "object" && "source" in value).map(([key, value]) => { const metric = value as { value: string | number; source: string }; return <div key={key}><span>{key}</span><strong>{metric.value}</strong><small>{metric.source}</small></div>; })}</div></section> : null}</div> : null}
