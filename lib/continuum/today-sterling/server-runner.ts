@@ -95,6 +95,15 @@ export type SterlingScopeCoverage = {
   workUnitIds: readonly string[];
 };
 
+export type SterlingTargetStoppedAtStage =
+  | "target-resolution-failed"
+  | "target-thread-live-retrieval-incomplete"
+  | "target-evidence-binding-incomplete"
+  | "target-chronology-incomplete"
+  | "target-package-oversized"
+  | "target-package-cross-unit-evidence"
+  | null;
+
 export type SterlingTodayAssembly = {
   workingSet: SterlingTodayWorkingSet;
   requestWorkingSet: SterlingTodayWorkingSet;
@@ -109,6 +118,13 @@ export type SterlingTodayAssembly = {
     scheduledThreadCount: number;
     successfullyLiveRetrievedThreadCount: number;
     missingOrFailedThreadCount: number;
+    providerFailedThreadCount: number;
+    budgetDeferredThreadCount: number;
+    requiredIndexedMessageCount: number;
+    successfullyLiveRetrievedMessageCount: number;
+    includedEvidenceMessageCount: number;
+    excludedOrAmbiguousAssociationCount: number;
+    stoppedAtStage: SterlingTargetStoppedAtStage;
     latestVerifiedSourceAt: string | null;
     complete: boolean;
   };
@@ -174,6 +190,13 @@ export type SterlingTodaySafeResult = {
     scheduledThreadCount: number;
     successfullyLiveRetrievedThreadCount: number;
     missingOrFailedThreadCount: number;
+    providerFailedThreadCount: number;
+    budgetDeferredThreadCount: number;
+    requiredIndexedMessageCount: number;
+    successfullyLiveRetrievedMessageCount: number;
+    includedEvidenceMessageCount: number;
+    excludedOrAmbiguousAssociationCount: number;
+    stoppedAtStage: SterlingTargetStoppedAtStage;
     latestVerifiedSourceAt: string | null;
     complete: boolean;
   };
@@ -673,6 +696,47 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     if (!targetBlockedReason && successful !== resolution.requiredThreadIds.length) {
       targetBlockedReason = "target-required-evidence-incomplete";
     }
+    const providerFailedThreadCount = targetOutcomes.filter((outcome) =>
+      outcome?.status === "unavailable" && outcome.safeErrorCategory !== "not-requested-budget-exhausted" &&
+      outcome.safeErrorCategory !== "missing-indexed-context").length;
+    const budgetDeferredThreadCount = targetOutcomes.filter((outcome) =>
+      outcome?.safeErrorCategory === "not-requested-budget-exhausted").length;
+    const requiredIndexedMessageCount = targetOutcomes.reduce((total, outcome) =>
+      total + (outcome?.indexedMessageCount ?? 0), 0);
+    const successfullyLiveRetrievedMessageCount = targetOutcomes.reduce((total, outcome) =>
+      total + (outcome?.status === "complete_live" ? outcome.liveMessageCount : 0), 0);
+    let stoppedAtStage: NonNullable<SterlingTodayAssembly["targetDiagnostics"]>["stoppedAtStage"] =
+      targetBlockedReason ? (targetBlockedReason === "target-required-evidence-incomplete"
+        ? "target-thread-live-retrieval-incomplete" : "target-resolution-failed") : null;
+    let includedEvidenceMessageCount = 0;
+    let requestTargetWorkingSet: SterlingTodayWorkingSet | null = null;
+    if (selected) {
+      requestTargetWorkingSet = buildSterlingTodayTargetWorkingSet(workingSet, selected.workUnitId, {
+        reviewedRequiredThreadIds: resolution.requiredThreadIds,
+      });
+      const requiredThreadSet = new Set(resolution.requiredThreadIds);
+      const packageGmailEvidence = requestTargetWorkingSet.evidence.filter((row) => row.sourceType === "gmail");
+      includedEvidenceMessageCount = packageGmailEvidence.filter((row) =>
+        row.threadId != null && requiredThreadSet.has(row.threadId)).length;
+      const packageUnit = requestTargetWorkingSet.workUnits[0];
+      const bindingComplete = resolution.requiredThreadIds.every((threadId) =>
+        packageUnit?.targetThreadBindings?.some((binding) => binding.threadId === threadId) &&
+        packageGmailEvidence.some((row) => row.threadId === threadId));
+      const crossUnitEvidence = packageGmailEvidence.some((row) =>
+        row.threadId == null || !requiredThreadSet.has(row.threadId));
+      const messageIds = packageGmailEvidence.map((row) => row.messageId).filter((id): id is string => Boolean(id));
+      const chronology = packageGmailEvidence.map((row) => row.timestamp);
+      const chronologyComplete = includedEvidenceMessageCount === requiredIndexedMessageCount &&
+        includedEvidenceMessageCount === successfullyLiveRetrievedMessageCount &&
+        messageIds.length === includedEvidenceMessageCount && new Set(messageIds).size === messageIds.length &&
+        chronology.every((timestamp, index) => index === 0 || chronology[index - 1]! <= timestamp) &&
+        packageGmailEvidence.every((row) =>
+          row.provenance === "indexed_gmail+live_quote_stripped_current_message");
+      if (!stoppedAtStage && crossUnitEvidence) stoppedAtStage = "target-package-cross-unit-evidence";
+      else if (!stoppedAtStage && !bindingComplete) stoppedAtStage = "target-evidence-binding-incomplete";
+      else if (!stoppedAtStage && !chronologyComplete) stoppedAtStage = "target-chronology-incomplete";
+      if (stoppedAtStage) targetBlockedReason ??= "target-required-evidence-incomplete";
+    }
     targetDiagnostics = {
       selectedWorkUnitId: selected?.workUnitId ?? null,
       secondaryWorkUnitIds: resolution.secondary.map((unit) => unit.workUnitId),
@@ -680,11 +744,18 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       scheduledThreadCount: scheduled,
       successfullyLiveRetrievedThreadCount: successful,
       missingOrFailedThreadCount: resolution.requiredThreadIds.length - successful,
+      providerFailedThreadCount,
+      budgetDeferredThreadCount,
+      requiredIndexedMessageCount,
+      successfullyLiveRetrievedMessageCount,
+      includedEvidenceMessageCount,
+      excludedOrAmbiguousAssociationCount: resolution.secondary.length,
+      stoppedAtStage,
       latestVerifiedSourceAt,
       complete: targetBlockedReason === null,
     };
     if (selected) {
-      requestWorkingSet = buildSterlingTodayTargetWorkingSet(workingSet, selected.workUnitId);
+      requestWorkingSet = requestTargetWorkingSet!;
       target = { caseId: input.targetCase, selectedWorkUnitId: selected.workUnitId,
         relatedWorkUnitIds: matching.map((row) => row.workUnitId) };
       targetPackage = summarizeSterlingTodayTargetPackage(requestWorkingSet);
@@ -890,6 +961,13 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
       scheduledThreadCount: assembly.targetDiagnostics.scheduledThreadCount,
       successfullyLiveRetrievedThreadCount: assembly.targetDiagnostics.successfullyLiveRetrievedThreadCount,
       missingOrFailedThreadCount: assembly.targetDiagnostics.missingOrFailedThreadCount,
+      providerFailedThreadCount: assembly.targetDiagnostics.providerFailedThreadCount,
+      budgetDeferredThreadCount: assembly.targetDiagnostics.budgetDeferredThreadCount,
+      requiredIndexedMessageCount: assembly.targetDiagnostics.requiredIndexedMessageCount,
+      successfullyLiveRetrievedMessageCount: assembly.targetDiagnostics.successfullyLiveRetrievedMessageCount,
+      includedEvidenceMessageCount: assembly.targetDiagnostics.includedEvidenceMessageCount,
+      excludedOrAmbiguousAssociationCount: assembly.targetDiagnostics.excludedOrAmbiguousAssociationCount,
+      stoppedAtStage: assembly.targetDiagnostics.stoppedAtStage,
       latestVerifiedSourceAt: assembly.targetDiagnostics.latestVerifiedSourceAt,
       complete: assembly.targetDiagnostics.complete,
     } : null,

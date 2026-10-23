@@ -30,6 +30,7 @@ const INSTRUCTIONS = [
   "An unavailable or disabled calendar means unknown calendar context, not confirmation that no events exist.",
   "Evidence-backed active work without a canonical project may receive a responsible-party and next-step classification with projectId null. Explain that it is provisional, cite exact evidence, and propose no canonical mutation for it.",
   "A scoped_evidence_group means only that the server authorized those exact threads for joint assessment. It does not establish a shared person or project identity.",
+  "A server_reviewed_target targetThreadBinding permits that exact thread only in this request. It is not a persisted canonical association and must not be treated as an identity merge.",
   "When exact sender identity, historical thread continuity, an exact operational identifier, or a canonical source record supports a possible association, place it in relationshipProposals for founder review. Never propose an association from name similarity alone, and never treat a relationship proposal as already applied.",
   "Typed identifiers distinguish projects, orders, certificates, and requests. Never treat a certificate or order identifier as a canonical project number.",
   "Every conclusion must cite exact request-local evidenceId handles such as E0001 from the working set. Never cite sourceRef, messageId, threadId, or any invented identifier as evidenceRefs.",

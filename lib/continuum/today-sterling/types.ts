@@ -65,6 +65,15 @@ export type SterlingWorkingUnit = {
   threadIds: readonly string[];
   sourceRefs: readonly string[];
   evidenceRefs: readonly string[];
+  /**
+   * Request-local evidence bindings approved by a fixed server-owned target.
+   * These never represent or persist a canonical Project/Gmail association.
+   */
+  targetThreadBindings?: readonly {
+    threadId: string;
+    associationBasis: "persisted_work_unit" | "server_reviewed_target";
+    persistedCanonicalAssociation: boolean;
+  }[];
 };
 
 export const STERLING_RELATIONSHIP_PROPOSAL_KINDS = [

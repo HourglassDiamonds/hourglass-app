@@ -8,12 +8,34 @@ function digest(value: unknown): string {
 export function buildSterlingTodayTargetWorkingSet(
   workingSet: SterlingTodayWorkingSet,
   workUnitId: string,
+  options: { reviewedRequiredThreadIds?: readonly string[] } = {},
 ): SterlingTodayWorkingSet {
   const workUnit = workingSet.workUnits.find(row => row.workUnitId === workUnitId);
   if (!workUnit) throw new Error(`sterling-target-unknown-work-unit:${workUnitId}`);
 
-  const evidenceIds = new Set(workUnit.evidenceRefs);
+  const reviewedRequiredThreadIds = [...new Set(
+    (options.reviewedRequiredThreadIds ?? []).map((threadId) => threadId.trim()).filter(Boolean),
+  )];
+  const reviewedThreadSet = new Set(reviewedRequiredThreadIds);
+  const reviewedEvidence = workingSet.evidence.filter((row) =>
+    row.sourceType === "gmail" && row.threadId != null && reviewedThreadSet.has(row.threadId));
+  const evidenceIds = new Set([...workUnit.evidenceRefs, ...reviewedEvidence.map((row) => row.evidenceId)]);
   const evidence = workingSet.evidence.filter(row => evidenceIds.has(row.evidenceId));
+  const targetWorkUnit = reviewedRequiredThreadIds.length === 0 ? workUnit : {
+    ...workUnit,
+    threadIds: [...new Set([...workUnit.threadIds, ...reviewedRequiredThreadIds])],
+    sourceRefs: [...new Set([...workUnit.sourceRefs, ...reviewedEvidence.map((row) => row.sourceRef)])],
+    evidenceRefs: [...new Set([...workUnit.evidenceRefs, ...reviewedEvidence.map((row) => row.evidenceId)])],
+    targetThreadBindings: reviewedRequiredThreadIds.map((threadId) => {
+      const persistedCanonicalAssociation = workUnit.threadIds.includes(threadId);
+      return {
+        threadId,
+        associationBasis: persistedCanonicalAssociation
+          ? "persisted_work_unit" as const : "server_reviewed_target" as const,
+        persistedCanonicalAssociation,
+      };
+    }),
+  };
   const projectIds = new Set(workUnit.projectId ? [workUnit.projectId] : []);
   const projects = workingSet.projects.filter(row => projectIds.has(row.projectId));
   const jobs = workingSet.jobs.filter(row => row.projectId != null && projectIds.has(row.projectId));
@@ -26,7 +48,7 @@ export function buildSterlingTodayTargetWorkingSet(
   const calendar = workingSet.calendar.filter(row => evidenceIds.has(row.evidenceId));
   const previousToday = workingSet.previousToday.filter(row =>
     workUnit.projectId != null && row.projectId === workUnit.projectId);
-  const material = { sourceSnapshotId: workingSet.evidenceSnapshotId, workUnit, projects, jobs, people,
+  const material = { sourceSnapshotId: workingSet.evidenceSnapshotId, workUnit: targetWorkUnit, projects, jobs, people,
     evidence, calendarAvailability: workingSet.calendarAvailability, calendar, previousToday };
   const targetDigest = digest(material);
 
@@ -38,7 +60,7 @@ export function buildSterlingTodayTargetWorkingSet(
     projects,
     jobs,
     evidence,
-    workUnits: [workUnit],
+    workUnits: [targetWorkUnit],
     calendar,
     previousToday,
   };
@@ -56,6 +78,7 @@ export function summarizeSterlingTodayTargetPackage(workingSet: SterlingTodayWor
       observedIdentifiers: workUnit.observedIdentifiers,
       typedIdentifiers: workUnit.typedIdentifiers,
       threadIds: workUnit.threadIds,
+      targetThreadBindings: workUnit.targetThreadBindings ?? [],
       sourceRefs: workUnit.sourceRefs,
     },
     canonicalProjects: workingSet.projects.map(project => ({

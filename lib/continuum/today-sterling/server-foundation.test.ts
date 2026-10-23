@@ -22,6 +22,9 @@ import {
 } from "./sarah-semantic-authorization";
 import { validateSarahSemanticAssembly } from "./sarah-semantic";
 import type { SterlingTodayAssembly } from "./server-runner";
+import { buildSterlingTodayTargetWorkingSet } from "./target";
+import { createSterlingEvidenceHandleMap } from "./evidence-handles";
+import type { SterlingTodayWorkingSet } from "./types";
 
 const ROOT = process.cwd();
 const LEASE_MIGRATION = "supabase/migrations/20261011003057_continuum_sterling_today_run_lease.sql";
@@ -241,38 +244,79 @@ describe("Sterling Sarah one-shot semantic authorization", () => {
     assert.match(table, /expires_at timestamptz/);
   });
 
-  it("requires the exact canonical Sarah thread, same-request live chronology, and latest Mod 9 STL evidence", () => {
+  it("binds the exact reviewed Sarah thread into a temporary canonical package without persisting an association", () => {
     const projectId = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1";
     const threadId = "1a0881b53067a9e6";
     const workUnitId = `project:${projectId}`;
+    const canonicalEvidence = {
+      evidenceId: `canonical:project:${projectId}`, sourceType: "canonical" as const,
+      sourceRef: `continuum:project:${projectId}`, timestamp: "2026-10-01T12:00:00.000Z",
+      direction: "unknown" as const, subject: "Sarah / C026143", excerpt: "Canonical project; lifecycle=cad.",
+      attachmentFilenames: [], messageId: null, threadId: null, projectIds: [projectId], personIds: [],
+      provenance: "canonical_project_read_only",
+    };
     const evidence = {
       evidenceId: "gmail:sarah:latest", sourceType: "gmail" as const,
       sourceRef: "gmail:thread:private:message:private", timestamp: "2026-10-21T17:58:38.000Z",
       direction: "inbound" as const, subject: "Mod 9 CAD and STL", excerpt: "Updated Mod 9 STL attached.",
       attachmentFilenames: ["mod9.stl"], messageId: "private", threadId,
-      projectIds: [projectId], personIds: [], provenance: "indexed_gmail+live_quote_stripped_current_message",
+      projectIds: [], personIds: [], provenance: "indexed_gmail+live_quote_stripped_current_message",
     };
+    const unrelated = { ...evidence, evidenceId: "gmail:unrelated:message", sourceRef: "gmail:thread:other:message:other",
+      messageId: "other", threadId: "aaaaaaaaaaaaaaaa", subject: "Unrelated supplier thread" };
     const unit = { workUnitId, kind: "canonical_project" as const, identityBasis: "canonical_project" as const,
       projectId, label: "Sarah", observedIdentifiers: ["C026143"],
-      typedIdentifiers: [{ kind: "project" as const, value: "C026143" }], threadIds: [threadId],
-      sourceRefs: [evidence.sourceRef], evidenceRefs: [evidence.evidenceId] };
+      typedIdentifiers: [{ kind: "project" as const, value: "C026143" }], threadIds: [],
+      sourceRefs: [canonicalEvidence.sourceRef], evidenceRefs: [canonicalEvidence.evidenceId] };
+    const base = {
+      contractVersion: "sterling-today-working-set-v3", runId: "run", evidenceSnapshotId: "snapshot",
+      sourceWatermark: "watermark", generatedAt: evidence.timestamp, mutationMode: "shadow_read_only",
+      people: [], projects: [{ projectId, title: "Sarah / C026143", projectKind: "custom_new_jewelry",
+        lifecycleStage: "cad", recordVersion: "v1", people: [], specs: [], openJobIds: [], gmailThreadIds: [] }],
+      jobs: [], evidence: [canonicalEvidence, evidence, unrelated], workUnits: [unit, {
+        workUnitId: "provisional:ambiguous", kind: "provisional_evidence", identityBasis: "source_thread",
+        projectId: null, label: "Ambiguous", observedIdentifiers: [], typedIdentifiers: [],
+        threadIds: [unrelated.threadId], sourceRefs: [unrelated.sourceRef], evidenceRefs: [unrelated.evidenceId],
+      }], calendarAvailability: { status: "disabled", reason: "fixture" }, calendar: [], previousToday: [],
+    } satisfies SterlingTodayWorkingSet;
+    const target = buildSterlingTodayTargetWorkingSet(base, workUnitId, {
+      reviewedRequiredThreadIds: [threadId],
+    });
+    assert.deepEqual(base.workUnits[0]?.threadIds, []);
+    assert.deepEqual(base.projects[0]?.gmailThreadIds, []);
+    assert.deepEqual(target.workUnits[0]?.targetThreadBindings, [{ threadId,
+      associationBasis: "server_reviewed_target", persistedCanonicalAssociation: false }]);
+    assert.deepEqual(target.evidence.map((row) => row.evidenceId), [canonicalEvidence.evidenceId, evidence.evidenceId]);
+    const handles = createSterlingEvidenceHandleMap(target);
+    assert.equal(handles.evidenceIdToHandle.has(evidence.evidenceId), true);
+    assert.equal(handles.evidenceIdToHandle.has(unrelated.evidenceId), false);
     const assembly = {
       target: { caseId: "SARAH/C026143", selectedWorkUnitId: workUnitId, relatedWorkUnitIds: [workUnitId] },
       targetBlockedReason: null,
       targetDiagnostics: { selectedWorkUnitId: workUnitId, secondaryWorkUnitIds: ["ambiguous"],
         requiredThreadCount: 1, scheduledThreadCount: 1, successfullyLiveRetrievedThreadCount: 1,
-        missingOrFailedThreadCount: 0, latestVerifiedSourceAt: evidence.timestamp, complete: true },
-      requestWorkingSet: { workUnits: [unit], evidence: [evidence] },
+        missingOrFailedThreadCount: 0, providerFailedThreadCount: 0, budgetDeferredThreadCount: 0,
+        requiredIndexedMessageCount: 1, successfullyLiveRetrievedMessageCount: 1,
+        includedEvidenceMessageCount: 1, excludedOrAmbiguousAssociationCount: 1, stoppedAtStage: null,
+        latestVerifiedSourceAt: evidence.timestamp, complete: true },
+      workingSet: base,
+      requestWorkingSet: target,
     } as unknown as SterlingTodayAssembly;
     assert.deepEqual(validateSarahSemanticAssembly(assembly), { ok: true });
     assert.deepEqual(validateSarahSemanticAssembly({ ...assembly, targetDiagnostics: {
       ...assembly.targetDiagnostics!, successfullyLiveRetrievedThreadCount: 0, missingOrFailedThreadCount: 1,
-      complete: false,
-    } }), { ok: false, reason: "sarah-evidence-incomplete" });
-    const unrelated = { ...evidence, threadId: "aaaaaaaaaaaaaaaa" };
+      complete: false, stoppedAtStage: "target-thread-live-retrieval-incomplete",
+    } }), { ok: false, reason: "target-thread-live-retrieval-incomplete" });
     assert.deepEqual(validateSarahSemanticAssembly({ ...assembly,
       requestWorkingSet: { ...assembly.requestWorkingSet, evidence: [evidence, unrelated] },
-    }), { ok: false, reason: "sarah-live-chronology-unverified" });
+    }), { ok: false, reason: "target-package-cross-unit-evidence" });
+    assert.deepEqual(validateSarahSemanticAssembly({ ...assembly, targetDiagnostics: {
+      ...assembly.targetDiagnostics!, includedEvidenceMessageCount: 2,
+    } }), { ok: false, reason: "target-chronology-incomplete" });
+    assert.deepEqual(validateSarahSemanticAssembly({ ...assembly,
+      requestWorkingSet: { ...target, evidence: target.evidence.map((row) => row.sourceType === "gmail"
+        ? { ...row, excerpt: "x".repeat(70_000) } : row) },
+    }), { ok: false, reason: "target-package-oversized" });
   });
 });
 

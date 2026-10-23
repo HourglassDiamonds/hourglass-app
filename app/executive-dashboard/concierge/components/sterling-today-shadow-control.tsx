@@ -112,10 +112,19 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
             <Count label="Scheduled target threads" value={state.target.scheduledThreadCount} />
             <Count label="Live retrieved" value={state.target.successfullyLiveRetrievedThreadCount} />
             <Count label="Missing or failed" value={state.target.missingOrFailedThreadCount} />
+            <Count label="Provider failed" value={state.target.providerFailedThreadCount} />
+            <Count label="Budget-deferred" value={state.target.budgetDeferredThreadCount} />
+            <Count label="Indexed messages required" value={state.target.requiredIndexedMessageCount} />
+            <Count label="Live messages retrieved" value={state.target.successfullyLiveRetrievedMessageCount} />
+            <Count label="Evidence messages included" value={state.target.includedEvidenceMessageCount} />
+            <Count label="Excluded ambiguous associations" value={state.target.excludedOrAmbiguousAssociationCount} />
             <Count label="Secondary matches" value={state.target.secondaryWorkUnitRefs.length} />
           </dl>
           <p className="mt-3">Latest verified source: {state.target.latestVerifiedSourceAt ?? "Unavailable"}</p>
           <p className="mt-3">Target completeness: {state.target.complete ? "complete" : "blocked"}</p>
+          {state.target.stoppedAtStage ? <p className="mt-2 text-[#d5a98c]">
+            Stopped at: {state.target.stoppedAtStage}
+          </p> : null}
         </div>
       ) : null}
       {state.continuity ? (

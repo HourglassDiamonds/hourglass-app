@@ -61,6 +61,35 @@ function safeFailure(
   };
 }
 
+function safeSemanticFailureFromAssembly(
+  assembly: Awaited<ReturnType<typeof assembleSterlingTodayShadow>>,
+  safeError: string,
+): SterlingTodaySafeResult {
+  const result = safeAssemblyResult(assembly);
+  const targetFailureStage = [
+    "target-resolution-failed",
+    "target-thread-live-retrieval-incomplete",
+    "target-evidence-binding-incomplete",
+    "target-chronology-incomplete",
+    "target-package-oversized",
+    "target-package-cross-unit-evidence",
+  ].includes(safeError) ? safeError as NonNullable<typeof result.target>["stoppedAtStage"] : null;
+  return {
+    ...result,
+    ok: false,
+    mode: "semantic",
+    verdict: "UNAVAILABLE",
+    validation: null,
+    proposal: null,
+    acceptance: null,
+    target: result.target ? {
+      ...result.target,
+      stoppedAtStage: targetFailureStage ?? result.target.stoppedAtStage,
+    } : null,
+    safeErrors: [...new Set([...result.safeErrors, safeError])].sort(),
+  };
+}
+
 async function authenticatedReadClient(): Promise<ReturnType<typeof getSupabaseAdmin>> {
   const auth = await getAuthenticatedGmailHistoryStores();
   if (!auth.ok) return null;
@@ -127,8 +156,9 @@ export async function runAuthenticatedSterlingTodaySarahSemantic(): Promise<Ster
                 : "sarah-semantic-authorization-unavailable");
   }
 
+  let assembly: Awaited<ReturnType<typeof assembleSterlingTodayShadow>> | null = null;
   try {
-    const assembly = await assembleSterlingTodayShadow({
+    assembly = await assembleSterlingTodayShadow({
       client,
       targetCase: STERLING_TODAY_SARAH_TARGET,
     });
@@ -152,13 +182,14 @@ export async function runAuthenticatedSterlingTodaySarahSemantic(): Promise<Ster
       .catch(() => false);
     const safeError = error instanceof SarahSemanticPreflightError ? error.safeReason
       : error instanceof SterlingTodayRequestError && error.code === "request-package-too-large"
-        ? "sarah-semantic-package-too-large"
+        ? "target-package-oversized"
         : error instanceof SterlingTodayRequestError && error.kind === "timeout"
           ? "sarah-semantic-model-timeout"
           : error instanceof SyntaxError ? "sarah-semantic-output-invalid"
             : "sarah-semantic-run-unavailable";
-    return safeFailure("semantic", "UNAVAILABLE",
-      finished ? safeError : "sarah-semantic-outcome-unknown");
+    const finalSafeError = finished ? safeError : "sarah-semantic-outcome-unknown";
+    return assembly ? safeSemanticFailureFromAssembly(assembly, finalSafeError)
+      : safeFailure("semantic", "UNAVAILABLE", finalSafeError);
   }
 }
 

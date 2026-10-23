@@ -115,6 +115,9 @@ describe("Sterling privacy-safe coverage diagnostics", () => {
     assembly.targetDiagnostics = { selectedWorkUnitId: "provisional:private-0",
       secondaryWorkUnitIds: ["provisional:private-1"], requiredThreadCount: 1,
       scheduledThreadCount: 1, successfullyLiveRetrievedThreadCount: 1, missingOrFailedThreadCount: 0,
+      providerFailedThreadCount: 0, budgetDeferredThreadCount: 0, requiredIndexedMessageCount: 1,
+      successfullyLiveRetrievedMessageCount: 1, includedEvidenceMessageCount: 1,
+      excludedOrAmbiguousAssociationCount: 1, stoppedAtStage: null,
       latestVerifiedSourceAt: "2026-10-21T10:00:00.000Z", complete: true };
     const serialized = JSON.stringify(safeAssemblyResult(assembly));
     for (const forbidden of ["Private client name", "private Gmail body", "private subject", "private-file.pdf",
