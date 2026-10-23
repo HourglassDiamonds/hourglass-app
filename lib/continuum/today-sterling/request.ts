@@ -38,6 +38,56 @@ const INSTRUCTIONS = [
   "Use the exact runId and evidenceSnapshotId supplied. Return only the strict structured object.",
 ].join(" ");
 
+export type SterlingTodayRequestPackage = {
+  requestBody: string;
+  requestBytes: number;
+  serializedInputBytes: number;
+  componentBytes: {
+    instructions: number;
+    workingSet: number;
+    outputSchema: number;
+    envelopeAndEncodingOverhead: number;
+  };
+};
+
+/** The single serializer for semantic execution and no-model package preflight. */
+export function buildSterlingTodayRequestPackage(input: {
+  model: string;
+  workingSet: SterlingTodayWorkingSet;
+  maxOutputTokens?: number;
+  disableTruncation?: boolean;
+}): SterlingTodayRequestPackage {
+  const evidenceHandles = createSterlingEvidenceHandleMap(input.workingSet);
+  const serialized = JSON.stringify(evidenceHandles.requestWorkingSet);
+  const maxOutputTokens = isPositiveFiniteInteger(input.maxOutputTokens)
+    ? input.maxOutputTokens : STERLING_TODAY_MAX_OUTPUT_TOKENS;
+  const instructions = `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`;
+  const requestBody = JSON.stringify({ model: input.model, store: false, max_output_tokens: maxOutputTokens,
+    ...(input.disableTruncation ? { truncation: "disabled" as const } : {}),
+    reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
+    instructions, input: serialized,
+    text: { format: { type: "json_schema", name: "sterling_today_proposal_v5", strict: true,
+      schema: STERLING_TODAY_OUTPUT_SCHEMA } } });
+  const requestBytes = Buffer.byteLength(requestBody);
+  const serializedInputBytes = Buffer.byteLength(serialized);
+  const instructionsBytes = Buffer.byteLength(instructions);
+  const outputSchemaBytes = Buffer.byteLength(JSON.stringify(STERLING_TODAY_OUTPUT_SCHEMA));
+  return {
+    requestBody,
+    requestBytes,
+    serializedInputBytes,
+    componentBytes: {
+      instructions: instructionsBytes,
+      workingSet: serializedInputBytes,
+      outputSchema: outputSchemaBytes,
+      envelopeAndEncodingOverhead: Math.max(
+        0,
+        requestBytes - serializedInputBytes - instructionsBytes - outputSchemaBytes,
+      ),
+    },
+  };
+}
+
 type ResponsesError = { code?: unknown; message?: unknown; param?: unknown; type?: unknown };
 type ResponsesBody = { status?: string; error?: ResponsesError | null; output_text?: string;
   incomplete_details?: { reason?: unknown } | null;
@@ -124,17 +174,15 @@ export async function requestSterlingTodayProposal(input: {
   usage: { inputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null } }> {
   const started = Date.now();
   const evidenceHandles = createSterlingEvidenceHandleMap(input.workingSet);
-  const serialized = JSON.stringify(evidenceHandles.requestWorkingSet);
   const maxOutputTokens = isPositiveFiniteInteger(input.maxOutputTokens)
     ? input.maxOutputTokens : STERLING_TODAY_MAX_OUTPUT_TOKENS;
-  const requestBody = JSON.stringify({ model: input.model, store: false, max_output_tokens: maxOutputTokens,
-    ...(input.disableTruncation ? { truncation: "disabled" as const } : {}),
-    reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
-    instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
-    text: { format: { type: "json_schema", name: "sterling_today_proposal_v5", strict: true,
-      schema: STERLING_TODAY_OUTPUT_SCHEMA } } });
-  const requestBytes = Buffer.byteLength(requestBody);
-  if (isPositiveFiniteInteger(input.maxRequestBytes) && requestBytes > input.maxRequestBytes) {
+  const requestPackage = buildSterlingTodayRequestPackage({
+    model: input.model,
+    workingSet: input.workingSet,
+    maxOutputTokens,
+    disableTruncation: input.disableTruncation,
+  });
+  if (isPositiveFiniteInteger(input.maxRequestBytes) && requestPackage.requestBytes > input.maxRequestBytes) {
     throw new SterlingTodayRequestError({ kind: "input", code: "request-package-too-large",
       elapsedMs: Date.now() - started, maxOutputTokens });
   }
@@ -149,7 +197,7 @@ export async function requestSterlingTodayProposal(input: {
     const response = await (input.fetchImpl ?? fetch)(CONCIERGE_SOL_RESPONSES_ENDPOINT, {
       method: "POST", signal: controller.signal,
       headers: { authorization: `Bearer ${input.apiKey}`, "content-type": "application/json" },
-      body: requestBody,
+      body: requestPackage.requestBody,
     });
     const requestId = response.headers.get("x-request-id");
     if (!response.ok) {
@@ -176,7 +224,8 @@ export async function requestSterlingTodayProposal(input: {
     const requestProposal = parseSterlingTodayProposal(raw);
     if (!requestProposal) throw new SyntaxError("sterling-today-invalid-contract");
     const proposal = resolveSterlingEvidenceHandles(requestProposal, evidenceHandles.handleToEvidenceId);
-    return { proposal, latencyMs: Date.now() - started, inputBytes: Buffer.byteLength(serialized), outputBytes: Buffer.byteLength(text),
+    return { proposal, latencyMs: Date.now() - started, inputBytes: requestPackage.serializedInputBytes,
+      outputBytes: Buffer.byteLength(text),
       usage: { inputTokens: json.usage?.input_tokens ?? null, outputTokens: json.usage?.output_tokens ?? null,
         reasoningTokens: json.usage?.output_tokens_details?.reasoning_tokens ?? null,
         totalTokens: json.usage?.total_tokens ?? null } };

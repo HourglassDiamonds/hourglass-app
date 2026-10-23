@@ -20,7 +20,7 @@ import {
   createSarahSemanticAuthorizationClaim,
   createSupabaseSarahSemanticAuthorizationStore,
 } from "./sarah-semantic-authorization";
-import { validateSarahSemanticAssembly } from "./sarah-semantic";
+import { prepareSarahSemanticPackage, validateSarahSemanticAssembly } from "./sarah-semantic";
 import type { SterlingTodayAssembly } from "./server-runner";
 import { buildSterlingTodayTargetWorkingSet } from "./target";
 import { createSterlingEvidenceHandleMap } from "./evidence-handles";
@@ -303,6 +303,13 @@ describe("Sterling Sarah one-shot semantic authorization", () => {
       requestWorkingSet: target,
     } as unknown as SterlingTodayAssembly;
     assert.deepEqual(validateSarahSemanticAssembly(assembly), { ok: true });
+    const packagePreflight = prepareSarahSemanticPackage(assembly);
+    assert.equal(packagePreflight.ok, true);
+    assert.equal(packagePreflight.diagnostics.messageCountParity, true);
+    assert.equal(packagePreflight.diagnostics.sourceAttributionValid, true);
+    assert.equal(packagePreflight.diagnostics.mod9EvidencePresent, true);
+    assert.equal(packagePreflight.diagnostics.requestByteCeilingPassed, true);
+    assert.ok((packagePreflight.diagnostics.serializedRequestBytes ?? 0) > 0);
     assert.deepEqual(validateSarahSemanticAssembly({ ...assembly, targetDiagnostics: {
       ...assembly.targetDiagnostics!, successfullyLiveRetrievedThreadCount: 0, missingOrFailedThreadCount: 1,
       complete: false, stoppedAtStage: "target-thread-live-retrieval-incomplete",
@@ -315,8 +322,23 @@ describe("Sterling Sarah one-shot semantic authorization", () => {
     } }), { ok: false, reason: "target-chronology-incomplete" });
     assert.deepEqual(validateSarahSemanticAssembly({ ...assembly,
       requestWorkingSet: { ...target, evidence: target.evidence.map((row) => row.sourceType === "gmail"
+        ? { ...row, direction: "unknown" as const } : row) },
+    }), { ok: false, reason: "target-chronology-incomplete" });
+    const duplicateEvidence = { ...evidence, evidenceId: "gmail:sarah:duplicate",
+      sourceRef: "gmail:thread:private:message:duplicate" };
+    assert.deepEqual(validateSarahSemanticAssembly({ ...assembly,
+      targetDiagnostics: { ...assembly.targetDiagnostics!, requiredIndexedMessageCount: 2,
+        successfullyLiveRetrievedMessageCount: 2, includedEvidenceMessageCount: 2 },
+      requestWorkingSet: { ...target, evidence: [...target.evidence, duplicateEvidence], workUnits: [{
+        ...target.workUnits[0]!, evidenceRefs: [...target.workUnits[0]!.evidenceRefs, duplicateEvidence.evidenceId],
+      }] },
+    }), { ok: false, reason: "target-chronology-incomplete" });
+    assert.deepEqual(validateSarahSemanticAssembly({ ...assembly,
+      requestWorkingSet: { ...target, evidence: target.evidence.map((row) => row.sourceType === "gmail"
         ? { ...row, excerpt: "x".repeat(70_000) } : row) },
     }), { ok: false, reason: "target-package-oversized" });
+    const safeDiagnostics = JSON.stringify(packagePreflight.diagnostics);
+    assert.doesNotMatch(safeDiagnostics, /Mod 9 CAD and STL|Updated Mod 9 STL attached|private/i);
   });
 });
 
@@ -383,6 +405,35 @@ describe("Sterling server execution boundaries", () => {
     assert.match(control, /disabled=\{executionPending\}/);
   });
 
+  it("exposes a fixed founder-only Sarah package preflight with no model or authorization claim", () => {
+    const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
+    const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
+    const runner = read("lib/continuum/today-sterling/server-runner.ts");
+    const control = read("app/executive-dashboard/concierge/components/sterling-today-shadow-control.tsx");
+    const preflightAction = action.slice(action.indexOf("export async function runSterlingTodaySarahPackagePreflightAction"),
+      action.indexOf("export async function runSterlingTodaySarahSemanticAction"));
+    const preflightRuntime = runtime.slice(runtime.indexOf("export async function runAuthenticatedSterlingTodaySarahPackagePreflight"),
+      runtime.indexOf("export async function runAuthenticatedSterlingTodaySarahSemantic"));
+    assert.match(preflightAction, /void _formData/);
+    assert.match(preflightAction, /runAuthenticatedSterlingTodaySarahPackagePreflight\(\)/);
+    assert.doesNotMatch(preflightAction, /\.get\(|Object\.fromEntries|threadId|projectId|targetCase/);
+    assert.match(preflightRuntime, /const client = await authenticatedReadClient\(\)/);
+    assert.match(preflightRuntime, /targetCase: STERLING_TODAY_SARAH_TARGET/);
+    assert.match(preflightRuntime, /liveRetrievalScope: "target_only"/);
+    assert.match(preflightRuntime, /expectedTargetThreadIds: \[STERLING_TODAY_SARAH_THREAD_ID\]/);
+    assert.match(preflightRuntime, /prepareSarahSemanticPackage/);
+    assert.doesNotMatch(preflightRuntime,
+      /getConciergeOpenAiApiKey|requestSterlingTodayProposal|executeSterlingTodaySemantic|authorizationStore|\.claim\(|\.finish\(/);
+    assert.match(runner, /input\.liveRetrievalScope === "target_only"/);
+    assert.match(runner, /expectedTargetThreadIds\.some/);
+    assert.match(runner, /targetThreadIds: targetOnlyScopeInvalid \? \[\] : targetThreadIdsForPlanning/);
+    assert.match(control, /Run Sarah Package Preflight/);
+    const preflightForm = control.slice(control.indexOf("<form action={sarahPackagePreflightAction}"),
+      control.indexOf("</form>", control.indexOf("<form action={sarahPackagePreflightAction}")));
+    assert.doesNotMatch(preflightForm, /<input|<select|<textarea|name=/);
+    assert.match(control, /disabled=\{executionPending\}/);
+  });
+
   it("exposes a separately gated, fixed Sarah semantic action without enabling general semantics", () => {
     const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
     const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
@@ -411,7 +462,7 @@ describe("Sterling server execution boundaries", () => {
 
   it("blocks an unsafe fixed target before the Gmail loader and never expands it from secondary matches", () => {
     const runner = read("lib/continuum/today-sterling/server-runner.ts");
-    assert.match(runner, /preliminaryTargetResolution\?\.blockedReason \? indexed\s*: await loadLiveTodayOperationalFacts/);
+    assert.match(runner, /const threadContext = retrievalBlocked \? indexed\s*: await loadLiveTodayOperationalFacts/);
     assert.match(runner, /targetThreadIdsForPlanning = preliminaryTargetResolution/);
     assert.doesNotMatch(runner, /targetUnitsForPlanning\.flatMap\(\(unit\) => unit\.threadIds\)/);
     assert.match(runner, /threadIds: execution\.scheduledThreadIds/);

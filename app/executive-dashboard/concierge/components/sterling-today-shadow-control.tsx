@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import {
   runSterlingTodayAssemblyAction,
   runSterlingTodaySarahAssemblyAction,
+  runSterlingTodaySarahPackagePreflightAction,
   runSterlingTodaySarahSemanticAction,
   runSterlingTodaySemanticAction,
   type SterlingTodayActionState,
@@ -127,6 +128,44 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
           </p> : null}
         </div>
       ) : null}
+      {state.packagePreflight ? (
+        <div className="mt-5 rounded-xl border border-[#ad9164]/30 p-4 text-[12px] text-[#b8aa9d]">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">Sarah package preflight</p>
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+            <Count label="Required target threads" value={state.packagePreflight.requiredTargetThreadCount} />
+            <Count label="Scheduled target threads" value={state.packagePreflight.scheduledTargetThreadCount} />
+            <Count label="Live retrieved threads" value={state.packagePreflight.liveRetrievedTargetThreadCount} />
+            <Count label="Indexed messages" value={state.packagePreflight.indexedMessageCount} />
+            <Count label="Live messages" value={state.packagePreflight.liveMessageCount} />
+            <Count label="Included messages" value={state.packagePreflight.includedMessageCount} />
+            <Count label="Evidence references" value={state.packagePreflight.citationHandleCount} />
+            <Count label="Serialized request bytes" value={state.packagePreflight.serializedRequestBytes} />
+            <Count label="Request-byte ceiling" value={state.packagePreflight.requestByteCeiling} />
+          </dl>
+          <p className="mt-3">Message parity: {state.packagePreflight.messageCountParity ? "pass" : "fail"}</p>
+          <p>Chronology: {state.packagePreflight.chronologyValid ? "pass" : "fail"}</p>
+          <p>Source attribution: {state.packagePreflight.sourceAttributionValid ? "pass" : "fail"}</p>
+          <p>Source provenance: {state.packagePreflight.provenanceValid ? "pass" : "fail"}</p>
+          <p>October 21 Mod 9 evidence: {state.packagePreflight.mod9EvidencePresent ? "present" : "absent"}</p>
+          <p>64,000-byte ceiling: {state.packagePreflight.requestByteCeilingPassed ? "pass" : "fail"}</p>
+          <p className="mt-3">Verified chronology: <Timestamp value={state.packagePreflight.earliestVerifiedMessageAt} />
+            {" — "}<Timestamp value={state.packagePreflight.latestVerifiedMessageAt} /></p>
+          {state.packagePreflight.componentBytes ? (
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+              <Count label="Instructions bytes" value={state.packagePreflight.componentBytes.instructions} />
+              <Count label="Working-set bytes" value={state.packagePreflight.componentBytes.workingSet} />
+              <Count label="Schema bytes" value={state.packagePreflight.componentBytes.outputSchema} />
+              <Count label="Envelope/encoding bytes" value={state.packagePreflight.componentBytes.envelopeAndEncodingOverhead} />
+              <Count label="Evidence-record bytes" value={state.packagePreflight.componentBytes.evidenceRecords} />
+              <Count label="Operational-text bytes" value={state.packagePreflight.componentBytes.operationalText} />
+              <Count label="Attachment metadata bytes" value={state.packagePreflight.componentBytes.attachmentMetadata} />
+              <Count label="Repeated operational-text bytes" value={state.packagePreflight.componentBytes.repeatedOperationalText} />
+              <Count label="Quoted-text bytes" value={state.packagePreflight.componentBytes.quotedText} />
+              <Count label="Possible signature bytes" value={state.packagePreflight.componentBytes.possibleSignatureText} />
+            </dl>
+          ) : null}
+        </div>
+      ) : null}
       {state.continuity ? (
         <div className="mt-5 rounded-xl border border-white/10 p-4">
           <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
@@ -207,12 +246,17 @@ export function SterlingTodayShadowControl({ semanticAvailable, sarahSemanticAva
 }) {
   const [assembly, assemblyAction, assemblyPending] = useActionState(runSterlingTodayAssemblyAction, null);
   const [sarahAssembly, sarahAssemblyAction, sarahAssemblyPending] = useActionState(runSterlingTodaySarahAssemblyAction, null);
+  const [sarahPackagePreflight, sarahPackagePreflightAction, sarahPackagePreflightPending] = useActionState(
+    runSterlingTodaySarahPackagePreflightAction,
+    null,
+  );
   const [sarahSemantic, sarahSemanticAction, sarahSemanticPending] = useActionState(
     runSterlingTodaySarahSemanticAction,
     null,
   );
   const [semantic, semanticAction, semanticPending] = useActionState(runSterlingTodaySemanticAction, null);
-  const executionPending = assemblyPending || sarahAssemblyPending || sarahSemanticPending || semanticPending;
+  const executionPending = assemblyPending || sarahAssemblyPending || sarahPackagePreflightPending ||
+    sarahSemanticPending || semanticPending;
   return (
     <section className="mt-8 max-w-2xl rounded-3xl border border-[#ad9164]/25 bg-[#17130f] p-6 md:p-8">
       <p className="text-[10px] uppercase tracking-[0.24em] text-[#ad9164]">Founder shadow execution</p>
@@ -233,6 +277,12 @@ export function SterlingTodayShadowControl({ semanticAvailable, sarahSemanticAva
             {sarahAssemblyPending ? "Assembling Sarah evidence…" : "Run Sarah Evidence Assembly"}
           </button>
         </form>
+        <form action={sarahPackagePreflightAction} className="mt-3">
+          <button type="submit" disabled={executionPending}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">
+            {sarahPackagePreflightPending ? "Measuring Sarah package…" : "Run Sarah Package Preflight"}
+          </button>
+        </form>
         <form action={sarahSemanticAction} className="mt-3">
           <button type="submit" disabled={!sarahSemanticAvailable || executionPending}
             className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">
@@ -246,6 +296,7 @@ export function SterlingTodayShadowControl({ semanticAvailable, sarahSemanticAva
         </p>
       </div>
       {sarahAssembly ? <SafeResult state={sarahAssembly} /> : null}
+      {sarahPackagePreflight ? <SafeResult state={sarahPackagePreflight} /> : null}
       {sarahSemantic ? <><SafeResult state={sarahSemantic} /><SemanticProposal state={sarahSemantic} /></> : null}
       <form action={assemblyAction} className="mt-7">
         <button type="submit" disabled={executionPending}

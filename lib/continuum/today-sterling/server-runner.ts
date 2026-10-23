@@ -62,6 +62,7 @@ import type {
   SterlingTodayValidationResult,
   SterlingTodayWorkingSet,
 } from "./types";
+import type { SarahSemanticPackageDiagnostics } from "./sarah-semantic";
 import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
   acceptanceIdentifiers,
@@ -176,8 +177,9 @@ export type SterlingTodaySemanticCompletion = {
 
 export type SterlingTodaySafeResult = {
   ok: boolean;
-  mode: "assembly" | "semantic";
-  verdict: SterlingTodaySemanticCompletion["verdict"] | "ASSEMBLY_ONLY" | "UNAVAILABLE" | "DISABLED" | "BUSY";
+  mode: "assembly" | "package_preflight" | "semantic";
+  verdict: SterlingTodaySemanticCompletion["verdict"] | "ASSEMBLY_ONLY" | "PACKAGE_READY" |
+    "PACKAGE_BLOCKED" | "UNAVAILABLE" | "DISABLED" | "BUSY";
   counts: SterlingTodayAssembly["counts"] | null;
   completeness: SterlingEvidenceCompletenessReport["aggregate"] | null;
   scope: { total: number; resolved: number; unresolved: number } | null;
@@ -207,6 +209,7 @@ export type SterlingTodaySafeResult = {
     "providerRateLimitedThreadCount" | "otherProviderErrorThreadCount" | "missingIndexedThreadCount" |
     "budgetDeferredThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
   performance: null | SterlingTodaySemanticCompletion["performance"];
+  packagePreflight: SarahSemanticPackageDiagnostics | null;
   validation: null | { accepted: boolean; errorCount: number; mutationProposalCount: number };
   proposal: SterlingSafeSemanticProposal | null;
   acceptance: null | {
@@ -284,6 +287,8 @@ type AssembleInput = {
   client: SupabaseClient;
   now?: Date;
   targetCase?: string | null;
+  liveRetrievalScope?: "portfolio" | "target_only";
+  expectedTargetThreadIds?: readonly string[];
   createGmailBatch?: () => Promise<LiveSourceViewerBatch | null>;
   continuity?: {
     mode: "assembly_planning_only";
@@ -506,6 +511,13 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   }) : null;
   const targetThreadIdsForPlanning = preliminaryTargetResolution && preliminaryTargetResolution.blockedReason === null
     ? [...preliminaryTargetResolution.requiredThreadIds] : [];
+  const expectedTargetThreadIds = [...new Set(input.expectedTargetThreadIds ?? [])].sort();
+  const actualTargetThreadIds = [...targetThreadIdsForPlanning].sort();
+  const targetOnlyScopeInvalid = input.liveRetrievalScope === "target_only" && (
+    !input.targetCase || expectedTargetThreadIds.length === 0 ||
+    expectedTargetThreadIds.length !== actualTargetThreadIds.length ||
+    expectedTargetThreadIds.some((threadId, index) => threadId !== actualTargetThreadIds[index])
+  );
   const targetPlanningSet = new Set(targetThreadIdsForPlanning);
   const prioritizedRequiredLiveThreadIds = [
     ...targetThreadIdsForPlanning,
@@ -523,12 +535,14 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     persistenceFailureCount: 0,
     semanticEvidenceReusable: false,
   };
-  let selectedLiveThreadIds = preliminaryTargetResolution?.blockedReason
-    ? [] : prioritizedRequiredLiveThreadIds.slice(0, STERLING_GMAIL_REQUEST_BUDGET);
-  let budgetDeferredThreadIds = preliminaryTargetResolution?.blockedReason
-    ? [] : prioritizedRequiredLiveThreadIds.slice(STERLING_GMAIL_REQUEST_BUDGET);
+  const retrievalBlocked = Boolean(preliminaryTargetResolution?.blockedReason) || targetOnlyScopeInvalid;
+  let selectedLiveThreadIds = retrievalBlocked ? [] : input.liveRetrievalScope === "target_only"
+    ? targetThreadIdsForPlanning : prioritizedRequiredLiveThreadIds.slice(0, STERLING_GMAIL_REQUEST_BUDGET);
+  let budgetDeferredThreadIds = retrievalBlocked ? [] : input.liveRetrievalScope === "target_only"
+    ? requiredLiveThreadIds.filter((threadId) => !targetPlanningSet.has(threadId))
+    : prioritizedRequiredLiveThreadIds.slice(STERLING_GMAIL_REQUEST_BUDGET);
   let priorVerifications = new Map<string, SterlingThreadVerificationMetadata>();
-  if (input.continuity && !preliminaryTargetResolution?.blockedReason) {
+  if (input.continuity && !retrievalBlocked && input.liveRetrievalScope !== "target_only") {
     try {
       const digests = requiredLiveThreadIds.map((threadId) =>
         sterlingThreadKeyDigest(threadId, input.continuity!.hmacKey));
@@ -577,7 +591,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   const execution = finalizeSterlingGmailExecution({
     selectedLiveThreadIds,
     budgetDeferredThreadIds,
-    targetThreadIds: targetThreadIdsForPlanning,
+    targetThreadIds: targetOnlyScopeInvalid ? [] : targetThreadIdsForPlanning,
     requestBudget: STERLING_GMAIL_REQUEST_BUDGET,
   });
   for (const threadId of execution.budgetDeferredThreadIds) {
@@ -593,11 +607,12 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     });
   }
   const loaderDiagnostics: { value: TodayLiveEnrichmentDiagnostics | null } = { value: null };
-  const threadContext = preliminaryTargetResolution?.blockedReason ? indexed
+  const threadContext = retrievalBlocked ? indexed
     : await loadLiveTodayOperationalFacts(indexed, {
       threadIds: execution.scheduledThreadIds,
       preserveThreadOrder: true,
-      maxThreadFetches: STERLING_GMAIL_REQUEST_BUDGET,
+      maxThreadFetches: input.liveRetrievalScope === "target_only"
+        ? execution.scheduledThreadIds.length : STERLING_GMAIL_REQUEST_BUDGET,
       ...(input.createGmailBatch ? { createBatch: input.createGmailBatch } : {}),
       onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
       onDiagnostics: (diagnostics) => { loaderDiagnostics.value = diagnostics; },
@@ -683,7 +698,8 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     const resolution = resolveSterlingTarget({ workingSet, definition, matchingUnits: matching,
       canonicalProjectIds: canonicalProjectIdsByKey.get(definition.key) ?? new Set<string>() });
     const selected = resolution.selected;
-    targetBlockedReason = preliminaryTargetResolution?.blockedReason ?? resolution.blockedReason;
+    targetBlockedReason = preliminaryTargetResolution?.blockedReason ??
+      (targetOnlyScopeInvalid ? "target-required-evidence-missing" : resolution.blockedReason);
     const targetOutcomes = resolution.requiredThreadIds.map((threadId) =>
       liveThreadOutcomes.find((outcome) => outcome.threadId === threadId));
     const successful = targetOutcomes.filter((outcome) => outcome?.status === "complete_live").length;
@@ -988,6 +1004,7 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
       failuresByCode: assembly.gmail.failuresByCode,
     } : null,
     performance: { ...assembly.performance, modelLatencyMs: null, inputBytes: null, outputBytes: null, tokenUsage: null },
+    packagePreflight: null,
     validation: null,
     proposal: null,
     acceptance: null,

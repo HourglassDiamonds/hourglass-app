@@ -22,6 +22,8 @@ import {
   SarahSemanticPreflightError,
   STERLING_TODAY_SARAH_MAX_OUTPUT_TOKENS,
   STERLING_TODAY_SARAH_MAX_REQUEST_BYTES,
+  STERLING_TODAY_SARAH_THREAD_ID,
+  prepareSarahSemanticPackage,
   validateSarahSemanticAssembly,
 } from "./sarah-semantic";
 import { SterlingTodayRequestError } from "./request";
@@ -36,7 +38,7 @@ import {
 import { STERLING_TODAY_SARAH_TARGET } from "./scope";
 
 function safeFailure(
-  mode: "assembly" | "semantic",
+  mode: "assembly" | "package_preflight" | "semantic",
   verdict: "UNAVAILABLE" | "DISABLED" | "BUSY",
   safeError: string,
 ): SterlingTodaySafeResult {
@@ -54,6 +56,7 @@ function safeFailure(
     continuity: null,
     gmail: null,
     performance: null,
+    packagePreflight: null,
     validation: null,
     proposal: null,
     acceptance: null,
@@ -129,6 +132,35 @@ export async function runAuthenticatedSterlingTodaySarahAssembly(): Promise<Ster
 }
 
 /**
+ * Fixed founder-only Sarah package preflight. It performs exact target retrieval
+ * and exact semantic serialization, then stops before authorization or model use.
+ */
+export async function runAuthenticatedSterlingTodaySarahPackagePreflight(): Promise<SterlingTodaySafeResult> {
+  const client = await authenticatedReadClient();
+  if (!client) return safeFailure("package_preflight", "UNAVAILABLE", "unauthorized-or-unavailable");
+  try {
+    const assembly = await assembleSterlingTodayShadow({
+      client,
+      targetCase: STERLING_TODAY_SARAH_TARGET,
+      liveRetrievalScope: "target_only",
+      expectedTargetThreadIds: [STERLING_TODAY_SARAH_THREAD_ID],
+    });
+    const preflight = prepareSarahSemanticPackage(assembly);
+    const safe = safeAssemblyResult(assembly);
+    return {
+      ...safe,
+      ok: preflight.ok,
+      mode: "package_preflight",
+      verdict: preflight.ok ? "PACKAGE_READY" : "PACKAGE_BLOCKED",
+      packagePreflight: preflight.diagnostics,
+      safeErrors: preflight.ok ? safe.safeErrors : [...new Set([...safe.safeErrors, preflight.reason])].sort(),
+    };
+  } catch {
+    return safeFailure("package_preflight", "UNAVAILABLE", "sarah-package-preflight-unavailable");
+  }
+}
+
+/**
  * Fixed, founder-only, one-shot Sarah semantic experiment. It accepts no
  * caller-owned target and consumes its authorization before any Gmail read.
  */
@@ -161,6 +193,8 @@ export async function runAuthenticatedSterlingTodaySarahSemantic(): Promise<Ster
     assembly = await assembleSterlingTodayShadow({
       client,
       targetCase: STERLING_TODAY_SARAH_TARGET,
+      liveRetrievalScope: "target_only",
+      expectedTargetThreadIds: [STERLING_TODAY_SARAH_THREAD_ID],
     });
     const preflight = validateSarahSemanticAssembly(assembly);
     if (!preflight.ok) throw new SarahSemanticPreflightError(preflight.reason);

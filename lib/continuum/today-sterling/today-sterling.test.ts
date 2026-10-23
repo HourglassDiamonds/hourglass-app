@@ -4,7 +4,7 @@ import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import { buildSterlingTodayWorkingSet } from "./working-set";
-import { requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_TODAY_TIMEOUT_ENV,
+import { buildSterlingTodayRequestPackage, requestSterlingTodayProposal, resolveSterlingTodayTimeoutMs, STERLING_TODAY_TIMEOUT_ENV,
   STERLING_TODAY_MAX_OUTPUT_TOKENS, STERLING_TODAY_REASONING_EFFORT, STERLING_TODAY_TIMEOUT_MS,
   SterlingTodayRequestError } from "./request";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
@@ -447,8 +447,11 @@ describe("Sterling-native Today", () => {
     const sourceEvidenceId = set.workUnits[0]!.evidenceRefs[0]!;
     const evidenceHandle = createSterlingEvidenceHandleMap(set).evidenceIdToHandle.get(sourceEvidenceId)!;
     let calls = 0;
+    const prepared = buildSterlingTodayRequestPackage({ model: "gpt-5.6-sol", workingSet: set,
+      maxOutputTokens: 8_000, disableTruncation: true });
     const fetchImpl: typeof fetch = async (_url, init) => {
       calls += 1;
+      assert.equal(String(init?.body), prepared.requestBody);
       const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
       assert.equal(body.store, false);
       assert.equal(body.max_output_tokens, 8_000);
@@ -462,6 +465,8 @@ describe("Sterling-native Today", () => {
     await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-5.6-sol", workingSet: set,
       maxOutputTokens: 8_000, maxRequestBytes: 64_000, disableTruncation: true, fetchImpl });
     assert.equal(calls, 1);
+    assert.equal(prepared.requestBytes, Buffer.byteLength(prepared.requestBody));
+    assert.equal(prepared.requestBytes, Object.values(prepared.componentBytes).reduce((sum, bytes) => sum + bytes, 0));
 
     calls = 0;
     await assert.rejects(
