@@ -442,6 +442,38 @@ describe("Sterling-native Today", () => {
     assert.equal("tools" in body, false);
   });
 
+  it("enforces the Sarah output and total request-package bounds without truncation or a network call", async () => {
+    const set = workingSet();
+    const sourceEvidenceId = set.workUnits[0]!.evidenceRefs[0]!;
+    const evidenceHandle = createSterlingEvidenceHandleMap(set).evidenceIdToHandle.get(sourceEvidenceId)!;
+    let calls = 0;
+    const fetchImpl: typeof fetch = async (_url, init) => {
+      calls += 1;
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      assert.equal(body.store, false);
+      assert.equal(body.max_output_tokens, 8_000);
+      assert.equal(body.truncation, "disabled");
+      assert.equal("tools" in body, false);
+      assert.equal("background" in body, false);
+      assert.equal("conversation" in body, false);
+      return new Response(JSON.stringify({ output_text: JSON.stringify(proposalWithEvidenceRef(evidenceHandle)) }),
+        { status: 200 });
+    };
+    await requestSterlingTodayProposal({ apiKey: "test", model: "gpt-5.6-sol", workingSet: set,
+      maxOutputTokens: 8_000, maxRequestBytes: 64_000, disableTruncation: true, fetchImpl });
+    assert.equal(calls, 1);
+
+    calls = 0;
+    await assert.rejects(
+      requestSterlingTodayProposal({ apiKey: "secret-key", model: "gpt-5.6-sol", workingSet: set,
+        maxOutputTokens: 8_000, maxRequestBytes: 1, disableTruncation: true,
+        fetchImpl: async () => { calls += 1; throw new Error("must not run"); } }),
+      (error: unknown) => error instanceof SterlingTodayRequestError && error.kind === "input" &&
+        error.code === "request-package-too-large" && !error.message.includes("secret-key"),
+    );
+    assert.equal(calls, 0);
+  });
+
   it("rejects unknown handles and model-authored source IDs without echoing them", async () => {
     const set = workingSet();
     const rawSourceId = set.evidence.find(row => row.sourceType === "gmail")!.evidenceId;

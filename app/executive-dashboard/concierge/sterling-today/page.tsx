@@ -3,6 +3,7 @@ import { ConciergeShell } from "../components/concierge-shell";
 import { SterlingTodayShadowControl } from "../components/sterling-today-shadow-control";
 import {
   isSterlingTodayDurableLeaseAvailable,
+  isSterlingTodaySarahSemanticFeatureEnabled,
   isSterlingTodaySemanticFeatureEnabled,
 } from "@/lib/continuum/today-sterling/server-config";
 
@@ -16,10 +17,14 @@ export const metadata = {
 
 export default function SterlingTodayShadowPage() {
   const semanticAvailable = isSterlingTodaySemanticFeatureEnabled() && isSterlingTodayDurableLeaseAvailable();
+  const sarahSemanticAvailable = isSterlingTodaySarahSemanticFeatureEnabled();
   return (
     <ConciergeShell>
       <ConciergeBackLink />
-      <SterlingTodayShadowControl semanticAvailable={semanticAvailable} />
+      <SterlingTodayShadowControl
+        semanticAvailable={semanticAvailable}
+        sarahSemanticAvailable={sarahSemanticAvailable}
+      />
     </ConciergeShell>
   );
 }

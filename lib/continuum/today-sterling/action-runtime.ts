@@ -2,6 +2,7 @@ import "server-only";
 
 import { getConciergeOpenAiApiKey } from "@/lib/continuum/concierge-sol/env";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
+import { CONCIERGE_FOREGROUND_MODEL } from "@/lib/continuum/concierge-sol/models";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import {
   createSterlingRunLease,
@@ -10,8 +11,20 @@ import {
 import {
   getSterlingTodayContinuityHmacKey,
   isSterlingTodayDurableLeaseAvailable,
+  isSterlingTodaySarahSemanticFeatureEnabled,
   isSterlingTodaySemanticFeatureEnabled,
 } from "./server-config";
+import {
+  createSarahSemanticAuthorizationClaim,
+  createSupabaseSarahSemanticAuthorizationStore,
+} from "./sarah-semantic-authorization";
+import {
+  SarahSemanticPreflightError,
+  STERLING_TODAY_SARAH_MAX_OUTPUT_TOKENS,
+  STERLING_TODAY_SARAH_MAX_REQUEST_BYTES,
+  validateSarahSemanticAssembly,
+} from "./sarah-semantic";
+import { SterlingTodayRequestError } from "./request";
 import { createSupabaseSterlingThreadVerificationStore } from "./retrieval-continuity-store";
 import {
   assembleSterlingTodayShadow,
@@ -42,6 +55,7 @@ function safeFailure(
     gmail: null,
     performance: null,
     validation: null,
+    proposal: null,
     acceptance: null,
     safeErrors: [safeError],
   };
@@ -83,6 +97,69 @@ export async function runAuthenticatedSterlingTodayAssembly(): Promise<SterlingT
 /** Fixed founder-only Sarah acceptance path. No caller-owned scope is accepted. */
 export async function runAuthenticatedSterlingTodaySarahAssembly(): Promise<SterlingTodaySafeResult> {
   return runAuthenticatedSterlingTodayAssemblyForTarget(STERLING_TODAY_SARAH_TARGET);
+}
+
+/**
+ * Fixed, founder-only, one-shot Sarah semantic experiment. It accepts no
+ * caller-owned target and consumes its authorization before any Gmail read.
+ */
+export async function runAuthenticatedSterlingTodaySarahSemantic(): Promise<SterlingTodaySafeResult> {
+  const client = await authenticatedReadClient();
+  if (!client) return safeFailure("semantic", "UNAVAILABLE", "unauthorized-or-unavailable");
+  if (!isSterlingTodaySarahSemanticFeatureEnabled()) {
+    return safeFailure("semantic", "DISABLED", "sarah-semantic-feature-disabled");
+  }
+  const apiKey = getConciergeOpenAiApiKey();
+  if (!apiKey) return safeFailure("semantic", "UNAVAILABLE", "model-credential-unavailable");
+
+  const authorization = createSarahSemanticAuthorizationClaim();
+  const authorizationStore = createSupabaseSarahSemanticAuthorizationStore(client);
+  const claim = await authorizationStore.claim(authorization);
+  if (claim !== "acquired") {
+    const verdict = claim === "claimed" ? "BUSY" : claim === "not_authorized" || claim === "available"
+      ? "DISABLED" : "UNAVAILABLE";
+    return safeFailure("semantic", verdict,
+      claim === "claimed" ? "sarah-semantic-in-progress"
+        : claim === "completed" ? "sarah-semantic-already-completed"
+          : claim === "failed" ? "sarah-semantic-already-failed"
+            : claim === "outcome_unknown" ? "sarah-semantic-outcome-unknown"
+              : claim === "not_authorized" ? "sarah-semantic-not-authorized"
+                : "sarah-semantic-authorization-unavailable");
+  }
+
+  try {
+    const assembly = await assembleSterlingTodayShadow({
+      client,
+      targetCase: STERLING_TODAY_SARAH_TARGET,
+    });
+    const preflight = validateSarahSemanticAssembly(assembly);
+    if (!preflight.ok) throw new SarahSemanticPreflightError(preflight.reason);
+    const completion = await executeSterlingTodaySemantic({
+      assembly,
+      apiKey,
+      model: CONCIERGE_FOREGROUND_MODEL,
+      requestPolicy: {
+        maxOutputTokens: STERLING_TODAY_SARAH_MAX_OUTPUT_TOKENS,
+        maxRequestBytes: STERLING_TODAY_SARAH_MAX_REQUEST_BYTES,
+        disableTruncation: true,
+      },
+    });
+    const finished = await authorizationStore.finish(authorization.claimId, "completed", new Date().toISOString());
+    if (!finished) return safeFailure("semantic", "UNAVAILABLE", "sarah-semantic-outcome-unknown");
+    return safeSemanticResult(completion);
+  } catch (error) {
+    const finished = await authorizationStore.finish(authorization.claimId, "failed", new Date().toISOString())
+      .catch(() => false);
+    const safeError = error instanceof SarahSemanticPreflightError ? error.safeReason
+      : error instanceof SterlingTodayRequestError && error.code === "request-package-too-large"
+        ? "sarah-semantic-package-too-large"
+        : error instanceof SterlingTodayRequestError && error.kind === "timeout"
+          ? "sarah-semantic-model-timeout"
+          : error instanceof SyntaxError ? "sarah-semantic-output-invalid"
+            : "sarah-semantic-run-unavailable";
+    return safeFailure("semantic", "UNAVAILABLE",
+      finished ? safeError : "sarah-semantic-outcome-unknown");
+  }
 }
 
 /**

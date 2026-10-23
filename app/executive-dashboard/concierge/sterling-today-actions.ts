@@ -5,6 +5,7 @@ import "server-only";
 import {
   runAuthenticatedSterlingTodayAssembly,
   runAuthenticatedSterlingTodaySarahAssembly,
+  runAuthenticatedSterlingTodaySarahSemantic,
   runAuthenticatedSterlingTodaySemantic,
 } from "@/lib/continuum/today-sterling/action-runtime";
 import type { SterlingTodaySafeResult } from "@/lib/continuum/today-sterling/server-runner";
@@ -29,6 +30,16 @@ export async function runSterlingTodaySarahAssemblyAction(
   void _previousState;
   void _formData;
   return runAuthenticatedSterlingTodaySarahAssembly();
+}
+
+/** Fixed Sarah/C026143 one-shot semantic shadow. Submitted form fields are intentionally ignored. */
+export async function runSterlingTodaySarahSemanticAction(
+  _previousState: SterlingTodayActionState,
+  _formData: FormData,
+): Promise<SterlingTodaySafeResult> {
+  void _previousState;
+  void _formData;
+  return runAuthenticatedSterlingTodaySarahSemantic();
 }
 
 /**

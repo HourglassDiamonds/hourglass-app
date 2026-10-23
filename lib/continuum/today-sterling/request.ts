@@ -45,7 +45,7 @@ type ResponsesBody = { status?: string; error?: ResponsesError | null; output_te
   output?: Array<{ type?: string; status?: string; content?: Array<{ type?: string; text?: string; refusal?: string }> }> };
 
 export class SterlingTodayRequestError extends Error {
-  readonly kind: "timeout" | "api" | "network" | "response";
+  readonly kind: "input" | "timeout" | "api" | "network" | "response";
   readonly status: number | null;
   readonly code: string | null;
   readonly apiType: string | null;
@@ -118,11 +118,25 @@ export function resolveSterlingTodayTimeoutMs(override?: number): number {
 
 export async function requestSterlingTodayProposal(input: {
   apiKey: string; model: string; workingSet: SterlingTodayWorkingSet; fetchImpl?: typeof fetch; timeoutMs?: number;
+  maxOutputTokens?: number; maxRequestBytes?: number; disableTruncation?: boolean;
 }): Promise<{ proposal: SterlingTodayProposal; latencyMs: number; inputBytes: number; outputBytes: number;
   usage: { inputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null } }> {
   const started = Date.now();
   const evidenceHandles = createSterlingEvidenceHandleMap(input.workingSet);
   const serialized = JSON.stringify(evidenceHandles.requestWorkingSet);
+  const maxOutputTokens = isPositiveFiniteInteger(input.maxOutputTokens)
+    ? input.maxOutputTokens : STERLING_TODAY_MAX_OUTPUT_TOKENS;
+  const requestBody = JSON.stringify({ model: input.model, store: false, max_output_tokens: maxOutputTokens,
+    ...(input.disableTruncation ? { truncation: "disabled" as const } : {}),
+    reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
+    instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
+    text: { format: { type: "json_schema", name: "sterling_today_proposal_v5", strict: true,
+      schema: STERLING_TODAY_OUTPUT_SCHEMA } } });
+  const requestBytes = Buffer.byteLength(requestBody);
+  if (isPositiveFiniteInteger(input.maxRequestBytes) && requestBytes > input.maxRequestBytes) {
+    throw new SterlingTodayRequestError({ kind: "input", code: "request-package-too-large",
+      elapsedMs: Date.now() - started, maxOutputTokens });
+  }
   const timeoutMs = resolveSterlingTodayTimeoutMs(input.timeoutMs);
   const controller = new AbortController();
   let timedOut = false;
@@ -134,10 +148,7 @@ export async function requestSterlingTodayProposal(input: {
     const response = await (input.fetchImpl ?? fetch)(CONCIERGE_SOL_RESPONSES_ENDPOINT, {
       method: "POST", signal: controller.signal,
       headers: { authorization: `Bearer ${input.apiKey}`, "content-type": "application/json" },
-      body: JSON.stringify({ model: input.model, store: false, max_output_tokens: STERLING_TODAY_MAX_OUTPUT_TOKENS,
-        reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
-        instructions: `${INSTRUCTIONS} Contract: ${STERLING_TODAY_PROPOSAL_VERSION}.`, input: serialized,
-        text: { format: { type: "json_schema", name: "sterling_today_proposal_v5", strict: true, schema: STERLING_TODAY_OUTPUT_SCHEMA } } }),
+      body: requestBody,
     });
     const requestId = response.headers.get("x-request-id");
     if (!response.ok) {
@@ -155,7 +166,7 @@ export async function requestSterlingTodayProposal(input: {
         elapsedMs: Date.now() - started, code: details.code ?? json.status ?? null,
         apiType: details.apiType, param: details.param,
         incompleteReason: diagnosticToken(json.incomplete_details?.reason),
-        maxOutputTokens: STERLING_TODAY_MAX_OUTPUT_TOKENS, ...usage });
+        maxOutputTokens, ...usage });
     }
     const text = structuredText(json);
     if (!text) throw new SyntaxError("sterling-today-malformed");

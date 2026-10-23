@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import {
   runSterlingTodayAssemblyAction,
   runSterlingTodaySarahAssemblyAction,
+  runSterlingTodaySarahSemanticAction,
   runSterlingTodaySemanticAction,
   type SterlingTodayActionState,
 } from "../sterling-today-actions";
@@ -150,11 +151,59 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
   );
 }
 
-export function SterlingTodayShadowControl({ semanticAvailable }: { semanticAvailable: boolean }) {
+function SemanticProposal({ state }: { state: NonNullable<SterlingTodayActionState> }) {
+  if (!state.proposal) return null;
+  return (
+    <div className="mt-6 rounded-2xl border border-[#ad9164]/30 bg-black/20 p-5">
+      <p className="text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">Validated Sarah proposal</p>
+      <div className="mt-4 space-y-4 text-[13px] leading-relaxed text-[#c4b7aa]">
+        {state.proposal.assessments.map((assessment) => (
+          <div key={assessment.workUnitRef} className="rounded-xl border border-white/10 p-4">
+            <p className="text-[#efe8de]">{assessment.operationalSubstage ??
+              assessment.canonicalLifecycleStage ?? "Stage remains uncertain"}</p>
+            <p className="mt-2">{assessment.explanation}</p>
+            <p className="mt-2">Next owner: {assessment.nextStepOwner}</p>
+            {assessment.obligations.map((obligation, index) => (
+              <p key={`${obligation.status}-${index}`} className="mt-2">
+                {obligation.status}: {obligation.description} · {obligation.responsibleParty}
+              </p>
+            ))}
+            {assessment.ambiguities.length ? <p className="mt-2 text-[#d5a98c]">
+              Uncertainty: {assessment.ambiguities.join("; ")}
+            </p> : null}
+            <p className="mt-2 text-[11px] text-[#81766c]">Evidence: {assessment.citations.join(", ")}</p>
+          </div>
+        ))}
+        {state.proposal.recommendations.map((recommendation, index) => (
+          <div key={`${recommendation.title}-${index}`} className="rounded-xl border border-white/10 p-4">
+            <p className="text-[#efe8de]">{recommendation.title}</p>
+            <p className="mt-2">{recommendation.summary}</p>
+            <p className="mt-2 text-[11px] text-[#81766c]">Evidence: {recommendation.citations.join(", ")}</p>
+          </div>
+        ))}
+        {state.proposal.portfolioAmbiguities.length ? <p className="text-[#d5a98c]">
+          Portfolio uncertainty: {state.proposal.portfolioAmbiguities.join("; ")}
+        </p> : null}
+        <p className="text-[11px] text-[#81766c]">
+          Proposal only. Canonical mutations proposed: {state.proposal.mutationProposalCount}. Nothing was applied.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export function SterlingTodayShadowControl({ semanticAvailable, sarahSemanticAvailable }: {
+  semanticAvailable: boolean;
+  sarahSemanticAvailable: boolean;
+}) {
   const [assembly, assemblyAction, assemblyPending] = useActionState(runSterlingTodayAssemblyAction, null);
   const [sarahAssembly, sarahAssemblyAction, sarahAssemblyPending] = useActionState(runSterlingTodaySarahAssemblyAction, null);
+  const [sarahSemantic, sarahSemanticAction, sarahSemanticPending] = useActionState(
+    runSterlingTodaySarahSemanticAction,
+    null,
+  );
   const [semantic, semanticAction, semanticPending] = useActionState(runSterlingTodaySemanticAction, null);
-  const executionPending = assemblyPending || sarahAssemblyPending || semanticPending;
+  const executionPending = assemblyPending || sarahAssemblyPending || sarahSemanticPending || semanticPending;
   return (
     <section className="mt-8 max-w-2xl rounded-3xl border border-[#ad9164]/25 bg-[#17130f] p-6 md:p-8">
       <p className="text-[10px] uppercase tracking-[0.24em] text-[#ad9164]">Founder shadow execution</p>
@@ -175,8 +224,20 @@ export function SterlingTodayShadowControl({ semanticAvailable }: { semanticAvai
             {sarahAssemblyPending ? "Assembling Sarah evidence…" : "Run Sarah Evidence Assembly"}
           </button>
         </form>
+        <form action={sarahSemanticAction} className="mt-3">
+          <button type="submit" disabled={!sarahSemanticAvailable || executionPending}
+            className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">
+            {sarahSemanticPending ? "Reasoning about Sarah…" : "Run Sarah Semantic Shadow Once"}
+          </button>
+        </form>
+        <p className="mt-2 text-[12px] text-[#81766c]">
+          {sarahSemanticAvailable
+            ? "One-shot Sarah semantic authorization is available only if its server record is still unused."
+            : "Sarah semantic execution is disabled."}
+        </p>
       </div>
       {sarahAssembly ? <SafeResult state={sarahAssembly} /> : null}
+      {sarahSemantic ? <><SafeResult state={sarahSemantic} /><SemanticProposal state={sarahSemantic} /></> : null}
       <form action={assemblyAction} className="mt-7">
         <button type="submit" disabled={executionPending}
           className="inline-flex min-h-11 items-center text-[11px] uppercase tracking-[0.2em] text-[#efe8de] outline-none hover:text-[#ad9164] focus-visible:text-[#ad9164] disabled:text-[#71685f]">

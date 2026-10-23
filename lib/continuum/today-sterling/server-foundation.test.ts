@@ -15,9 +15,18 @@ import {
   createSterlingRunLease,
   createSupabaseSterlingRunLeaseStore,
 } from "./run-lease";
+import {
+  InMemorySarahSemanticAuthorizationStore,
+  createSarahSemanticAuthorizationClaim,
+  createSupabaseSarahSemanticAuthorizationStore,
+} from "./sarah-semantic-authorization";
+import { validateSarahSemanticAssembly } from "./sarah-semantic";
+import type { SterlingTodayAssembly } from "./server-runner";
 
 const ROOT = process.cwd();
 const LEASE_MIGRATION = "supabase/migrations/20261011003057_continuum_sterling_today_run_lease.sql";
+const SARAH_AUTHORIZATION_MIGRATION =
+  "supabase/migrations/20261023010612_continuum_sterling_today_sarah_semantic_one_shot.sql";
 const read = (path: string) => readFileSync(join(ROOT, path), "utf8");
 
 function correction(overrides: Partial<SourceCommunicationEvent> = {}): SourceCommunicationEvent {
@@ -170,6 +179,103 @@ describe("Sterling metadata-only run lease contract", () => {
   });
 });
 
+describe("Sterling Sarah one-shot semantic authorization", () => {
+  it("atomically permits only one concurrent claim", async () => {
+    const store = new InMemorySarahSemanticAuthorizationStore();
+    const now = new Date("2026-10-23T01:10:00Z");
+    const claims = await Promise.all([
+      store.claim(createSarahSemanticAuthorizationClaim(now)),
+      store.claim(createSarahSemanticAuthorizationClaim(now)),
+    ]);
+    assert.equal(claims.filter((value) => value === "acquired").length, 1);
+    assert.equal(claims.filter((value) => value === "claimed").length, 1);
+  });
+
+  it("rejects every replay after success, failure, or an expired ambiguous claim", async () => {
+    for (const terminal of ["completed", "failed"] as const) {
+      const store = new InMemorySarahSemanticAuthorizationStore();
+      const claim = createSarahSemanticAuthorizationClaim(new Date("2026-10-23T01:10:00Z"));
+      assert.equal(await store.claim(claim), "acquired");
+      assert.equal(await store.finish(claim.claimId, terminal, "2026-10-23T01:11:00Z"), true);
+      assert.equal(await store.claim(createSarahSemanticAuthorizationClaim(new Date("2026-10-23T01:12:00Z"))), terminal);
+    }
+    const ambiguous = new InMemorySarahSemanticAuthorizationStore();
+    assert.equal(await ambiguous.claim(createSarahSemanticAuthorizationClaim(new Date("2026-10-23T01:10:00Z"))), "acquired");
+    assert.equal(await ambiguous.claim(createSarahSemanticAuthorizationClaim(new Date("2026-10-23T01:17:00Z"))),
+      "outcome_unknown");
+  });
+
+  it("fails closed when authorization RPCs are absent", async () => {
+    const store = createSupabaseSarahSemanticAuthorizationStore({
+      rpc: async () => ({ data: null, error: { code: "PGRST202" } }),
+    } as never);
+    const claim = createSarahSemanticAuthorizationClaim();
+    assert.equal(await store.claim(claim), "unavailable");
+    assert.equal(await store.finish(claim.claimId, "failed", new Date().toISOString()), false);
+  });
+
+  it("defines one additive, pre-authorized, service-role-only metadata contract", () => {
+    const sql = read(SARAH_AUTHORIZATION_MIGRATION);
+    assert.match(sql, /^-- One-shot authorization metadata[\s\S]*begin;/i);
+    assert.match(sql, /create table public\.continuum_sterling_today_semantic_authorizations/i);
+    assert.match(sql, /authorization_state in \('available', 'claimed', 'completed', 'failed', 'outcome_unknown'\)/i);
+    assert.match(sql, /and authorization_state = 'available'[\s\S]*and claim_id is null/i);
+    assert.match(sql, /return 'acquired'/i);
+    assert.match(sql, /current_state = 'claimed' and current_expires_at <= clock_timestamp\(\)[\s\S]*return 'outcome_unknown'/i);
+    assert.match(sql, /and claim_id = p_claim_id[\s\S]*and authorization_state = 'claimed'/i);
+    assert.match(sql, /security definer[\s\S]*set search_path = ''/i);
+    assert.match(sql, /enable row level security/i);
+    assert.match(sql, /revoke all on table[\s\S]*from public, anon, authenticated, service_role/i);
+    assert.doesNotMatch(sql, /grant (?:select|insert|update|delete|truncate|references|trigger) on table/i);
+    assert.doesNotMatch(sql, /create policy|grant .* to (?:anon|authenticated)/i);
+    assert.match(sql, /revoke all on function public\.continuum_claim_sterling_today_sarah_semantic[\s\S]*from public, anon, authenticated, service_role/i);
+    assert.match(sql, /grant execute on function public\.continuum_claim_sterling_today_sarah_semantic[\s\S]*to service_role/i);
+  });
+
+  it("stores no evidence, Gmail identifier, client identity, prompt, or model output", () => {
+    const sql = read(SARAH_AUTHORIZATION_MIGRATION);
+    const table = sql.slice(sql.indexOf("create table"), sql.indexOf("alter table"));
+    assert.doesNotMatch(table, /evidence|gmail|thread|message|subject|person|project|client|prompt|model|payload|jsonb/i);
+    assert.match(table, /authorization_digest text/);
+    assert.match(table, /claim_id uuid/);
+    assert.match(table, /expires_at timestamptz/);
+  });
+
+  it("requires the exact canonical Sarah thread, same-request live chronology, and latest Mod 9 STL evidence", () => {
+    const projectId = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1";
+    const threadId = "1a0881b53067a9e6";
+    const workUnitId = `project:${projectId}`;
+    const evidence = {
+      evidenceId: "gmail:sarah:latest", sourceType: "gmail" as const,
+      sourceRef: "gmail:thread:private:message:private", timestamp: "2026-10-21T17:58:38.000Z",
+      direction: "inbound" as const, subject: "Mod 9 CAD and STL", excerpt: "Updated Mod 9 STL attached.",
+      attachmentFilenames: ["mod9.stl"], messageId: "private", threadId,
+      projectIds: [projectId], personIds: [], provenance: "indexed_gmail+live_quote_stripped_current_message",
+    };
+    const unit = { workUnitId, kind: "canonical_project" as const, identityBasis: "canonical_project" as const,
+      projectId, label: "Sarah", observedIdentifiers: ["C026143"],
+      typedIdentifiers: [{ kind: "project" as const, value: "C026143" }], threadIds: [threadId],
+      sourceRefs: [evidence.sourceRef], evidenceRefs: [evidence.evidenceId] };
+    const assembly = {
+      target: { caseId: "SARAH/C026143", selectedWorkUnitId: workUnitId, relatedWorkUnitIds: [workUnitId] },
+      targetBlockedReason: null,
+      targetDiagnostics: { selectedWorkUnitId: workUnitId, secondaryWorkUnitIds: ["ambiguous"],
+        requiredThreadCount: 1, scheduledThreadCount: 1, successfullyLiveRetrievedThreadCount: 1,
+        missingOrFailedThreadCount: 0, latestVerifiedSourceAt: evidence.timestamp, complete: true },
+      requestWorkingSet: { workUnits: [unit], evidence: [evidence] },
+    } as unknown as SterlingTodayAssembly;
+    assert.deepEqual(validateSarahSemanticAssembly(assembly), { ok: true });
+    assert.deepEqual(validateSarahSemanticAssembly({ ...assembly, targetDiagnostics: {
+      ...assembly.targetDiagnostics!, successfullyLiveRetrievedThreadCount: 0, missingOrFailedThreadCount: 1,
+      complete: false,
+    } }), { ok: false, reason: "sarah-evidence-incomplete" });
+    const unrelated = { ...evidence, threadId: "aaaaaaaaaaaaaaaa" };
+    assert.deepEqual(validateSarahSemanticAssembly({ ...assembly,
+      requestWorkingSet: { ...assembly.requestWorkingSet, evidence: [evidence, unrelated] },
+    }), { ok: false, reason: "sarah-live-chronology-unverified" });
+  });
+});
+
 describe("Sterling server execution boundaries", () => {
   it("keeps the reusable runner free of production writers and approval execution", () => {
     const source = read("lib/continuum/today-sterling/server-runner.ts");
@@ -220,7 +326,7 @@ describe("Sterling server execution boundaries", () => {
     const sarahAction = action.slice(action.indexOf("export async function runSterlingTodaySarahAssemblyAction"),
       action.indexOf("export async function runSterlingTodaySemanticAction"));
     const sarahRuntime = runtime.slice(runtime.indexOf("export async function runAuthenticatedSterlingTodaySarahAssembly"),
-      runtime.indexOf("export async function runAuthenticatedSterlingTodaySemantic"));
+      runtime.indexOf("export async function runAuthenticatedSterlingTodaySarahSemantic"));
     assert.match(sarahAction, /void _formData/);
     assert.match(sarahAction, /runAuthenticatedSterlingTodaySarahAssembly\(\)/);
     assert.doesNotMatch(sarahAction, /\.get\(|Object\.fromEntries|threadId|projectId|targetCase/);
@@ -231,6 +337,32 @@ describe("Sterling server execution boundaries", () => {
       control.indexOf("</form>", control.indexOf("<form action={sarahAssemblyAction}")));
     assert.doesNotMatch(sarahForm, /<input|<select|<textarea|name=/);
     assert.match(control, /disabled=\{executionPending\}/);
+  });
+
+  it("exposes a separately gated, fixed Sarah semantic action without enabling general semantics", () => {
+    const action = read("app/executive-dashboard/concierge/sterling-today-actions.ts");
+    const runtime = read("lib/continuum/today-sterling/action-runtime.ts");
+    const config = read("lib/continuum/today-sterling/server-config.ts");
+    const control = read("app/executive-dashboard/concierge/components/sterling-today-shadow-control.tsx");
+    const sarahAction = action.slice(action.indexOf("export async function runSterlingTodaySarahSemanticAction"),
+      action.indexOf("export async function runSterlingTodaySemanticAction"));
+    const sarahRuntime = runtime.slice(runtime.indexOf("export async function runAuthenticatedSterlingTodaySarahSemantic"),
+      runtime.indexOf("export async function runAuthenticatedSterlingTodaySemantic"));
+    assert.match(config, /CONTINUUM_STERLING_TODAY_SARAH_SEMANTIC_ENABLED/);
+    assert.match(sarahAction, /void _formData/);
+    assert.match(sarahAction, /runAuthenticatedSterlingTodaySarahSemantic\(\)/);
+    assert.doesNotMatch(sarahAction, /\.get\(|Object\.fromEntries|threadId|projectId|targetCase/);
+    assert.match(sarahRuntime, /isSterlingTodaySarahSemanticFeatureEnabled/);
+    assert.match(sarahRuntime, /targetCase: STERLING_TODAY_SARAH_TARGET/);
+    assert.match(sarahRuntime, /validateSarahSemanticAssembly/);
+    assert.match(sarahRuntime, /model: CONCIERGE_FOREGROUND_MODEL/);
+    assert.match(sarahRuntime, /maxOutputTokens: STERLING_TODAY_SARAH_MAX_OUTPUT_TOKENS/);
+    assert.match(sarahRuntime, /maxRequestBytes: STERLING_TODAY_SARAH_MAX_REQUEST_BYTES/);
+    assert.doesNotMatch(sarahRuntime, /isSterlingTodaySemanticFeatureEnabled|isSterlingTodayDurableLeaseAvailable/);
+    assert.match(control, /Run Sarah Semantic Shadow Once/);
+    const semanticForm = control.slice(control.indexOf("<form action={sarahSemanticAction}"),
+      control.indexOf("</form>", control.indexOf("<form action={sarahSemanticAction}")));
+    assert.doesNotMatch(semanticForm, /<input|<select|<textarea|name=/);
   });
 
   it("blocks an unsafe fixed target before the Gmail loader and never expands it from secondary matches", () => {

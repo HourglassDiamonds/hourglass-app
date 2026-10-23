@@ -35,6 +35,7 @@ import { evaluateSterlingTodayAcceptance } from "./acceptance";
 import { evaluateOctober21Acceptance } from "./october-19-acceptance";
 import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from "./evidence-load";
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
+import { createSterlingEvidenceHandleMap } from "./evidence-handles";
 import { resolveSterlingTarget } from "./target-resolution";
 import { finalizeSterlingGmailExecution, STERLING_GMAIL_REQUEST_BUDGET } from "./retrieval-execution";
 import { excludeSterlingSuppressedWorkUnits, sterlingPreModelSuppressions,
@@ -184,6 +185,7 @@ export type SterlingTodaySafeResult = {
     "budgetDeferredThreadCount" | "threadFetches" | "durationMs" | "failuresByCode">;
   performance: null | SterlingTodaySemanticCompletion["performance"];
   validation: null | { accepted: boolean; errorCount: number; mutationProposalCount: number };
+  proposal: SterlingSafeSemanticProposal | null;
   acceptance: null | {
     originalTenPassed: boolean;
     october21Passed: boolean;
@@ -192,6 +194,36 @@ export type SterlingTodaySafeResult = {
     unverifiedCount: number;
   };
   safeErrors: readonly string[];
+};
+
+export type SterlingSafeSemanticProposal = {
+  assessments: readonly {
+    workUnitRef: string;
+    canonicalLifecycleStage: string | null;
+    operationalSubstage: string | null;
+    nextStepOwner: string;
+    confidence: string;
+    explanation: string;
+    citations: readonly string[];
+    ambiguities: readonly string[];
+    obligations: readonly {
+      description: string;
+      status: string;
+      responsibleParty: string;
+      confidence: string;
+      citations: readonly string[];
+    }[];
+  }[];
+  recommendations: readonly {
+    title: string;
+    summary: string;
+    confidence: string;
+    explanation: string;
+    citations: readonly string[];
+    ambiguities: readonly string[];
+  }[];
+  portfolioAmbiguities: readonly string[];
+  mutationProposalCount: number;
 };
 
 export type SterlingSafeWorkUnitCoverage = {
@@ -694,6 +726,11 @@ export async function executeSterlingTodaySemantic(input: {
   assembly: SterlingTodayAssembly;
   apiKey: string;
   model?: string;
+  requestPolicy?: {
+    maxOutputTokens: number;
+    maxRequestBytes: number;
+    disableTruncation: true;
+  };
 }): Promise<SterlingTodaySemanticCompletion> {
   const startedAt = Date.now();
   if (input.assembly.targetBlockedReason) {
@@ -711,6 +748,7 @@ export async function executeSterlingTodaySemantic(input: {
       apiKey: input.apiKey,
       model: input.model ?? conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL),
       workingSet,
+      ...input.requestPolicy,
     }),
   });
   if (!gated.called || !gated.workingSet || !gated.result) {
@@ -752,8 +790,8 @@ function blockedCompletion(
     assembly,
     called: false,
     blockedWorkUnitIds: assembly.completeness.workUnits.filter((row) => !row.modelEligible).map((row) => row.workUnitId),
-    proposal: null,
     validation: null,
+    proposal: null,
     acceptance: null,
     operationalAcceptance: null,
     verdict,
@@ -873,8 +911,47 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
     } : null,
     performance: { ...assembly.performance, modelLatencyMs: null, inputBytes: null, outputBytes: null, tokenUsage: null },
     validation: null,
+    proposal: null,
     acceptance: null,
     safeErrors,
+  };
+}
+
+function safeSemanticProposal(completion: SterlingTodaySemanticCompletion): SterlingSafeSemanticProposal | null {
+  if (!completion.validation?.accepted || !completion.proposal) return null;
+  const handles = createSterlingEvidenceHandleMap(completion.assembly.requestWorkingSet).evidenceIdToHandle;
+  const citations = (refs: readonly string[]) => refs.flatMap((ref) => {
+    const handle = handles.get(ref);
+    return handle ? [handle] : [];
+  });
+  return {
+    assessments: completion.proposal.portfolioAssessments.map((assessment) => ({
+      workUnitRef: opaqueWorkUnitRef(assessment.workUnitId),
+      canonicalLifecycleStage: assessment.currentStage.canonicalLifecycleStage,
+      operationalSubstage: assessment.currentStage.operationalSubstage,
+      nextStepOwner: assessment.nextStepOwner,
+      confidence: assessment.confidence,
+      explanation: assessment.explanation,
+      citations: citations(assessment.evidenceRefs),
+      ambiguities: assessment.ambiguities,
+      obligations: assessment.obligations.map((obligation) => ({
+        description: obligation.description,
+        status: obligation.status,
+        responsibleParty: obligation.responsibleParty,
+        confidence: obligation.confidence,
+        citations: citations(obligation.evidenceRefs),
+      })),
+    })),
+    recommendations: completion.proposal.recommendations.map((recommendation) => ({
+      title: recommendation.title,
+      summary: recommendation.summary,
+      confidence: recommendation.confidence,
+      explanation: recommendation.explanation,
+      citations: citations(recommendation.evidenceRefs),
+      ambiguities: recommendation.ambiguities,
+    })),
+    portfolioAmbiguities: completion.proposal.portfolioAmbiguities,
+    mutationProposalCount: completion.proposal.proposedCanonicalMutations.length,
   };
 }
 
@@ -892,6 +969,7 @@ export function safeSemanticResult(completion: SterlingTodaySemanticCompletion):
       errorCount: validation.errors.length,
       mutationProposalCount: completion.proposal?.proposedCanonicalMutations.length ?? 0,
     } : null,
+    proposal: safeSemanticProposal(completion),
     acceptance: completion.acceptance && completion.operationalAcceptance ? {
       originalTenPassed: completion.acceptance.passed,
       october21Passed: completion.operationalAcceptance.passed,
