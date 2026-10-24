@@ -64,6 +64,11 @@ import type {
 } from "./types";
 import type { SarahSemanticPackageDiagnostics } from "./sarah-semantic";
 import {
+  diagnoseSterlingTargetChronology,
+  sterlingTargetChronologyFailureStage,
+  type SterlingTargetChronologyDiagnostics,
+} from "./target-chronology";
+import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
   acceptanceIdentifiers,
   isDurablyScopedFounderCorrection,
@@ -127,6 +132,7 @@ export type SterlingTodayAssembly = {
     excludedOrAmbiguousAssociationCount: number;
     stoppedAtStage: SterlingTargetStoppedAtStage;
     latestVerifiedSourceAt: string | null;
+    chronologyInvariant: SterlingTargetChronologyDiagnostics | null;
     complete: boolean;
   };
   targetPackage: ReturnType<typeof summarizeSterlingTodayTargetPackage> | null;
@@ -200,6 +206,7 @@ export type SterlingTodaySafeResult = {
     excludedOrAmbiguousAssociationCount: number;
     stoppedAtStage: SterlingTargetStoppedAtStage;
     latestVerifiedSourceAt: string | null;
+    chronologyInvariant: SterlingTargetChronologyDiagnostics | null;
     complete: boolean;
   };
   candidateCoverage: SterlingTodayAssembly["candidateCoverage"] | null;
@@ -725,6 +732,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       targetBlockedReason ? (targetBlockedReason === "target-required-evidence-incomplete"
         ? "target-thread-live-retrieval-incomplete" : "target-resolution-failed") : null;
     let includedEvidenceMessageCount = 0;
+    let chronologyInvariant: SterlingTargetChronologyDiagnostics | null = null;
     let requestTargetWorkingSet: SterlingTodayWorkingSet | null = null;
     if (selected) {
       requestTargetWorkingSet = buildSterlingTodayTargetWorkingSet(workingSet, selected.workUnitId, {
@@ -740,17 +748,18 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
         packageGmailEvidence.some((row) => row.threadId === threadId));
       const crossUnitEvidence = packageGmailEvidence.some((row) =>
         row.threadId == null || !requiredThreadSet.has(row.threadId));
-      const messageIds = packageGmailEvidence.map((row) => row.messageId).filter((id): id is string => Boolean(id));
-      const chronology = packageGmailEvidence.map((row) => row.timestamp);
-      const chronologyComplete = includedEvidenceMessageCount === requiredIndexedMessageCount &&
-        includedEvidenceMessageCount === successfullyLiveRetrievedMessageCount &&
-        messageIds.length === includedEvidenceMessageCount && new Set(messageIds).size === messageIds.length &&
-        chronology.every((timestamp, index) => index === 0 || chronology[index - 1]! <= timestamp) &&
-        packageGmailEvidence.every((row) =>
-          row.provenance === "indexed_gmail+live_quote_stripped_current_message");
+      chronologyInvariant = diagnoseSterlingTargetChronology({
+        evidence: packageGmailEvidence,
+        requiredThreadIds: resolution.requiredThreadIds,
+        referencedEvidenceIds: packageUnit?.evidenceRefs ?? [],
+        indexedMessageCount: requiredIndexedMessageCount,
+        liveMessageCount: successfullyLiveRetrievedMessageCount,
+        includedMessageCount: includedEvidenceMessageCount,
+      });
+      const chronologyFailureStage = sterlingTargetChronologyFailureStage(chronologyInvariant);
       if (!stoppedAtStage && crossUnitEvidence) stoppedAtStage = "target-package-cross-unit-evidence";
       else if (!stoppedAtStage && !bindingComplete) stoppedAtStage = "target-evidence-binding-incomplete";
-      else if (!stoppedAtStage && !chronologyComplete) stoppedAtStage = "target-chronology-incomplete";
+      else if (!stoppedAtStage && chronologyFailureStage) stoppedAtStage = chronologyFailureStage;
       if (stoppedAtStage) targetBlockedReason ??= "target-required-evidence-incomplete";
     }
     targetDiagnostics = {
@@ -768,6 +777,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       excludedOrAmbiguousAssociationCount: resolution.secondary.length,
       stoppedAtStage,
       latestVerifiedSourceAt,
+      chronologyInvariant,
       complete: targetBlockedReason === null,
     };
     if (selected) {
@@ -985,6 +995,7 @@ export function safeAssemblyResult(assembly: SterlingTodayAssembly): SterlingTod
       excludedOrAmbiguousAssociationCount: assembly.targetDiagnostics.excludedOrAmbiguousAssociationCount,
       stoppedAtStage: assembly.targetDiagnostics.stoppedAtStage,
       latestVerifiedSourceAt: assembly.targetDiagnostics.latestVerifiedSourceAt,
+      chronologyInvariant: assembly.targetDiagnostics.chronologyInvariant,
       complete: assembly.targetDiagnostics.complete,
     } : null,
     candidateCoverage: assembly.candidateCoverage,

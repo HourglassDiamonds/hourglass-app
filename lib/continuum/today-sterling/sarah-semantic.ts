@@ -2,6 +2,11 @@ import { CONCIERGE_FOREGROUND_MODEL } from "@/lib/continuum/concierge-sol/models
 import { buildSterlingTodayRequestPackage } from "./request";
 import type { SterlingTodayAssembly } from "./server-runner";
 import { STERLING_TODAY_SARAH_TARGET } from "./scope";
+import {
+  diagnoseSterlingTargetChronology,
+  sterlingTargetChronologyComplete,
+  type SterlingTargetChronologyDiagnostics,
+} from "./target-chronology";
 
 export const STERLING_TODAY_SARAH_PROJECT_ID = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1" as const;
 export const STERLING_TODAY_SARAH_THREAD_ID = "1a0881b53067a9e6" as const;
@@ -27,6 +32,7 @@ export type SarahSemanticPackageDiagnostics = {
   serializedRequestBytes: number | null;
   requestByteCeiling: number;
   requestByteCeilingPassed: boolean;
+  chronologyInvariant: SterlingTargetChronologyDiagnostics | null;
   componentBytes: null | {
     instructions: number;
     workingSet: number;
@@ -109,6 +115,7 @@ function emptyDiagnostics(assembly: SterlingTodayAssembly): SarahSemanticPackage
     serializedRequestBytes: null,
     requestByteCeiling: STERLING_TODAY_SARAH_MAX_REQUEST_BYTES,
     requestByteCeilingPassed: false,
+    chronologyInvariant: target?.chronologyInvariant ?? null,
     componentBytes: null,
   };
 }
@@ -172,10 +179,21 @@ export function prepareSarahSemanticPackage(assembly: SterlingTodayAssembly): Sa
     .filter(Boolean).join(" ") : "";
   diagnostics.mod9EvidencePresent = Boolean(latest) && latest!.timestamp >= STERLING_TODAY_SARAH_LATEST_REQUIRED_AT &&
     /\bmod\s*9\b/i.test(latestMaterial) && /\bstl\b/i.test(latestMaterial);
+  diagnostics.chronologyInvariant = diagnoseSterlingTargetChronology({
+    evidence: gmailEvidence,
+    requiredThreadIds: [STERLING_TODAY_SARAH_THREAD_ID],
+    referencedEvidenceIds: unit.evidenceRefs,
+    indexedMessageCount: diagnostics.indexedMessageCount,
+    liveMessageCount: diagnostics.liveMessageCount,
+    includedMessageCount: diagnostics.includedMessageCount,
+  });
 
   if (!diagnostics.messageCountParity || messageIds.length !== gmailEvidence.length ||
       new Set(messageIds).size !== messageIds.length || !diagnostics.chronologyValid ||
       !diagnostics.provenanceValid || !diagnostics.sourceAttributionValid || !diagnostics.mod9EvidencePresent) {
+    return { ok: false, reason: "target-chronology-incomplete", diagnostics };
+  }
+  if (!sterlingTargetChronologyComplete(diagnostics.chronologyInvariant)) {
     return { ok: false, reason: "target-chronology-incomplete", diagnostics };
   }
 

@@ -24,7 +24,12 @@ import { prepareSarahSemanticPackage, validateSarahSemanticAssembly } from "./sa
 import type { SterlingTodayAssembly } from "./server-runner";
 import { buildSterlingTodayTargetWorkingSet } from "./target";
 import { createSterlingEvidenceHandleMap } from "./evidence-handles";
-import type { SterlingTodayWorkingSet } from "./types";
+import {
+  diagnoseSterlingTargetChronology,
+  sterlingTargetChronologyComplete,
+  sterlingTargetChronologyFailureStage,
+} from "./target-chronology";
+import type { SterlingEvidence, SterlingTodayWorkingSet } from "./types";
 
 const ROOT = process.cwd();
 const LEASE_MIGRATION = "supabase/migrations/20261011003057_continuum_sterling_today_run_lease.sql";
@@ -90,6 +95,69 @@ describe("Sterling server-owned acceptance scope", () => {
     const both = correction({ personLabel: "Justin Smith", authorOwnedText: "Remove Justin Smith intake; retain Zane Kennedy.",
       evidenceExcerpt: "Remove Justin Smith intake; retain Zane Kennedy." });
     assert.equal(isDurablyScopedFounderCorrection(definition, both), true);
+  });
+});
+
+describe("Sterling target chronology diagnostics", () => {
+  const requiredThread = "thread_target";
+  const baseEvidence: SterlingEvidence[] = [
+    {
+      evidenceId: "evidence_1", sourceType: "gmail", sourceRef: "opaque_1",
+      timestamp: "2026-10-20T12:00:00.000Z", direction: "inbound", subject: null, excerpt: null,
+      attachmentFilenames: [], messageId: "message_1", threadId: requiredThread,
+      projectIds: [], personIds: [], provenance: "indexed_gmail+live_quote_stripped_current_message",
+    },
+    {
+      evidenceId: "evidence_2", sourceType: "gmail", sourceRef: "opaque_2",
+      timestamp: "2026-10-21T12:00:00.000Z", direction: "outbound", subject: null, excerpt: null,
+      attachmentFilenames: [], messageId: "message_2", threadId: requiredThread,
+      projectIds: [], personIds: [], provenance: "indexed_gmail+live_quote_stripped_current_message",
+    },
+  ];
+  const diagnose = (overrides: Partial<Parameters<typeof diagnoseSterlingTargetChronology>[0]> = {}) =>
+    diagnoseSterlingTargetChronology({
+      evidence: baseEvidence,
+      requiredThreadIds: [requiredThread],
+      referencedEvidenceIds: baseEvidence.map((row) => row.evidenceId),
+      indexedMessageCount: 2,
+      liveMessageCount: 2,
+      includedMessageCount: 2,
+      ...overrides,
+    });
+
+  it("reports independent privacy-safe counts and accepts a complete chronology", () => {
+    const result = diagnose();
+    assert.equal(sterlingTargetChronologyComplete(result), true);
+    assert.deepEqual(result, {
+      missingMessageIdCount: 0, malformedMessageIdCount: 0, duplicateMessageIdCount: 0,
+      invalidTimestampCount: 0, outOfOrderMessageCount: 0, missingRequiredThreadCount: 0,
+      requiredThreadMembershipMismatchCount: 0, provenanceMismatchCount: 0,
+      unexpectedEvidenceMembershipCount: 0, indexedLiveCountDisagreementCount: 0,
+      indexedIncludedCountDisagreementCount: 0,
+    });
+    assert.doesNotMatch(JSON.stringify(result), /message_1|thread_target|opaque_1/i);
+  });
+
+  it("separates every blocking invariant without exposing identifiers", () => {
+    const cases: Array<[keyof ReturnType<typeof diagnose>, ReturnType<typeof diagnose>,
+      ReturnType<typeof sterlingTargetChronologyFailureStage>]> = [
+      ["missingMessageIdCount", diagnose({ evidence: [{ ...baseEvidence[0]!, messageId: null }, baseEvidence[1]!] }), "target-chronology-incomplete"],
+      ["malformedMessageIdCount", diagnose({ evidence: [{ ...baseEvidence[0]!, messageId: "bad id" }, baseEvidence[1]!] }), "target-chronology-incomplete"],
+      ["duplicateMessageIdCount", diagnose({ evidence: [baseEvidence[0]!, { ...baseEvidence[1]!, messageId: "message_1" }] }), "target-chronology-incomplete"],
+      ["invalidTimestampCount", diagnose({ evidence: [{ ...baseEvidence[0]!, timestamp: "invalid" }, baseEvidence[1]!] }), "target-chronology-incomplete"],
+      ["outOfOrderMessageCount", diagnose({ evidence: [baseEvidence[1]!, baseEvidence[0]!] }), "target-chronology-incomplete"],
+      ["missingRequiredThreadCount", diagnose({ requiredThreadIds: [requiredThread, "thread_missing"] }), "target-evidence-binding-incomplete"],
+      ["requiredThreadMembershipMismatchCount", diagnose({ evidence: [{ ...baseEvidence[0]!, threadId: "thread_foreign" }, baseEvidence[1]!] }), "target-package-cross-unit-evidence"],
+      ["provenanceMismatchCount", diagnose({ evidence: [{ ...baseEvidence[0]!, provenance: "indexed_gmail+candidate_excerpt" }, baseEvidence[1]!] }), "target-chronology-incomplete"],
+      ["unexpectedEvidenceMembershipCount", diagnose({ referencedEvidenceIds: ["evidence_2"] }), "target-evidence-binding-incomplete"],
+      ["indexedLiveCountDisagreementCount", diagnose({ liveMessageCount: 1 }), "target-chronology-incomplete"],
+      ["indexedIncludedCountDisagreementCount", diagnose({ includedMessageCount: 1 }), "target-chronology-incomplete"],
+    ];
+    for (const [field, result, expectedStage] of cases) {
+      assert.equal(result[field], 1, field);
+      assert.equal(sterlingTargetChronologyComplete(result), false, field);
+      assert.equal(sterlingTargetChronologyFailureStage(result), expectedStage, field);
+    }
   });
 });
 
@@ -298,7 +366,11 @@ describe("Sterling Sarah one-shot semantic authorization", () => {
         missingOrFailedThreadCount: 0, providerFailedThreadCount: 0, budgetDeferredThreadCount: 0,
         requiredIndexedMessageCount: 1, successfullyLiveRetrievedMessageCount: 1,
         includedEvidenceMessageCount: 1, excludedOrAmbiguousAssociationCount: 1, stoppedAtStage: null,
-        latestVerifiedSourceAt: evidence.timestamp, complete: true },
+        latestVerifiedSourceAt: evidence.timestamp,
+        chronologyInvariant: diagnoseSterlingTargetChronology({ evidence: [evidence], requiredThreadIds: [threadId],
+          referencedEvidenceIds: [evidence.evidenceId], indexedMessageCount: 1, liveMessageCount: 1,
+          includedMessageCount: 1 }),
+        complete: true },
       workingSet: base,
       requestWorkingSet: target,
     } as unknown as SterlingTodayAssembly;
@@ -310,6 +382,19 @@ describe("Sterling Sarah one-shot semantic authorization", () => {
     assert.equal(packagePreflight.diagnostics.mod9EvidencePresent, true);
     assert.equal(packagePreflight.diagnostics.requestByteCeilingPassed, true);
     assert.ok((packagePreflight.diagnostics.serializedRequestBytes ?? 0) > 0);
+    const provenanceBlocked = diagnoseSterlingTargetChronology({
+      evidence: [{ ...evidence, provenance: "indexed_gmail+candidate_excerpt" }],
+      requiredThreadIds: [threadId], referencedEvidenceIds: [evidence.evidenceId],
+      indexedMessageCount: 1, liveMessageCount: 1, includedMessageCount: 1,
+    });
+    const blockedPreflight = prepareSarahSemanticPackage({ ...assembly, targetBlockedReason:
+      "target-required-evidence-incomplete", targetDiagnostics: {
+      ...assembly.targetDiagnostics!, stoppedAtStage: "target-chronology-incomplete",
+      chronologyInvariant: provenanceBlocked, complete: false,
+    } });
+    assert.equal(blockedPreflight.ok, false);
+    assert.equal(blockedPreflight.reason, "target-chronology-incomplete");
+    assert.equal(blockedPreflight.diagnostics.chronologyInvariant?.provenanceMismatchCount, 1);
     assert.deepEqual(validateSarahSemanticAssembly({ ...assembly, targetDiagnostics: {
       ...assembly.targetDiagnostics!, successfullyLiveRetrievedThreadCount: 0, missingOrFailedThreadCount: 1,
       complete: false, stoppedAtStage: "target-thread-live-retrieval-incomplete",

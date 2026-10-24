@@ -118,7 +118,15 @@ describe("Sterling privacy-safe coverage diagnostics", () => {
       providerFailedThreadCount: 0, budgetDeferredThreadCount: 0, requiredIndexedMessageCount: 1,
       successfullyLiveRetrievedMessageCount: 1, includedEvidenceMessageCount: 1,
       excludedOrAmbiguousAssociationCount: 1, stoppedAtStage: null,
-      latestVerifiedSourceAt: "2026-10-21T10:00:00.000Z", complete: true };
+      latestVerifiedSourceAt: "2026-10-21T10:00:00.000Z",
+      chronologyInvariant: {
+        missingMessageIdCount: 0, malformedMessageIdCount: 0, duplicateMessageIdCount: 0,
+        invalidTimestampCount: 0, outOfOrderMessageCount: 0, missingRequiredThreadCount: 0,
+        requiredThreadMembershipMismatchCount: 0, provenanceMismatchCount: 0,
+        unexpectedEvidenceMembershipCount: 0, indexedLiveCountDisagreementCount: 0,
+        indexedIncludedCountDisagreementCount: 0,
+      },
+      complete: true };
     const serialized = JSON.stringify(safeAssemblyResult(assembly));
     for (const forbidden of ["Private client name", "private Gmail body", "private subject", "private-file.pdf",
       "private-message", "private-thread", "gmail:private", "provisional:private"]) {

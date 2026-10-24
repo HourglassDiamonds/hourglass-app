@@ -148,6 +148,21 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
           <p>Source provenance: {state.packagePreflight.provenanceValid ? "pass" : "fail"}</p>
           <p>October 21 Mod 9 evidence: {state.packagePreflight.mod9EvidencePresent ? "present" : "absent"}</p>
           <p>64,000-byte ceiling: {state.packagePreflight.requestByteCeilingPassed ? "pass" : "fail"}</p>
+          {state.packagePreflight.chronologyInvariant ? (
+            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+              <Count label="Missing message IDs" value={state.packagePreflight.chronologyInvariant.missingMessageIdCount} />
+              <Count label="Malformed message IDs" value={state.packagePreflight.chronologyInvariant.malformedMessageIdCount} />
+              <Count label="Duplicate message IDs" value={state.packagePreflight.chronologyInvariant.duplicateMessageIdCount} />
+              <Count label="Invalid timestamps" value={state.packagePreflight.chronologyInvariant.invalidTimestampCount} />
+              <Count label="Out-of-order messages" value={state.packagePreflight.chronologyInvariant.outOfOrderMessageCount} />
+              <Count label="Missing required threads" value={state.packagePreflight.chronologyInvariant.missingRequiredThreadCount} />
+              <Count label="Wrong-thread messages" value={state.packagePreflight.chronologyInvariant.requiredThreadMembershipMismatchCount} />
+              <Count label="Provenance mismatches" value={state.packagePreflight.chronologyInvariant.provenanceMismatchCount} />
+              <Count label="Unexpected evidence members" value={state.packagePreflight.chronologyInvariant.unexpectedEvidenceMembershipCount} />
+              <Count label="Indexed/live count delta" value={state.packagePreflight.chronologyInvariant.indexedLiveCountDisagreementCount} />
+              <Count label="Indexed/included count delta" value={state.packagePreflight.chronologyInvariant.indexedIncludedCountDisagreementCount} />
+            </dl>
+          ) : null}
           <p className="mt-3">Verified chronology: <Timestamp value={state.packagePreflight.earliestVerifiedMessageAt} />
             {" — "}<Timestamp value={state.packagePreflight.latestVerifiedMessageAt} /></p>
           {state.packagePreflight.componentBytes ? (
