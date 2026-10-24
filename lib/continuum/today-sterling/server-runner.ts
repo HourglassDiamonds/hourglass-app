@@ -69,6 +69,10 @@ import {
   type SterlingTargetChronologyDiagnostics,
 } from "./target-chronology";
 import {
+  summarizeSterlingTargetExtractionDiagnostics,
+  type SterlingTargetExtractionDiagnostics,
+} from "./target-extraction-diagnostics";
+import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
   acceptanceIdentifiers,
   isDurablyScopedFounderCorrection,
@@ -133,6 +137,7 @@ export type SterlingTodayAssembly = {
     stoppedAtStage: SterlingTargetStoppedAtStage;
     latestVerifiedSourceAt: string | null;
     chronologyInvariant: SterlingTargetChronologyDiagnostics | null;
+    extractionDiagnostics: SterlingTargetExtractionDiagnostics | null;
     complete: boolean;
   };
   targetPackage: ReturnType<typeof summarizeSterlingTodayTargetPackage> | null;
@@ -733,6 +738,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
         ? "target-thread-live-retrieval-incomplete" : "target-resolution-failed") : null;
     let includedEvidenceMessageCount = 0;
     let chronologyInvariant: SterlingTargetChronologyDiagnostics | null = null;
+    let extractionDiagnostics: SterlingTargetExtractionDiagnostics | null = null;
     let requestTargetWorkingSet: SterlingTodayWorkingSet | null = null;
     if (selected) {
       requestTargetWorkingSet = buildSterlingTodayTargetWorkingSet(workingSet, selected.workUnitId, {
@@ -756,6 +762,13 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
         liveMessageCount: successfullyLiveRetrievedMessageCount,
         includedMessageCount: includedEvidenceMessageCount,
       });
+      extractionDiagnostics = summarizeSterlingTargetExtractionDiagnostics({
+        threadContext,
+        requiredThreadIds: resolution.requiredThreadIds,
+        provenanceMismatchMessageIds: new Set(packageGmailEvidence
+          .filter((row) => row.provenance !== "indexed_gmail+live_quote_stripped_current_message")
+          .flatMap((row) => row.messageId ? [row.messageId] : [])),
+      });
       const chronologyFailureStage = sterlingTargetChronologyFailureStage(chronologyInvariant);
       if (!stoppedAtStage && crossUnitEvidence) stoppedAtStage = "target-package-cross-unit-evidence";
       else if (!stoppedAtStage && !bindingComplete) stoppedAtStage = "target-evidence-binding-incomplete";
@@ -778,6 +791,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       stoppedAtStage,
       latestVerifiedSourceAt,
       chronologyInvariant,
+      extractionDiagnostics,
       complete: targetBlockedReason === null,
     };
     if (selected) {

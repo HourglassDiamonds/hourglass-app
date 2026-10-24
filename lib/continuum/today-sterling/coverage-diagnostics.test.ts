@@ -126,6 +126,7 @@ describe("Sterling privacy-safe coverage diagnostics", () => {
         unexpectedEvidenceMembershipCount: 0, indexedLiveCountDisagreementCount: 0,
         indexedIncludedCountDisagreementCount: 0,
       },
+      extractionDiagnostics: null,
       complete: true };
     const serialized = JSON.stringify(safeAssemblyResult(assembly));
     for (const forbidden of ["Private client name", "private Gmail body", "private subject", "private-file.pdf",

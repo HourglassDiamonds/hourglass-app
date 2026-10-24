@@ -216,6 +216,7 @@ export async function runPreparedSourceViewerFetch(input: {
         subject: row.subject,
         sentAt: row.internalDate,
         plainText: row.plainText,
+        bodyExtractionStatus: row.bodyExtractionStatus,
         snippet: live?.snippet?.trim() || null,
         attachments: row.attachments.map((attachment) => ({
           filename: attachment.filename,

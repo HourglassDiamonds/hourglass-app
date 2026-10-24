@@ -386,6 +386,7 @@ export type SourceViewerMessageInput = {
   subject: string | null;
   sentAt: string | null;
   plainText: string | null;
+  bodyExtractionStatus?: import("@/lib/continuum/gmail/live-extraction-diagnostics").GmailBodyExtractionStatus;
   snippet: string | null;
   attachments: readonly { filename: string | null; mimeType: string | null }[];
 };

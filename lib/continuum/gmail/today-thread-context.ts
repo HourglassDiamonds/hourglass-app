@@ -30,6 +30,7 @@ import {
   type LiveSourceViewerBatch,
 } from "./source-viewer-run";
 import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-events/operational-facts";
+import { classifyLiveMessageExtraction } from "./live-extraction-diagnostics";
 
 const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
@@ -655,6 +656,12 @@ export async function loadLiveTodayOperationalFacts(
         return {
           ...message,
           operationalText,
+          liveExtractionDiagnostic: classifyLiveMessageExtraction({
+            plainText: live.plainText,
+            providerSnippet: live.snippet,
+            attachmentMetadataPresent: live.attachments.length > 0,
+            bodyExtractionStatus: live.bodyExtractionStatus,
+          }),
           hasAttachments: message.hasAttachments === true || attachmentFilenames.length > 0,
           attachmentFilenames,
         };

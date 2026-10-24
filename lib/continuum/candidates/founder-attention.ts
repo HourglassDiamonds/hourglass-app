@@ -172,6 +172,26 @@ export type TodayGmailIndexedMessage = {
   attachmentFilenames?: readonly string[];
   /** Quote-stripped, live-read operational excerpts only; never a persisted body. */
   operationalText?: string | null;
+  /** Ephemeral privacy-safe extraction status; never persisted or model-bound. */
+  liveExtractionDiagnostic?: {
+    outcome:
+      | "operational_current_text"
+      | "non_operational_current_text"
+      | "empty_current_text"
+      | "quote_only_current_content"
+      | "signature_or_boilerplate_only"
+      | "attachment_only"
+      | "uncertain_or_failed_decoding"
+      | "unsupported_message_format"
+      | "ambiguous_quote_stripping"
+      | "empty_plaintext_with_provider_snippet";
+    decodingSucceeded: boolean;
+    currentMessageTextFound: boolean;
+    operationalTextRecognized: boolean;
+    attachmentMetadataPresent: boolean;
+    providerFallbackAffectedExtraction: boolean;
+    extractionUncertain: boolean;
+  };
   plaintext?: string | null;
 };
 

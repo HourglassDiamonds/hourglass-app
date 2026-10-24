@@ -7,6 +7,7 @@ import {
   sterlingTargetChronologyComplete,
   type SterlingTargetChronologyDiagnostics,
 } from "./target-chronology";
+import type { SterlingTargetExtractionDiagnostics } from "./target-extraction-diagnostics";
 
 export const STERLING_TODAY_SARAH_PROJECT_ID = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1" as const;
 export const STERLING_TODAY_SARAH_THREAD_ID = "1a0881b53067a9e6" as const;
@@ -33,6 +34,7 @@ export type SarahSemanticPackageDiagnostics = {
   requestByteCeiling: number;
   requestByteCeilingPassed: boolean;
   chronologyInvariant: SterlingTargetChronologyDiagnostics | null;
+  extractionDiagnostics: SterlingTargetExtractionDiagnostics | null;
   componentBytes: null | {
     instructions: number;
     workingSet: number;
@@ -116,6 +118,7 @@ function emptyDiagnostics(assembly: SterlingTodayAssembly): SarahSemanticPackage
     requestByteCeiling: STERLING_TODAY_SARAH_MAX_REQUEST_BYTES,
     requestByteCeilingPassed: false,
     chronologyInvariant: target?.chronologyInvariant ?? null,
+    extractionDiagnostics: target?.extractionDiagnostics ?? null,
     componentBytes: null,
   };
 }

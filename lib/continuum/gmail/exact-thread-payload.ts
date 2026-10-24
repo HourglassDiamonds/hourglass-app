@@ -12,6 +12,7 @@ import {
   sentAtFromInternalDate,
 } from "./payload";
 import type { GmailApiMessage, GmailApiThread, GmailPayloadPart } from "./types";
+import type { GmailBodyExtractionStatus } from "./live-extraction-diagnostics";
 
 export type ProtectedMimePartMeta = {
   mimeType: string | null;
@@ -38,6 +39,8 @@ export type ProtectedExactThreadMessage = {
   bcc: readonly string[];
   subject: string | null;
   plainText: string | null;
+  /** Present for live provider payloads; absent legacy/fixture rows classify as uncertain. */
+  bodyExtractionStatus?: GmailBodyExtractionStatus;
   mimeParts: readonly ProtectedMimePartMeta[];
   attachments: readonly ProtectedExactThreadAttachment[];
 };
@@ -53,6 +56,16 @@ function decodeGmailBodyData(data: string): string {
   const decoded = Buffer.from(trimmed, "base64url").toString("utf8");
   if (decoded) return decoded;
   return Buffer.from(trimmed, "base64").toString("utf8");
+}
+
+function validUtf8(data: string): boolean {
+  try {
+    const bytes = Buffer.from(data.trim(), "base64url");
+    new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function stripHtml(html: string): string {
@@ -74,6 +87,8 @@ function walkParts(
     plain: string[];
     html: string[];
     mime: ProtectedMimePartMeta[];
+    decodeFailureCount: number;
+    unsupportedBodyPartCount: number;
   },
 ): void {
   if (!part) return;
@@ -88,6 +103,9 @@ function walkParts(
 
   const data = part.body?.data?.trim();
   if (data && !attachmentId && !filename) {
+    const supportedText = !mimeType || /^text\/(?:plain|html)(?:;|$)/i.test(mimeType);
+    if (!supportedText) acc.unsupportedBodyPartCount += 1;
+    if (supportedText && !validUtf8(data)) acc.decodeFailureCount += 1;
     const decoded = decodeGmailBodyData(data);
     if (decoded) {
       if (!mimeType || /^text\/plain(?:;|$)/i.test(mimeType)) {
@@ -126,10 +144,25 @@ export function protectExactThreadMessage(
   message: GmailApiMessage,
 ): ProtectedExactThreadMessage {
   const addresses = parseGmailAddresses(message);
-  const walked = { plain: [] as string[], html: [] as string[], mime: [] as ProtectedMimePartMeta[] };
+  const walked = {
+    plain: [] as string[],
+    html: [] as string[],
+    mime: [] as ProtectedMimePartMeta[],
+    decodeFailureCount: 0,
+    unsupportedBodyPartCount: 0,
+  };
   walkParts(message.payload, walked);
   const plainJoined = walked.plain.join("\n\n").trim();
   const htmlJoined = walked.html.join("\n\n").trim();
+  const bodyExtractionStatus: GmailBodyExtractionStatus = walked.decodeFailureCount > 0
+    ? "decode_failed"
+    : plainJoined
+      ? "decoded_plaintext"
+      : htmlJoined
+        ? "decoded_html"
+        : walked.unsupportedBodyPartCount > 0
+          ? "unsupported"
+          : "empty";
   const internalDate = internalDateIso(message);
   const attachments = extractAttachmentMetadata(
     message,
@@ -151,6 +184,7 @@ export function protectExactThreadMessage(
     bcc: addresses.bccEmails,
     subject: parseGmailSubject(message),
     plainText: plainJoined || (htmlJoined ? stripHtml(htmlJoined) : null) || null,
+    bodyExtractionStatus,
     mimeParts: walked.mime,
     attachments,
   };

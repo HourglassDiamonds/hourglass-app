@@ -163,6 +163,36 @@ function SafeResult({ state }: { state: NonNullable<SterlingTodayActionState> })
               <Count label="Indexed/included count delta" value={state.packagePreflight.chronologyInvariant.indexedIncludedCountDisagreementCount} />
             </dl>
           ) : null}
+          {state.packagePreflight.extractionDiagnostics ? (
+            <details className="mt-4 border-t border-white/10 pt-4">
+              <summary className="cursor-pointer text-[11px] uppercase tracking-[0.18em] text-[#ad9164]">
+                Privacy-safe extraction diagnostics
+              </summary>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2">
+                <Count label="Messages classified" value={state.packagePreflight.extractionDiagnostics.totalMessageCount} />
+                <Count label="Provenance mismatches" value={state.packagePreflight.extractionDiagnostics.provenanceMismatchCount} />
+                <Count label="Decoding succeeded" value={state.packagePreflight.extractionDiagnostics.decodingSucceededCount} />
+                <Count label="Current text found" value={state.packagePreflight.extractionDiagnostics.currentMessageTextFoundCount} />
+                <Count label="Operational text recognized" value={state.packagePreflight.extractionDiagnostics.operationalTextRecognizedCount} />
+                <Count label="Attachment metadata present" value={state.packagePreflight.extractionDiagnostics.attachmentMetadataPresentCount} />
+                <Count label="Provider fallback affected" value={state.packagePreflight.extractionDiagnostics.providerFallbackAffectedCount} />
+                <Count label="Uncertain extraction" value={state.packagePreflight.extractionDiagnostics.uncertainCount} />
+              </dl>
+              <div className="mt-3 space-y-2">
+                {state.packagePreflight.extractionDiagnostics.mismatches.map((row) => (
+                  <div key={row.messageRef} className="rounded-lg border border-white/10 p-3">
+                    <p className="text-[#efe8de]">{row.messageRef} · {row.outcome}</p>
+                    <p>Decode: {row.decodingSucceeded ? "succeeded" : "not verified"}</p>
+                    <p>Current text: {row.currentMessageTextFound ? "found" : "not found"}</p>
+                    <p>Operational text: {row.operationalTextRecognized ? "recognized" : "not recognized"}</p>
+                    <p>Attachment metadata: {row.attachmentMetadataPresent ? "present" : "absent"}</p>
+                    <p>Provider fallback affected extraction: {row.providerFallbackAffectedExtraction ? "yes" : "no"}</p>
+                    <p>Uncertain: {row.extractionUncertain ? "yes" : "no"}</p>
+                  </div>
+                ))}
+              </div>
+            </details>
+          ) : null}
           <p className="mt-3">Verified chronology: <Timestamp value={state.packagePreflight.earliestVerifiedMessageAt} />
             {" — "}<Timestamp value={state.packagePreflight.latestVerifiedMessageAt} /></p>
           {state.packagePreflight.componentBytes ? (
