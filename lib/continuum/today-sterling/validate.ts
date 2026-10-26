@@ -21,6 +21,7 @@ export function validateSterlingTodayProposal(
   const projects = new Map(workingSet.projects.map(row => [row.projectId, row]));
   const people = new Set(workingSet.people.map(row => row.personId));
   const evidence = new Set(workingSet.evidence.map(row => row.evidenceId));
+  const evidenceById = new Map(workingSet.evidence.map(row => [row.evidenceId, row]));
   const jobs = new Map(workingSet.jobs.map(row => [row.jobId, row]));
   const workUnits = new Map(workingSet.workUnits.map(row => [row.workUnitId, row]));
   const assessments = new Map<string, SterlingTodayProposal["portfolioAssessments"][number]>();
@@ -54,6 +55,12 @@ export function validateSterlingTodayProposal(
     for (const ref of refs) {
       if (!evidence.has(ref)) errors.push(`unknown-evidence:${assessment.workUnitId}:${ref}`);
       else if (!workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-evidence:${assessment.workUnitId}:${ref}`);
+    }
+    requireOperationalAuthority(assessment.currentStage.evidenceRefs,
+      `current-stage:${assessment.workUnitId}`, evidenceById, errors);
+    for (const obligation of assessment.obligations) {
+      requireOperationalAuthority(obligation.evidenceRefs,
+        `obligation:${assessment.workUnitId}:${obligation.obligationId}`, evidenceById, errors);
     }
     const project = assessment.projectId ? projects.get(assessment.projectId) : null;
     if (assessment.currentStage.canonicalLifecycleStage && project && isLifecycleKind(project.projectKind) &&
@@ -104,6 +111,7 @@ export function validateSterlingTodayProposal(
       else if (workUnit && !workUnit.evidenceRefs.includes(ref)) errors.push(`cross-work-unit-evidence:${item.itemId}:${ref}`);
     }
     if (item.evidenceRefs.length === 0) errors.push(`missing-provenance:${item.itemId}`);
+    requireOperationalAuthority(item.evidenceRefs, `recommendation:${item.itemId}`, evidenceById, errors);
   }
   for (const assessment of assessments.values()) {
     if (assessment.recommendationItemId && !recommendations.has(assessment.recommendationItemId)) {
@@ -144,7 +152,7 @@ export function validateSterlingTodayProposal(
 
   const seenKeys = new Set<string>();
   const mutationValidations = proposal.proposedCanonicalMutations.map(mutation => {
-    const reasons = validateMutation(mutation, { projects, people, evidence, jobs, seenKeys, workingSet });
+    const reasons = validateMutation(mutation, { projects, people, evidence, evidenceById, jobs, seenKeys, workingSet });
     seenKeys.add(mutation.proposalKey);
     return {
       proposalKey: mutation.proposalKey,
@@ -157,11 +165,36 @@ export function validateSterlingTodayProposal(
   return { accepted: errors.length === 0, proposal: errors.length === 0 ? proposal : null, errors, mutationValidations };
 }
 
+function supportsOperationalClaim(row: SterlingTodayWorkingSet["evidence"][number]): boolean {
+  if (row.sourceType !== "gmail") return true;
+  if (row.contentClassification === "operational_current_text") return true;
+  if (row.contentClassification != null) return false;
+  return row.provenance.includes("live_quote_stripped_current_message") && Boolean(row.excerpt?.trim());
+}
+
+function requireOperationalAuthority(
+  refs: readonly string[],
+  context: string,
+  evidenceById: ReadonlyMap<string, SterlingTodayWorkingSet["evidence"][number]>,
+  errors: string[],
+): void {
+  if (refs.length === 0) return;
+  const rows = refs.flatMap((ref) => {
+    const row = evidenceById.get(ref);
+    return row ? [row] : [];
+  });
+  if (rows.length > 0 && !rows.some(supportsOperationalClaim)) {
+    errors.push(`insufficient-operational-evidence:${context}`);
+  }
+}
+
 function validateMutation(
   mutation: SterlingProposedCanonicalMutation,
   context: {
     projects: Map<string, SterlingTodayWorkingSet["projects"][number]>;
-    people: Set<string>; evidence: Set<string>; jobs: Map<string, SterlingTodayWorkingSet["jobs"][number]>;
+    people: Set<string>; evidence: Set<string>;
+    evidenceById: ReadonlyMap<string, SterlingTodayWorkingSet["evidence"][number]>;
+    jobs: Map<string, SterlingTodayWorkingSet["jobs"][number]>;
     seenKeys: Set<string>; workingSet: SterlingTodayWorkingSet;
   },
 ): string[] {
@@ -170,6 +203,13 @@ function validateMutation(
   if (mutation.requiresFounderApproval !== true) reasons.push("founder-approval-required");
   if (mutation.evidenceRefs.length === 0) reasons.push("evidence-required");
   for (const ref of mutation.evidenceRefs) if (!context.evidence.has(ref)) reasons.push(`unknown-evidence:${ref}`);
+  const mutationEvidence = mutation.evidenceRefs.flatMap((ref) => {
+    const row = context.evidenceById.get(ref);
+    return row ? [row] : [];
+  });
+  if (mutationEvidence.length > 0 && !mutationEvidence.some(supportsOperationalClaim)) {
+    reasons.push("insufficient-operational-evidence");
+  }
   const project = mutation.projectId ? context.projects.get(mutation.projectId) : null;
   const job = mutation.jobId ? context.jobs.get(mutation.jobId) : null;
   if (mutation.projectId && !project) reasons.push("unknown-project");

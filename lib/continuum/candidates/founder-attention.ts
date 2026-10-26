@@ -172,6 +172,13 @@ export type TodayGmailIndexedMessage = {
   attachmentFilenames?: readonly string[];
   /** Quote-stripped, live-read operational excerpts only; never a persisted body. */
   operationalText?: string | null;
+  /**
+   * Quote-stripped current-message text from a successfully decoded live read.
+   * Ephemeral only: this may carry non-operational conversational context but is
+   * never persisted, and it is never populated from an indexed candidate excerpt
+   * or provider snippet fallback.
+   */
+  verifiedCurrentMessageText?: string | null;
   /** Ephemeral privacy-safe extraction status; never persisted or model-bound. */
   liveExtractionDiagnostic?: {
     outcome:

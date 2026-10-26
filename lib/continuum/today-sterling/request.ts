@@ -3,7 +3,7 @@ import { createSterlingEvidenceHandleMap, resolveSterlingEvidenceHandles } from 
 import { parseSterlingTodayProposal, STERLING_TODAY_OUTPUT_SCHEMA } from "./schema";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal, type SterlingTodayWorkingSet } from "./types";
 
-export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v6" as const;
+export const STERLING_TODAY_PROMPT_VERSION = "sterling-today-reasoning-v7" as const;
 export const STERLING_TODAY_TIMEOUT_MS = 180_000;
 export const STERLING_TODAY_TIMEOUT_ENV = "CONTINUUM_STERLING_TODAY_TIMEOUT_MS" as const;
 export const STERLING_TODAY_MAX_OUTPUT_TOKENS = 24_000;
@@ -34,6 +34,9 @@ const INSTRUCTIONS = [
   "When exact sender identity, historical thread continuity, an exact operational identifier, or a canonical source record supports a possible association, place it in relationshipProposals for founder review. Never propose an association from name similarity alone, and never treat a relationship proposal as already applied.",
   "Typed identifiers distinguish projects, orders, certificates, and requests. Never treat a certificate or order identifier as a canonical project number.",
   "Every conclusion must cite exact request-local evidenceId handles such as E0001 from the working set. Never cite sourceRef, messageId, threadId, or any invented identifier as evidenceRefs.",
+  "Treat source authenticity separately from content usefulness. non_operational_current_text is verified conversational context but cannot by itself establish an obligation, action, approval, specification, or lifecycle change.",
+  "empty_current_text, quote_only_current_content, signature_or_boilerplate_only, and attachment_only preserve chronology but cannot independently support operational claims.",
+  "attachmentEvidence=verified_metadata_presence proves only that an attachment exists. Filenames and MIME metadata do not establish CAD/STL contents, design specifications, approvals, or completion.",
   "Presentation recommendations and canonical mutations are separate. Mutations are proposals only and always require founder approval.",
   "Use the exact runId and evidenceSnapshotId supplied. Return only the strict structured object.",
 ].join(" ");

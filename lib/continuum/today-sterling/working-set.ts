@@ -1,7 +1,11 @@
 import { createHash, randomUUID } from "node:crypto";
 import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
 import { collectExactGmailIds, exactGmailIdsFromPointer, isExactGmailHexId } from "@/lib/continuum/candidates/exact-gmail-ids";
-import type { TodayGmailThreadContext, TodayKnownPerson } from "@/lib/continuum/candidates/founder-attention";
+import type {
+  TodayGmailIndexedMessage,
+  TodayGmailThreadContext,
+  TodayKnownPerson,
+} from "@/lib/continuum/candidates/founder-attention";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
@@ -76,6 +80,14 @@ function cleanExcerpt(value: string | null | undefined): string | null {
   const clean = (value ?? "").split("\n").filter(line => !/^\s*>/.test(line) && !/\bwrote:\s*$/i.test(line))
     .join("\n").replace(/\n{3,}/g, "\n\n").trim();
   return clean ? clean.slice(0, 4000) : null;
+}
+
+function hasTrustedLiveAuthenticity(message: TodayGmailIndexedMessage): boolean {
+  const diagnostic = message.liveExtractionDiagnostic;
+  if (!diagnostic) return Boolean(message.operationalText?.trim());
+  return Boolean(diagnostic?.decodingSucceeded) &&
+    diagnostic?.extractionUncertain === false &&
+    diagnostic.providerFallbackAffectedExtraction === false;
 }
 
 function unique(values: readonly (string | null | undefined)[]): string[] {
@@ -175,7 +187,12 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     const projectIds = [...(projectIdsByThread.get(threadId) ?? [])];
     for (const message of thread.messages ?? []) {
       const related = candidatesByMessage.get(message.messageId) ?? [];
-      const excerpt = cleanExcerpt(message.operationalText) ?? cleanExcerpt(related.map(candidateExcerpt).filter(Boolean).join("\n"));
+      const trustedLive = hasTrustedLiveAuthenticity(message);
+      const verifiedContext = message.liveExtractionDiagnostic?.outcome === "non_operational_current_text"
+        ? message.verifiedCurrentMessageText?.trim() || null
+        : null;
+      const excerpt = cleanExcerpt(message.operationalText) ?? verifiedContext ??
+        (trustedLive ? null : cleanExcerpt(related.map(candidateExcerpt).filter(Boolean).join("\n")));
       evidence.push({
         evidenceId: `gmail:${threadId}:${message.messageId}`, sourceType: "gmail",
         sourceRef: `gmail:thread:${threadId}:message:${message.messageId}`, timestamp: message.sentAt,
@@ -186,7 +203,13 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
           knownPersonId(message.fromEmailHash),
           ...(message.toEmailHashes ?? []).map(knownPersonId),
         ]),
-        provenance: message.operationalText ? "indexed_gmail+live_quote_stripped_current_message" : "indexed_gmail+candidate_excerpt",
+        provenance: trustedLive
+          ? "indexed_gmail+live_quote_stripped_current_message"
+          : "indexed_gmail+candidate_excerpt",
+        contentClassification: message.liveExtractionDiagnostic?.outcome ??
+          (message.operationalText?.trim() ? "operational_current_text" : null),
+        attachmentEvidence: message.liveExtractionDiagnostic?.attachmentMetadataPresent
+          ? "verified_metadata_presence" : "none",
       });
     }
   }

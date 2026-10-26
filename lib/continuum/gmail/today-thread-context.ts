@@ -31,6 +31,7 @@ import {
 } from "./source-viewer-run";
 import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-events/operational-facts";
 import { classifyLiveMessageExtraction } from "./live-extraction-diagnostics";
+import { authorOwnedText } from "./candidates/spec-provenance";
 
 const THREAD_QUERY_CHUNK = 40;
 const MESSAGES_PER_THREAD = 80;
@@ -653,15 +654,23 @@ export async function loadLiveTodayOperationalFacts(
             ...liveAttachmentFilenames,
           ]),
         ];
+        const liveExtractionDiagnostic = classifyLiveMessageExtraction({
+          plainText: live.plainText,
+          providerSnippet: live.snippet,
+          attachmentMetadataPresent: live.attachments.length > 0,
+          bodyExtractionStatus: live.bodyExtractionStatus,
+        });
+        const verifiedCurrentMessageText = liveExtractionDiagnostic.decodingSucceeded &&
+          !liveExtractionDiagnostic.extractionUncertain &&
+          !liveExtractionDiagnostic.providerFallbackAffectedExtraction &&
+          liveExtractionDiagnostic.currentMessageTextFound
+          ? authorOwnedText(live.plainText)
+          : null;
         return {
           ...message,
           operationalText,
-          liveExtractionDiagnostic: classifyLiveMessageExtraction({
-            plainText: live.plainText,
-            providerSnippet: live.snippet,
-            attachmentMetadataPresent: live.attachments.length > 0,
-            bodyExtractionStatus: live.bodyExtractionStatus,
-          }),
+          verifiedCurrentMessageText,
+          liveExtractionDiagnostic,
           hasAttachments: message.hasAttachments === true || attachmentFilenames.length > 0,
           attachmentFilenames,
         };

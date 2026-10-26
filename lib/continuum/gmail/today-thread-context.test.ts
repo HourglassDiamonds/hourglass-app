@@ -307,6 +307,46 @@ describe("Today live Gmail rebuild batch", () => {
     }]);
   });
 
+  it("retains decoded non-operational current text without promoting provider fallback", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([["thread-context", { messages: [
+      { messageId: "message-context", sentAt: "2026-10-21T12:00:00.000Z", direction: "inbound" },
+      { messageId: "message-fallback", sentAt: "2026-10-21T13:00:00.000Z", direction: "inbound" },
+    ] }]]);
+    const result = await loadLiveTodayOperationalFacts(base, {
+      requireComplete: true,
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 1 },
+        async fetchThread({ threadId }) {
+          return {
+            ok: true as const,
+            safeErrorCode: null,
+            threadId,
+            indexedSubject: null,
+            messages: [{
+              messageId: "message-context", threadId, sentAt: "2026-10-21T12:00:00.000Z",
+              fromRaw: null, fromEmail: null, to: [], cc: [], subject: null,
+              plainText: "Sounds good, thank you.", snippet: "", attachments: [{ filename: "context.pdf", mimeType: "application/pdf" }],
+              bodyExtractionStatus: "decoded_plaintext" as const,
+            }, {
+              messageId: "message-fallback", threadId, sentAt: "2026-10-21T13:00:00.000Z",
+              fromRaw: null, fromEmail: null, to: [], cc: [], subject: null,
+              plainText: null, snippet: "Fallback must not become verified text.", attachments: [],
+              bodyExtractionStatus: "empty" as const,
+            }],
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+          };
+        },
+      }),
+    });
+    const [context, fallback] = result.get("thread-context")!.messages!;
+    assert.equal(context?.verifiedCurrentMessageText, "Sounds good, thank you.");
+    assert.equal(context?.liveExtractionDiagnostic?.outcome, "non_operational_current_text");
+    assert.equal(fallback?.verifiedCurrentMessageText, null);
+    assert.equal(fallback?.liveExtractionDiagnostic?.outcome, "empty_plaintext_with_provider_snippet");
+    assert.equal(fallback?.liveExtractionDiagnostic?.extractionUncertain, true);
+  });
+
   it("rejects a partial live batch when completeness is required for publication", async () => {
     const base = new Map<string, TodayGmailThreadContext>([
       [

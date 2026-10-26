@@ -48,6 +48,21 @@ export type SterlingEvidence = {
   subject: string | null; excerpt: string | null; attachmentFilenames: readonly string[];
   messageId: string | null; threadId: string | null; projectIds: readonly string[];
   personIds: readonly string[]; provenance: string;
+  /** Live content usefulness is independent from live source authenticity. */
+  contentClassification?:
+    | "operational_current_text"
+    | "non_operational_current_text"
+    | "empty_current_text"
+    | "quote_only_current_content"
+    | "signature_or_boilerplate_only"
+    | "attachment_only"
+    | "uncertain_or_failed_decoding"
+    | "unsupported_message_format"
+    | "ambiguous_quote_stripping"
+    | "empty_plaintext_with_provider_snippet"
+    | null;
+  /** Attachment metadata proves presence only, never attachment contents. */
+  attachmentEvidence?: "none" | "verified_metadata_presence" | null;
 };
 
 export type SterlingPreviousTodayItem = {
