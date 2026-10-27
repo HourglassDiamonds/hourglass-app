@@ -180,8 +180,8 @@ class SupabaseClientWebsiteIntakeReader implements ClientWebsiteIntakeReader {
       .order("updated_at", { ascending: false });
     if (jobError) throw new Error(jobError.message ?? "read-website-intake-lifecycle-failed");
     const jobs = (Array.isArray(jobData) ? jobData : []).filter(
-      (row): row is Record<string, unknown> => Boolean(row && typeof row === "object"),
-    );
+      (row) => Boolean(row && typeof row === "object"),
+    ) as Array<Record<string, unknown>>;
     const projectIds = [...new Set(jobs.flatMap((job) => job.project_id ? [String(job.project_id)] : []))];
     const projectTitles = new Map<string, string>();
     const projectStages = new Map<string, string>();
