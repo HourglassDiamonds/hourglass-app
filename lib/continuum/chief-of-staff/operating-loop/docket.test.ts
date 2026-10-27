@@ -11,6 +11,7 @@ import {
   cosWatchingCountLabel,
   docketSubject,
   masterSprintDocketItems,
+  sectionsWithoutUpNext,
 } from "./docket";
 import { composeCosOperatingLoop } from "./compose";
 import {
@@ -127,6 +128,17 @@ function loopOf(extra: Partial<CosOperatingLoopView> = {}): CosOperatingLoopView
 }
 
 describe("Today Chief of Staff docket", () => {
+  it("renders each action once by removing Up Next cards from lifecycle sections", () => {
+    const docket = composeTodayDocket(loopOf({
+      status: "active",
+      brief: [briefItem(), briefItem({ id: "brief-two", projectId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", candidateIds: ["cand-two"] })],
+    }));
+    const sections = sectionsWithoutUpNext(docket.sections ?? [], docket.items);
+    const sectionIds = sections.flatMap((section) => section.items.map((item) => item.id));
+    assert.equal(sectionIds.some((id) => docket.items.some((item) => item.id === id)), false);
+    assert.equal(new Set([...docket.items.map((item) => item.id), ...sectionIds]).size, docket.items.length + sectionIds.length);
+  });
+
   it("uses Person / Project as the subject line", () => {
     assert.equal(docketSubject("Travis Morse", "Chicken ring"), "Travis Morse / Chicken ring");
     assert.equal(docketSubject("Travis Morse", "Chicken ring (his) / Travis"), "Travis Morse");

@@ -24,6 +24,15 @@ export type ClientWebsiteIntake = {
   attribution: Record<string, unknown>;
   source: string;
   submittedAt: string;
+  lifecycle: {
+    disposition: "new" | "test_submission" | "solicitation" | "contacted";
+    label: string;
+    activeJobId: string | null;
+    jobState: "open" | "snoozed" | "resolved" | "cancelled" | null;
+    projectId: string | null;
+    projectTitle: string | null;
+    projectStage: string | null;
+  };
   correspondenceReview?: {
     candidateId: string;
     status: "pending" | "approved";

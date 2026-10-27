@@ -74,7 +74,7 @@ function WorkRow({ item, selected, onSelect }: { item: CosTodaySectionItem; sele
         <p className="min-w-0 break-words text-[14px] leading-relaxed text-[#e4dbd0]">{item.title}</p>
         <p className="shrink-0 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">{item.stateLabel}</p>
       </div>
-      <p className="mt-1 break-words text-[13px] leading-relaxed text-[#9f9489]">{item.summary}</p>
+      <p className="mt-1 break-words text-[13px] leading-relaxed text-[#9f9489]"><span className="text-[#7f756c]">Next step: </span>{item.summary}</p>
       <button type="button" onClick={onSelect} className="mt-2 min-h-10 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">
         {selected ? "Selected for Sterling" : "Tell Sterling about this"}
       </button>
@@ -90,7 +90,7 @@ function IntakeCard({ intake, selected, onSelect }: { intake: ClientWebsiteIntak
     <details className="border-t border-[#2b2926] py-3 first:border-t-0" data-today-intake={intake.intakeId}>
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 outline-none marker:hidden">
         <span className="min-w-0 break-words text-[14px] text-[#e4dbd0]">Website inquiry — {intake.fullName}</span>
-        <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[#ad9164]">Open</span>
+        <span className="shrink-0 text-[10px] uppercase tracking-[0.16em] text-[#ad9164]">{intake.lifecycle.label}</span>
       </summary>
       <div className="min-w-0 pb-2 pt-2">
         {whatMatters ? (
@@ -149,7 +149,7 @@ export function TodayOperatingSections({
     const target = targetFor(trimmed, sections) ?? sections.flatMap((section) => section.items).find((item) => item.id === selectedTargetId) ?? null;
     const intakeTarget = intakes.find((intake) => intake.intakeId === selectedTargetId) ?? null;
     if (move === "remove" && intakeTarget) {
-      setReply("I found the selected intake. Review dismissal on that intake, then approve it to remove the Job from the active queue while preserving the submission and audit history.");
+      setReply("I found the selected intake. Choose Test submission or Solicitation on that intake, then approve the classification. The Person, submission, and audit history remain preserved and the decision can be restored.");
       setFailedQuery(null);
       setQuery("");
       return;
@@ -192,6 +192,10 @@ export function TodayOperatingSections({
 
   return (
     <div className="mt-10 min-w-0" data-today-operating-sections="">
+      <div className="mb-3">
+        <h2 className="text-[11px] uppercase tracking-[0.22em] text-[#8d8073]">Work by status</h2>
+        <p className="mt-1 text-[12px] leading-relaxed text-[#6f675f]">The short action queue stays above. Remaining work appears once below in its current lifecycle.</p>
+      </div>
       {visibleIntakes.length > 0 ? (
         <details open className="border-b border-[#34312d] py-1" data-today-section="concierge-intake">
           <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 outline-none marker:hidden">
@@ -202,7 +206,7 @@ export function TodayOperatingSections({
         </details>
       ) : null}
       {sections.map((section) => {
-        const alwaysPresent = section.id === "founder" || section.id === "repairs";
+        const alwaysPresent = section.id === "repairs";
         if (!alwaysPresent && section.items.length === 0) return null;
         return (
           <details

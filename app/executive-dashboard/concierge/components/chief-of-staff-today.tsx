@@ -5,6 +5,7 @@ import {
   composeTodayDocket,
   COS_DOCKET_TITLE,
   cosQueuedLabel,
+  sectionsWithoutUpNext,
   TODAY_DOCKET_VERSION,
   type CosDocketItemView,
   type CosTodayDocketView,
@@ -234,6 +235,12 @@ export function ChiefOfStaffToday({
   const hasBrief = docket.items.some((item) => item.origin === "brief");
   const loopStatus = loop?.status
     ?? (docket.showDisconnected ? "disconnected" : docket.showCaughtUp ? "caught-up" : "active");
+  const lifecycleSections = sectionsWithoutUpNext(
+    incomingDocket
+      ? docket.sections ?? composeTodaySections({ active: docket.items, watching: docket.watching })
+      : composeTodaySections({ active: docket.items, watching: docket.watching }),
+    docket.items,
+  );
   return (
     <section
       data-cos-operating-loop={loopStatus}
@@ -317,9 +324,7 @@ export function ChiefOfStaffToday({
         </>
       )}
       <TodayOperatingSections
-        initialSections={incomingDocket
-          ? docket.sections ?? composeTodaySections({ active: docket.items, watching: docket.watching })
-          : composeTodaySections({ active: docket.items, watching: docket.watching })}
+        initialSections={lifecycleSections}
         intakes={intakes}
         businessTodayContext={businessTodayContext}
         askAction={askAction}

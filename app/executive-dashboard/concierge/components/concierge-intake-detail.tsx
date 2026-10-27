@@ -45,7 +45,7 @@ export function ConciergeIntakeDetail({
     >
       <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 py-4 outline-none marker:content-none focus-visible:text-[#efe8de] [&::-webkit-details-marker]:hidden">
         <span className="text-[11px] uppercase tracking-[0.24em] text-[#ad9164]">
-          Concierge intake
+          Concierge intake · {intake.lifecycle.label}
         </span>
         <span className="min-w-0 text-right text-[11px] leading-relaxed text-[#8d8073]">
           {submitted}

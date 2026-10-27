@@ -36,6 +36,15 @@ const intake: ClientWebsiteIntake = {
   },
   source: "hourglassdiamonds.com/concierge",
   submittedAt: "2026-10-05T14:10:11.233Z",
+  lifecycle: {
+    disposition: "new",
+    label: "New inquiry",
+    activeJobId: "b42b9407-168a-41db-99ba-0374e3e1e9a1",
+    jobState: "open",
+    projectId: null,
+    projectTitle: null,
+    projectStage: null,
+  },
   correspondenceReview: null,
 };
 

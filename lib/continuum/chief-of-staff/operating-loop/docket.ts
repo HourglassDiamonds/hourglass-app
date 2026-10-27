@@ -91,6 +91,18 @@ export type CosTodaySectionView = {
   items: readonly CosTodaySectionItem[];
 };
 
+/** Keep Up Next as the single action surface while retaining every other item by lifecycle. */
+export function sectionsWithoutUpNext(
+  sections: readonly CosTodaySectionView[],
+  upNext: readonly Pick<CosDocketItemView, "id">[],
+): CosTodaySectionView[] {
+  const promoted = new Set(upNext.map((item) => item.id));
+  return sections.map((section) => ({
+    ...section,
+    items: section.items.filter((item) => !promoted.has(item.id)),
+  }));
+}
+
 export function isExternalPromiseFollowUpDue(
   packet: CosDocketItemView["briefingPacket"],
   asOfIso: string | null | undefined,
@@ -172,8 +184,8 @@ export function composeTodaySections(input: {
     title: item.subject,
     summary:
       item.briefingPacket?.ballHolder === "founder"
-        ? item.briefing?.nextBody || item.semanticPresentation?.suggestedAction || item.headline
-        : item.semanticPresentation?.founderCheckpoint || item.headline,
+        ? item.semanticPresentation?.suggestedAction || item.briefing?.nextBody || item.headline
+        : item.semanticPresentation?.founderCheckpoint || item.briefing?.nextBody || item.headline,
     stateLabel: item.semanticPresentation?.stateLabel || item.briefing?.stateChip || (item.origin === "master_sprint" ? "MASTER SPRINT" : "ACTIVE"),
     origin: item.origin,
     ballHolder: item.briefingPacket?.ballHolder ?? (item.origin === "master_sprint" ? "founder" : null),

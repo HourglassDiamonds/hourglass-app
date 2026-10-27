@@ -1,11 +1,14 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { effectiveCandidatePayload, effectiveCandidateTarget } from "@/lib/continuum/candidates/review";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { confirmGmailPersonAssociation } from "@/lib/continuum/client-memory/founder-project/identity-gate";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
+import {
+  isWebsiteIntakeDisposition,
+} from "@/lib/continuum/client-memory/website-intake-lifecycle";
+import { transitionWebsiteIntakeWithWriters } from "@/lib/continuum/client-memory/website-intake-transition";
 
 export type WebsiteIntakeActionState = {
   ok: boolean;
@@ -15,6 +18,7 @@ export type WebsiteIntakeActionState = {
 function refreshWebsiteIntakeSurfaces() {
   revalidatePath(CONCIERGE_HOME_PATH);
   revalidatePath("/executive-dashboard/concierge/clients");
+  revalidatePath("/executive-dashboard/concierge/projects");
 }
 
 async function authorizedIntake(intakeId: string) {
@@ -81,43 +85,53 @@ export async function confirmWebsiteIntakeCorrespondence(
   return { ok: true, message: "Correspondence linked to the existing prospect. No Project was created." };
 }
 
-export async function closeWebsiteIntake(
+export async function transitionWebsiteIntakeLifecycle(
   _previous: WebsiteIntakeActionState,
   formData: FormData,
 ): Promise<WebsiteIntakeActionState> {
   const intakeId = String(formData.get("intakeId") ?? "").trim();
   const disposition = String(formData.get("disposition") ?? "").trim();
-  if (!intakeId || (disposition !== "dismiss" && disposition !== "established")) {
+  if (!intakeId || !isWebsiteIntakeDisposition(disposition)) {
     return { ok: false, message: "Choose a valid intake disposition." };
   }
-  const { getAuthenticatedProjectJobWriter } = await import("@/lib/continuum/client-memory/project-jobs/load-writer");
-  const [intake, jobs] = await Promise.all([
+  const [{ getAuthenticatedProjectJobWriter }, { getAuthenticatedFounderProjectWriter }] = await Promise.all([
+    import("@/lib/continuum/client-memory/project-jobs/load-writer"),
+    import("@/lib/continuum/client-memory/founder-project/load-writer"),
+  ]);
+  const [intake, jobs, projects] = await Promise.all([
     authorizedIntake(intakeId),
     getAuthenticatedProjectJobWriter(),
+    getAuthenticatedFounderProjectWriter(),
   ]);
-  if (!intake || !jobs.ok || !intake.jobId) {
+  if (!intake || !jobs.ok || !projects.ok || !intake.personId) {
     return { ok: false, message: "Sign in again or reopen the intake before changing it." };
   }
-  const job = await jobs.writer.getJob(null, intake.jobId);
-  if (!job || (job.state !== "open" && job.state !== "snoozed")) {
-    return { ok: true, message: "This intake is already out of the active queue." };
-  }
-  if (disposition === "established" && intake.correspondenceReview?.status !== "approved") {
-    return { ok: false, message: "Confirm the trusted correspondence association first." };
-  }
-  const result = await jobs.writer.mutateJob({
-    mutationId: randomUUID(),
-    projectId: null,
-    jobId: intake.jobId,
-    action: disposition === "dismiss" ? "cancel" : "resolve",
+
+  const result = await transitionWebsiteIntakeWithWriters({
+    intake,
+    disposition,
+    jobs: jobs.writer,
+    projects: projects.writer,
     actor: jobs.username,
   });
-  if (!result.ok) return { ok: false, message: "The intake stayed active because the reviewed change could not be saved." };
+  if (!result.ok) {
+    if (result.reason === "correspondence-pending") {
+      return { ok: false, message: "Confirm the exact-address correspondence first so the contacted opportunity keeps its verified history." };
+    }
+    if (result.partialProjectId) {
+      return { ok: false, message: "The opportunity exists, but lifecycle completion failed. New Concierge remains active for a safe retry." };
+    }
+    return { ok: false, message: "The intake stayed unchanged because the reviewed lifecycle transition could not be saved." };
+  }
   refreshWebsiteIntakeSurfaces();
   return {
     ok: true,
-    message: disposition === "dismiss"
-      ? "Dismissed from active intake. The original submission and audit history remain preserved."
-      : "Moved out of New Intake. The prospect and linked correspondence remain preserved.",
+    message: result.status === "already-present"
+      ? "This inquiry already has that lifecycle state."
+      : disposition === "new"
+        ? "Restored to New Concierge. The prior disposition and audit history remain preserved."
+        : disposition === "contacted"
+      ? "Contacted opportunity created in Projects and moved to Waiting on Client. The inquiry and correspondence review remain preserved."
+      : `Classified as ${disposition === "test_submission" ? "a test submission" : "a solicitation"}. It is out of New Concierge and can be restored here.`,
   };
 }

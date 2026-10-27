@@ -7,6 +7,10 @@ import { requireInternalClientMemorySession } from "./access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import {
+  applyWebsiteIntakeLifecycle,
+  type WebsiteIntakeLifecycleJob,
+} from "@/lib/continuum/client-memory/website-intake-lifecycle";
+import {
   CLIENT_WEBSITE_INTAKE_RECENT_LIMIT,
   type ClientWebsiteIntake,
   type ClientWebsiteIntakeReader,
@@ -84,6 +88,15 @@ function intakeRow(row: Record<string, unknown>): ClientWebsiteIntake | null {
     attribution,
     source: String(row.source ?? ""),
     submittedAt,
+    lifecycle: {
+      disposition: "new",
+      label: "New inquiry",
+      activeJobId: row.job_id == null ? null : String(row.job_id),
+      jobState: null,
+      projectId: null,
+      projectTitle: null,
+      projectStage: null,
+    },
     correspondenceReview: null,
   };
 }
@@ -154,6 +167,50 @@ class SupabaseClientWebsiteIntakeReader implements ClientWebsiteIntakeReader {
     }));
   }
 
+  private async withLifecycle(
+    intakes: ClientWebsiteIntake[],
+  ): Promise<ClientWebsiteIntake[]> {
+    if (intakes.length === 0) return intakes;
+    const intakeRefs = intakes.map((intake) => `website-intake:${intake.intakeId}`);
+    const contactRefs = intakes.map((intake) => `website-intake-contact:${intake.intakeId}`);
+    const { data: jobData, error: jobError } = await this.client
+      .from("continuum_project_jobs")
+      .select("job_id, project_id, state, detail, source_ref, created_at, updated_at")
+      .in("source_ref", [...intakeRefs, ...contactRefs])
+      .order("updated_at", { ascending: false });
+    if (jobError) throw new Error(jobError.message ?? "read-website-intake-lifecycle-failed");
+    const jobs = (Array.isArray(jobData) ? jobData : []).filter(
+      (row): row is Record<string, unknown> => Boolean(row && typeof row === "object"),
+    );
+    const projectIds = [...new Set(jobs.flatMap((job) => job.project_id ? [String(job.project_id)] : []))];
+    const projectTitles = new Map<string, string>();
+    const projectStages = new Map<string, string>();
+    if (projectIds.length > 0) {
+      const [{ data: profiles }, { data: stages }] = await Promise.all([
+        this.client.from("continuum_project_profiles").select("project_id, display_title").in("project_id", projectIds),
+        this.client.from("continuum_project_lifecycle_states").select("project_id, stage").in("project_id", projectIds),
+      ]);
+      for (const row of Array.isArray(profiles) ? profiles : []) {
+        if (row?.project_id) projectTitles.set(String(row.project_id), String(row.display_title ?? ""));
+      }
+      for (const row of Array.isArray(stages) ? stages : []) {
+        if (row?.project_id && row.stage) projectStages.set(String(row.project_id), String(row.stage));
+      }
+    }
+    const lifecycleJobs = jobs.flatMap((job): WebsiteIntakeLifecycleJob[] => {
+      const state = String(job.state ?? "");
+      if (!["open", "snoozed", "resolved", "cancelled"].includes(state)) return [];
+      return [{
+        jobId: String(job.job_id ?? ""),
+        projectId: job.project_id ? String(job.project_id) : null,
+        state: state as WebsiteIntakeLifecycleJob["state"],
+        detail: job.detail == null ? null : String(job.detail),
+        sourceRef: job.source_ref == null ? null : String(job.source_ref),
+      }];
+    });
+    return applyWebsiteIntakeLifecycle(intakes, lifecycleJobs, projectTitles, projectStages);
+  }
+
   async listRecent(options?: { limit?: number }): Promise<ClientWebsiteIntake[]> {
     const limit = Math.min(
       Math.max(options?.limit ?? CLIENT_WEBSITE_INTAKE_RECENT_LIMIT, 1),
@@ -167,34 +224,20 @@ class SupabaseClientWebsiteIntakeReader implements ClientWebsiteIntakeReader {
         .order("submitted_at", { ascending: false })
         .limit(limit),
     );
-    return this.withCorrespondenceReview(rows);
+    return this.withCorrespondenceReview(await this.withLifecycle(rows));
   }
 
   async listActiveRecent(options?: { limit?: number }): Promise<ClientWebsiteIntake[]> {
     const intakes = await this.listRecent(options);
-    const jobIds = intakes.flatMap((intake) => (intake.jobId ? [intake.jobId] : []));
-    if (jobIds.length === 0) return [];
-    const { data, error } = await this.client
-      .from("continuum_project_jobs")
-      .select("job_id, state")
-      .in("job_id", jobIds);
-    if (error) throw new Error(error.message ?? "read-website-intake-jobs-failed");
-    const activeJobIds = new Set(
-      (Array.isArray(data) ? data : []).flatMap((row) => {
-        if (!row || typeof row !== "object") return [];
-        const job = row as Record<string, unknown>;
-        return (job.state === "open" || job.state === "snoozed") && job.job_id
-          ? [String(job.job_id)]
-          : [];
-      }),
+    return intakes.filter((intake) =>
+      intake.lifecycle.disposition === "new" && Boolean(intake.lifecycle.activeJobId),
     );
-    return intakes.filter((intake) => intake.jobId && activeJobIds.has(intake.jobId));
   }
 
   async listForPerson(personId: string): Promise<ClientWebsiteIntake[]> {
     const trimmed = personId.trim();
     if (!trimmed) return [];
-    return readRows(
+    const rows = await readRows(
       this.client
         .from("continuum_website_intakes")
         .select(WEBSITE_INTAKE_COLUMNS)
@@ -202,6 +245,7 @@ class SupabaseClientWebsiteIntakeReader implements ClientWebsiteIntakeReader {
         .eq("person_id", trimmed)
         .order("submitted_at", { ascending: false }),
     );
+    return this.withCorrespondenceReview(await this.withLifecycle(rows));
   }
 }
 
