@@ -148,24 +148,28 @@ describe("cos feedback sol request", () => {
       "utf8",
     );
     const page = readFileSync(join(root, "app/executive-dashboard/concierge/page.tsx"), "utf8");
-    const settle = readFileSync(
-      join(root, "app/executive-dashboard/concierge/components/cos-feedback-settle.tsx"),
-      "utf8",
-    );
     const action = readFileSync(
       join(root, "app/executive-dashboard/concierge/cos-feedback-actions.ts"),
+      "utf8",
+    );
+    const intakeAction = readFileSync(
+      join(root, "app/executive-dashboard/concierge/website-intake-actions.ts"),
       "utf8",
     );
     assert.match(adapter, /import "server-only"/);
     assert.match(adapter, /getConciergeOpenAiApiKey/);
     assert.doesNotMatch(adapter, /NEXT_PUBLIC_/);
-    assert.match(page, /CosFeedbackSettle/);
-    assert.match(settle, /settleCosFeedback/);
-    assert.doesNotMatch(settle, /setInterval|OPENAI_API_KEY/);
+    assert.doesNotMatch(page, /CosFeedbackSettle|settleCosFeedback|cos-feedback-actions/);
     assert.doesNotMatch(today, /presentCosFeedback/);
     assert.doesNotMatch(today, /refreshCosFeedback|sol-adapter|OPENAI_API_KEY/);
     assert.doesNotMatch(poll, /settleCosFeedback|sol-adapter|OPENAI_API_KEY/);
     assert.doesNotMatch(probe, /settleCosFeedback|sol-adapter|OPENAI_API_KEY/);
+    assert.doesNotMatch(intakeAction, /settleCosFeedback|refreshCosFeedback|sol-adapter|OPENAI_API_KEY/);
+    assert.match(intakeAction, /revalidatePath\(CONCIERGE_HOME_PATH\)/);
+    assert.match(action, /COS_FEEDBACK_EXPLICIT_INTENT/);
+    assert.match(action, /formData\.get\("intent"\)/);
+    assert.match(action, /requireInternalClientMemorySession/);
+    assert.match(action, /EXECUTIVE_DASHBOARD_SESSION_COOKIE/);
     assert.match(action, /cosFeedbackSolModel/);
     assert.match(action, /cosFeedbackSolRoute/);
     assert.match(action, /cosFeedbackIsCached/);

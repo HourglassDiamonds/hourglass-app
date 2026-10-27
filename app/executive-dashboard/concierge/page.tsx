@@ -1,6 +1,5 @@
 import { Suspense } from "react";
 import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
-import { calendarFeedbackCommitments, calendarFeedbackMaterialKey } from "@/lib/continuum/calendar/today-upcoming";
 import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
 import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";
@@ -8,7 +7,6 @@ import { reviewProposedActionFromForm } from "./intake-review-actions";
 import { askConcierge } from "./ask-actions";
 import { CommandCenterHome } from "./components/command-center-home";
 import { ConciergeShell } from "./components/concierge-shell";
-import { CosFeedbackSettle } from "./components/cos-feedback-settle";
 import { GmailOperatingFreshness } from "./components/gmail-operating-freshness";
 import {
   ConditionalHoldPanel,
@@ -41,10 +39,6 @@ export default async function ConciergeHomePage() {
       <GmailOperatingFreshness
         refreshing={today.freshness === "refreshing"}
         baselineWatermark={today.readModelWatermark}
-      />
-      <CosFeedbackSettle
-        watermark={today.readModelWatermark}
-        calendarKey={calendarFeedbackMaterialKey(calendarFeedbackCommitments(upcoming))}
       />
       <Suspense fallback={<ConditionalHoldPanelFallback />}>
         <ConditionalHoldPanel />
