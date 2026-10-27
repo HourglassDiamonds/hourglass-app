@@ -49,7 +49,7 @@ export function WebsiteIntakeControls({ intake }: { intake: ClientWebsiteIntake 
           <input type="hidden" name="disposition" value={review} />
           <p className="text-[12px] leading-relaxed text-[#c4b7aa]">
             {review === "contacted"
-              ? "Approve creating a Discovery-stage opportunity. Choose the next-action owner from verified evidence or your explicit decision. Exact-address correspondence must be confirmed first when available. This does not fabricate an email or a sale."
+              ? "Approve creating a Discovery-stage opportunity. Choose the next-action owner from verified evidence or your explicit decision. Pending correspondence stays unverified and can be reviewed separately. This does not fabricate an email or a sale."
               : review === "new"
                 ? "Restore this preserved inquiry to New Concierge. Its prior disposition and audit history remain intact."
                 : `Approve classifying this as ${review === "test_submission" ? "a test submission" : "a solicitation"}. The Person and inquiry history remain preserved.`}

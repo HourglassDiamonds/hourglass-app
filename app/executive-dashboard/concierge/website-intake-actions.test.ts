@@ -44,5 +44,6 @@ test("correspondence association is exact-email evidence, founder-approved, and 
   assert.doesNotMatch(today, /fullName\.split/);
   assert.match(controls, /Confirm correspondence/);
   assert.match(controls, /does not fabricate an email or a sale/);
-  assert.match(action, /Confirm the exact-address correspondence first/);
+  assert.match(controls, /Pending correspondence stays unverified and can be reviewed separately/);
+  assert.doesNotMatch(transition, /correspondence-pending/);
 });

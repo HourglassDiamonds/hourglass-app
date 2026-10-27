@@ -15,7 +15,7 @@ import {
 
 export type WebsiteIntakeTransitionResult =
   | { ok: true; status: "restored" | "classified" | "contacted" | "already-present" }
-  | { ok: false; reason: "correspondence-pending" | "invalid-state" | "write-failed"; partialProjectId?: string };
+  | { ok: false; reason: "invalid-state" | "write-failed"; partialProjectId?: string };
 
 export async function transitionWebsiteIntakeWithWriters(input: {
   intake: ClientWebsiteIntake;
@@ -58,9 +58,6 @@ export async function transitionWebsiteIntakeWithWriters(input: {
   let projectId: string | undefined;
   if (disposition === "contacted") {
     if (!nextActionOwner) return { ok: false, reason: "invalid-state" };
-    if (intake.correspondenceReview?.status === "pending") {
-      return { ok: false, reason: "correspondence-pending" };
-    }
     const plan = websiteIntakeOpportunityPlan(intake);
     const created = await projects.createProject({
       mutationId: websiteIntakeOperationId(intake.intakeId, "contacted:project"),

@@ -116,7 +116,7 @@ describe("website intake CRM lifecycle", () => {
         jobId: created.job.jobId,
         lifecycle: { ...base.lifecycle, activeJobId: created.job.jobId },
         correspondenceReview: name === "Morgan Jines" || name === "Zane Kennedy"
-          ? { candidateId: `candidate-${index}`, status: "approved" as const, confidence: "high" as const, sourceTimestamp: now() }
+          ? { candidateId: `candidate-${index}`, status: "pending" as const, confidence: "medium" as const, sourceTimestamp: now() }
           : null,
       };
       const result = await transitionWebsiteIntakeWithWriters({
@@ -125,7 +125,7 @@ describe("website intake CRM lifecycle", () => {
         jobs,
         projects,
         actor: "founder",
-        nextActionOwner: name === "Ty Sheffield" ? "founder" : name === "Morgan Jines" ? "unknown" : "client",
+        nextActionOwner: "unknown",
       });
       assert.equal(result.ok, true, name);
       rows.push(row);
@@ -145,12 +145,14 @@ describe("website intake CRM lifecycle", () => {
     assert.equal(refreshed.filter((row) => row.lifecycle.activeJobId).length, 0);
     assert.deepEqual(
       jobStore.listJobs().filter((job) => job.sourceRef?.startsWith("website-intake-contact:")).map((job) => job.waitingOnActor).sort(),
-      ["client", "founder", "unknown"],
+      ["unknown", "unknown", "unknown"],
     );
     for (const row of rows.slice(2)) {
       const linked = (await projects.listActiveClientProjects(row.personId!))[0]!;
       assert.equal((await memory.getProjectLifecycleState(linked.projectId, "custom_new_jewelry"))?.stage, "discovery");
     }
+    assert.equal(rows[3]!.correspondenceReview?.status, "pending");
+    assert.equal(rows[4]!.correspondenceReview?.status, "pending");
   });
 
   it("reconstructs the five founder-declared cases after refresh and removes all from New Concierge", () => {

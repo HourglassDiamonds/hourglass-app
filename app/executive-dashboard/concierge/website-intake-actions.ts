@@ -124,9 +124,6 @@ export async function transitionWebsiteIntakeLifecycle(
     nextActionOwner,
   });
   if (!result.ok) {
-    if (result.reason === "correspondence-pending") {
-      return { ok: false, message: "Confirm the exact-address correspondence first so the contacted opportunity keeps its verified history." };
-    }
     if (result.partialProjectId) {
       return { ok: false, message: "The opportunity exists, but lifecycle completion failed. New Concierge remains active for a safe retry." };
     }
