@@ -49,11 +49,22 @@ export function WebsiteIntakeControls({ intake }: { intake: ClientWebsiteIntake 
           <input type="hidden" name="disposition" value={review} />
           <p className="text-[12px] leading-relaxed text-[#c4b7aa]">
             {review === "contacted"
-              ? "Approve creating a Discovery-stage opportunity and a Waiting on Client action. Exact-address correspondence must be confirmed first when available. This records the founder’s contact declaration; it does not fabricate an email or a sale."
+              ? "Approve creating a Discovery-stage opportunity. Choose the next-action owner from verified evidence or your explicit decision. Exact-address correspondence must be confirmed first when available. This does not fabricate an email or a sale."
               : review === "new"
                 ? "Restore this preserved inquiry to New Concierge. Its prior disposition and audit history remain intact."
                 : `Approve classifying this as ${review === "test_submission" ? "a test submission" : "a solicitation"}. The Person and inquiry history remain preserved.`}
           </p>
+          {review === "contacted" ? (
+            <label className="mt-3 block text-[11px] uppercase tracking-[0.14em] text-[#8d8073]">
+              Next action
+              <select name="nextActionOwner" required defaultValue="" className="mt-2 block min-h-11 w-full border border-[#4a4136] bg-[#171513] px-3 text-[13px] normal-case tracking-normal text-[#d8cec4]">
+                <option value="" disabled>Choose ownership</option>
+                <option value="client">Waiting on Client</option>
+                <option value="founder">Founder Action</option>
+                <option value="unknown">Next Step Unresolved</option>
+              </select>
+            </label>
+          ) : null}
           <div className="mt-3 flex flex-wrap gap-3">
             <button type="submit" disabled={transitionPending} className="min-h-10 text-[10px] uppercase tracking-[0.16em] text-[#ad9164]">
               {transitionPending ? "Saving…" : "Approve"}

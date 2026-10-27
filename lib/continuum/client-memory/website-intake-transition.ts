@@ -6,9 +6,11 @@ import {
   websiteIntakeDispositionFromDetail,
   websiteIntakeOperationId,
   websiteIntakeOpportunityPlan,
+  websiteIntakeNextAction,
   withWebsiteIntakeDispositionMarker,
   withoutWebsiteIntakeDispositionMarker,
   type WebsiteIntakeDisposition,
+  type WebsiteIntakeNextActionOwner,
 } from "./website-intake-lifecycle";
 
 export type WebsiteIntakeTransitionResult =
@@ -21,8 +23,9 @@ export async function transitionWebsiteIntakeWithWriters(input: {
   jobs: ProjectJobWriter;
   projects: FounderProjectWriter;
   actor: string;
+  nextActionOwner?: WebsiteIntakeNextActionOwner;
 }): Promise<WebsiteIntakeTransitionResult> {
-  const { intake, disposition, jobs, projects, actor } = input;
+  const { intake, disposition, jobs, projects, actor, nextActionOwner } = input;
   if (!intake.personId) return { ok: false, reason: "invalid-state" };
 
   if (disposition === "new") {
@@ -54,6 +57,7 @@ export async function transitionWebsiteIntakeWithWriters(input: {
 
   let projectId: string | undefined;
   if (disposition === "contacted") {
+    if (!nextActionOwner) return { ok: false, reason: "invalid-state" };
     if (intake.correspondenceReview?.status === "pending") {
       return { ok: false, reason: "correspondence-pending" };
     }
@@ -68,15 +72,21 @@ export async function transitionWebsiteIntakeWithWriters(input: {
     });
     if (!created.ok) return { ok: false, reason: "write-failed" };
     projectId = created.projectId;
+    const nextAction = websiteIntakeNextAction({
+      fullName: intake.fullName,
+      projectType: intake.projectType,
+      owner: nextActionOwner,
+    });
     const waiting = await jobs.createJob({
-      mutationId: websiteIntakeOperationId(intake.intakeId, "contacted:waiting-client"),
+      mutationId: websiteIntakeOperationId(intake.intakeId, "contacted:next-action"),
       projectId,
       kind: "commitment",
-      subject: plan.nextActionSubject,
+      subject: nextAction.subject,
       detail: websiteIntakeContactDetail({
         correspondenceApproved: intake.correspondenceReview?.status === "approved",
+        nextActionOwner,
       }),
-      waitingOnActor: "client",
+      waitingOnActor: nextAction.waitingOnActor,
       associatedPersonId: intake.personId,
       actor,
       sourceSystem: "continuum",

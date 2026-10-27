@@ -19,7 +19,12 @@ test("intake lifecycle preserves history and uses authenticated, audited CRM wri
   assert.match(action, /transitionWebsiteIntakeWithWriters/);
   assert.match(transition, /websiteIntakeOperationId/);
   assert.match(transition, /createProject/);
-  assert.match(transition, /waitingOnActor:\s*"client"/);
+  assert.match(action, /isWebsiteIntakeNextActionOwner/);
+  assert.match(controls, /name="nextActionOwner"/);
+  assert.match(controls, /Waiting on Client/);
+  assert.match(controls, /Founder Action/);
+  assert.match(controls, /Next Step Unresolved/);
+  assert.doesNotMatch(transition, /waitingOnActor:\s*"client"/);
   assert.match(transition, /action:\s*disposition === "contacted" \? "resolve" : "cancel"/);
   assert.doesNotMatch(action, /delete\(|continuum_website_intakes[^]*delete/);
   assert.doesNotMatch(`${action}\n${transition}`, /insertProject/i);

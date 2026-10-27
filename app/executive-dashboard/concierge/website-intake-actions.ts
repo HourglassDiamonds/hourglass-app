@@ -6,6 +6,7 @@ import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { confirmGmailPersonAssociation } from "@/lib/continuum/client-memory/founder-project/identity-gate";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
 import {
+  isWebsiteIntakeNextActionOwner,
   isWebsiteIntakeDisposition,
 } from "@/lib/continuum/client-memory/website-intake-lifecycle";
 import { transitionWebsiteIntakeWithWriters } from "@/lib/continuum/client-memory/website-intake-transition";
@@ -91,8 +92,15 @@ export async function transitionWebsiteIntakeLifecycle(
 ): Promise<WebsiteIntakeActionState> {
   const intakeId = String(formData.get("intakeId") ?? "").trim();
   const disposition = String(formData.get("disposition") ?? "").trim();
+  const nextActionOwnerValue = String(formData.get("nextActionOwner") ?? "").trim();
   if (!intakeId || !isWebsiteIntakeDisposition(disposition)) {
     return { ok: false, message: "Choose a valid intake disposition." };
+  }
+  const nextActionOwner = disposition === "contacted" && isWebsiteIntakeNextActionOwner(nextActionOwnerValue)
+    ? nextActionOwnerValue
+    : undefined;
+  if (disposition === "contacted" && !nextActionOwner) {
+    return { ok: false, message: "Choose who owns the next action before creating the contacted opportunity." };
   }
   const [{ getAuthenticatedProjectJobWriter }, { getAuthenticatedFounderProjectWriter }] = await Promise.all([
     import("@/lib/continuum/client-memory/project-jobs/load-writer"),
@@ -113,6 +121,7 @@ export async function transitionWebsiteIntakeLifecycle(
     jobs: jobs.writer,
     projects: projects.writer,
     actor: jobs.username,
+    nextActionOwner,
   });
   if (!result.ok) {
     if (result.reason === "correspondence-pending") {
@@ -131,7 +140,7 @@ export async function transitionWebsiteIntakeLifecycle(
       : disposition === "new"
         ? "Restored to New Concierge. The prior disposition and audit history remain preserved."
         : disposition === "contacted"
-      ? "Contacted opportunity created in Projects and moved to Waiting on Client. The inquiry and correspondence review remain preserved."
+      ? `Contacted opportunity created in Projects with ${nextActionOwner === "client" ? "Waiting on Client" : nextActionOwner === "founder" ? "Founder Action" : "Next Step Unresolved"}. The inquiry and correspondence review remain preserved.`
       : `Classified as ${disposition === "test_submission" ? "a test submission" : "a solicitation"}. It is out of New Concierge and can be restored here.`,
   };
 }

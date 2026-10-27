@@ -13,6 +13,7 @@ import {
   websiteIntakeDispositionFromDetail,
   websiteIntakeOperationId,
   websiteIntakeOpportunityPlan,
+  websiteIntakeNextAction,
   withWebsiteIntakeDispositionMarker,
   withoutWebsiteIntakeDispositionMarker,
   type WebsiteIntakeLifecycleJob,
@@ -124,6 +125,7 @@ describe("website intake CRM lifecycle", () => {
         jobs,
         projects,
         actor: "founder",
+        nextActionOwner: name === "Ty Sheffield" ? "founder" : name === "Morgan Jines" ? "unknown" : "client",
       });
       assert.equal(result.ok, true, name);
       rows.push(row);
@@ -141,7 +143,10 @@ describe("website intake CRM lifecycle", () => {
     const refreshed = applyWebsiteIntakeLifecycle(rows, snapshots);
     assert.deepEqual(refreshed.map((row) => row.lifecycle.disposition), cases.map(([, disposition]) => disposition));
     assert.equal(refreshed.filter((row) => row.lifecycle.activeJobId).length, 0);
-    assert.equal(jobStore.listJobs().filter((job) => job.waitingOnActor === "client" && job.state === "open").length, 3);
+    assert.deepEqual(
+      jobStore.listJobs().filter((job) => job.sourceRef?.startsWith("website-intake-contact:")).map((job) => job.waitingOnActor).sort(),
+      ["client", "founder", "unknown"],
+    );
     for (const row of rows.slice(2)) {
       const linked = (await projects.listActiveClientProjects(row.personId!))[0]!;
       assert.equal((await memory.getProjectLifecycleState(linked.projectId, "custom_new_jewelry"))?.stage, "discovery");
@@ -165,7 +170,7 @@ describe("website intake CRM lifecycle", () => {
           jobId: `40000000-0000-4000-8000-00000000000${index}`,
           projectId,
           state: "open",
-          detail: websiteIntakeContactDetail({ correspondenceApproved: index >= 3 }),
+          detail: websiteIntakeContactDetail({ correspondenceApproved: index >= 3, nextActionOwner: index === 2 ? "founder" : index === 3 ? "unknown" : "client" }),
           sourceRef: `website-intake-contact:${intakeId}`,
         },
       ] : [terminal];
@@ -206,7 +211,15 @@ describe("website intake CRM lifecycle", () => {
   it("creates stable operations and never fabricates correspondence when none is verified", () => {
     assert.equal(websiteIntakeOperationId("abc", "contacted:project"), websiteIntakeOperationId("abc", "contacted:project"));
     assert.match(websiteIntakeOperationId("abc", "contacted:project"), /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/);
-    assert.match(websiteIntakeContactDetail({ correspondenceApproved: false }), /does not claim an email was sent/);
+    assert.match(websiteIntakeContactDetail({ correspondenceApproved: false, nextActionOwner: "unknown" }), /does not claim an email was sent/);
+    assert.deepEqual(websiteIntakeNextAction({ fullName: "Ty Sheffield", projectType: "Engagement Ring", owner: "founder" }), {
+      subject: "Follow up with Ty Sheffield about Engagement Ring",
+      waitingOnActor: "founder",
+    });
+    assert.deepEqual(websiteIntakeNextAction({ fullName: "Morgan Jines", projectType: "Engagement Ring", owner: "unknown" }), {
+      subject: "Clarify the next step for Morgan Jines about Engagement Ring",
+      waitingOnActor: "unknown",
+    });
     const plan = websiteIntakeOpportunityPlan({ fullName: "Zane Kennedy", category: "wedding_bands", projectType: "Wedding Band" });
     assert.equal(plan.projectKind, "custom_new_jewelry");
     assert.equal(plan.lifecycleStage, "discovery");

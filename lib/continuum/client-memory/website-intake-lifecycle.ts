@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import type { ProjectKind } from "./project-kind";
 import type { ProjectLifecycleStage } from "./project-lifecycle";
+import type { OpenJobActor } from "./project-jobs/types";
 import type { ClientWebsiteIntake } from "./read/website-intake";
 
 export const WEBSITE_INTAKE_DISPOSITIONS = [
@@ -12,6 +13,22 @@ export const WEBSITE_INTAKE_DISPOSITIONS = [
 
 export type WebsiteIntakeDisposition =
   (typeof WEBSITE_INTAKE_DISPOSITIONS)[number];
+
+export const WEBSITE_INTAKE_NEXT_ACTION_OWNERS = [
+  "client",
+  "founder",
+  "unknown",
+] as const;
+
+export type WebsiteIntakeNextActionOwner =
+  (typeof WEBSITE_INTAKE_NEXT_ACTION_OWNERS)[number];
+
+export function isWebsiteIntakeNextActionOwner(
+  value: unknown,
+): value is WebsiteIntakeNextActionOwner {
+  return typeof value === "string" &&
+    (WEBSITE_INTAKE_NEXT_ACTION_OWNERS as readonly string[]).includes(value);
+}
 
 const MARKER_PREFIX = "[continuum-intake-lifecycle:v1";
 const MARKER_PATTERN = /\[continuum-intake-lifecycle:v1 disposition=(new|test_submission|solicitation|contacted) basis=founder_explicit\]/;
@@ -74,8 +91,31 @@ export type WebsiteIntakeOpportunityPlan = {
   title: string;
   projectKind: ProjectKind;
   lifecycleStage: ProjectLifecycleStage | null;
-  nextActionSubject: string;
 };
+
+export function websiteIntakeNextAction(input: {
+  fullName: string;
+  projectType: string;
+  owner: WebsiteIntakeNextActionOwner;
+}): { subject: string; waitingOnActor: OpenJobActor } {
+  const projectType = input.projectType.trim() || "Concierge inquiry";
+  if (input.owner === "client") {
+    return {
+      subject: `Await reply from ${input.fullName} about ${projectType}`,
+      waitingOnActor: "client",
+    };
+  }
+  if (input.owner === "founder") {
+    return {
+      subject: `Follow up with ${input.fullName} about ${projectType}`,
+      waitingOnActor: "founder",
+    };
+  }
+  return {
+    subject: `Clarify the next step for ${input.fullName} about ${projectType}`,
+    waitingOnActor: "unknown",
+  };
+}
 
 export function websiteIntakeOpportunityPlan(input: {
   fullName: string;
@@ -89,7 +129,6 @@ export function websiteIntakeOpportunityPlan(input: {
       title: `${input.fullName} — ${projectType}`,
       projectKind: "repair_service",
       lifecycleStage: "intake",
-      nextActionSubject: `Await reply from ${input.fullName} about ${projectType}`,
     };
   }
   if (category === "stone_sourcing" || category === "loose_stone_sourcing") {
@@ -97,23 +136,27 @@ export function websiteIntakeOpportunityPlan(input: {
       title: `${input.fullName} — ${projectType}`,
       projectKind: "loose_stone_sourcing",
       lifecycleStage: null,
-      nextActionSubject: `Await reply from ${input.fullName} about ${projectType}`,
     };
   }
   return {
     title: `${input.fullName} — ${projectType}`,
     projectKind: "custom_new_jewelry",
     lifecycleStage: "discovery",
-    nextActionSubject: `Await reply from ${input.fullName} about ${projectType}`,
   };
 }
 
 export function websiteIntakeContactDetail(input: {
   correspondenceApproved: boolean;
+  nextActionOwner: WebsiteIntakeNextActionOwner;
 }): string {
+  const ownership = input.nextActionOwner === "client"
+    ? "Founder selected Waiting on Client."
+    : input.nextActionOwner === "founder"
+      ? "Founder selected Founder Action."
+      : "Founder selected Next Step Unresolved.";
   return input.correspondenceApproved
-    ? "Founder confirmed initial contact. Exact-address correspondence is founder-approved and linked. Waiting for the client response."
-    : "Founder confirmed initial contact. No verified outbound correspondence is attached; this record does not claim an email was sent. Waiting for the client response.";
+    ? `Founder confirmed initial contact. Exact-address correspondence is founder-approved and linked. ${ownership}`
+    : `Founder confirmed initial contact. No verified outbound correspondence is attached; this record does not claim an email was sent. ${ownership}`;
 }
 
 export type WebsiteIntakeLifecycleJob = {
