@@ -46,6 +46,7 @@ function card(extra: Partial<CurrentProjectCard> = {}): CurrentProjectCard {
     fileCount: 0,
     progress: [{ label: "Project created", at: "2026-08-01T00:00:00.000Z" }],
     lifecycleStage: "production",
+    currentActionOwner: null,
     founderOwnedUnresolved: false,
     actionDueAt: null,
     waitingSince: null,
@@ -412,6 +413,7 @@ describe("Current Projects Command Center accordion UI", () => {
             },
             currentJobId: PROJECT_A,
             lifecycleStage: "cad",
+            currentActionOwner: "founder",
             founderOwnedUnresolved: true,
           }),
           card({

@@ -301,6 +301,115 @@ describe("Current Projects operating groups", () => {
     assert.equal(after.founderOwnedUnresolved, false);
   });
 
+  it("groups the accepted Mira, Ellis, and Tessa ownership fixtures from the current Job", () => {
+    const mira = cardFor(PROJECT_A, "PREVIEW_TEST — Mira Stone — Custom Jewelry", "discovery", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 1,
+        unresolved: [
+          job({
+            jobId: JOB_A,
+            subject: "Follow up with Mira",
+            waitingOnActor: "founder",
+          }),
+        ],
+      },
+    });
+    const ellis = cardFor(PROJECT_B, "PREVIEW_TEST — Ellis North — Engagement Ring", "discovery", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 1,
+        unresolved: [
+          job({
+            jobId: "55555555-5555-4555-8555-555555555555",
+            subject: "Clarify the next step for Ellis",
+            waitingOnActor: "unknown",
+          }),
+        ],
+      },
+    });
+    const tessa = cardFor(PROJECT_C, "PREVIEW_TEST — Tessa Grove — Wedding Band", "discovery", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 1,
+        unresolved: [
+          job({
+            jobId: "66666666-6666-4666-8666-666666666666",
+            subject: "Await reply from Tessa",
+            waitingOnActor: "client",
+          }),
+        ],
+      },
+    });
+
+    const grouped = groupCurrentProjects([mira, ellis, tessa], {
+      nowIso: NOW,
+      viewport: "desktop",
+    });
+
+    assert.deepEqual(titlesIn(grouped, "your_turn"), [mira.title]);
+    assert.deepEqual(titlesIn(grouped, "waiting_for_client"), [tessa.title]);
+    assert.deepEqual(titlesIn(grouped, "other_active"), [ellis.title]);
+    assert.deepEqual(allGroupedProjectIds(grouped).sort(), [PROJECT_A, PROJECT_B, PROJECT_C].sort());
+    assert.equal(new Set(allGroupedProjectIds(grouped)).size, 3);
+  });
+
+  it("uses only the selected current Job owner, not stale lifecycle ownership or another Job", () => {
+    const clientNow = cardFor(PROJECT_A, "Client is current", "client_approval", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 2,
+        unresolved: [
+          job({
+            jobId: JOB_A,
+            subject: "Old founder follow-up",
+            waitingOnActor: "founder",
+            dueAt: "2026-09-20",
+          }),
+          job({
+            jobId: "55555555-5555-4555-8555-555555555555",
+            subject: "Await current client response",
+            waitingOnActor: "client",
+            dueAt: "2026-09-10",
+          }),
+        ],
+      },
+    });
+    const founderNow = cardFor(PROJECT_B, "Founder is current", "client_approval", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 1,
+        unresolved: [
+          job({
+            jobId: "66666666-6666-4666-8666-666666666666",
+            subject: "Founder must act",
+            waitingOnActor: "founder",
+          }),
+        ],
+      },
+    });
+    const unknownNow = cardFor(PROJECT_C, "Ownership unresolved", "discovery", {
+      openJobs: {
+        connected: true,
+        unresolvedCount: 1,
+        unresolved: [
+          job({
+            jobId: "77777777-7777-4777-8777-777777777777",
+            subject: "Clarify ownership",
+            waitingOnActor: "unknown",
+          }),
+        ],
+      },
+    });
+
+    assert.equal(clientNow.currentActionOwner, "client");
+    assert.equal(founderNow.currentActionOwner, "founder");
+    assert.equal(unknownNow.currentActionOwner, "unknown");
+    assert.equal(operatingGroupForProject(clientNow), "waiting_for_client");
+    assert.equal(operatingGroupForProject(founderNow), "your_turn");
+    assert.equal(operatingGroupForProject(unknownNow), "other_active");
+  });
+
   it("groups CAD, client approval, production, shop, ready, and unknown active states", () => {
     const cards = [
       cardFor(PROJECT_A, "C. Binder", "cad"),

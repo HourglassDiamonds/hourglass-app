@@ -74,6 +74,8 @@ export type CurrentProjectCard = {
   fileCount: number;
   progress: CurrentProjectProgressEntry[];
   lifecycleStage: string | null;
+  /** Owner of the selected current unresolved Job; never inferred from display text. */
+  currentActionOwner?: ProjectDeskOpenJob["waitingOnActor"] | null;
   founderOwnedUnresolved: boolean;
   actionDueAt: string | null;
   waitingSince: string | null;
@@ -293,6 +295,7 @@ export function composeCurrentProjectCard(
     fileCount: files.length,
     progress: progressFromDesk(desk),
     lifecycleStage,
+    currentActionOwner: currentJob?.waitingOnActor ?? null,
     founderOwnedUnresolved,
     actionDueAt,
     waitingSince: timestamps.waitingSince,
@@ -330,6 +333,7 @@ export function composeCurrentProjectCardFromWork(
     fileCount: 0,
     progress: [{ label: CURRENT_PROJECTS_CREATED_LABEL, at: null }],
     lifecycleStage: work.lifecycleStage,
+    currentActionOwner: null,
     founderOwnedUnresolved: false,
     actionDueAt: null,
     waitingSince: null,

@@ -139,9 +139,15 @@ export function mapLifecycleStageToOperatingGroup(
 
 export function operatingGroupForProject(input: {
   lifecycleStage: string | null | undefined;
-  founderOwnedUnresolved: boolean;
+  currentActionOwner?: ProjectDeskOpenJob["waitingOnActor"] | null;
 }): CurrentProjectOperatingGroupId {
-  if (input.founderOwnedUnresolved) return "your_turn";
+  if (
+    input.currentActionOwner != null &&
+    isFounderOwnedActor(input.currentActionOwner)
+  ) {
+    return "your_turn";
+  }
+  if (input.currentActionOwner === "client") return "waiting_for_client";
   return mapLifecycleStageToOperatingGroup(input.lifecycleStage);
 }
 
@@ -274,7 +280,7 @@ export function groupCurrentProjects(
   for (const card of cards) {
     const id = operatingGroupForProject({
       lifecycleStage: card.lifecycleStage,
-      founderOwnedUnresolved: card.founderOwnedUnresolved,
+      currentActionOwner: card.currentActionOwner,
     });
     const list = buckets.get(id) ?? [];
     list.push(card);
