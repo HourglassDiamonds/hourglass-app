@@ -120,6 +120,12 @@ export default function Footer() {
             <FooterLink href="/privacy" pathname={pathname} className={LEGAL_LINK}>
               Privacy
             </FooterLink>
+            <FooterLink href="/terms" pathname={pathname} className={LEGAL_LINK}>
+              Terms
+            </FooterLink>
+            <FooterLink href="/accessibility" pathname={pathname} className={LEGAL_LINK}>
+              Accessibility
+            </FooterLink>
             <button
               type="button"
               className={LEGAL_LINK}
@@ -127,12 +133,20 @@ export default function Footer() {
             >
               Analytics
             </button>
-            <FooterLink href="/terms" pathname={pathname} className={LEGAL_LINK}>
-              Terms
-            </FooterLink>
           </div>
 
         </div>
+
+        <p className="mt-2 text-[10px] leading-5 text-[#6d655e] sm:mt-1">
+          From the founder:{" "}
+          <a
+            href="https://open.spotify.com/show/0yefcv818cQNtXvtrMuqHk"
+            className="inline-flex min-h-11 items-center rounded-sm underline decoration-[#987648] underline-offset-[3px] transition-colors hover:text-[#1f1d1a]"
+          >
+            THE TIMELINE
+          </a>{" "}
+          — an independent investigative podcast by Justin Smith.
+        </p>
 
       </div>
     </footer>

@@ -601,6 +601,27 @@ describe("AA-17 analytics consent (WCAG 2.1.1 / 4.1.2 / 1.4.4)", () => {
     assert.match(footer, />[\s\n]*Analytics[\s\n]*</);
   });
 
+  it("keeps required legal destinations together in the footer", () => {
+    const privacyIdx = footer.indexOf('href="/privacy"');
+    const termsIdx = footer.indexOf('href="/terms"');
+    const accessibilityIdx = footer.indexOf('href="/accessibility"');
+    const analyticsIdx = footer.indexOf("requestAnalyticsConsentManager()");
+
+    assert.ok(privacyIdx > -1);
+    assert.ok(termsIdx > privacyIdx);
+    assert.ok(accessibilityIdx > termsIdx);
+    assert.ok(analyticsIdx > accessibilityIdx);
+  });
+
+  it("links the founder podcast with an accessible touch target", () => {
+    assert.match(
+      footer,
+      /href="https:\/\/open\.spotify\.com\/show\/0yefcv818cQNtXvtrMuqHk"/,
+    );
+    assert.match(footer, />[\s\n]*THE TIMELINE[\s\n]*<\/a>/);
+    assert.match(footer, /inline-flex min-h-11 items-center/);
+  });
+
   it("stacks choices on narrow viewports", () => {
     assert.match(analyticsConsent, /flex-col gap-2 sm:w-auto sm:flex-row/);
     assert.match(analyticsConsent, /w-full/);
