@@ -228,6 +228,14 @@ test("Tonal completion extraction exposes the exact historical-session review", 
   assert.match(source, /!selectedWorkoutTonalSession\.plannedSource/);
 });
 
+test("Before Photo approval reports the exact sequence rejection at the review", () => {
+  assert.match(source, /setTonalPlanFeedback\("Saving the reviewed Before Photo…"\)/);
+  assert.match(source, /Session \$\{nextOrder\} is still next\. Session \$\{session\.order\} cannot be approved/);
+  assert.match(source, /aria-live="assertive"/);
+  assert.match(source, /performance-source-digest-invalid/);
+  assert.doesNotMatch(source, /The planned session was not saved\. Review the current sequence and retry\./);
+});
+
 test("recovery screenshots have date-gated editable review and confirmed persistence feedback", () => {
   assert.match(source, /chooseRecoveryScreenshot/);
   assert.match(source, /sourceType", "recovery_screenshot"/);

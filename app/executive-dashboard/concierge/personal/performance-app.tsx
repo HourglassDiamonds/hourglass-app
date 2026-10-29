@@ -584,7 +584,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   async function acceptUpcomingTonalPlan(input: { title?: string; movements: TonalProgramMovement[] }) {
     const session = tonalPlanTargetOrder === null ? undefined : state.tonal.enrollment.sessions.find((candidate) => candidate.order === tonalPlanTargetOrder); const proposal = tonalPlanProposal; const file = tonalPlanFile;
     if (!session || !proposal || !file || !proposal.sourceDigest || tonalPlanCommitInFlight.current) return;
-    tonalPlanCommitInFlight.current = true; setTonalPlanBusy(true);
+    tonalPlanCommitInFlight.current = true; setTonalPlanBusy(true); setTonalPlanFeedback("Saving the reviewed Before Photo…");
     const at = new Date().toISOString();
     const source = { kind: "tonal_app_screenshot" as const, reference: `sha256:${proposal.sourceDigest}`, digest: proposal.sourceDigest, reviewedAt: at, file: { name: file.name, type: file.type, size: file.size } };
     try {
@@ -594,7 +594,26 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       setState(saved.state); setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback(saved.duplicate ? "Before photo already attached to this workout" : `Before photo attached to Tonal session ${session.order}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : "performance-save-failed";
-      setTonalPlanFeedback(message === "performance-revision-conflict" ? "Performance changed elsewhere. The latest state was loaded; review this Before Photo again." : message === "performance-mutation-action-unavailable" ? "Preview cannot audit planned Tonal sessions yet. Nothing changed." : "The planned session was not saved. Review the current sequence and retry.");
+      const nextOrder = nextTonalSession(state)?.order;
+      setTonalPlanFeedback(message === "tonal-session-plan-order-invalid"
+        ? nextOrder && nextOrder !== session.order
+          ? `Session ${nextOrder} is still next. Session ${session.order} cannot be approved until Session ${nextOrder} is completed or explicitly skipped. Nothing was saved.`
+          : `Session ${session.order} is not currently eligible for Before Photo approval. Nothing was saved.`
+        : message === "tonal-session-plan-evidence-required"
+          ? "Keep at least one visible movement or a visible workout title before approving. Nothing was saved."
+          : message === "tonal-session-plan-requires-active-program"
+            ? "Fit Over 40 is not currently active. Nothing was saved."
+            : message === "tonal-session-plan-source-required" || message === "performance-source-digest-invalid"
+              ? "The reviewed source could not be verified. Upload the original image again; nothing was saved."
+              : message === "performance-revision-conflict"
+                ? "Performance changed elsewhere. The latest state was loaded; review this Before Photo again."
+                : message === "performance-mutation-action-unavailable"
+                  ? "Preview cannot audit planned Tonal sessions yet. Nothing changed."
+                  : message.startsWith("performance-source-upload-failed")
+                    ? "The private Before Photo upload failed. Nothing was saved; retry when storage is available."
+                    : message.startsWith("performance-state-invalid")
+                      ? "The reviewed plan failed canonical validation. Nothing was saved."
+                      : "The planned session was not saved because persistence was unavailable. Nothing changed.");
     } finally { tonalPlanCommitInFlight.current = false; setTonalPlanBusy(false); }
   }
 
@@ -921,7 +940,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
               {day.activities.length ? <div className={styles.dayEntries}>{day.activities.map((activity) => <ActivityRow key={activity.id} activity={activity} maxDate={today} onCorrectDate={(date) => void correctActivityDate(activity.id, date)} onDeleteSource={activity.source?.storagePath ? () => void deleteSource("activity", activity.id) : undefined} />)}</div> : null}
               {(pastActivityOpen || tonalCompletionTargetOrder !== null) && activityDefaultDate === day.date && intakeProposal?.kind === "activity" ? <div className={styles.proposal} ref={tonalCompletionTargetOrder !== null ? completionReviewRef : undefined} tabIndex={-1} data-completion-review={tonalCompletionTargetOrder ?? undefined}><p className={styles.kicker}>{tonalCompletionTargetOrder !== null ? `Review Fit Over 40 · Session ${tonalCompletionTargetOrder}` : "Review completed activity"}</p>{tonalCompletionTargetOrder !== null ? <p className={styles.provenance}>Approve & Save enriches this exact session. It does not create a second completion or advance Session {tonalCompletionTargetOrder + 1}.</p> : null}<ActivityReview proposal={intakeProposal} defaultDate={activityDefaultDate} maxDate={activityMaxDate} onAccept={acceptActivity} onReject={() => void rejectIntake()} acceptLabel="Approve & Save" busy={activitySaveBusy} feedback={activitySaveFeedback} /></div> : null}
               {tonalPlanBusy || intakeBusy && (tonalCompletionFeedback || completionWorkoutId) ? <p aria-live="polite">Sterling is reading visible workout evidence…</p> : null}
-              {tonalPlanFeedback ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}{tonalCompletionFeedback ? <p aria-live="polite" className={styles.warning}>{tonalCompletionFeedback}</p> : null}
+              {tonalPlanFeedback ? <p aria-live="assertive" className={styles.warning}>{tonalPlanFeedback}</p> : null}{tonalCompletionFeedback ? <p aria-live="polite" className={styles.warning}>{tonalCompletionFeedback}</p> : null}
               {tonalPlanProposal && selectedWorkoutTonalSession && tonalPlanTargetOrder === selectedWorkoutTonalSession.order ? <TonalPlanReview sequencePosition={selectedWorkoutTonalSession.order} proposal={tonalPlanProposal} busy={tonalPlanBusy} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}
             </section>
 
@@ -991,7 +1010,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
         </div> : null}
         {tonalPlanBusy ? <p aria-live="polite">Sterling is reading the visible planned workout…</p> : null}
         {intakeBusy && (tonalCompletionFeedback || completionWorkoutId) ? <p aria-live="polite">Sterling is reading visible completion facts…</p> : null}
-        {tonalPlanFeedback ? <p aria-live="polite" className={styles.warning}>{tonalPlanFeedback}</p> : null}
+        {tonalPlanFeedback ? <p aria-live="assertive" className={styles.warning}>{tonalPlanFeedback}</p> : null}
         {tonalCompletionFeedback ? <p aria-live="polite" className={styles.warning}>{tonalCompletionFeedback}</p> : null}
         {tonalPlanProposal && selectedWorkoutTonalSession && tonalPlanTargetOrder === selectedWorkoutTonalSession.order ? <TonalPlanReview sequencePosition={selectedWorkoutTonalSession.order} proposal={tonalPlanProposal} busy={tonalPlanBusy} onAccept={acceptUpcomingTonalPlan} onReject={() => { setTonalPlanProposal(null); setTonalPlanFile(null); setTonalPlanTargetOrder(null); setTonalPlanFeedback("Proposal rejected; nothing was saved."); }} /> : null}
       </section> : null}
