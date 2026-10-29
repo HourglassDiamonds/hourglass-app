@@ -19,7 +19,7 @@ export const GPM_SEO_DESCRIPTION =
   "Hourglass Ledger Global Pressure Monitor — qualitative status of external threat pressure and systemic transmission.";
 
 export const GPM_HUB_DESCRIPTION =
-  "Very high external pressure / Broader energy transmission — Saudi Arabia’s principal Hormuz-bypass route is disrupted and oil is in a $100+ regime, while credit, funding, and equities continue to function.";
+  "Very high external pressure / Broad energy transmission — EIA still sees constrained Middle East flows and a $105 fourth-quarter Brent path, while physical workarounds, credit, funding, and resilient activity limit broader failure.";
 
 export const GPM_KICKER = "The Ledger Intelligence System";
 
@@ -29,18 +29,18 @@ export const GPM_INTRO =
 export const GPM_CURRENT_STATE_LABEL = "Current State";
 
 export const GPM_CURRENT_STATE =
-  "Very high external pressure / Broader energy transmission";
+  "Very high external pressure / Broad energy transmission";
 
 export const GPM_CURRENT_DIRECTION_LABEL = "Current Direction";
 
 export const GPM_CURRENT_DIRECTION =
-  "Energy disruption broadening / Adaptation still limiting systemic failure";
+  "Persistent constraint / Physical workarounds improving";
 
 export const GPM_LEAD =
-  "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. The East-West Pipeline was shut after attacks, and shipping sources reported oil loadings at Yanbu suspended. That is disruption of the principal bypass, not a confirmed total failure of all alternate routing. Kpler showed Hormuz commodity-vessel traffic at four on Monday, versus roughly 130–140 daily before the conflict. Brent settled around $108.75 on September 15 and remained in a $100+ regime on the morning of September 16. Libya halted three fields after a pipeline-valve protest. Half of Russia’s top diesel-producing refineries cut or halted output after drone strikes. Credit, funding, and equities continue to function; this is broader energy-supply transmission, not a confirmed financial-system seizure.";
+  "External pressure remains very high. EIA's October outlook keeps Middle East oil flows constrained through the fourth quarter and raises its 4Q Brent forecast to $105 after September averaged $114. The same release supplies important counterevidence: regional shut-in production was the lowest since hostilities began, and convoys, bypass routes, and ship-to-ship transfers are lifting output and exports. The Fed held on October 28; activity and market function remain resilient. This is persistent broad energy transmission, not a confirmed financial-system seizure.";
 
 export const GPM_WHAT_CHANGED =
-  "Since the August 24 review, Saudi Arabia’s principal Hormuz-bypass route was disrupted. The East-West Pipeline shutdown and reported Yanbu loading suspension moved oil from the August 24 ~$92–93 band into a $100+ regime (Brent around $108). Already-depressed Hormuz commodity traffic fell further, to four vessels on Monday from ten a day earlier. Libya field shutdowns and Russian diesel-refinery damage added supply pressure in the same energy channel. Houthi strikes continued and Hormuz talks stalled. Credit and funding still function. Physical oil continues clearing. Energy-supply transmission is now broader than the prior partial state. Analyst $120/$130 oil paths are scenarios, not forecasts.";
+  "Since September 16, the pressure state has held rather than moved higher. EIA confirmed the $100+ oil regime and lifted its fourth-quarter forecast, while also documenting lower regional shut-ins and improving export workarounds. The October Fed decision resolved one uncertainty: rates held after September's hike. Long yields remain near 5%, but resilient activity and functioning credit are material counterevidence. No additional degree increment is justified.";
 
 export const GPM_THREAT_PANEL = {
   title: "Threat Pressure",
@@ -344,6 +344,42 @@ export const GPM_SERIES: LedgerMonitorSeries = {
           url: "https://www.reuters.com/world/china/global-markets-wrapup-1-2026-09-16/",
           supports:
             "Morning-of-September-16 confirmation: oil remained in a $100+ regime while the U.S. 10-year retreated just below 5% — a print move, not a cooling of energy or financial pressure levels",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 29, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Very high external pressure / Broad energy transmission",
+      currentDirection: "Persistent constraint / Physical workarounds improving",
+      previousState: "Very high external pressure / Broader energy transmission",
+      materialChangeSummary:
+        "The pressure state holds. EIA's October outlook confirms constrained Middle East flows through 4Q26 and raises its 4Q Brent forecast to $105 after September averaged $114. Counterevidence matters: September regional shut-in production was the lowest since hostilities began, and convoys, bypass routes, and ship-to-ship transfers are lifting output. The Fed held on October 28 and domestic activity remains resilient; the 10-year is still near 5%, but no funding or credit seizure is confirmed.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — October 2026",
+          date: "October 6, 2026 (reviewed October 29, 2026)",
+          url: "https://www.eia.gov/outlooks/steo/pdf/steo_text.pdf",
+          supports:
+            "Constrained 4Q Middle East flows, September Brent averaging $114, a $105 4Q forecast, and partial recovery through convoys and alternative export routes",
+        },
+        {
+          institution: "Board of Governors of the Federal Reserve System",
+          title: "Federal Reserve issues FOMC statement",
+          date: "October 28, 2026",
+          url: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+          supports:
+            "Target range held at 3.75%–4.00%; inflation remains elevated while spending, investment, productivity, and employment remain resilient",
+        },
+        {
+          institution: "Board of Governors of the Federal Reserve System",
+          title: "H.15 Selected Interest Rates — Daily Update",
+          date: "October 28, 2026",
+          url: "https://www.federalreserve.gov/Releases/H15/Update/",
+          supports:
+            "Long-duration Treasury yields remained around the 5% pressure threshold without evidence of a market-functioning seizure",
         },
       ],
     },

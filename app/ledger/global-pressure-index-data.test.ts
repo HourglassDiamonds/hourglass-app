@@ -41,7 +41,7 @@ describe("Global Pressure Index weighted reading (archived numerical series)", (
     assert.equal(gpi.displayTitle, GPM_DISPLAY_TITLE);
     assert.equal(
       gpi.status,
-      "Very high external pressure / Broader energy transmission",
+      "Very high external pressure / Broad energy transmission",
     );
     assert.equal(gpi.updatedLabel, "");
     assert.doesNotMatch(gpi.updatedLabel, /updated weekly/i);
@@ -55,24 +55,24 @@ describe("Global Pressure Monitor interim copy", () => {
   it("states qualitative status without a published temperature", () => {
     assert.equal(
       GPM_CURRENT_STATE,
-      "Very high external pressure / Broader energy transmission",
+      "Very high external pressure / Broad energy transmission",
     );
     assert.equal(
       GPM_CURRENT_DIRECTION,
-      "Energy disruption broadening / Adaptation still limiting systemic failure",
+      "Persistent constraint / Physical workarounds improving",
     );
     assert.match(GPM_LEAD, /credit|function/i);
-    assert.match(GPM_LEAD, /130/);
+    assert.match(GPM_LEAD, /convoys|bypass routes/i);
     assert.doesNotMatch(GPM_LEAD, /\d+°/);
     assert.doesNotMatch(GPM_INTRO, /System Temperature/i);
     assert.doesNotMatch(GPM_INTRO, /interim|methodology revision/i);
     assert.match(GPM_METHODOLOGY_NOTICE, /System Temperature/);
-    assert.match(GPM_WHAT_CHANGED, /August 24 review/i);
+    assert.match(GPM_WHAT_CHANGED, /September 16/i);
     assert.equal(GPM_SNAPSHOT.evidenceCutoff, LEDGER_EVIDENCE_CUTOFF);
-    assert.equal(GPM_SNAPSHOT.reviewDate, "September 16, 2026");
+    assert.equal(GPM_SNAPSHOT.reviewDate, "October 29, 2026");
     assert.ok(
       GPM_SNAPSHOT.sources.some((source) =>
-        source.institution.includes("Reuters") || source.institution === "The National",
+        source.institution.includes("Federal Reserve"),
       ),
     );
     assert.ok(
@@ -82,14 +82,15 @@ describe("Global Pressure Monitor interim copy", () => {
     );
   });
 
-  it("appends September 16 after preserved August snapshots", async () => {
+  it("appends October 29 after preserved August and September snapshots", async () => {
     const { GPM_SERIES } = await import("./global-pressure-monitor-data");
-    assert.equal(GPM_SERIES.snapshots.length, 5);
+    assert.equal(GPM_SERIES.snapshots.length, 6);
     assert.equal(GPM_SERIES.snapshots[0]?.reviewDate, "August 3, 2026");
     assert.equal(GPM_SERIES.snapshots[1]?.reviewDate, "August 12, 2026");
     assert.equal(GPM_SERIES.snapshots[2]?.reviewDate, "August 18, 2026");
     assert.equal(GPM_SERIES.snapshots[3]?.reviewDate, "August 24, 2026");
     assert.equal(GPM_SERIES.snapshots[4]?.reviewDate, "September 16, 2026");
+    assert.equal(GPM_SERIES.snapshots[5]?.reviewDate, "October 29, 2026");
     assert.equal(GPM_SERIES.snapshots[3]?.evidenceCutoff, "August 24, 2026");
   });
 

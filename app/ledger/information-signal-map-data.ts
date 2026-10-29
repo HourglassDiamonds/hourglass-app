@@ -22,7 +22,7 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "Physical energy-market and rates evidence is more cross-confirmed than in August: Brent is in a $100+ regime, Hormuz commodity traffic printed four vessels, Saudi Arabia’s principal Hormuz-bypass route is disrupted, and the U.S. 10-year crossed 5% on September 15. Trajectory, duration, and policy response remain uncertain — pipeline repair estimates span very soon to eight weeks, Hormuz talks stalled, the 10-year retreated just below 5% on the morning of September 16, and the September 15–16 Fed decision had not been published at cutoff. Gold is falling while geopolitical risk is high, which is a real disconfirmation. AI coverage mixes agent-containment incidents with lab safety-coordination. Confidence stays Moderate. Information Signal adds no degrees.";
+  "October evidence separates pressure from adaptation more cleanly. EIA confirms constrained 4Q oil flows while documenting lower shut-ins and export workarounds. The Fed held after September's hike; inflation remains elevated and activity resilient. PJM documents both tight operating conditions and successful adaptation. Gold cooled further while diamonds improved. AI providers document broader deployment beside explicit capability limits and containment. Confidence stays Moderate. Information Signal adds no degrees.";
 
 export const ISM_SIGNAL_GRID = [
   {
@@ -121,15 +121,15 @@ export const ISM_WHAT_WOULD_CHANGE = [
 export const ISM_FOOTER_NOTE =
   "Narrative analysis and framing comparison — observational, without speculation or certainty claims. Information Signal informs confidence in the System Temperature reading; it does not raise the temperature itself.";
 
-export const ISM_CURRENT_STATE = "High-attention / Physical evidence converging";
+export const ISM_CURRENT_STATE = "High-attention / Better-separated signals";
 
 export const ISM_CURRENT_DIRECTION =
-  "Energy and rates prints clearer / Duration and policy path still uncertain";
+  "Persistent pressure / More explicit counterevidence";
 
 export const ISM_HUB_STATUS = ISM_CURRENT_STATE;
 
 export const ISM_HUB_DESCRIPTION =
-  "High-attention / Physical evidence converging — $100+ oil, disruption of Saudi Arabia’s principal Hormuz-bypass route, and a 10-year that crossed 5% are cross-confirmed, while duration and policy path remain uncertain.";
+  "High-attention / Better-separated signals — energy and rates pressure persists, while physical workarounds, resilient activity, lower gold, and explicit AI controls make the counterevidence clearer.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
 export const ISM_SERIES: LedgerMonitorSeries = {
@@ -320,6 +320,50 @@ export const ISM_SERIES: LedgerMonitorSeries = {
           url: "http://www.kitco.com/news/off-the-wire/2026-09-15/gold-eases-stronger-us-rate-hike-odds",
           supports:
             "Spot gold near the lowest since early August while geopolitical risk is high — a material disconfirmation of a simple safe-haven frame",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 29, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High-attention / Better-separated signals",
+      currentDirection: "Persistent pressure / More explicit counterevidence",
+      previousState: "High-attention / Physical evidence converging",
+      materialChangeSummary:
+        "Signal quality improved without eliminating uncertainty. EIA now separates persistent 4Q oil constraints from recovering regional output and export workarounds. The October Fed outcome is known: rates held after September's hike, with resilient activity and elevated inflation. PJM documents both tight operating conditions and successful adaptation. Gold cooled further while diamond prices improved. AI providers document both broader deployment and explicit capability limits. Confidence remains Moderate; Information Signal adds no degrees.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — October 2026",
+          date: "October 6, 2026",
+          url: "https://www.eia.gov/outlooks/steo/pdf/steo_text.pdf",
+          supports:
+            "A single source explicitly documenting both persistent energy pressure and improving physical workarounds",
+        },
+        {
+          institution: "Board of Governors of the Federal Reserve System",
+          title: "Federal Reserve issues FOMC statement",
+          date: "October 28, 2026",
+          url: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+          supports:
+            "Resolved policy outcome and a balanced statement of elevated inflation beside resilient activity",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "Operations Update: PJM Extends Maximum Generation Alert to Oct. 14, Calls on Demand Response",
+          date: "October 13–14, 2026",
+          url: "https://insidelines.pjm.com/operations-update-extends-maximum-generation-alert-calls-on-demand-response/",
+          supports:
+            "Confirmed tight grid conditions with successful operating adaptation and no use of large-load backup generation",
+        },
+        {
+          institution: "OpenAI",
+          title: "GPT-6 Sol and GPT-6 Luna: October 2026 update",
+          date: "October 7, 2026",
+          url: "https://deploymentsafety.openai.com/gpt-6-october/jailbreaks",
+          supports:
+            "Broader deployment, High cyber and bio/chemical capability classifications, below-Critical cyber findings, and disclosed evaluation regressions",
         },
       ],
     },

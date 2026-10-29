@@ -24,10 +24,10 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Public infrastructure strain remains high and multi-regional, with active adaptation. EIA’s September 9 STEO forecasts record U.S. electricity sales of 4,135 billion kWh in 2026 and 4,211 billion kWh in 2027, driven in significant part by data-center development and manufacturing. Texas is enforcing data-center water reporting and had paused new data-center grid connections pending a power/water audit — gating load, not a grid failure. EIA lowered its West South Central sales path after that pause. Previously scored PJM congestion and European water-to-power effects remain in the picture. Energy shipping and refining constraints are counted on Global Pressure rather than added again here. Systems function; there is no synchronized grid failure.";
+  "Public infrastructure strain remains high, with active adaptation. EIA's October outlook places 2026 PJM wholesale prices 41% above 2025 and keeps commercial demand, including data centers, growing through 2027. PJM used maximum-generation and load-management alerts during unusually warm October shoulder-season weather, while retaining authority to direct large loads to backup generation. PJM did not need that authority and maintained service. This confirms high strain, not grid failure.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "The live U.S. evidence is now EIA record-demand confirmation plus Texas power/water gating of data centers. That is active adaptation under high strain, not expired July emergency orders and not a failing grid. Internal System Temperature infrastructure holds high / partial.";
+  "October adds a live operating test: PJM used alerts and demand response during tight shoulder-season conditions but served load without calling large-load backup generation. EIA still shows elevated PJM prices and growing commercial demand. Internal System Temperature infrastructure holds high / partial.";
 
 export const ISI_CATEGORIES = [
   {
@@ -392,6 +392,42 @@ export const ISI_SERIES: LedgerMonitorSeries = {
           url: "https://gov.texas.gov/news/post/governor-abbott-directs-twdb-to-penalize-data-center-reporting-failures",
           supports:
             "First-party directive to impose legal consequences for data-center water-survey noncompliance and to partner with ERCOT on the interconnection audit",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 29, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain",
+      currentDirection: "Active adaptation / Large-load operating pressure confirmed",
+      previousState: "High infrastructure strain",
+      materialChangeSummary:
+        "The high-strain state holds. EIA's October outlook places 2026 PJM wholesale prices 41% above 2025 and keeps commercial demand, including data centers, growing through 2027. PJM used maximum-generation and load-management alerts during unusually warm October shoulder-season weather, while retaining authority to direct large loads to backup generation. PJM did not need that authority and maintained service. This confirms high strain plus adaptation, not grid failure.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — Electricity, Coal, and Renewables",
+          date: "October 6, 2026 (reviewed October 29, 2026)",
+          url: "https://www.eia.gov/outlooks/steo/report/electricity.php",
+          supports:
+            "PJM wholesale prices forecast 41% above 2025, 4% year-over-year national 3Q consumption growth, and continued commercial demand growth through 2027",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "Operations Update: PJM Extends Maximum Generation Alert to Oct. 14, Calls on Demand Response",
+          date: "October 13–14, 2026",
+          url: "https://insidelines.pjm.com/operations-update-extends-maximum-generation-alert-calls-on-demand-response/",
+          supports:
+            "Tight shoulder-season conditions, maximum-generation and load-management procedures, and reliable operation without using large-load backup generation",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "PJM, FERC Focus on Large Load Challenges at Tech Conference",
+          date: "October 22, 2026",
+          url: "https://insidelines.pjm.com/pjm-ferc-focus-on-large-load-challenges-at-tech-conference/",
+          supports:
+            "Persistent planning and operating challenges from near-constant data-center load and slower generation and transmission expansion",
         },
       ],
     },
