@@ -76,6 +76,10 @@ export type ScheduledWorkout = {
   history: WorkoutHistoryEvent[];
   deferredTo?: string;
   replacesWorkoutId?: string;
+  projection?: {
+    canonicalDate: string;
+    reason: "missed_sequence" | "future_shift" | "explicit_double_up";
+  };
 };
 
 export type PerformedSet = {
@@ -409,4 +413,11 @@ export type PersonalState = {
     carbs: number;
     fat: number;
   }>;
+  workoutRolloverChoice?: {
+    mode: "succession" | "double_up";
+    primarySessionOrder: number;
+    secondarySessionOrder?: number;
+    targetDate: string;
+    reviewedAt: string;
+  };
 };

@@ -1,20 +1,22 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState } from "./program";
-import { migrateLegacyPersonalState, parsePersonalState, rolloverUnresolved } from "./state";
+import { migrateLegacyPersonalState, parsePersonalState } from "./state";
 import { configureTonalProgram } from "./tonal-programs";
+import { projectWorkoutRollover } from "./workout-rollover";
 
 function configuredState(today: string) {
   return configureTonalProgram({ state: createInitialPersonalState(today), programId: "fit-over-40", weeklyFrequency: 3, source: { kind: "founder_confirmed", reference: "machine", reviewedAt: `${today}T10:00:00Z` }, founderVerifiedAt: `${today}T10:00:00Z` });
 }
 
-test("an untouched workout remains planned / unresolved after midnight", () => {
+test("midnight projects an untouched workout without mutating canonical state", () => {
   const state = activateTrainingProgram(configuredState("2026-10-12"), "2026-10-12", "2026-10-11T12:00:00Z");
-  const rolled = rolloverUnresolved(state, "2026-10-13", "2026-10-13T04:01:00.000Z");
-  const prior = rolled.schedule.find((workout) => workout.date === "2026-10-12");
-  assert.equal(prior?.status, "unresolved");
-  assert.equal(prior?.history.at(-1)?.action, "rolled_unresolved");
-  assert.doesNotMatch(JSON.stringify(prior), /failed/i);
+  const before = JSON.stringify(state);
+  const rolled = projectWorkoutRollover(state, "2026-10-13");
+  const prior = rolled.schedule.find((workout) => workout.prescription.tonalSessionOrder === 1);
+  assert.equal(prior?.date, "2026-10-14");
+  assert.equal(prior?.projection?.canonicalDate, "2026-10-12");
+  assert.equal(JSON.stringify(state), before, "projection performs no canonical write");
 });
 
 test("migrates the approved Personal RC browser logs into the canonical v2 model", () => {
@@ -51,4 +53,13 @@ test("a completed Tonal block remains completed after canonical reload", () => {
   assert.equal(parsed.program.status, "active");
   assert.equal(parsed.tonal.enrollment.status, "completed");
   assert.equal(parsed.tonal.enrollment.completedAt, "2026-11-15T12:00:00.000Z");
+});
+
+test("view-only workout projections are never restored as canonical state", () => {
+  const active = activateTrainingProgram(configuredState("2026-10-17"), "2026-10-19", "2026-10-17T12:01:00.000Z");
+  active.schedule[0]!.projection = { canonicalDate: active.schedule[0]!.date, reason: "missed_sequence" };
+  active.schedule[0]!.date = "2026-10-21";
+  const parsed = parsePersonalState(JSON.stringify(active), "2026-10-20");
+  assert.equal(parsed.schedule[0]?.projection, undefined);
+  assert.equal(parsed.schedule[0]?.date, "2026-10-19");
 });

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState, plannedWorkout, previewTrainingWeek, PROGRAM_RESTART_DATE } from "./program";
-import { parsePersonalState, rolloverUnresolved } from "./state";
+import { parsePersonalState } from "./state";
 import { configureTonalProgram } from "./tonal-programs";
 
 function configuredState() {
@@ -54,10 +54,8 @@ test("legacy fixed-anchor state enters setup without creating missed sessions", 
     schedule: [plannedWorkout("2026-10-12")],
   };
   const parsed = parsePersonalState(JSON.stringify(legacy), "2026-10-20");
-  const rolled = rolloverUnresolved(parsed, "2026-10-21", "2026-10-21T05:00:00Z");
   assert.equal(parsed.program.status, "setup");
   assert.equal(parsed.schedule.length, 0);
-  assert.deepEqual(rolled, parsed);
 });
 
 test("Week 1 preview has three Tonal slots, two runs, Thursday recovery, and Sunday hard rest", () => {

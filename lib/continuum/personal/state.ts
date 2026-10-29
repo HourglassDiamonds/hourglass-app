@@ -67,7 +67,12 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
   try {
     const value: unknown = JSON.parse(raw);
     if (!isRecord(value) || (value.version !== 2 && value.version !== 3)) return fallback;
-    const schedule = Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120) : [];
+    const schedule = Array.isArray(value.schedule) ? value.schedule.filter(isWorkout).slice(0, 120).map((workout) => {
+      const canonical = { ...workout };
+      if (canonical.projection && /^\d{4}-\d{2}-\d{2}$/.test(canonical.projection.canonicalDate)) canonical.date = canonical.projection.canonicalDate;
+      delete canonical.projection;
+      return canonical;
+    }) : [];
     const rawProgram = value.version === 3 && isRecord(value.program) ? value.program : null;
     const tonal = parseTonalPlan(value.tonal);
     const active = rawProgram?.status === "active" && typeof rawProgram.anchorDate === "string" && /^\d{4}-\d{2}-\d{2}$/.test(rawProgram.anchorDate) && typeof rawProgram.activatedAt === "string" && ["active", "completed", "paused"].includes(tonal.enrollment.status);
@@ -92,6 +97,21 @@ export function parsePersonalState(raw: string | null, today: string): PersonalS
             fat: Number(value.nutritionTargets.fat) || fallback.nutritionTargets.fat,
           }
         : fallback.nutritionTargets,
+      workoutRolloverChoice: isRecord(value.workoutRolloverChoice)
+        && ["succession", "double_up"].includes(String(value.workoutRolloverChoice.mode))
+        && Number.isSafeInteger(value.workoutRolloverChoice.primarySessionOrder)
+        && Number(value.workoutRolloverChoice.primarySessionOrder) > 0
+        && typeof value.workoutRolloverChoice.targetDate === "string"
+        && /^\d{4}-\d{2}-\d{2}$/.test(value.workoutRolloverChoice.targetDate)
+        && typeof value.workoutRolloverChoice.reviewedAt === "string"
+        ? {
+            mode: value.workoutRolloverChoice.mode as "succession" | "double_up",
+            primarySessionOrder: Number(value.workoutRolloverChoice.primarySessionOrder),
+            secondarySessionOrder: Number.isSafeInteger(value.workoutRolloverChoice.secondarySessionOrder) && Number(value.workoutRolloverChoice.secondarySessionOrder) > 0 ? Number(value.workoutRolloverChoice.secondarySessionOrder) : undefined,
+            targetDate: value.workoutRolloverChoice.targetDate,
+            reviewedAt: value.workoutRolloverChoice.reviewedAt,
+          }
+        : undefined,
     };
     return ensureSchedule(next, today);
   } catch {
@@ -183,21 +203,7 @@ export function migrateLegacyPersonalState(raw: string | null, today: string): P
 }
 
 export function ensureSchedule(state: PersonalState, today: string): PersonalState {
+  void today;
   if (state.program.status !== "active" || !state.program.anchorDate) return { ...state, schedule: preserveHistoricalSchedule(state.schedule, state.sessions) };
-  return rolloverUnresolved(state, today);
-}
-
-export function rolloverUnresolved(state: PersonalState, today: string, now = new Date().toISOString()): PersonalState {
-  if (state.program.status !== "active" || !state.program.anchorDate) return state;
-  return {
-    ...state,
-    schedule: state.schedule.map((workout) => workout.date < today && workout.status === "planned" && workout.originalDate >= state.program.anchorDate!
-      ? {
-          ...workout,
-          status: "unresolved" as const,
-          provenance: [...new Set([...workout.provenance, "user" as const])],
-          history: [...workout.history, { at: now, action: "rolled_unresolved" as const, actor: "system" as const, note: "Midnight passed without a resolution; the workout remains planned / unresolved." }],
-        }
-      : workout),
-  };
+  return state;
 }

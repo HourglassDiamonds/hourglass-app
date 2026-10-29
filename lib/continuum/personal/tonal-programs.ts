@@ -154,7 +154,7 @@ export function tonalSessionStatus(state: PersonalState, session: TonalProgramSe
 }
 
 export function nextTonalSession(state: PersonalState): TonalProgramSession | undefined {
-  return state.tonal.enrollment.sessions.find((session) => tonalSessionStatus(state, session) !== "completed");
+  return state.tonal.enrollment.sessions.find((session) => !["completed", "skipped"].includes(tonalSessionStatus(state, session)));
 }
 
 export function syncTonalProgramCompletion(state: PersonalState, at: string): PersonalState {
@@ -171,6 +171,11 @@ type TonalCompletionIdentity = {
   movements?: readonly TonalProgramMovement[];
 };
 
+export type TonalCompletionMatchResult = {
+  matched: boolean;
+  reason?: "session-not-found" | "approved-plan-required" | "completion-evidence-already-attached" | "session-not-next" | "program-mismatch" | "workout-title-mismatch" | "planned-movements-required" | "movement-mismatch";
+};
+
 export type TonalSessionOutcome = "Completed" | "Deferred" | "Skipped" | "Pending";
 
 export function tonalSessionOutcome(state: PersonalState, session: TonalProgramSession): TonalSessionOutcome {
@@ -185,20 +190,31 @@ function normalized(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
 
-export function matchesTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity, options?: { allowCompletedEvidence?: boolean }): boolean {
+export function evaluateTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity, options?: { allowCompletedEvidence?: boolean }): TonalCompletionMatchResult {
   const program = TONAL_PROGRAM_CATALOG[state.tonal.enrollment.programId];
   const target = state.tonal.enrollment.sessions.find((session) => session.order === input.sequencePosition);
   const next = nextTonalSession(state);
-  if (!target || !target.plannedAt || !target.plannedSource || target.completedActivityId && !options?.allowCompletedEvidence) return false;
+  if (!target) return { matched: false, reason: "session-not-found" };
+  if (!target.plannedAt || !target.plannedSource) return { matched: false, reason: "approved-plan-required" };
+  if (target.completedActivityId && !options?.allowCompletedEvidence) return { matched: false, reason: "completion-evidence-already-attached" };
   const status = tonalSessionStatus(state, target);
   const historicalRecovery = status === "completed" || status === "deferred" || status === "skipped";
-  if (next?.order !== target.order && !historicalRecovery) return false;
-  if (!input.programTitle || normalized(input.programTitle) !== normalized(program.title)) return false;
-  if (target.title) return Boolean(input.workoutTitle && normalized(input.workoutTitle) === normalized(target.title));
+  if (next?.order !== target.order && !historicalRecovery) return { matched: false, reason: "session-not-next" };
+  if (!input.programTitle || normalized(input.programTitle) !== normalized(program.title)) return { matched: false, reason: "program-mismatch" };
+  if (target.title && input.workoutTitle) return normalized(input.workoutTitle) === normalized(target.title)
+    ? { matched: true }
+    : { matched: false, reason: "workout-title-mismatch" };
 
   const plannedMovements = target.movements.map((movement) => normalized(movement.name)).filter(Boolean);
   const completedMovements = new Set((input.movements ?? []).map((movement) => normalized(movement.name)).filter(Boolean));
-  return plannedMovements.length > 0 && plannedMovements.every((movement) => completedMovements.has(movement));
+  if (!plannedMovements.length) return { matched: false, reason: "planned-movements-required" };
+  return plannedMovements.every((movement) => completedMovements.has(movement))
+    ? { matched: true }
+    : { matched: false, reason: "movement-mismatch" };
+}
+
+export function matchesTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity, options?: { allowCompletedEvidence?: boolean }): boolean {
+  return evaluateTonalSessionCompletion(state, input, options).matched;
 }
 
 export function matchesNextTonalSessionCompletion(state: PersonalState, input: TonalCompletionIdentity): boolean {

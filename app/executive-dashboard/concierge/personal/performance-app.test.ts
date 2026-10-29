@@ -85,8 +85,8 @@ test("mobile completion selection stays available while canonical completion rem
   assert.match(source, /Completed \/ Deferred \/ Skipped \/ Pending|tonalSessionOutcome/);
   assert.match(source, /Completion screenshot selected\. Sterling is reading only the visible results/);
   assert.match(source, /Extraction complete\. Review the selected Tonal session below; nothing is saved until you approve it/);
-  assert.match(source, /matchesTonalSessionCompletion/);
-  assert.match(source, /does not match the founder-selected Tonal session/);
+  assert.match(source, /evaluateTonalSessionCompletion/);
+  assert.match(source, /Nothing was saved/);
   assert.match(source, /Add Before Photo/);
   assert.match(source, /No plan details will be fabricated/);
   assert.match(source, /Completion evidence added without creating another completed session/);
@@ -109,7 +109,7 @@ test("the unified card keeps Tonal and non-Tonal completion paths distinct", () 
 
 test("the primary mobile experience is a Monday through Sunday day-centered week", () => {
   assert.match(source, /data-weekly-performance/);
-  assert.match(source, /weekRecords\(state, displayWeekStart\)/);
+  assert.match(source, /weekRecords\(projectedState, displayWeekStart\)/);
   assert.match(source, /Previous/);
   assert.match(source, /This week/);
   assert.match(source, /Next →/);
@@ -119,6 +119,24 @@ test("the primary mobile experience is a Monday through Sunday day-centered week
   assert.match(css, /\.daySummary/);
   assert.match(css, /\.dayBody/);
   assert.match(css, /@media\(max-width:390px\)[\s\S]*\.dailyTotals/);
+});
+
+test("activity approval has immediate saving feedback and actionable fail-closed errors", () => {
+  assert.match(source, /activitySaveBusy/);
+  assert.match(source, /Saving…/);
+  assert.match(source, /Validating the selected session and source evidence/);
+  assert.match(source, /Performance changed elsewhere\. The latest state was loaded/);
+  assert.match(source, /Activity already logged/);
+  assert.match(source, /disabled=\{busy/);
+});
+
+test("missed Tonal sessions use a deterministic founder-controlled projection", () => {
+  assert.match(source, /projectWorkoutRollover/);
+  assert.match(source, /Session \{rolloverPlan\.nextSession\.order\} remains next/);
+  assert.match(source, /Continue in Succession/);
+  assert.match(source, /Double Up \/ Makeup/);
+  assert.match(source, /Two strength sessions together increase fatigue/);
+  assert.match(source, /action: "accept_adjustment"/);
 });
 
 test("daily nutrition shows exact remaining values and audited historical corrections", () => {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { activateTrainingProgram, createInitialPersonalState, transitionTrainingProgram } from "./program";
 import { parsePersonalState } from "./state";
-import { configureTonalProgram, markTonalSessionCompletedFromActivity, matchesNextTonalSessionCompletion, matchesTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionOutcome, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
+import { configureTonalProgram, evaluateTonalSessionCompletion, markTonalSessionCompletedFromActivity, matchesNextTonalSessionCompletion, matchesTonalSessionCompletion, nextTonalSession, planTonalSessionFromScreenshot, requiredTonalSessionCount, reviewTonalTransition, tonalSessionOutcome, tonalSessionStatus, TONAL_PROGRAM_CATALOG } from "./tonal-programs";
 
 function configured() {
   return configureTonalProgram({
@@ -53,6 +53,22 @@ test("a titleless approved exercise-list plan matches only the same visible move
   assert.equal(tonalSessionStatus(completed, completed.tonal.enrollment.sessions[0]!), "completed");
   const duplicate = markTonalSessionCompletedFromActivity(completed, { activityId: "activity-list-duplicate", sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Goblet squat" }, { name: "Standing row" }], at: "2026-10-19T13:05:00Z" });
   assert.equal(duplicate.tonal.enrollment.sessions[0]?.completedActivityId, "activity-list");
+});
+
+test("a titled plan can use its complete approved movement list only when the completion title is absent", () => {
+  const activated = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
+  const active = planTonalSessionFromScreenshot(activated, { sequencePosition: 1, title: "Workout 1", movements: [{ name: "Goblet squat" }, { name: "Standing row" }], source: { kind: "tonal_app_screenshot", reference: "sha256:plan", digest: "plan", reviewedAt: "now", file: { name: "plan.png", type: "image/png", size: 100 } }, approvedAt: "2026-10-18T13:00:00Z" });
+  assert.deepEqual(evaluateTonalSessionCompletion(active, { sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Standing row" }, { name: "Goblet squat" }] }), { matched: true });
+  assert.deepEqual(evaluateTonalSessionCompletion(active, { sequencePosition: 1, programTitle: "Fit Over 40", workoutTitle: "Conflicting title", movements: [{ name: "Standing row" }, { name: "Goblet squat" }] }), { matched: false, reason: "workout-title-mismatch" });
+  assert.deepEqual(evaluateTonalSessionCompletion(active, { sequencePosition: 1, programTitle: "Fit Over 40", movements: [{ name: "Goblet squat" }] }), { matched: false, reason: "movement-mismatch" });
+});
+
+test("an explicit skip advances the sequence without marking a workout complete", () => {
+  const active = activateTrainingProgram(configured(), "2026-10-19", "2026-10-18T12:00:00Z");
+  const firstId = active.tonal.enrollment.sessions[0]!.scheduledWorkoutId!;
+  const skipped = { ...active, schedule: active.schedule.map((workout) => workout.id === firstId ? { ...workout, status: "skipped" as const } : workout) };
+  assert.equal(nextTonalSession(skipped)?.order, 2);
+  assert.equal(skipped.schedule.find((workout) => workout.id === firstId)?.status, "skipped");
 });
 
 test("a schedule-completed historical session can receive its matching completion evidence after next-session advancement", () => {
