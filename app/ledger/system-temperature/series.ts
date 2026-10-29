@@ -666,24 +666,204 @@ export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16: SystemTemperatureSnapshot =
       "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further and oil established a $100+ regime. Financial transmission deepened as the 10-year crossed 5% and a September Fed hike became nearly fully priced. Credit, funding, equities, and earnings continue to function. Infrastructure remains high strain with active adaptation rather than grid failure. Gold’s decline disconfirms a simple safe-haven bid and is not a separate materials increment. AI safety coordination is governance adaptation, not additional System Temperature heat.",
   };
 
+/**
+ * October 29, 2026 review — all five discrete channel states hold.
+ *
+ * The October evidence is consequential but does not establish a new regime:
+ * EIA still sees constrained Middle East flows and a $105 4Q Brent path while
+ * also documenting recovery through convoys and export workarounds; the Fed
+ * held after September's hike while the 10-year remained near 5%; PJM needed
+ * maximum-generation procedures during an unusually warm shoulder-season
+ * week but continued to serve load; gold cooled further while September RAPI
+ * gains broadened; and new frontier releases arrived with explicit capability
+ * thresholds and stronger containment. Those are confirmations and mixed
+ * counter-signals, not a reason to manufacture a numerical move.
+ */
+export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29: SystemTemperatureSnapshot =
+  {
+    reviewDate: "October 29, 2026",
+    evidenceCutoff: "October 29, 2026",
+    methodologyVersion: SYSTEM_TEMPERATURE_METHODOLOGY_VERSION,
+    channels: [
+      {
+        id: "geopolitics-energy-supply",
+        pressure: "severe",
+        transmission: "broad",
+        materialChange: false,
+        transmissionExplanation:
+          "EIA's October STEO confirms that Middle East oil flows remain constrained through the fourth quarter and raises its 4Q Brent forecast to $105 per barrel after September averaged $114. The same report estimates September regional shut-in production was the lowest since hostilities began and expects convoys, bypass routes, and ship-to-ship transfers to lift production and exports. Pressure and energy-price transmission therefore remain severe and broad, but improving physical workarounds argue against a new increment.",
+        coolingNotes:
+          "Regional production and exports are recovering from their most impaired point, physical cargoes continue to clear, and EIA expects the Brent average to fall in 2027. These are real counter-signals, not evidence that the live constraint has normalized.",
+        evidenceRefs: [
+          "EIA Short-Term Energy Outlook Oct 6, 2026",
+          "global-pressure monitor",
+        ],
+      },
+      {
+        id: "financial-economic",
+        pressure: "very-high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "The Federal Reserve held the target range at 3.75%–4.00% on October 28 after September's increase, while stating that inflation remains elevated and activity, spending, productivity, investment, and employment remain resilient. The 10-year Treasury remained close to 5% and traded just above it after the decision. Financial pressure stays very high with partial transmission; the October hold is not a return to the softer August path.",
+        coolingNotes:
+          "The Fed did not deliver another hike, domestic activity remains resilient, and there is still no verified funding freeze, bank seizure, or broad credit-system dysfunction. Market functioning keeps transmission partial.",
+        evidenceRefs: [
+          "Federal Reserve FOMC statement Oct 28, 2026",
+          "Federal Reserve H.15 Selected Interest Rates Oct 28, 2026",
+          "information-signal monitor",
+        ],
+      },
+      {
+        id: "physical-infrastructure",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "EIA's October outlook keeps PJM wholesale prices 41% above 2025 and commercial electricity demand, including data centers, growing through 2027. PJM used maximum-generation and load-management alerts during unusually warm October shoulder-season weather and retained authority to call large loads onto backup generation, but reported that service remained reliable. High strain and partial transmission hold.",
+        coolingNotes:
+          "PJM did not need to use large-load backup generation during the October alert, and its procedures, demand response, and temporary operating tools maintained reliability. This is active adaptation, not synchronized grid failure.",
+        evidenceRefs: [
+          "EIA Short-Term Energy Outlook electricity Oct 6, 2026",
+          "PJM Operations Update Oct 13–14, 2026",
+          "PJM / FERC large-load reliability conference Oct 22, 2026",
+          "infrastructure-strain monitor",
+        ],
+      },
+      {
+        id: "commodities-materials",
+        pressure: "elevated",
+        transmission: "contained",
+        materialChange: false,
+        transmissionExplanation:
+          "Gold reference prices moved toward roughly $4,013 by October 23 from the high-$4,200s in mid-September even as energy and geopolitical pressure remained high. September RAPI improved for all four tracked round-diamond size bands, led by smaller goods, but supply discipline and quality segmentation still explain the recovery. Materials remain elevated and contained rather than entering a generalized scarcity regime.",
+        coolingNotes:
+          "Further gold cooling is a material counter-signal to a simple geopolitical safe-haven narrative. Diamond gains are broadening, but they remain uneven and supply-led inside a downsized industry.",
+        evidenceRefs: [
+          "World Gold Council gold-price data reviewed Oct 27, 2026",
+          "Rapaport September RAPI release Oct 6, 2026",
+          "precious-materials monitor",
+        ],
+      },
+      {
+        id: "technology-ai",
+        pressure: "high",
+        transmission: "partial",
+        materialChange: false,
+        transmissionExplanation:
+          "OpenAI broadened GPT-6 consumer access and rated the October Sol and Luna releases High in cyber and biological/chemical capability, while Google released Gemini 4 Argon with agentic task integrations. OpenAI also disclosed a September containment incident, paused training, hardened controls, and resumed only after review. Capability and deployment continue to accelerate, but security controls, power, and capital remain binding; the new releases confirm the existing high/partial state rather than a new external-transmission regime.",
+        coolingNotes:
+          "OpenAI's October safety card says Sol and Luna remain below the Critical cyber threshold and below High for AI self-improvement. The containment pause, remediations, and continued infrastructure limits are adaptation, not unconstrained deployment.",
+        evidenceRefs: [
+          "OpenAI GPT-6 Sol and Luna October update Oct 7, 2026",
+          "Google Gemini 4 Argon Oct 13, 2026",
+          "OpenAI frontier training environment security Oct 23, 2026",
+          "ai-capability monitor",
+        ],
+      },
+    ],
+    confidence: "moderate",
+    confidenceRationale:
+      "The October review is more current and better anchored in first-party recurring releases: EIA, the Federal Reserve, PJM, Reclamation, FAO, and model-provider system materials. They confirm persistent energy, rates, grid, water, and AI pressure while also documenting functioning markets, physical workarounds, load-management adaptation, lower gold, and explicit model controls. The direction is clearer than the exact duration, so confidence remains Moderate and Information Signal adds no degrees.",
+    activeEvents: [
+      {
+        id: "hormuz-corridor-disruption-2026",
+        label: "Strait of Hormuz / Gulf shipping disruption",
+        firstIncorporatedReview: "August 12, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "September 16, 2026",
+        decayEligible: false,
+        notes:
+          "EIA still expects constrained 4Q flows, but September shut-ins eased and workarounds are lifting exports. Confirmation plus partial adaptation; no new increment.",
+      },
+      {
+        id: "saudi-east-west-pipeline-yanbu-2026",
+        label: "Saudi East-West Pipeline / Yanbu loadings disruption",
+        firstIncorporatedReview: "September 16, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "September 16, 2026",
+        decayEligible: false,
+        notes:
+          "The October STEO keeps the attack and bypass risk in its higher oil-price path while documenting alternative export routes. Already scored in geo/energy.",
+      },
+      {
+        id: "pjm-large-load-adequacy-2026",
+        label: "PJM large-load / resource-adequacy framework",
+        firstIncorporatedReview: "August 12, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 12, 2026",
+        decayEligible: false,
+        notes:
+          "October alerts and the continuing large-load framework confirm high strain, while successful operations and unused backup-generation authority confirm adaptation.",
+      },
+      {
+        id: "sovereign-duration-repricing-2026",
+        label: "Long-duration sovereign yield repricing",
+        firstIncorporatedReview: "August 18, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "September 16, 2026",
+        decayEligible: false,
+        notes:
+          "The 10-year remains around 5% after the Fed's October hold. Persistent rates pressure, still without broad financial-system dysfunction.",
+      },
+      {
+        id: "europe-water-power-freight-2026",
+        label: "European drought / water-constrained power and freight",
+        firstIncorporatedReview: "August 18, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 18, 2026",
+        decayEligible: true,
+        notes:
+          "No fresh October evidence reviewed establishes a new European transmission increment. Keep under decay review rather than carrying it forward as new heat.",
+      },
+      {
+        id: "openai-astra-cyber-containment-2026",
+        label: "Frontier-model operational security containment",
+        firstIncorporatedReview: "August 24, 2026",
+        baselineIncorporated: true,
+        lastMaterialChangeReview: "August 24, 2026",
+        decayEligible: false,
+        notes:
+          "October releases and the disclosed September DNS-resolver incident confirm capability and containment pressure. Remediation and resumed training are adaptation; no additional degree increment.",
+      },
+    ],
+    coolingReview: {
+      improved:
+        "Middle East shut-in production eased from its earlier peak; the Fed held in October; gold cooled toward roughly $4,013; Lake Powell rose to about 24% full by October 25.",
+      normalized:
+        "Domestic spending, productivity, investment, employment, credit, funding, and equity-market function remain intact. PJM served load through its October alert without calling large-load backup generation.",
+      failedToTransmit:
+        "Persistent oil and rates pressure has not produced a funding seizure or broad non-energy supply-chain shutdown. New AI releases have not established a new external economic or infrastructure regime.",
+      absorbed:
+        "Oil flows are using convoys and export workarounds; PJM is using alerts, demand response, and large-load rules; frontier labs are pausing, red-teaming, and hardening containment.",
+      decayed:
+        "The pending September FOMC outcome is resolved: the Fed hiked in September and held in October. The European water-power event has no fresh October material-change evidence and is now decay-eligible. September's exact four-vessel Hormuz print is historical rather than a current October count.",
+    },
+    pressureLabel: "High Pressure",
+    functioningLabel: "Systems Functioning",
+    explanation:
+      "Pressure remains high without a new discrete regime change. Middle East oil flows are still constrained and the 10-year remains near 5%, but production workarounds, functioning credit, resilient activity, and an October Fed hold limit broader transmission. PJM's October alert confirms grid strain while successful operations confirm adaptation. Gold cooled further, diamond prices improved unevenly, and frontier AI releases arrived with explicit capability limits and containment controls.",
+  };
+
 export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] =
   [
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_18,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+    SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29,
   ];
 
 export const SYSTEM_TEMPERATURE_READING: SystemTemperatureReading =
-  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16, {
+  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29, {
     previousDegrees: computeTemperatureDegrees(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
     ),
   });
 
 /** Public hub interpretation under System Temperature. Not a methodology input. */
 export const SYSTEM_TEMPERATURE_LEDGER_NOTE =
-  "The energy shock broadened after Saudi Arabia’s principal Hormuz-bypass route was disrupted, while already-depressed Hormuz traffic fell further. Oil is in a $100+ regime, the 10-year crossed 5%, and a September Fed hike is nearly fully priced. Credit, funding, equities, and earnings continue to function. Physical oil continues clearing. Infrastructure operators are gating load rather than failing. Gold is falling as yields rise — not a separate materials increment."
+  "The October review holds at 74°. Middle East oil flows remain constrained and the 10-year remains near 5%, but physical workarounds, functioning credit, resilient activity, and an October Fed hold limit broader transmission. PJM's October alert confirms grid strain while successful operations confirm adaptation. Gold cooled further, diamond prices improved unevenly, and frontier AI releases arrived with explicit capability limits and containment controls."
 
 if (!SYSTEM_TEMPERATURE_READING.validation.ok) {
   throw new Error(

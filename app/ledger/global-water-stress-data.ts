@@ -23,13 +23,13 @@ export const GWS_INTRO =
 export const GWS_CURRENT_STATE = "High water stress / Multi-system transmission";
 
 export const GWS_CURRENT_DIRECTION =
-  "Uneven — Colorado still severe / Texas industrial-use enforcement";
+  "Structural shortage / Seasonal reservoir improvement";
 
 export const GWS_SUMMARY =
-  "Water stress is high and transmitting into multiple systems, but the map remains highly uneven. Colorado River conditions stay severe: Lake Powell around 22% full and Lake Mead around 26% as of the September 8 Reclamation weekly, with total system storage near 31%; Upper Basin officials agreed on September 15 to continue Flaming Gorge emergency releases to protect Powell. That is adaptation inside structural shortage, not recovery. Texas is now enforcing data-center water reporting — industrial-use transmission, not a statewide municipal collapse. Europe retains high seasonal stress with previously confirmed power, freight, and agricultural transmission. Tigris–Euphrates remains materially improved and structurally vulnerable. FAO’s August Food Price Index at 133.3 is a cross-system food/agriculture signal, not a new water temperature weight. Water remains qualitative and receives no System Temperature weight.";
+  "Water stress remains high and uneven. Reclamation's October 26 weekly places Powell at 24% full after a 6.96-foot weekly rise, a real seasonal improvement inside severe structural shortage; Mead remains near 26%. FAO's September Food Price Index rose to 136.0 as cereals, vegetable oils, and sugar increased. Tigris–Euphrates remains an important hydrologic counter-signal. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_WEEKLY_SIGNAL =
-  "Colorado remains a severe structural shortage with emergency releases continuing. Texas data-center water enforcement is the new industrial-use print. Do not ratchet the whole water monitor because one region stays severe. Tigris–Euphrates remains the hydrologic counter-signal. Water is an evidence layer, not a sixth temperature weight.";
+  "Powell's seasonal rise to 24% full is the clearest counterevidence this cycle, but Colorado storage remains structurally low. FAO's September food index rose to 136.0, confirming continued agriculture and transport transmission. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_CATEGORIES = [
   {
@@ -297,6 +297,42 @@ export const GWS_SERIES: LedgerMonitorSeries = {
           url: "https://www.reuters.com/world/europe/world-food-prices-highest-since-2022-supply-risks-mount-fao-says-2026-09-04/",
           supports:
             "FAO index up from 130.8 in July, with weather, Middle East conflict, and Black Sea logistics among pressures",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 29, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High water stress / Multi-system transmission",
+      currentDirection: "Structural shortage / Seasonal reservoir improvement",
+      previousState: "High water stress / Multi-system transmission",
+      materialChangeSummary:
+        "The qualitative water state holds. Reclamation's October 26 weekly places Powell at 3,527.51 feet and 24% full, up 6.96 feet week over week, while Mead remains near 26% full and total Colorado River storage remains structurally low. The seasonal rise is real counterevidence, not recovery. FAO's September Food Price Index rose to 136.0 as cereals, vegetable oils, and sugar increased, confirming continued food-system transmission. Water remains an evidence layer with no separate System Temperature weight.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Bureau of Reclamation",
+          title: "Lower Colorado Weekly Hydrologic Update",
+          date: "October 26, 2026 (conditions through October 25)",
+          url: "https://www.usbr.gov/lc/region/g4000/weekly.pdf",
+          supports:
+            "Powell at elevation 3,527.51 feet, 5.691 million acre-feet and 24% full after a weekly rise; seasonal improvement inside structural shortage",
+        },
+        {
+          institution: "Food and Agriculture Organization of the United Nations",
+          title: "FAO Food Price Index rises in September amid weather concerns and transport disruptions",
+          date: "October 2, 2026",
+          url: "https://www.fao.org/newsroom/detail/fao-food-price-index-rises-in-september-amid-weather-concerns-and-transport-disruptions/en",
+          supports:
+            "September index at 136.0, up 1.5% month over month and 5.8% year over year, with cereal, vegetable-oil, and sugar pressure",
+        },
+        {
+          institution: "PJM Interconnection",
+          title: "Operations Update: PJM Extends Maximum Generation Alert to Oct. 14, Calls on Demand Response",
+          date: "October 13–14, 2026",
+          url: "https://insidelines.pjm.com/operations-update-extends-maximum-generation-alert-calls-on-demand-response/",
+          supports:
+            "Power-system adaptation during unusually warm shoulder-season conditions; no evidence of a water-driven municipal collapse",
         },
       ],
     },

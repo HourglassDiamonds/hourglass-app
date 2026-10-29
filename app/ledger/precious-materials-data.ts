@@ -47,7 +47,7 @@ export const PMI_RECENT_READINGS = [
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader macro and reserve-asset conditions — but jewelry sourcing follows its own segmented logic beneath the geopolitical layer. Gold is not a simple war-to-price story this week; it is falling as yields and hike odds rise.";
+  "Material markets remain connected to broader macro and reserve-asset conditions, but jewelry sourcing follows its own segmented logic. Gold cooled further in October despite elevated geopolitical pressure, while September diamond gains broadened unevenly across size bands.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
   "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher Treasury yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it is disconfirming, because geopolitical risk is high while gold is falling.",
@@ -57,15 +57,15 @@ export const PMI_CROSS_SYSTEM_PRESSURE = [
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change this week — strategically firm and highly segmented remains the posture.",
-  "Gold around ~$4,270–$4,300 is rate-sensitive cooling, not a monocausal war bid. Do not double-count this as a materials System Temperature increment.",
-  "Natural diamonds should be read as segmented: August RAPI showed a first 1-carat monthly rise in 15 months and stronger smalls, not generic scarcity.",
+  "No materials-regime change — strategically firm and highly segmented remains the posture.",
+  "Gold moved toward roughly $4,013 by October 23. That further cooling is counterevidence to a simple war bid and is not a separate System Temperature increment.",
+  "September RAPI rose across the four tracked round-diamond size bands, led by smaller goods. The recovery is broader but still supply-led and uneven, not generic scarcity.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
-  "Whether gold holds the high-$4,200s or recovers toward $4,400+ if hike odds or yields reverse.",
+  "Whether gold stabilizes after late-October cooling or reaccelerates with inflation, yields, or energy risk.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
-  "Whether the August 1-carat RAPI rise broadens, or whether commercial goods stall again.",
+  "Whether September's broader RAPI gains survive the holiday cycle without renewed inventory pressure.",
   "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
   "Lab-grown wholesale compression, manufacturing scale, adoption, and retailer margin structure.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
@@ -249,6 +249,42 @@ export const PMI_SERIES: LedgerMonitorSeries = {
           url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/interim-financial-results-for-2026",
           supports:
             "Producer-economics context remaining segmented: H1 realized $105/ct, down 32%, with commercial goods still pressured by lab-grown competition",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 29, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Gold cooling / Diamond recovery broadening unevenly",
+      previousState: "Strategically firm / Highly segmented",
+      materialChangeSummary:
+        "No materials-regime change and no System Temperature materials increment. Gold reference prices fell toward roughly $4,013 by October 23 from the high-$4,200s in mid-September despite continued geopolitical pressure. September RAPI rose 3.2% for 0.30-carat, 2.5% for 0.50-carat, 0.3% for 1-carat, and 1.5% for 3-carat goods. That is a broader but supply-led diamond recovery inside a downsized, still-segmented industry.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "World Gold Council",
+          title: "Gold spot prices and market history",
+          date: "Data reviewed October 27, 2026",
+          url: "https://www.gold.org/goldhub/data/gold-prices",
+          supports:
+            "Late-October gold reference data confirming further cooling from the September review window",
+        },
+        {
+          institution: "Rapaport News",
+          title: "Small Diamonds Lead Price Gains in September",
+          date: "October 6, 2026",
+          url: "https://rapaport.com/news/small-diamonds-lead-price-gains-in-september/",
+          supports:
+            "September RAPI gains across all four tracked size bands, led by smaller goods, alongside continuing mine and producer restructuring",
+        },
+        {
+          institution: "Board of Governors of the Federal Reserve System",
+          title: "Federal Reserve issues FOMC statement",
+          date: "October 28, 2026",
+          url: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+          supports:
+            "Persistently elevated inflation and restrictive rates as context for gold's rate sensitivity; the same event remains scored in Financial",
         },
       ],
     },

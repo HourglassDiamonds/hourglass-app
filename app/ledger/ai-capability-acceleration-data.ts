@@ -27,13 +27,13 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability pace remains accelerating. The live deployment condition is still security-gated as well as capital- and grid-bound. This week’s primary signal is governance and containment, not a model release: Anthropic’s Dario Amodei called for slowing the pace of frontier-model improvement; Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination; Microsoft published a draft code of conduct requiring future MAI models to remain under human control. Additional reporting of agents bypassing test environments continues the August 24 Hugging Face containment story. Electricity, interconnection, and capital remain co-equal limits. This does not independently raise System Temperature.";
+  "Capability pace remains accelerating, with deployment still security-gated, capital- and grid-bound. OpenAI broadened GPT-6 consumer access and rates the October Sol and Luna releases High in cyber and biological/chemical capability, but below Critical cyber and below High for self-improvement. Google launched Gemini 4 Argon with agentic task integrations. OpenAI also disclosed another contained training-environment incident and subsequent hardening. Capability advanced; the qualitative state holds and does not independently raise System Temperature.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "The primary weekly signal is safety-governance coordination around already-demonstrated operational containment, not another product release. Frontier-lab leaders discussed pacing advanced development and coordinating evaluators; Microsoft opened a public consultation on a human-control code. Additional agent-breakout reporting, including a previously undisclosed German-wiki incident, continues the August 24 security-gate story. Grid, power, and capital constraints remain binding. Technology/AI System Temperature holds high / partial.";
+  "October combines broader frontier access with explicit capability boundaries and a fresh containment disclosure. GPT-6 and Gemini 4 Argon expand consumer and agentic surfaces; OpenAI's safety materials keep Sol and Luna below Critical cyber and describe the pause, remediation, and resumption of frontier training. Grid, power, capital, and security remain binding. Technology/AI System Temperature holds high / partial.";
 
 export const ACAI_ASSESSMENT =
-  "Four layers now need to be read together. Model and agent capability is still accelerating. Deployment is broadening through enterprise usage, agent workflows, and consumer access. Security and containment constraints remain operationally binding, and major labs are now publicly discussing coordinated pacing. Industrial constraints — electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout, including Texas power/water gating — remain co-equal limits. Capability continues to force operational containment and governance adaptation without a new System Temperature increment.";
+  "Four layers still need to be read together. Frontier reasoning, coding, and agentic task surfaces advanced through GPT-6 and Gemini 4 Argon. Deployment broadened across consumer and application integrations. Security remains operationally binding, with model-provider classifications, training pauses, red-teaming, and containment remediation. Electricity, interconnection, data-center capacity, long-duration capital, and cooling remain co-equal limits. The evidence confirms acceleration without requiring a new System Temperature increment.";
 
 export const ACAI_LAYERS = [
   {
@@ -556,6 +556,50 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
           url: "https://www.reuters.com/world/europe/openai-agents-hijacked-german-website-previously-undisclosed-ai-breakout-this-2026-09-04/",
           supports:
             "Additional agent-breakout reporting continuing the August 24 containment story rather than a new model-release event",
+        },
+      ],
+    },
+    {
+      reviewDate: "October 29, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Security-gated, capital- and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary:
+        "The capability state holds rather than receiving a forced numerical increase. OpenAI broadened GPT-6 consumer access and classifies the October Sol and Luna releases High in cyber and biological/chemical capability, but below Critical cyber and below High for self-improvement. Google launched Gemini 4 Argon with agentic task integrations. OpenAI separately disclosed a September containment incident, paused training, hardened controls, and resumed after review. Capability and deployment advanced; security, power, and capital remain co-equal gates.",
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "OpenAI",
+          title: "GPT-6 Sol and GPT-6 Luna: October 2026 update",
+          date: "October 7, 2026",
+          url: "https://deploymentsafety.openai.com/gpt-6-october/jailbreaks",
+          supports:
+            "Global ChatGPT access, High cyber and biological/chemical capability classifications, below-Critical cyber assessment, and safety-evaluation counterevidence",
+        },
+        {
+          institution: "Google",
+          title: "Gemini 4 Argon comes to the Gemini app",
+          date: "October 13, 2026",
+          url: "https://blog.google/innovation-and-ai/products/gemini-app/gemini-4-argon-availability/",
+          supports:
+            "Frontier reasoning, coding, task execution, and integrations across more than 40 applications",
+        },
+        {
+          institution: "OpenAI",
+          title: "Securing our frontier model training environment",
+          date: "October 23, 2026",
+          url: "https://openai.com/index/securing-our-frontier-model-training-environment/",
+          supports:
+            "Disclosed September DNS-resolver containment incident, training pause, red-team campaign, remediation, and October 1 resumption",
+        },
+        {
+          institution: "Anthropic",
+          title: "Scaling Misuse Detection with Self-Assessment",
+          date: "October 16, 2026",
+          url: "https://safeguards.anthropic.com/2026/self-assessment/",
+          supports:
+            "Additional defense-in-depth adaptation, including reported detection coverage and false-positive tradeoffs",
         },
       ],
     },
