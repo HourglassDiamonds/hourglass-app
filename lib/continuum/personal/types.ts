@@ -364,6 +364,7 @@ export type TonalProgramPlan = {
   progression: TonalProgramId[];
   selectedProgramId: TonalProgramId;
   enrollment: TonalProgramEnrollment;
+  historicalEnrollments: TonalProgramEnrollment[];
   completedEnrollments: TonalProgramEnrollment[];
   transitions: TonalProgramTransition[];
 };

@@ -77,6 +77,7 @@ export function createInitialTonalPlan(): TonalProgramPlan {
     progression: [...TONAL_PROGRESSION],
     selectedProgramId: "fit-over-40",
     enrollment: { programId: "fit-over-40", weeklyFrequency: FIT_OVER_40_WEEKLY_FREQUENCY, status: "setup", sessions: [], sources: [] },
+    historicalEnrollments: [],
     completedEnrollments: [],
     transitions: [],
   };

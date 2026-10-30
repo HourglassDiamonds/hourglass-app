@@ -105,6 +105,7 @@ export function validatePersonalState(state: PersonalState): string[] {
     if (state.tonal.enrollment.founderVerifiedAt && !tonalEnrollmentReady(state.tonal)) errors.push("tonal-session-sequence");
     if (state.program.status === "active" && (!tonalEnrollmentReady(state.tonal) || !["active", "completed", "paused"].includes(state.tonal.enrollment.status))) errors.push("tonal-active-state");
     if (state.program.status === "setup" && state.tonal.enrollment.status !== "setup") errors.push("tonal-setup-state");
+    if (state.tonal.historicalEnrollments.some((enrollment) => !["paused", "completed"].includes(enrollment.status) || !enrollment.startedOn || !enrollment.founderVerifiedAt || !enrollment.sources.length)) errors.push("tonal-historical-enrollment");
     if (state.tonal.completedEnrollments.some((enrollment) => enrollment.status !== "completed" || !enrollment.completedAt)) errors.push("tonal-completed-history");
   }
   if (state.meals.length > 5_000 || state.activities.length > 5_000 || state.recoveryEntries.length > 5_000) errors.push("state-size");

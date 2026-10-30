@@ -139,6 +139,14 @@ test("missed Tonal sessions use a deterministic founder-controlled projection", 
   assert.match(source, /action: "accept_adjustment"/);
 });
 
+test("an active Fit Over 40 cycle exposes one reviewed restart without rewriting history", () => {
+  assert.match(source, /data-program-restart/);
+  assert.match(source, /restartFitOver40Cycle/);
+  assert.match(source, /restart-fit-over-40/);
+  assert.match(source, /Prior workout evidence remains in history/);
+  assert.match(source, /unfinished old-cycle slots are retired, never completed or skipped/);
+});
+
 test("daily nutrition shows exact remaining values and audited historical corrections", () => {
   assert.match(source, /day\.remaining\[key\] >= 0/);
   assert.match(source, /over/);

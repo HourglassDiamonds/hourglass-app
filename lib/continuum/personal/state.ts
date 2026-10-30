@@ -46,11 +46,24 @@ function parseTonalPlan(value: unknown): TonalProgramPlan {
       startedOn: typeof enrollment.startedOn === "string" ? enrollment.startedOn : undefined,
       completedAt: typeof enrollment.completedAt === "string" ? enrollment.completedAt : undefined,
     },
+    historicalEnrollments: Array.isArray(value.historicalEnrollments)
+      ? value.historicalEnrollments.flatMap((candidate) => {
+        const parsed = parseTonalPlan({
+          selectedProgramId: isRecord(candidate) ? candidate.programId : undefined,
+          enrollment: candidate,
+          historicalEnrollments: [],
+          completedEnrollments: [],
+          transitions: [],
+        }).enrollment;
+        return parsed.status === "paused" || parsed.status === "completed" ? [parsed] : [];
+      })
+      : [],
     completedEnrollments: Array.isArray(value.completedEnrollments)
       ? value.completedEnrollments.flatMap((candidate) => {
         const parsed = parseTonalPlan({
           selectedProgramId: isRecord(candidate) ? candidate.programId : undefined,
           enrollment: candidate,
+          historicalEnrollments: [],
           completedEnrollments: [],
           transitions: [],
         }).enrollment;

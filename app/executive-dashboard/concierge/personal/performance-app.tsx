@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { applySterlingProposal, deferAndReflow, retargetSterlingScheduleAdjustment } from "@/lib/continuum/personal/adaptation";
-import { activateTrainingProgram, createInitialPersonalState, dateKey, previewTrainingWeek, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
+import { activateTrainingProgram, createInitialPersonalState, dateKey, previewFitOver40RestartWeek, previewTrainingWeek, restartFitOver40Cycle, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
 import { deriveFrequentlyEaten, frequentMealMutationKey, logFrequentMeal, mealName, mealSignature, saveMealAsFrequent, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
@@ -161,7 +161,9 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   const frequentlyEaten = deriveFrequentlyEaten(state.meals, state.frequentMeals);
   const todayActivities = state.activities.filter((activity) => activity.occurredOn === today);
   const activationPreview = activationReview
-    ? previewTrainingWeek(state.tonal, programStartDate)
+    ? state.program.status === "active"
+      ? previewFitOver40RestartWeek(state, programStartDate)
+      : previewTrainingWeek(state.tonal, programStartDate)
     : [];
   const upcomingTonalSession = nextTonalSession(state);
   const selectableWorkouts = rolloverPlan.schedule.filter((workout) => workout.status !== "replaced").sort((a, b) => a.date.localeCompare(b.date));
@@ -241,26 +243,32 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
   }
 
   async function confirmActivation() {
-    if (!activationReview || activationBusy || state.program.status !== "setup") return;
+    if (!activationReview || activationBusy) return;
     setActivationBusy(true); setActivationError("");
     try {
       const activatedAt = new Date().toISOString();
-      const next = activateTrainingProgram(state, programStartDate, activatedAt);
+      const restarting = state.program.status === "active";
+      const next = restarting
+        ? restartFitOver40Cycle(state, programStartDate, activatedAt)
+        : activateTrainingProgram(state, programStartDate, activatedAt);
       const saved = await persistStateMutation(next, {
-        idempotencyKey: `activate-program-${programStartDate}`,
+        idempotencyKey: `${restarting ? "restart-fit-over-40" : "activate-program"}-${programStartDate}`,
         action: "activate_program",
-        accepted: { startDate: programStartDate, week11ObjectiveDate: shiftDate(programStartDate, 10 * 7 + 4) },
+        accepted: { kind: restarting ? "restart_fit_over_40" : "initial_activation", startDate: programStartDate, priorStartDate: restarting ? state.program.anchorDate : undefined, prescribedSessions: 12, week11ObjectiveDate: shiftDate(programStartDate, 10 * 7 + 4) },
       });
       setState(saved.state); setActivationReview(false);
+      setActivationError(saved.duplicate ? "This Fit Over 40 cycle was already saved." : restarting ? `New Fit Over 40 cycle saved for ${prettyDate(programStartDate)}. Prior workout evidence remains in history.` : "");
     } catch (error) {
       const message = error instanceof Error ? error.message : "performance-save-failed";
       setActivationError(message === "performance-revision-conflict"
-        ? "Performance changed in another save. Review the start date again before activating."
+        ? "Performance changed in another save. Review the start date again before saving."
         : message === "performance-mutation-action-unavailable"
-          ? "This Preview database cannot record program activation yet. The program remains not started."
+          ? "This Preview database cannot record the program cycle yet. Nothing changed."
           : message === "tonal-session-sequence-required"
             ? "Confirm the founder-verified Fit Over 40 cadence of three weekly workouts before activation."
-          : "The program was not activated. Existing nutrition and activity history remains unchanged.");
+            : message === "performance-cycle-restart-date-invalid"
+              ? "Choose a later Monday for the distinct Fit Over 40 cycle."
+              : "The program cycle was not saved. Existing workout evidence and history remain unchanged.");
     } finally { setActivationBusy(false); }
   }
 
@@ -875,6 +883,16 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review Week 1</button></div>
       {activationError ? <p role="alert" className={styles.warning}>{activationError}</p> : null}
       {activationReview ? <div className={styles.proposal}><strong>Proposed — the program is still not started</strong><p>Week 1 begins {prettyDate(programStartDate)}. Existing accepted history stays unchanged.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min · {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy || !tonalEnrollmentReady(state.tonal)}>{activationBusy ? "Activating…" : "Confirm and activate"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
+    </section> : null}
+
+    {state.program.status === "active" && state.tonal.selectedProgramId === "fit-over-40" ? <section className={styles.card} data-program-restart>
+      <p className={styles.kicker}>Founder-controlled cycle restart</p>
+      <h2>Start a distinct Fit Over 40 cycle.</h2>
+      <p>The current cycle, its photos, workout history, and audit trail stay preserved. The new cycle starts at Session 1 with twelve fresh ordered slots and Sunday hard rest.</p>
+      <div className={styles.formGrid}><label>New Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div>
+      <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review new cycle</button></div>
+      {activationError ? <p role="status" aria-live="polite" className={styles.warning}>{activationError}</p> : null}
+      {activationReview ? <div className={styles.proposal}><strong>Proposed - nothing has changed yet</strong><p>Session 1 begins {prettyDate(programStartDate)}. Existing occurrences remain available as history; unfinished old-cycle slots are retired, never completed or skipped.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min - {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy}>{activationBusy ? "Saving new cycle..." : "Confirm new cycle"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
     </section> : null}
 
     {state.program.status === "active" && rolloverPlan.nextSession && rolloverPlan.missedSessionCount > 0 ? <section className={styles.card} data-workout-rollover>
