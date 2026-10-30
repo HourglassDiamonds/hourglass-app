@@ -99,6 +99,14 @@ export function previewFitOver40RestartWeek(state: PersonalState, startDate: str
   return Array.from({ length: 7 }, (_, offset) => plannedWorkout(shiftDate(startDate, offset), startDate, tonal, `fit-over-40-${startDate}`));
 }
 
+export function isCurrentFitOver40CycleStart(state: PersonalState, startDate: string): boolean {
+  return state.program.status === "active"
+    && state.tonal.enrollment.status === "active"
+    && state.tonal.selectedProgramId === "fit-over-40"
+    && Boolean(state.program.anchorDate)
+    && startDate === state.program.anchorDate;
+}
+
 export function restartFitOver40Cycle(state: PersonalState, startDate: string, restartedAt = new Date().toISOString()): PersonalState {
   if (state.program.status !== "active" || state.tonal.enrollment.status !== "active" || state.tonal.selectedProgramId !== "fit-over-40") throw new Error("fit-over-40-restart-requires-active-cycle");
   if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(startDate) || weekdayIndex(startDate) !== 0) throw new Error("performance-program-start-must-be-monday");

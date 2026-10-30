@@ -145,6 +145,10 @@ test("an active Fit Over 40 cycle exposes one reviewed restart without rewriting
   assert.match(source, /restart-fit-over-40/);
   assert.match(source, /Prior workout evidence remains in history/);
   assert.match(source, /unfinished old-cycle slots are retired, never completed or skipped/);
+  assert.match(source, /isCurrentFitOver40CycleStart/);
+  assert.match(source, /data-program-cycle-current/);
+  assert.match(source, /Already active — this is the current Fit Over 40 cycle/);
+  assert.match(source, /disabled=\{activationBusy \|\| currentFitOver40CycleSelected\}/);
 });
 
 test("daily nutrition shows exact remaining values and audited historical corrections", () => {

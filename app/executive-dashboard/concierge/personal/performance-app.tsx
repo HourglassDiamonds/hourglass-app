@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { applySterlingProposal, deferAndReflow, retargetSterlingScheduleAdjustment } from "@/lib/continuum/personal/adaptation";
-import { activateTrainingProgram, createInitialPersonalState, dateKey, previewFitOver40RestartWeek, previewTrainingWeek, restartFitOver40Cycle, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
+import { activateTrainingProgram, createInitialPersonalState, dateKey, isCurrentFitOver40CycleStart, previewFitOver40RestartWeek, previewTrainingWeek, restartFitOver40Cycle, shiftDate, weekdayIndex } from "@/lib/continuum/personal/program";
 import { proposeProgression } from "@/lib/continuum/personal/progression";
 import { migrateLegacyPersonalState, parsePersonalState } from "@/lib/continuum/personal/state";
 import { deriveFrequentlyEaten, frequentMealMutationKey, logFrequentMeal, mealName, mealSignature, saveMealAsFrequent, type FrequentMealCandidate } from "@/lib/continuum/personal/nutrition";
@@ -165,6 +165,7 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       ? previewFitOver40RestartWeek(state, programStartDate)
       : previewTrainingWeek(state.tonal, programStartDate)
     : [];
+  const currentFitOver40CycleSelected = isCurrentFitOver40CycleStart(state, programStartDate);
   const upcomingTonalSession = nextTonalSession(state);
   const selectableWorkouts = rolloverPlan.schedule.filter((workout) => workout.status !== "replaced").sort((a, b) => a.date.localeCompare(b.date));
   const selectedWorkout = rolloverPlan.schedule.find((workout) => workout.id === selectedWorkoutId) ?? todayWorkout ?? selectableWorkouts.find((workout) => workout.date >= today) ?? selectableWorkouts.at(-1);
@@ -212,6 +213,9 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
 
   function reviewActivation() {
     setActivationError("");
+    if (isCurrentFitOver40CycleStart(state, programStartDate)) {
+      setActivationReview(false); setActivationError(`Fit Over 40 is already active for ${prettyDate(programStartDate)}. No restart is needed.`); return;
+    }
     if (!programStartDate || programStartDate < today || weekdayIndex(programStartDate) !== 0) {
       setActivationReview(false); setActivationError("Choose a Monday so Week 1 keeps Sunday as the planned rest day."); return;
     }
@@ -890,7 +894,8 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
       <h2>Start a distinct Fit Over 40 cycle.</h2>
       <p>The current cycle, its photos, workout history, and audit trail stay preserved. The new cycle starts at Session 1 with twelve fresh ordered slots and Sunday hard rest.</p>
       <div className={styles.formGrid}><label>New Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div>
-      <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy}>Review new cycle</button></div>
+      {currentFitOver40CycleSelected ? <p role="status" aria-live="polite" className={styles.provenance} data-program-cycle-current>Already active — this is the current Fit Over 40 cycle. Session 1 remains next; no restart will be created.</p> : null}
+      <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy || currentFitOver40CycleSelected}>{currentFitOver40CycleSelected ? "Current cycle already active" : "Review new cycle"}</button></div>
       {activationError ? <p role="status" aria-live="polite" className={styles.warning}>{activationError}</p> : null}
       {activationReview ? <div className={styles.proposal}><strong>Proposed - nothing has changed yet</strong><p>Session 1 begins {prettyDate(programStartDate)}. Existing occurrences remain available as history; unfinished old-cycle slots are retired, never completed or skipped.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min - {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy}>{activationBusy ? "Saving new cycle..." : "Confirm new cycle"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
     </section> : null}
