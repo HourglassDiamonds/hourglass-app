@@ -664,7 +664,12 @@ export function candidateDispositionCorrectionEvents(
       evidenceExcerpt: disposition.wording,
       workIdentityBasis: disposition.cadIds.length ? "cad" : null,
       provenance: "founder_correction",
-      correction: { stage: "complete", ballHolder: "unknown", dependency: null },
+      correction: {
+        stage: "complete",
+        ballHolder: "unknown",
+        dependency: null,
+        sourceDisposition: disposition.kind,
+      },
     } satisfies SourceCommunicationEvent];
   });
 }

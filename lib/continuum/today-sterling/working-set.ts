@@ -270,7 +270,8 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
         waitingOn: founderWaitingOn(truth.ballHolder),
         attentionPriority: truth.stage === "complete" ? "no_attention"
           : truth.ballHolder === "founder" ? "action_now" : "monitor",
-        disposition: truth.stage === "complete" ? "completed" : "active",
+        disposition: truth.sourceDisposition === "spam" ? "rejected_junk"
+          : truth.stage === "complete" ? "completed" : "active",
       } : null });
   }
   for (const directive of input.founderDirectives ?? []) {

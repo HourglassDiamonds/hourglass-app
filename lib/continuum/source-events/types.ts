@@ -89,7 +89,13 @@ export type SourceCommunicationEvent = {
     | "production_job"
     | "candidate_message"
     | null;
-  correction?: { stage?: import("../chief-of-staff/operating-loop/current-work").WorkStage; ballHolder: import("../chief-of-staff/operating-loop/current-work").ResponsibleActor; dependency: string | null };
+  correction?: {
+    stage?: import("../chief-of-staff/operating-loop/current-work").WorkStage;
+    ballHolder: import("../chief-of-staff/operating-loop/current-work").ResponsibleActor;
+    dependency: string | null;
+    /** Exact retained-source disposition; present only for candidate review corrections. */
+    sourceDisposition?: "terminal" | "spam";
+  };
   provenance:
     | "founder_correction"
     | "indexed_gmail"

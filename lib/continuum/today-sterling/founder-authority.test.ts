@@ -10,6 +10,9 @@ import {
   type SterlingTodayProposal,
   type SterlingTodayWorkingSet,
 } from "./types";
+import type { ContinuumCandidate } from "@/lib/continuum/candidates/types";
+import { buildSterlingTodayWorkingSet } from "./working-set";
+import { mergeSterlingFounderCorrections } from "./founder-candidate-corrections";
 
 const PROJECT_ID = "11111111-1111-4111-8111-111111111111";
 const PERSON_ID = "22222222-2222-4222-8222-222222222222";
@@ -164,6 +167,134 @@ function proposal(evidenceId: string): SterlingTodayProposal {
 }
 
 describe("Sterling founder authority", () => {
+  it("keeps an exact-source junk rejection authoritative across recomposition without minting a Person", () => {
+    const threadId = "face000000000001";
+    const messageId = "face000000000002";
+    const sourceRef = `gc1|${threadId}|${messageId}`;
+    const candidate: ContinuumCandidate = {
+      candidateId: "sterling-acceptance-daniel-source",
+      sourceSystem: "gmail",
+      sourceRef,
+      sourceTimestamp: "2026-10-29T12:00:00.000Z",
+      candidateType: "person_association",
+      proposedTarget: { kind: "person", personId: null },
+      payload: {
+        kind: "person_association",
+        displayName: "Daniel Iles",
+        emailHash: "d".repeat(64),
+        mintPerson: false,
+        mergePersons: false,
+      },
+      confidence: "high",
+      evidenceBasis: { ruleIds: ["sterling-preview-acceptance"], matchedText: null },
+      candidateState: "active",
+      reviewStatus: "pending",
+      lastReviewAction: "edit",
+      founderEditedPayload: null,
+      founderEditedTarget: {
+        kind: "person",
+        personId: null,
+        permanentSuppression: true,
+        founderDisposition: {
+          kind: "spam",
+          itemId: "preview:daniel-iles",
+          workLoopId: `source:${threadId}`,
+          cadIds: [],
+          sourceRefs: [sourceRef],
+          label: "Daniel Iles",
+          wording: "Daniel Iles is rejected junk.",
+        },
+      },
+      reviewedAt: "2026-10-30T13:00:00.000Z",
+      createdAt: "2026-10-29T12:00:00.000Z",
+      canonical: false,
+      automaticApply: false,
+      parserVersion: "sterling-preview-acceptance",
+      supersedesCandidateId: null,
+      supersededByCandidateId: null,
+    };
+    const compose = () => buildSterlingTodayWorkingSet({
+      runId: "preview-daniel-recompose",
+      sourceWatermark: "preview-acceptance",
+      generatedAt: "2026-10-30T14:00:00.000Z",
+      projects: [],
+      jobs: [],
+      candidates: [candidate],
+      threadContext: new Map(),
+      knownPeople: [],
+      founderCorrections: mergeSterlingFounderCorrections([], [candidate]),
+    });
+    for (const set of [compose(), compose()]) {
+      assert.equal(set.people.length, 0);
+      assert.equal(set.projects.length, 0);
+      assert.equal(set.workUnits.length, 1);
+      assert.deepEqual(set.workUnits[0]?.threadIds, [threadId]);
+      const unit = set.workUnits[0]!;
+      const founderEvidence = set.evidence.find((row) => row.sourceType === "founder_directive")!;
+      const raw: SterlingTodayProposal = {
+        contractVersion: STERLING_TODAY_PROPOSAL_VERSION,
+        runId: set.runId,
+        evidenceSnapshotId: set.evidenceSnapshotId,
+        generatedAt: set.generatedAt,
+        portfolioAssessments: [{
+          workUnitId: unit.workUnitId,
+          projectId: null,
+          identityStatus: "provisional_evidence",
+          todayDisposition: "presented",
+          recommendationItemId: "resurrected-junk",
+          currentStage: {
+            canonicalLifecycleStage: null,
+            operationalSubstage: null,
+            responsibleParty: "founder",
+            confidence: "low",
+            explanation: "Older source inference.",
+            evidenceRefs: [founderEvidence.evidenceId],
+          },
+          obligations: [{
+            obligationId: "reply-junk",
+            description: "Reply",
+            status: "open",
+            responsibleParty: "founder",
+            confidence: "low",
+            evidenceRefs: [founderEvidence.evidenceId],
+          }],
+          nextStepOwner: "founder",
+          attentionPriority: "action_now",
+          confidence: "low",
+          evidenceRefs: [founderEvidence.evidenceId],
+          ambiguities: [],
+          explanation: "Older source inference.",
+          omissionReason: null,
+        }],
+        recommendations: [{
+          itemId: "resurrected-junk",
+          workUnitId: unit.workUnitId,
+          category: "founder_actions",
+          projectId: null,
+          personId: null,
+          relationshipRole: "unknown",
+          title: "Daniel Iles",
+          summary: "Reply",
+          attentionPriority: "action_now",
+          confidence: "low",
+          explanation: "Older source inference.",
+          evidenceRefs: [founderEvidence.evidenceId],
+          ambiguities: [],
+          obligations: [],
+        }],
+        relationshipProposals: [],
+        proposedCanonicalMutations: [],
+        portfolioAmbiguities: [],
+      };
+      const reconciled = applySterlingFounderAuthority(set, raw);
+      assert.equal(reconciled.recommendations.length, 0);
+      assert.equal(reconciled.portfolioAssessments[0]?.todayDisposition, "suppressed");
+      assert.match(reconciled.portfolioAssessments[0]?.omissionReason ?? "", /History is retained/);
+      assert.equal(reconciled.proposedCanonicalMutations.length, 0);
+      assert.equal(validateSterlingTodayProposal(set, reconciled).accepted, true);
+    }
+  });
+
   it("suppresses a founder-confirmed closure without deleting obligation history", () => {
     const evidence = directiveEvidence({
       id: "founder-closure",

@@ -12,6 +12,7 @@ import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
 import { loadFounderCorrectionEvents } from "@/lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
 import { loadSterlingFounderDirectives } from "./founder-directive-load";
+import { mergeSterlingFounderCorrections } from "./founder-candidate-corrections";
 import {
   loadIndexedTodayThreadContext,
   loadIndexedTodayThreadContextByEmailHashes,
@@ -449,7 +450,7 @@ function scopeCoverage(
 export async function assembleSterlingTodayShadow(input: AssembleInput): Promise<SterlingTodayAssembly> {
   const startedAt = Date.now();
   const now = input.now ?? new Date();
-  const [candidates, projects, jobs, people, corrections, founderDirectives, calendar, watermark, previousToday, calendarStatus] = await Promise.all([
+  const [candidates, projects, jobs, people, canonicalCorrections, founderDirectives, calendar, watermark, previousToday, calendarStatus] = await Promise.all([
     loadCandidates(input.client),
     new SupabaseProjectDeskReader(input.client as never).listProjects(),
     loadProjectJobs(input.client as never),
@@ -461,6 +462,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     loadPreviousToday(input.client),
     calendarDiagnostic(input.client),
   ]);
+  const corrections = mergeSterlingFounderCorrections(canonicalCorrections, candidates);
 
   const portfolio = selectSterlingPortfolio(
     { projects, jobs: jobs ?? [], candidates, corrections, calendar, previousToday },
