@@ -122,7 +122,7 @@ function founderCanonicalMutations(
             ? "Founder-confirmed completion; review resolution of the remaining canonical open job."
             : "Founder-confirmed terminal disposition; review cancellation of the stale canonical open job.",
         });
-      } else if (directive.waitingOn && directive.waitingOn !== job.responsibleParty) {
+      } else if (openJobs.length === 1 && directive.waitingOn && directive.waitingOn !== job.responsibleParty) {
         mutations.push({
           ...base,
           proposalKey: founderMutationKey(directive.directiveId, "update_open_job_holder", job.jobId),

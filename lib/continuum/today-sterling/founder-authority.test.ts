@@ -225,6 +225,23 @@ describe("Sterling founder authority", () => {
     ]);
   });
 
+  it("does not guess which canonical job owns a waiting-on correction", () => {
+    const evidence = directiveEvidence({
+      id: "founder-ambiguous-jobs",
+      at: "2026-10-30T13:00:00.000Z",
+      disposition: "active",
+      stage: "cad",
+      waitingOn: "vendor_shop",
+      attention: "monitor",
+    });
+    const set = workingSet([evidence], { withOpenJob: true });
+    set.jobs = [...set.jobs, { ...set.jobs[0]!, jobId: "44444444-4444-4444-8444-444444444444" }];
+    const reconciled = applySterlingFounderAuthority(set, proposal(evidence.evidenceId));
+    assert.equal(reconciled.proposedCanonicalMutations.some(
+      (row) => row.kind === "update_open_job_holder",
+    ), false);
+  });
+
   it("proposes canonical completion and open-job resolution without applying either", () => {
     const evidence = directiveEvidence({
       id: "founder-complete",
