@@ -15,6 +15,10 @@ import type {
 } from "./types";
 
 const UNIQUE_VIOLATION = "23505";
+const LEGACY_PROPOSAL_TYPES = [
+  "job_update", "priority_change", "due_date", "waiting_state", "duplicate_merge",
+  "stale_resolution", "new_projectless_job", "follow_up", "conditional_hold",
+] as const;
 
 export class SupabaseSterlingProposalRepository implements SterlingProposalRepository {
   constructor(private readonly client: SupabaseClient) {}
@@ -46,6 +50,7 @@ export class SupabaseSterlingProposalRepository implements SterlingProposalRepos
   async listActive(limit = 50) {
     const { data, error } = await this.client.from(STERLING_PROPOSALS_TABLE)
       .select(STERLING_PROPOSAL_COLUMNS)
+      .in("proposal_type", LEGACY_PROPOSAL_TYPES)
       .in("status", ["proposed", "deferred", "approved", "edited_and_approved", "executing", "failed"])
       .order("created_at", { ascending: false }).limit(limit);
     this.throwStorage(error);
@@ -63,6 +68,7 @@ export class SupabaseSterlingProposalRepository implements SterlingProposalRepos
   async listRecentDecisions(limit = 100) {
     const { data, error } = await this.client.from(STERLING_PROPOSALS_TABLE)
       .select(STERLING_PROPOSAL_COLUMNS).not("founder_decision", "is", null)
+      .in("proposal_type", LEGACY_PROPOSAL_TYPES)
       .order("founder_decision_at", { ascending: false }).limit(limit);
     this.throwStorage(error);
     return (data ?? []).map((row) => rowToProposalRecord(row as unknown as Record<string, unknown>));

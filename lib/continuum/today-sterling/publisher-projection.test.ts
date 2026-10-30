@@ -3,17 +3,34 @@ import { afterEach, describe, it } from "node:test";
 import type { TodayPageModel } from "@/lib/continuum/chief-of-staff/operating-loop/load";
 import { TODAY_DOCKET_VERSION } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 import { projectSterlingTodaySurface } from "./publisher-projection";
+import { loadFreshSterlingTodayPublication } from "./publication-store";
 import { isSterlingTodayPreviewPublisherEnabled } from "./server-config";
 import type { SterlingTodayProposal } from "./types";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const originalEnvironment = process.env.CONTINUUM_ENV;
 const originalFlag = process.env.CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED;
+const originalVercel = process.env.VERCEL;
+const originalVercelEnvironment = process.env.VERCEL_ENV;
+const originalSupabaseUrl = process.env.SUPABASE_URL;
+const originalPreviewRef = process.env.CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF;
+const originalProductionRef = process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF;
 
 afterEach(() => {
   if (originalEnvironment === undefined) delete process.env.CONTINUUM_ENV;
   else process.env.CONTINUUM_ENV = originalEnvironment;
   if (originalFlag === undefined) delete process.env.CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED;
   else process.env.CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED = originalFlag;
+  for (const [key, value] of Object.entries({
+    VERCEL: originalVercel,
+    VERCEL_ENV: originalVercelEnvironment,
+    SUPABASE_URL: originalSupabaseUrl,
+    CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF: originalPreviewRef,
+    CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF: originalProductionRef,
+  })) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
 });
 
 function legacy(): TodayPageModel {
@@ -67,7 +84,14 @@ describe("Sterling Preview Today publisher", () => {
     process.env.CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED = "true";
     assert.equal(isSterlingTodayPreviewPublisherEnabled(), false);
     process.env.CONTINUUM_ENV = "preview";
+    process.env.VERCEL = "1";
+    process.env.VERCEL_ENV = "preview";
+    process.env.CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF = "hrmpzplffuhhvbtxxhnt";
+    process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF = "bnafadfgrrriblppeubp";
+    process.env.SUPABASE_URL = "https://hrmpzplffuhhvbtxxhnt.supabase.co";
     assert.equal(isSterlingTodayPreviewPublisherEnabled(), true);
+    process.env.SUPABASE_URL = "https://bnafadfgrrriblppeubp.supabase.co";
+    assert.equal(isSterlingTodayPreviewPublisherEnabled(), false);
   });
 
   it("projects one card per work unit and keeps Up Next founder-only", () => {
@@ -78,5 +102,49 @@ describe("Sterling Preview Today publisher", () => {
     assert.equal(allSectionItems.some((row) => row.title === "Dylan"), false);
     assert.equal(allSectionItems.some((row) => row.title === "Duplicate"), false);
     assert.equal(result.readModelWatermark, "legacy-watermark");
+  });
+
+  it("reads only an active, bounded, validation-passed durable publication", async () => {
+    const expected = proposal();
+    const calls: Array<[string, unknown]> = [];
+    const query = {
+      select(value: string) { calls.push(["select", value]); return this; },
+      eq(column: string, value: string) { calls.push([`eq:${column}`, value]); return this; },
+      lte(column: string, value: string) { calls.push([`lte:${column}`, value]); return this; },
+      gt(column: string, value: string) { calls.push([`gt:${column}`, value]); return this; },
+      order(column: string) { calls.push(["order", column]); return this; },
+      limit(value: number) { calls.push(["limit", value]); return this; },
+      async maybeSingle() {
+        return { data: {
+          run_id: expected.runId,
+          proposal: expected,
+          validation_summary: { verdict: "PASS", accepted: true, mutationsReviewable: true },
+          published_at: "2026-10-30T12:00:00.000Z",
+          expires_at: "2026-10-30T12:15:00.000Z",
+        }, error: null };
+      },
+    };
+    const client = { from: () => query } as unknown as SupabaseClient;
+    const loaded = await loadFreshSterlingTodayPublication(client, new Date("2026-10-30T12:05:00.000Z"));
+    assert.deepEqual(loaded, expected);
+    assert.ok(calls.some(([name, value]) => name === "eq:status" && value === "active"));
+    assert.ok(calls.some(([name]) => name === "gt:expires_at"));
+  });
+
+  it("fails closed for a durable row whose validation is not accepted", async () => {
+    const expected = proposal();
+    const query = {
+      select() { return this; }, eq() { return this; }, lte() { return this; },
+      gt() { return this; }, order() { return this; }, limit() { return this; },
+      async maybeSingle() {
+        return { data: {
+          run_id: expected.runId,
+          proposal: expected,
+          validation_summary: { verdict: "PASS", accepted: false, mutationsReviewable: true },
+        }, error: null };
+      },
+    };
+    const client = { from: () => query } as unknown as SupabaseClient;
+    assert.equal(await loadFreshSterlingTodayPublication(client), null);
   });
 });

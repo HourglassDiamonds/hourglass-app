@@ -1,5 +1,6 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
 import { getConciergeOpenAiApiKey } from "@/lib/continuum/concierge-sol/env";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { CONCIERGE_FOREGROUND_MODEL } from "@/lib/continuum/concierge-sol/models";
@@ -14,6 +15,7 @@ import {
   isSterlingTodayPreviewPublisherEnabled,
   isSterlingTodaySarahSemanticFeatureEnabled,
   isSterlingTodaySemanticFeatureEnabled,
+  isVerifiedSterlingTodayPreviewRuntime,
 } from "./server-config";
 import {
   createSarahSemanticAuthorizationClaim,
@@ -37,6 +39,7 @@ import {
   type SterlingTodaySafeResult,
 } from "./server-runner";
 import { STERLING_TODAY_SARAH_TARGET } from "./scope";
+import { loadFreshSterlingTodayPublication } from "./publication-store";
 
 function safeFailure(
   mode: "assembly" | "package_preflight" | "semantic",
@@ -260,32 +263,78 @@ export async function runAuthenticatedSterlingTodaySemantic(): Promise<SterlingT
 }
 
 /**
- * Preview publisher bridge. It returns raw validated output only to server-side
- * presentation code and never persists or applies canonical mutations.
+ * Preview publisher bridge. Page requests read a bounded, validated durable
+ * publication and never invoke the model. Publication is a separate explicit
+ * server workflow protected by the existing durable semantic lease.
  */
 export async function loadAuthenticatedSterlingTodayPublisherProposal() {
-  if (!isSterlingTodayPreviewPublisherEnabled() ||
-    !isSterlingTodaySemanticFeatureEnabled() ||
-    !isSterlingTodayDurableLeaseAvailable()) return null;
+  if (!isSterlingTodayPreviewPublisherEnabled()) return null;
   const client = await authenticatedReadClient();
+  return client ? loadFreshSterlingTodayPublication(client) : null;
+}
+
+/**
+ * Explicit Preview publication workflow. It is intentionally not called by a
+ * page request and is not wired to a browser control in this gate.
+ */
+export async function publishAuthenticatedSterlingTodaySnapshot(): Promise<
+  | { ok: true; status: "published" | "already-present"; publicationId: string }
+  | { ok: false; reason: string }
+> {
+  if (!isVerifiedSterlingTodayPreviewRuntime()) return { ok: false, reason: "preview-runtime-not-verified" };
+  if (!isSterlingTodaySemanticFeatureEnabled() || !isSterlingTodayDurableLeaseAvailable()) {
+    return { ok: false, reason: "semantic-publication-disabled" };
+  }
+  const auth = await getAuthenticatedGmailHistoryStores();
+  const client = auth.ok ? getSupabaseAdmin() : null;
   const apiKey = getConciergeOpenAiApiKey();
-  if (!client || !apiKey) return null;
+  if (!auth.ok || !client || !apiKey) return { ok: false, reason: "unauthorized-or-unavailable" };
   const leaseStore = createSupabaseSterlingRunLeaseStore(client);
-  const lease = createSterlingRunLease({ mode: "semantic", scopeVersion: "sterling-today-preview-publisher-v1" });
+  const lease = createSterlingRunLease({ mode: "semantic", scopeVersion: "sterling-today-preview-publication-v1" });
   const claim = await leaseStore.claim(lease);
-  if (claim !== "claimed") return null;
+  if (claim !== "claimed") return { ok: false, reason: claim === "busy" ? "semantic-run-in-progress" : "durable-lease-unavailable" };
   try {
     const assembly = await assembleSterlingTodayShadow({ client });
     const completion = await executeSterlingTodaySemantic({ assembly, apiKey });
-    await leaseStore.finish(lease.runId, "completed", new Date().toISOString());
     const mutationsReviewable = completion.validation?.mutationValidations.every(
       (row) => row.status === "approved_for_founder_review",
     ) ?? false;
-    return completion.verdict === "PASS" && completion.validation?.accepted && mutationsReviewable
-      ? completion.proposal
-      : null;
+    if (completion.verdict !== "PASS" || !completion.proposal ||
+      !completion.validation?.accepted || !mutationsReviewable) {
+      await leaseStore.finish(lease.runId, "failed", new Date().toISOString());
+      return { ok: false, reason: "semantic-publication-validation-blocked" };
+    }
+    const now = new Date();
+    const publicationId = randomUUID();
+    const publication = await client.rpc("continuum_publish_sterling_today", {
+      p_publication_id: publicationId,
+      p_run_id: completion.proposal.runId,
+      p_proposal: completion.proposal,
+      p_source_watermark: completion.assembly.workingSet.sourceWatermark,
+      p_validation_summary: {
+        verdict: completion.verdict,
+        accepted: true,
+        mutationsReviewable: true,
+        evidenceSnapshotId: completion.proposal.evidenceSnapshotId,
+      },
+      p_generated_at: completion.proposal.generatedAt,
+      p_validated_at: now.toISOString(),
+      p_published_at: now.toISOString(),
+      p_expires_at: new Date(now.getTime() + 15 * 60 * 1000).toISOString(),
+      p_actor: auth.username,
+    });
+    if (publication.error || !["published", "already-present"].includes(String(publication.data?.status))) {
+      await leaseStore.finish(lease.runId, "failed", new Date().toISOString());
+      return { ok: false, reason: publication.error?.message || "publication-write-failed" };
+    }
+    await leaseStore.finish(lease.runId, "completed", new Date().toISOString());
+    return {
+      ok: true,
+      status: String(publication.data.status) as "published" | "already-present",
+      publicationId: String(publication.data.publicationId),
+    };
   } catch {
     await leaseStore.finish(lease.runId, "failed", new Date().toISOString()).catch(() => false);
-    return null;
+    return { ok: false, reason: "semantic-publication-unavailable" };
   }
 }
