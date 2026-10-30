@@ -31,6 +31,15 @@ The proposal ledger records founder decisions durably, and the canonical Job wri
 - `edited_and_approved` requires an entire validated payload with the same proposal ID and proposal kind. The exact edited payload and fingerprint become immutable decision history.
 - Execution is a second RPC using the decision RPC's returned `record_version`. Concurrent or stale approvals fail closed.
 - Existing legacy proposal types remain readable by the legacy ledger UI but are excluded from the new canonical executor.
+- The proposal guard applies founder-decision and execution-receipt immutability only to `canonical_change_set` and `source_suppression`. Existing legacy proposals retain the established defer → approve transition.
+
+## Exact-source suppression boundary
+
+- An approved suppression contains exactly one source reference, and it must equal the Candidate's canonical `source_ref`. A set containing one match plus any unrelated reference is rejected.
+- The Candidate must be Gmail-derived and its current monotonic `record_version` must match.
+- The approved email hash must equal a verified hash retained in the Candidate payload. Today only `person_association` retains that identity value.
+- `open_job` Candidates retain the exact Gmail source but not the verified sender hash. They therefore fail closed with `candidate-email-identity-unsupported`; a caller-supplied hash, display name, or inferred Person is never accepted.
+- The server repository enforces the same binding before founder review, and the transactional executor revalidates it under row lock.
 
 ## Preview Today publication
 
@@ -47,5 +56,12 @@ Rollback is compensating, never destructive. Lifecycle/holder/source disposition
 - Revoke the RPC from `public`, `anon`, and `authenticated`; grant only `service_role`.
 - Do not expose a browser write path.
 - The executable disposable-Postgres regression covers approval requirement, stale versions, idempotent replay, cross-client rejection, exact-source suppression/compensation, browser-role denial, legacy compatibility, and rollback after an injected later-operation failure.
+- Negative assertions capture the database error inside a nested block and raise the test-failure sentinel outside that handler. Each rejected operation is followed by canonical, audit-history, and ledger invariants proving no write escaped.
 - Static TypeScript migration tests enforce the intended ACL, fixed search path, locking, version checks, canonical writer reuse, and bounded publication design.
 - The SQL regression and Supabase security/performance advisors must run against an isolated database after migration review and before shared Preview application. They cannot validate an unapplied migration against the existing remote schema.
+
+## Disposable runtime gate
+
+Local Supabase execution requires Docker or Podman; neither is available on the current Windows host, and no standalone PostgreSQL or WSL runtime is installed. Shared Preview must not become the first execution target.
+
+The smallest safe hosted route is a temporary Supabase development branch of Continuum Preview (schema only, no Production data): apply repository migrations through the proposed migration, execute `supabase/tests/sterling_transactional_canonical_approval.sql`, run database lint plus security/performance advisors, verify function/table ACLs, and delete the branch after retaining logs. Creating that branch may incur compute charges and therefore requires a separate founder authorization after the platform cost quote. The current Preview project has no existing development branch available for this test.

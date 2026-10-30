@@ -191,7 +191,7 @@ export function prepareSterlingCanonicalApprovals(input: {
 /** Exact retained-source suppression; broad names are deliberately not accepted. */
 export function prepareSterlingSourceSuppression(input: Omit<SterlingSourceSuppressionApproval, "approvalId" | "version" | "kind" | "action" | "requiresFounderApproval">): SterlingSourceSuppressionApproval | null {
   const refs = [...new Set(input.sourceRefs.map((row) => row.trim()).filter(Boolean))].sort();
-  if (!/^[0-9a-f]{64}$/i.test(input.candidateId) || refs.length === 0 || !/^[0-9a-f]{64}$/i.test(input.emailHash) ||
+  if (!/^[0-9a-f]{64}$/i.test(input.candidateId) || refs.length !== 1 || !/^[0-9a-f]{64}$/i.test(input.emailHash) ||
     !/^\d+$/.test(input.expectedRecordVersion) || !input.itemId.trim() || !input.workUnitId.trim() ||
     !input.label.trim() || !input.wording.trim()) return null;
   return {
@@ -209,7 +209,7 @@ export function prepareSterlingSourceSuppression(input: Omit<SterlingSourceSuppr
 export function prepareSterlingSourceSuppressionCompensation(input: Omit<SterlingSourceSuppressionCompensation, "approvalId" | "version" | "kind" | "action" | "requiresFounderApproval">): SterlingSourceSuppressionCompensation | null {
   const refs = [...new Set(input.sourceRefs.map((row) => row.trim()).filter(Boolean))].sort();
   if (!/^[0-9a-f]{64}$/i.test(input.candidateId) || !/^[0-9a-f]{64}$/i.test(input.emailHash) ||
-    !/^\d+$/.test(input.expectedRecordVersion) || refs.length === 0 ||
+    !/^\d+$/.test(input.expectedRecordVersion) || refs.length !== 1 ||
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(input.compensatesProposalId)) return null;
   return {
     ...input,

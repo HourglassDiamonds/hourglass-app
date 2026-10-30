@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
   isCanonicalApprovalPayload,
+  sourceSuppressionBindingError,
   SupabaseSterlingCanonicalApprovalRepository,
 } from "./canonical-approval-repository";
 import type { SterlingCanonicalApprovalEnvelope } from "./canonical-approval-adapter";
@@ -108,5 +109,35 @@ describe("Sterling canonical approval repository", () => {
       ...original,
       operations: [{ ...original.operations[0], projectId: 7 }],
     }), false);
+    assert.equal(isCanonicalApprovalPayload({
+      version: 1, kind: "source_suppression", action: "suppress",
+      approvalId: original.approvalId, candidateId: "b".repeat(64),
+      sourceRefs: ["gmail:thread:exact", "gmail:thread:unrelated"], emailHash: "a".repeat(64),
+      expectedRecordVersion: "1", disposition: "spam", itemId: "source:item",
+      workUnitId: "source:thread", cadIds: [], label: "Daniel", wording: "Rejected",
+      requiresFounderApproval: true,
+    }), false);
+  });
+
+  it("fails source suppression closed when the Candidate lacks retained verified email identity", () => {
+    const suppression = {
+      version: 1 as const, kind: "source_suppression" as const, action: "suppress" as const,
+      approvalId: original.approvalId, candidateId: "b".repeat(64), sourceRefs: ["gmail:thread:exact"],
+      emailHash: "a".repeat(64), expectedRecordVersion: "1", disposition: "spam" as const,
+      itemId: "source:item", workUnitId: "source:thread", cadIds: [], label: "Daniel",
+      wording: "Rejected", requiresFounderApproval: true as const,
+    };
+    assert.equal(sourceSuppressionBindingError(suppression, {
+      source_system: "gmail", source_ref: "gmail:thread:exact", record_version: 1,
+      payload: { kind: "person_association", emailHash: "a".repeat(64) },
+    }), null);
+    assert.equal(sourceSuppressionBindingError(suppression, {
+      source_system: "gmail", source_ref: "gmail:thread:exact", record_version: 1,
+      payload: { kind: "open_job", jobKind: "required_action" },
+    }), "candidate-email-identity-unsupported");
+    assert.equal(sourceSuppressionBindingError(suppression, {
+      source_system: "gmail", source_ref: "gmail:thread:other", record_version: 1,
+      payload: { kind: "person_association", emailHash: "a".repeat(64) },
+    }), "candidate-source-ref-mismatch");
   });
 });

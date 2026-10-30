@@ -107,6 +107,14 @@ export class SupabaseSterlingCanonicalApprovalRepository {
 
   async create(payload: SterlingCanonicalApprovalPayload, metadata: CanonicalApprovalMetadata) {
     if (!isCanonicalApprovalPayload(payload)) throw new Error("invalid-canonical-approval-payload");
+    if (payload.kind === "source_suppression") {
+      const candidate = await this.client.from("continuum_candidates")
+        .select("candidate_id, source_system, source_ref, payload, record_version")
+        .eq("candidate_id", payload.candidateId).maybeSingle();
+      if (candidate.error || !candidate.data) throw new Error("candidate-not-found");
+      const bindingError = sourceSuppressionBindingError(payload, candidate.data as Record<string, unknown>);
+      if (bindingError) throw new Error(bindingError);
+    }
     const affectedEntityType = payload.kind === "canonical_change_set" ? "project" : "candidate";
     const affectedEntityId = payload.kind === "canonical_change_set" ? payload.projectId : payload.candidateId;
     const row = {
@@ -206,6 +214,22 @@ export class SupabaseSterlingCanonicalApprovalRepository {
   }
 }
 
+/** Fail closed before founder review as well as inside the database executor. */
+export function sourceSuppressionBindingError(
+  payload: SterlingSourceSuppressionApproval | SterlingSourceSuppressionCompensation,
+  candidate: Record<string, unknown>,
+): string | null {
+  if (candidate.source_system !== "gmail") return "candidate-source-mismatch";
+  if (payload.sourceRefs.length !== 1 || payload.sourceRefs[0] !== candidate.source_ref) {
+    return "candidate-source-ref-mismatch";
+  }
+  if (String(candidate.record_version) !== payload.expectedRecordVersion) return "stale-candidate-version";
+  const candidatePayload = isRecord(candidate.payload) ? candidate.payload : null;
+  if (candidatePayload?.kind !== "person_association") return "candidate-email-identity-unsupported";
+  if (candidatePayload.emailHash !== payload.emailHash) return "candidate-email-hash-mismatch";
+  return null;
+}
+
 function rowToCanonicalApproval(row: Record<string, unknown>): CanonicalApprovalRow {
   if (!isCanonicalApprovalPayload(row.original_proposal)) throw new Error("invalid-canonical-approval-row");
   const approved = row.approved_payload == null ? null : row.approved_payload;
@@ -240,7 +264,7 @@ export function isCanonicalApprovalPayload(value: unknown): value is SterlingCan
       value.operations.every((operation) => isCanonicalOperation(operation) && operation.projectId === value.projectId);
   }
   if (value.kind !== "source_suppression" || (value.action !== "suppress" && value.action !== "restore")) return false;
-  if (!sha256(value.candidateId) || !stringArray(value.sourceRefs) || value.sourceRefs.length === 0 ||
+  if (!sha256(value.candidateId) || !stringArray(value.sourceRefs) || value.sourceRefs.length !== 1 ||
     !sha256(value.emailHash) || !positiveIntegerString(value.expectedRecordVersion) ||
     (value.disposition !== "spam" && value.disposition !== "terminal")) return false;
   return value.action === "restore"

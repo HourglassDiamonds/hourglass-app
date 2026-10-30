@@ -62,6 +62,7 @@ describe("Sterling canonical approval preparation", () => {
   it("requires candidate, exact source refs, verified hash, and version for suppression", () => {
     const input = { candidateId: "b".repeat(64), sourceRefs: ["gmail:thread:exact"], emailHash: "a".repeat(64), expectedRecordVersion: "1", disposition: "spam" as const, itemId: "source:item", workUnitId: "source:thread", cadIds: [], label: "Daniel Iles", wording: "Rejected junk." };
     assert.equal(prepareSterlingSourceSuppression({ ...input, sourceRefs: [] }), null);
+    assert.equal(prepareSterlingSourceSuppression({ ...input, sourceRefs: [...input.sourceRefs, "gmail:thread:unrelated"] }), null);
     const prepared = prepareSterlingSourceSuppression(input);
     assert.equal(prepared?.requiresFounderApproval, true);
     assert.deepEqual(prepared?.sourceRefs, ["gmail:thread:exact"]);
@@ -71,5 +72,10 @@ describe("Sterling canonical approval preparation", () => {
       compensatesProposalId: prepared!.approvalId,
     });
     assert.equal(restored?.action, "restore");
+    assert.equal(prepareSterlingSourceSuppressionCompensation({
+      candidateId: input.candidateId, sourceRefs: [...input.sourceRefs, "gmail:thread:unrelated"],
+      emailHash: input.emailHash, expectedRecordVersion: "2", disposition: "spam",
+      compensatesProposalId: prepared!.approvalId,
+    }), null);
   });
 });

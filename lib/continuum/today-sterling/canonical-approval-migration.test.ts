@@ -30,6 +30,7 @@ describe("Sterling transactional canonical approval migration", () => {
     assert.match(sql, /continuum_candidates[\s\S]*add column record_version bigint not null default 1/i);
     assert.match(sql, /immutable-proposal-payload/i);
     assert.match(sql, /immutable-founder-decision/i);
+    assert.match(sql, /old\.proposal_type in \('canonical_change_set', 'source_suppression'\)[\s\S]*immutable-founder-decision/i);
     assert.match(sql, /approved-payload-fingerprint-mismatch/i);
     assert.match(sql, /order by person\.person_id[\s\S]*for key share/i);
     assert.match(sql, /order by job\.job_id[\s\S]*for update/i);
@@ -41,6 +42,8 @@ describe("Sterling transactional canonical approval migration", () => {
     assert.match(sql, /public\.continuum_write_project_job/i);
     assert.match(sql, /operation_kind not in \('set_project_lifecycle','update_open_job_holder','resolve_open_job','cancel_open_job'\)/i);
     assert.match(sql, /continuum_candidate_suppression_events/i);
+    assert.match(sql, /jsonb_array_length\(source_refs\) <> 1/i);
+    assert.match(sql, /candidate-email-identity-unsupported/i);
   });
 
   it("keeps page publication durable, expiring, and separate from model execution", async () => {
@@ -64,7 +67,13 @@ describe("Sterling transactional canonical approval migration", () => {
       "injected-late-operation-failure",
       "partial history escaped rollback",
       "suppression compensation failed",
+      "legacy defer-to-approve compatibility failed",
+      "candidate-source-ref-mismatch",
+      "candidate-email-identity-unsupported",
     ]) assert.match(sql, new RegExp(expected));
+    assert.match(sql, /test_expect_database_error/i);
+    assert.doesNotMatch(sql, /raise exception 'expected (?:founder|approval|person|stale|injected)/i);
+    assert.match(sql, /approved_payload=original_proposal[\s\S]*executed_payload=approved_payload/i);
     assert.match(sql, /set local role anon/i);
     assert.match(sql, /rollback;\s*$/i);
   });

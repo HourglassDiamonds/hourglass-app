@@ -147,7 +147,11 @@ begin
     raise exception 'immutable-proposal-payload';
   end if;
 
-  if old.founder_decision is not null and (
+  -- Legacy proposal workflows permit a deferred decision to be replaced by a
+  -- later founder decision. Canonical decisions are one-way because their
+  -- exact approved payload is the execution authority.
+  if old.proposal_type in ('canonical_change_set', 'source_suppression')
+    and old.founder_decision is not null and (
     new.founder_decision is distinct from old.founder_decision
     or new.founder_decision_at is distinct from old.founder_decision_at
     or new.founder_decision_note is distinct from old.founder_decision_note
@@ -159,7 +163,8 @@ begin
     raise exception 'immutable-founder-decision';
   end if;
 
-  if old.execution_status = 'executed' and (
+  if old.proposal_type in ('canonical_change_set', 'source_suppression')
+    and old.execution_status = 'executed' and (
     new.execution_status is distinct from old.execution_status
     or new.canonical_mutation_id is distinct from old.canonical_mutation_id
     or new.executed_payload is distinct from old.executed_payload
@@ -436,9 +441,8 @@ begin
 
   fingerprint := continuum_private.jsonb_sha256(p_approved_payload);
 
-  if proposal.status in ('approved', 'edited_and_approved') then
-    if proposal.status = p_decision
-      and proposal.founder_decision = p_decision
+  if proposal.founder_decision in ('approved', 'edited_and_approved') then
+    if proposal.founder_decision = p_decision
       and proposal.approved_payload = p_approved_payload
       and proposal.approved_payload_fingerprint = fingerprint then
       return jsonb_build_object(
@@ -554,7 +558,6 @@ declare
   job_id uuid;
   source_refs jsonb;
   source_ref text;
-  source_match boolean;
   current_email_hash text;
   action_name text;
   prior_candidate jsonb;
@@ -850,15 +853,18 @@ begin
     if candidate.record_version <> (payload->>'expectedRecordVersion')::bigint then
       raise exception 'stale-candidate-version';
     end if;
-    source_match := exists (
-      select 1 from jsonb_array_elements_text(source_refs) value
-      where value = candidate.source_ref
-    );
-    if not source_match then raise exception 'candidate-source-ref-mismatch'; end if;
-    current_email_hash := case
-      when candidate.payload->>'kind' = 'person_association' then candidate.payload->>'emailHash'
-      else null
-    end;
+    -- A Candidate owns one canonical source_ref. Suppression may not carry
+    -- additional unrelated refs, even when one supplied ref happens to match.
+    if jsonb_array_length(source_refs) <> 1
+      or source_refs->>0 is distinct from candidate.source_ref then
+      raise exception 'candidate-source-ref-mismatch';
+    end if;
+    -- person_association is currently the only Candidate payload that retains
+    -- a verified sender hash. open_job and other payloads fail closed.
+    if candidate.payload->>'kind' <> 'person_association' then
+      raise exception 'candidate-email-identity-unsupported';
+    end if;
+    current_email_hash := candidate.payload->>'emailHash';
     if current_email_hash is distinct from payload->>'emailHash' then
       raise exception 'candidate-email-hash-mismatch';
     end if;
