@@ -77,7 +77,7 @@ test("just-in-time Tonal plans and completion screenshots remain editable and ex
 });
 
 test("mobile completion selection stays available while canonical completion remains match-gated", () => {
-  assert.match(source, /Add After Photo<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\}/);
+  assert.match(source, /Add After Photo · after workout<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\}/);
   assert.match(source, /Training schedule/);
   assert.match(source, /Today · upcoming · history/);
   assert.match(source, /data-unified-workout-cards/);
@@ -97,6 +97,15 @@ test("mobile completion selection stays available while canonical completion rem
   assert.match(css, /\.workoutControls[^}]*grid-template-columns/);
   assert.match(css, /\.workoutCardSelected/);
   assert.doesNotMatch(source, /Today is resolved/);
+});
+
+test("Tonal evidence controls present Before as the first step without weakening After gates", () => {
+  assert.match(source, /Add Before Photo\{!selectedWorkoutTonalSession\.plannedSource \? " · first step" : ""\}/);
+  assert.match(source, /selectedWorkoutTonalSession\.plannedSource && selectedWorkout\.date <= today \? styles\.primary/);
+  assert.match(source, /disabled=\{intakeBusy \|\| selectedWorkout\.date > today \|\| !selectedWorkoutTonalSession\.plannedSource\}/);
+  assert.match(source, /Add After Photo · after workout/);
+  assert.match(source, /Scheduled for \$\{prettyDate\(selectedWorkout\.date\)\}\. Approve the Before Photo first; After Photo opens on or after the scheduled workout date\./);
+  assert.match(source, /Step 1: approve the matching Before Photo\. Step 2: complete the workout, then add After Photo\./);
 });
 
 test("the unified card keeps Tonal and non-Tonal completion paths distinct", () => {
