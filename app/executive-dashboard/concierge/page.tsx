@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { loadPreviewIntegratedTodaySurface as loadTodaySurface } from "@/lib/continuum/today-sterling/publisher";
 import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
 import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";

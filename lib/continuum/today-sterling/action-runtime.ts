@@ -11,6 +11,7 @@ import {
 import {
   getSterlingTodayContinuityHmacKey,
   isSterlingTodayDurableLeaseAvailable,
+  isSterlingTodayPreviewPublisherEnabled,
   isSterlingTodaySarahSemanticFeatureEnabled,
   isSterlingTodaySemanticFeatureEnabled,
 } from "./server-config";
@@ -255,5 +256,36 @@ export async function runAuthenticatedSterlingTodaySemantic(): Promise<SterlingT
   } catch {
     await leaseStore.finish(lease.runId, "failed", new Date().toISOString()).catch(() => false);
     return safeFailure("semantic", "UNAVAILABLE", "semantic-run-unavailable");
+  }
+}
+
+/**
+ * Preview publisher bridge. It returns raw validated output only to server-side
+ * presentation code and never persists or applies canonical mutations.
+ */
+export async function loadAuthenticatedSterlingTodayPublisherProposal() {
+  if (!isSterlingTodayPreviewPublisherEnabled() ||
+    !isSterlingTodaySemanticFeatureEnabled() ||
+    !isSterlingTodayDurableLeaseAvailable()) return null;
+  const client = await authenticatedReadClient();
+  const apiKey = getConciergeOpenAiApiKey();
+  if (!client || !apiKey) return null;
+  const leaseStore = createSupabaseSterlingRunLeaseStore(client);
+  const lease = createSterlingRunLease({ mode: "semantic", scopeVersion: "sterling-today-preview-publisher-v1" });
+  const claim = await leaseStore.claim(lease);
+  if (claim !== "claimed") return null;
+  try {
+    const assembly = await assembleSterlingTodayShadow({ client });
+    const completion = await executeSterlingTodaySemantic({ assembly, apiKey });
+    await leaseStore.finish(lease.runId, "completed", new Date().toISOString());
+    const mutationsReviewable = completion.validation?.mutationValidations.every(
+      (row) => row.status === "approved_for_founder_review",
+    ) ?? false;
+    return completion.verdict === "PASS" && completion.validation?.accepted && mutationsReviewable
+      ? completion.proposal
+      : null;
+  } catch {
+    await leaseStore.finish(lease.runId, "failed", new Date().toISOString()).catch(() => false);
+    return null;
   }
 }
