@@ -277,8 +277,24 @@ function SemanticProposal({ state }: { state: NonNullable<SterlingTodayActionSta
         {state.proposal.portfolioAmbiguities.length ? <p className="text-[#d5a98c]">
           Portfolio uncertainty: {state.proposal.portfolioAmbiguities.join("; ")}
         </p> : null}
+        {state.proposal.canonicalMutationProposals.map((mutation) => (
+          <div key={mutation.proposalRef} className="rounded-xl border border-[#ad9164]/30 bg-[#ad9164]/5 p-4">
+            <p className="text-[#efe8de]">Canonical proposal · {mutation.kind.replaceAll("_", " ")}</p>
+            <p className="mt-2">{mutation.reason}</p>
+            <p className="mt-2">
+              Target: {mutation.targetLifecycleStage ?? mutation.targetJobState ??
+                mutation.targetResponsibleParty ?? "canonical record update"}
+            </p>
+            <p className="mt-2">Validation: {mutation.validationStatus.replaceAll("_", " ")}</p>
+            {mutation.validationReasons.length ? (
+              <p className="mt-2 text-[#d5a98c]">Blocked by: {mutation.validationReasons.join("; ")}</p>
+            ) : null}
+            <p className="mt-2 text-[11px] text-[#81766c]">Rollback: {mutation.rollback}</p>
+            <p className="mt-2 text-[11px] text-[#81766c]">Evidence: {mutation.citations.join(", ")}</p>
+          </div>
+        ))}
         <p className="text-[11px] text-[#81766c]">
-          Proposal only. Canonical mutations proposed: {state.proposal.mutationProposalCount}. Nothing was applied.
+          Founder review only. Canonical mutations proposed: {state.proposal.mutationProposalCount}. Nothing was applied or persisted.
         </p>
       </div>
     </div>

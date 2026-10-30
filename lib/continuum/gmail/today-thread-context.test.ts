@@ -307,6 +307,19 @@ describe("Today live Gmail rebuild batch", () => {
     }]);
   });
 
+  it("reports the batch initialization blocker instead of attributing it to every provider read", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      ["thread-a", { subject: "Indexed subject", messages: [] }],
+    ]);
+    const outcomes: TodayLiveThreadOutcome[] = [];
+    const result = await loadLiveTodayOperationalFacts(base, {
+      createBatchResult: async () => ({ ok: false, safeErrorCategory: "token-kek-missing" }),
+      onThreadOutcome: (outcome) => outcomes.push(outcome),
+    });
+    assert.equal(result.get("thread-a")?.subject, "Indexed subject");
+    assert.equal(outcomes[0]?.safeErrorCategory, "token-kek-missing");
+  });
+
   it("retains decoded non-operational current text without promoting provider fallback", async () => {
     const base = new Map<string, TodayGmailThreadContext>([["thread-context", { messages: [
       { messageId: "message-context", sentAt: "2026-10-21T12:00:00.000Z", direction: "inbound" },

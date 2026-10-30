@@ -5,6 +5,7 @@ import type {
   SterlingPortfolioAssessment,
   SterlingResponsibleParty,
   SterlingTodayCategory,
+  SterlingProposedCanonicalMutation,
   SterlingTodayProposal,
   SterlingTodayRecommendation,
   SterlingTodayWorkingSet,
@@ -59,6 +60,92 @@ function addEvidence(refs: readonly string[], evidenceId: string): string[] {
 
 function founderItemId(workUnitId: string, directiveId: string): string {
   return `founder:${createHash("sha256").update(`${workUnitId}|${directiveId}`).digest("hex").slice(0, 20)}`;
+}
+
+function founderMutationKey(directiveId: string, kind: string, targetId: string): string {
+  return `founder-mutation:${createHash("sha256").update(`${directiveId}|${kind}|${targetId}`).digest("hex").slice(0, 20)}`;
+}
+
+function founderCanonicalMutations(
+  workingSet: SterlingTodayWorkingSet,
+  directives: ReadonlyMap<string, FounderEvidence>,
+): SterlingProposedCanonicalMutation[] {
+  const mutations: SterlingProposedCanonicalMutation[] = [];
+  for (const [workUnitId, evidence] of directives) {
+    const unit = workingSet.workUnits.find((row) => row.workUnitId === workUnitId);
+    const project = unit?.projectId
+      ? workingSet.projects.find((row) => row.projectId === unit.projectId)
+      : null;
+    if (!project) continue;
+    const directive = evidence.founderDirective;
+    const base = {
+      projectId: project.projectId,
+      personId: null,
+      evidenceRefs: [evidence.evidenceId],
+      requiresFounderApproval: true as const,
+    };
+    if (directive.lifecycleStage != null && directive.lifecycleStage !== project.lifecycleStage) {
+      mutations.push({
+        ...base,
+        proposalKey: founderMutationKey(directive.directiveId, "set_project_lifecycle", project.projectId),
+        kind: "set_project_lifecycle",
+        jobId: null,
+        expectedRecordVersion: project.recordVersion,
+        targetLifecycleStage: directive.lifecycleStage,
+        targetJobState: null,
+        targetResponsibleParty: null,
+        newJob: null,
+        reason: "Founder-authoritative lifecycle correction; review before canonical application.",
+      });
+    }
+    const openJobs = workingSet.jobs.filter((job) => job.projectId === project.projectId &&
+      (job.state === "open" || job.state === "snoozed"));
+    const terminal = directive.disposition != null && TERMINAL_DISPOSITIONS.has(directive.disposition);
+    for (const job of openJobs) {
+      if (terminal) {
+        const completed = directive.disposition === "completed";
+        mutations.push({
+          ...base,
+          proposalKey: founderMutationKey(
+            directive.directiveId,
+            completed ? "resolve_open_job" : "cancel_open_job",
+            job.jobId,
+          ),
+          kind: completed ? "resolve_open_job" : "cancel_open_job",
+          jobId: job.jobId,
+          expectedRecordVersion: job.recordVersion,
+          targetLifecycleStage: null,
+          targetJobState: completed ? "resolved" : "cancelled",
+          targetResponsibleParty: null,
+          newJob: null,
+          reason: completed
+            ? "Founder-confirmed completion; review resolution of the remaining canonical open job."
+            : "Founder-confirmed terminal disposition; review cancellation of the stale canonical open job.",
+        });
+      } else if (directive.waitingOn && directive.waitingOn !== job.responsibleParty) {
+        mutations.push({
+          ...base,
+          proposalKey: founderMutationKey(directive.directiveId, "update_open_job_holder", job.jobId),
+          kind: "update_open_job_holder",
+          jobId: job.jobId,
+          expectedRecordVersion: job.recordVersion,
+          targetLifecycleStage: null,
+          targetJobState: null,
+          targetResponsibleParty: directive.waitingOn,
+          newJob: null,
+          reason: "Founder-authoritative waiting-on correction; review before canonical job update.",
+        });
+      }
+    }
+  }
+  return mutations;
+}
+
+function mutationAxis(mutation: SterlingProposedCanonicalMutation): string {
+  if (mutation.kind === "set_project_lifecycle") return `lifecycle:${mutation.projectId}`;
+  if (mutation.kind === "update_open_job_holder") return `holder:${mutation.jobId}`;
+  if (mutation.kind === "resolve_open_job" || mutation.kind === "cancel_open_job") return `job-state:${mutation.jobId}`;
+  return `create-job:${mutation.projectId}:${mutation.proposalKey}`;
 }
 
 function reconciledAssessment(
@@ -174,9 +261,15 @@ export function applySterlingFounderAuthority(
     });
     return recommendation ? [recommendation] : [];
   });
+  const founderMutations = founderCanonicalMutations(workingSet, directives);
+  const founderAxes = new Set(founderMutations.map(mutationAxis));
   return {
     ...proposal,
     portfolioAssessments: assessments,
     recommendations: [...untouched, ...enforced],
+    proposedCanonicalMutations: [
+      ...proposal.proposedCanonicalMutations.filter((mutation) => !founderAxes.has(mutationAxis(mutation))),
+      ...founderMutations,
+    ],
   };
 }

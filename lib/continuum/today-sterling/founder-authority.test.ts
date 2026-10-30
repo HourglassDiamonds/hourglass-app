@@ -13,6 +13,7 @@ import {
 
 const PROJECT_ID = "11111111-1111-4111-8111-111111111111";
 const PERSON_ID = "22222222-2222-4222-8222-222222222222";
+const JOB_ID = "33333333-3333-4333-8333-333333333333";
 
 function directiveEvidence(input: {
   id: string;
@@ -48,7 +49,10 @@ function directiveEvidence(input: {
   };
 }
 
-function workingSet(directives: readonly SterlingEvidence[]): SterlingTodayWorkingSet {
+function workingSet(
+  directives: readonly SterlingEvidence[],
+  options: { withOpenJob?: boolean; lifecycleStage?: "cad" | "production" | "completed" } = {},
+): SterlingTodayWorkingSet {
   return {
     contractVersion: STERLING_TODAY_WORKING_SET_VERSION,
     runId: "run-1",
@@ -61,14 +65,27 @@ function workingSet(directives: readonly SterlingEvidence[]): SterlingTodayWorki
       projectId: PROJECT_ID,
       title: "JP commission",
       projectKind: "custom_new_jewelry",
-      lifecycleStage: "cad",
+      lifecycleStage: options.lifecycleStage ?? "cad",
       recordVersion: "project-v1",
       people: [{ personId: PERSON_ID, relationshipRole: "client" }],
       specs: [],
-      openJobIds: [],
+      openJobIds: options.withOpenJob ? [JOB_ID] : [],
       gmailThreadIds: [],
     }],
-    jobs: [],
+    jobs: options.withOpenJob ? [{
+      jobId: JOB_ID,
+      projectId: PROJECT_ID,
+      associatedPersonId: PERSON_ID,
+      kind: "required_action",
+      subject: "Advance JP project",
+      detail: null,
+      responsibleParty: "founder",
+      state: "open",
+      dueAt: null,
+      deferredUntil: null,
+      sourceRef: directives[0]?.sourceRef ?? null,
+      recordVersion: "job-v1",
+    }] : [],
     evidence: directives,
     workUnits: [{
       workUnitId: `project:${PROJECT_ID}`,
@@ -183,6 +200,49 @@ describe("Sterling founder authority", () => {
     assert.equal(assessment.attentionPriority, "monitor");
     assert.equal(reconciled.recommendations[0]?.category, "waiting_on_client");
     assert.equal(validateSterlingTodayProposal(set, reconciled).accepted, true);
+  });
+
+  it("creates validated founder-review proposals for lifecycle and waiting-on corrections", () => {
+    const evidence = directiveEvidence({
+      id: "founder-production-shop",
+      at: "2026-10-30T13:00:00.000Z",
+      disposition: "active",
+      stage: "production",
+      waitingOn: "vendor_shop",
+      attention: "monitor",
+    });
+    const set = workingSet([evidence], { withOpenJob: true });
+    const reconciled = applySterlingFounderAuthority(set, proposal(evidence.evidenceId));
+    assert.deepEqual(
+      reconciled.proposedCanonicalMutations.map((row) => row.kind).sort(),
+      ["set_project_lifecycle", "update_open_job_holder"],
+    );
+    const validation = validateSterlingTodayProposal(set, reconciled);
+    assert.equal(validation.accepted, true);
+    assert.deepEqual(validation.mutationValidations.map((row) => row.status), [
+      "approved_for_founder_review",
+      "approved_for_founder_review",
+    ]);
+  });
+
+  it("proposes canonical completion and open-job resolution without applying either", () => {
+    const evidence = directiveEvidence({
+      id: "founder-complete",
+      at: "2026-10-30T13:00:00.000Z",
+      disposition: "completed",
+      stage: "completed",
+      waitingOn: "unknown",
+      attention: "no_attention",
+    });
+    const set = workingSet([evidence], { withOpenJob: true });
+    const reconciled = applySterlingFounderAuthority(set, proposal(evidence.evidenceId));
+    assert.deepEqual(
+      reconciled.proposedCanonicalMutations.map((row) => row.kind).sort(),
+      ["resolve_open_job", "set_project_lifecycle"],
+    );
+    assert.equal(validateSterlingTodayProposal(set, reconciled).mutationValidations.every(
+      (row) => row.status === "approved_for_founder_review",
+    ), true);
   });
 
   it("uses the newest founder directive and preserves contact type as a separate axis", () => {

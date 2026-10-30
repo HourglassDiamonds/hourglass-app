@@ -266,6 +266,20 @@ export type SterlingSafeSemanticProposal = {
   }[];
   portfolioAmbiguities: readonly string[];
   mutationProposalCount: number;
+  canonicalMutationProposals: readonly {
+    proposalRef: string;
+    kind: string;
+    projectRef: string | null;
+    jobRef: string | null;
+    targetLifecycleStage: string | null;
+    targetJobState: string | null;
+    targetResponsibleParty: string | null;
+    reason: string;
+    citations: readonly string[];
+    validationStatus: "approved_for_founder_review" | "rejected";
+    validationReasons: readonly string[];
+    rollback: string;
+  }[];
 };
 
 export type SterlingSafeWorkUnitCoverage = {
@@ -1052,6 +1066,9 @@ function safeSemanticProposal(completion: SterlingTodaySemanticCompletion): Ster
     const handle = handles.get(ref);
     return handle ? [handle] : [];
   });
+  const validationByKey = new Map(
+    completion.validation.mutationValidations.map((row) => [row.proposalKey, row] as const),
+  );
   return {
     assessments: completion.proposal.portfolioAssessments.map((assessment) => ({
       workUnitRef: opaqueWorkUnitRef(assessment.workUnitId),
@@ -1082,6 +1099,24 @@ function safeSemanticProposal(completion: SterlingTodaySemanticCompletion): Ster
     })),
     portfolioAmbiguities: completion.proposal.portfolioAmbiguities,
     mutationProposalCount: completion.proposal.proposedCanonicalMutations.length,
+    canonicalMutationProposals: completion.proposal.proposedCanonicalMutations.flatMap((mutation) => {
+      const validation = validationByKey.get(mutation.proposalKey);
+      if (!validation) return [];
+      return [{
+        proposalRef: opaqueWorkUnitRef(`mutation:${mutation.proposalKey}`),
+        kind: mutation.kind,
+        projectRef: mutation.projectId ? opaqueWorkUnitRef(`project:${mutation.projectId}`) : null,
+        jobRef: mutation.jobId ? opaqueWorkUnitRef(`job:${mutation.jobId}`) : null,
+        targetLifecycleStage: mutation.targetLifecycleStage,
+        targetJobState: mutation.targetJobState,
+        targetResponsibleParty: mutation.targetResponsibleParty,
+        reason: mutation.reason,
+        citations: citations(mutation.evidenceRefs),
+        validationStatus: validation.status,
+        validationReasons: validation.reasons,
+        rollback: validation.rollback,
+      }];
+    }),
   };
 }
 

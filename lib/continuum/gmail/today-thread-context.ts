@@ -25,9 +25,10 @@ import {
 } from "./env";
 import { parseGmailFromHeader } from "./payload";
 import {
-  createLiveSourceViewerBatch,
+  createLiveSourceViewerBatchResult,
   executeLiveSourceViewerFetch,
   type LiveSourceViewerBatch,
+  type LiveSourceViewerBatchResult,
 } from "./source-viewer-run";
 import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-events/operational-facts";
 import { classifyLiveMessageExtraction } from "./live-extraction-diagnostics";
@@ -463,6 +464,7 @@ export async function loadLiveTodayOperationalFacts(
   base: ReadonlyMap<string, TodayGmailThreadContext>,
   options: {
     createBatch?: () => Promise<LiveSourceViewerBatch | null>;
+    createBatchResult?: () => Promise<LiveSourceViewerBatchResult>;
     requireComplete?: boolean;
     threadIds?: readonly string[];
     onDiagnostics?: (diagnostics: TodayLiveEnrichmentDiagnostics) => void;
@@ -563,17 +565,25 @@ export async function loadLiveTodayOperationalFacts(
       latestLiveMessageAt: null,
     });
   }
-  const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
+  let batch: LiveSourceViewerBatch | null;
+  let batchFailureCategory = "batch-unavailable";
+  if (options.createBatch) {
+    batch = await options.createBatch();
+  } else {
+    const result = await (options.createBatchResult ?? createLiveSourceViewerBatchResult)();
+    batch = result.ok ? result.batch : null;
+    if (!result.ok) batchFailureCategory = result.safeErrorCategory;
+  }
   if (!batch) {
     for (const threadId of attemptedThreadIds) {
       const current = out.get(threadId);
-      recordOutcome(current, false, "batch-unavailable");
+      recordOutcome(current, false, batchFailureCategory);
       emitThreadOutcome({
         threadId,
         status: "unavailable",
         indexedMessageCount: current?.messages?.length ?? 0,
         liveMessageCount: 0,
-        safeErrorCategory: "batch-unavailable",
+        safeErrorCategory: batchFailureCategory,
         latestIndexedMessageAt: latestTimestamp(current?.messages?.map((message) => message.sentAt) ?? []),
         latestLiveMessageAt: null,
       });
