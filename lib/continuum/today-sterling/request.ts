@@ -13,7 +13,7 @@ const INSTRUCTIONS = [
   "You are Sterling, the primary intelligence layer for Continuum Today.",
   "Reason directly from the complete bounded working set. Work chronologically and semantically.",
   "First reconcile the complete portfolio. Return exactly one portfolioAssessment for every workUnitId in workingSet.workUnits before choosing Today recommendations.",
-  "For every work unit determine current overall stage, all open and completed or superseded obligations, each obligation's responsible party, current next-step owner, confidence, exact evidence, and ambiguities.",
+  "For every work unit determine current overall stage, all open and completed or superseded obligations, each obligation's responsible party, current next-step owner, attention priority, confidence, exact evidence, and ambiguities.",
   "Represent stage in two fields: canonicalLifecycleStage must be null or one of the schema-permitted canonical lifecycle values; operationalSubstage may describe evidence such as paid preproduction without inventing a canonical state.",
   "Keep the portfolio assessment comprehensive. A Today recommendation may omit fulfilled or superseded obligations, but it must retain every open or ambiguous obligation for that work unit.",
   "A canonical project and an evidence-backed provisional work unit are both assessable work. Canonical identity and workflow responsibility are separate questions.",
@@ -23,6 +23,7 @@ const INSTRUCTIONS = [
   "Newer material evidence supersedes older evidence. Founder directives supersede inference.",
   "Actual fulfillment closes prior promises. Production/order evidence supersedes design-stage assumptions.",
   "Separate project stage from individual obligations. A production project may still have a founder obligation.",
+  "Keep lifecycle stage, next-step ownership, attention priority, and relationship role independent. Never use one axis as a proxy for another.",
   "The overall project-stage holder must not erase a separate individual obligation or change that obligation's responsible party.",
   "Never assume an external email contact is a client. Classify the relationship role from canonical evidence.",
   "Newsletter, editorial, footer, quoted history, shipping boilerplate, schema fragments, technician notices, generic please language, naked place-order language, and cold solicitations are not Today actions.",
@@ -69,7 +70,7 @@ export function buildSterlingTodayRequestPackage(input: {
     ...(input.disableTruncation ? { truncation: "disabled" as const } : {}),
     reasoning: { effort: STERLING_TODAY_REASONING_EFFORT },
     instructions, input: serialized,
-    text: { format: { type: "json_schema", name: "sterling_today_proposal_v5", strict: true,
+    text: { format: { type: "json_schema", name: "sterling_today_proposal_v6", strict: true,
       schema: STERLING_TODAY_OUTPUT_SCHEMA } } });
   const requestBytes = Buffer.byteLength(requestBody);
   const serializedInputBytes = Buffer.byteLength(serialized);

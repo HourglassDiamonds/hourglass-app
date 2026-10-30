@@ -1,5 +1,5 @@
 import {
-  STERLING_MUTATION_KINDS, STERLING_RELATIONSHIP_PROPOSAL_KINDS, STERLING_RELATIONSHIP_ROLES, STERLING_RESPONSIBLE_PARTIES,
+  STERLING_ATTENTION_PRIORITIES, STERLING_MUTATION_KINDS, STERLING_RELATIONSHIP_PROPOSAL_KINDS, STERLING_RELATIONSHIP_ROLES, STERLING_RESPONSIBLE_PARTIES,
   STERLING_TODAY_CATEGORIES, STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal,
 } from "./types";
 import { CUSTOM_LIFECYCLE_STAGES, REPAIR_LIFECYCLE_STAGES } from "@/lib/continuum/client-memory/project-lifecycle";
@@ -10,6 +10,7 @@ const nullableLifecycleStage = { type: ["string", "null"], enum: [...lifecycleSt
 const stringArray = { type: "array", items: { type: "string" } } as const;
 const confidence = { type: "string", enum: ["high", "medium", "low"] } as const;
 const responsibleParty = { type: "string", enum: STERLING_RESPONSIBLE_PARTIES } as const;
+const attentionPriority = { type: "string", enum: STERLING_ATTENTION_PRIORITIES } as const;
 const obligation = {
   type: "object", additionalProperties: false,
   properties: { obligationId: { type: "string" }, description: { type: "string" },
@@ -32,11 +33,11 @@ const portfolioAssessment = {
     recommendationItemId: nullableString,
     currentStage: stageAssessment,
     obligations: { type: "array", items: obligation },
-    nextStepOwner: responsibleParty, confidence, evidenceRefs: stringArray, ambiguities: stringArray,
+    nextStepOwner: responsibleParty, attentionPriority, confidence, evidenceRefs: stringArray, ambiguities: stringArray,
     explanation: { type: "string" }, omissionReason: nullableString,
   },
   required: ["workUnitId", "projectId", "identityStatus", "todayDisposition", "recommendationItemId",
-    "currentStage", "obligations", "nextStepOwner", "confidence", "evidenceRefs", "ambiguities",
+    "currentStage", "obligations", "nextStepOwner", "attentionPriority", "confidence", "evidenceRefs", "ambiguities",
     "explanation", "omissionReason"],
 } as const;
 const recommendation = {
@@ -45,12 +46,12 @@ const recommendation = {
     itemId: { type: "string" }, workUnitId: { type: "string" }, category: { type: "string", enum: STERLING_TODAY_CATEGORIES },
     projectId: nullableString, personId: nullableString,
     relationshipRole: { type: "string", enum: STERLING_RELATIONSHIP_ROLES }, title: { type: "string" },
-    summary: { type: "string" }, confidence, explanation: { type: "string" },
+    summary: { type: "string" }, attentionPriority, confidence, explanation: { type: "string" },
     evidenceRefs: stringArray, ambiguities: stringArray,
     obligations: { type: "array", items: obligation },
   },
   required: ["itemId", "workUnitId", "category", "projectId", "personId", "relationshipRole", "title", "summary",
-    "confidence", "explanation", "evidenceRefs", "ambiguities", "obligations"],
+    "attentionPriority", "confidence", "explanation", "evidenceRefs", "ambiguities", "obligations"],
 } as const;
 const mutation = {
   type: "object", additionalProperties: false,
@@ -122,7 +123,8 @@ function validPortfolioAssessment(v: unknown): boolean {
     oneOf(v.identityStatus, ["canonical_project", "provisional_evidence", "unresolved_identity"] as const) &&
     oneOf(v.todayDisposition, ["presented", "suppressed", "ambiguous"] as const) && nullable(v.recommendationItemId) &&
     validStageAssessment(v.currentStage) && Array.isArray(v.obligations) && v.obligations.every(validObligation) &&
-    oneOf(v.nextStepOwner, STERLING_RESPONSIBLE_PARTIES) && oneOf(v.confidence, ["high", "medium", "low"] as const) &&
+    oneOf(v.nextStepOwner, STERLING_RESPONSIBLE_PARTIES) && oneOf(v.attentionPriority, STERLING_ATTENTION_PRIORITIES) &&
+    oneOf(v.confidence, ["high", "medium", "low"] as const) &&
     strings(v.evidenceRefs) && strings(v.ambiguities) && typeof v.explanation === "string" && nullable(v.omissionReason);
 }
 function validRecommendation(v: unknown): boolean {
@@ -131,7 +133,8 @@ function validRecommendation(v: unknown): boolean {
     typeof v.itemId === "string" && typeof v.workUnitId === "string" &&
     oneOf(v.category, STERLING_TODAY_CATEGORIES) && nullable(v.projectId) &&
     nullable(v.personId) && oneOf(v.relationshipRole, STERLING_RELATIONSHIP_ROLES) && typeof v.title === "string" &&
-    typeof v.summary === "string" && oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" &&
+    typeof v.summary === "string" && oneOf(v.attentionPriority, STERLING_ATTENTION_PRIORITIES) &&
+    oneOf(v.confidence, ["high", "medium", "low"] as const) && typeof v.explanation === "string" &&
     strings(v.evidenceRefs) && strings(v.ambiguities) &&
     Array.isArray(v.obligations) && v.obligations.every(validObligation);
 }

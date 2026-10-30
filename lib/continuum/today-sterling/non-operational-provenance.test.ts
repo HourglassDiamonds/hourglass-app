@@ -293,6 +293,7 @@ describe("Sterling verified non-operational provenance", () => {
           explanation: "Context alone cannot establish an operational change.", evidenceRefs: [contextual.evidenceId] },
         obligations: [],
         nextStepOwner: "unknown",
+        attentionPriority: "no_attention",
         confidence: "low",
         evidenceRefs: [contextual.evidenceId],
         ambiguities: ["Operational status is not established by this acknowledgment."],
