@@ -44,6 +44,8 @@ describe("Sterling transactional canonical approval migration", () => {
     assert.match(sql, /continuum_candidate_suppression_events/i);
     assert.match(sql, /jsonb_array_length\(source_refs\) <> 1/i);
     assert.match(sql, /candidate-email-identity-unsupported/i);
+    assert.match(sql, /from public\.continuum_candidate_suppression_events suppression_history/i);
+    assert.match(sql, /suppression_history\.operation = 'suppress'/i);
   });
 
   it("keeps page publication durable, expiring, and separate from model execution", async () => {
@@ -69,12 +71,18 @@ describe("Sterling transactional canonical approval migration", () => {
       "suppression compensation failed",
       "legacy defer-to-approve compatibility failed",
       "candidate-source-ref-mismatch",
+      "candidate-email-hash-mismatch",
       "candidate-email-identity-unsupported",
+      "suppression compensation history lookup failed",
+      "successful lifecycle operation failed",
+      "successful Job resolution failed",
     ]) assert.match(sql, new RegExp(expected));
     assert.match(sql, /test_expect_database_error/i);
     assert.doesNotMatch(sql, /raise exception 'expected (?:founder|approval|person|stale|injected)/i);
     assert.match(sql, /approved_payload=original_proposal[\s\S]*executed_payload=approved_payload/i);
     assert.match(sql, /set local role anon/i);
+    assert.match(sql, /STERLING_TRANSACTIONAL_CANONICAL_APPROVAL_REGRESSION_PASS/);
+    assert.match(sql, /regression_completion_marker;[\s\S]*rollback;\s*$/i);
     assert.match(sql, /rollback;\s*$/i);
   });
 });

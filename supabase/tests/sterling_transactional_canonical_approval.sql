@@ -218,6 +218,27 @@ do $$ begin
  if exists (select 1 from public.continuum_candidate_suppression_events where proposal_id='76000000-0000-4000-8000-000000000010') then raise exception 'extra-source rejection wrote audit'; end if;
 end $$;
 
+-- A correct source reference with the wrong verified sender hash must also fail
+-- without changing the Candidate or writing suppression history.
+select continuum_private.test_insert_sterling_approval(
+ '76000000-0000-4000-8000-000000000012','source_suppression','candidate',repeat('d',64),
+ jsonb_build_object('version',1,'kind','source_suppression','action','suppress','approvalId','76000000-0000-4000-8000-000000000012',
+  'candidateId',repeat('d',64),'sourceRefs',jsonb_build_array('gc1|face000000000001|face000000000002'),
+  'emailHash',repeat('f',64),'expectedRecordVersion','1','disposition','spam','itemId','source:wrong-email',
+  'workUnitId','source:face000000000001','cadIds','[]'::jsonb,'label','Daniel Iles','wording','Wrong email hash.','requiresFounderApproval',true));
+set local role service_role;
+select public.continuum_sterling_record_canonical_decision('76000000-0000-4000-8000-000000000012',1,'approved',original_proposal,'2026-10-30T16:06:42Z','founder',null)
+from public.continuum_sterling_proposals where proposal_id='76000000-0000-4000-8000-000000000012';
+select continuum_private.test_expect_database_error(
+ $$select public.continuum_sterling_execute_approved_change_set('76000000-0000-4000-8000-000000000012',2,'founder','2026-10-30T16:06:44Z')$$,
+ 'candidate-email-hash-mismatch'
+);
+reset role;
+do $$ begin
+ if not exists (select 1 from public.continuum_candidates where candidate_id=repeat('d',64) and record_version=1 and review_status='pending' and founder_edited_target is null) then raise exception 'email-hash rejection changed candidate'; end if;
+ if exists (select 1 from public.continuum_candidate_suppression_events where proposal_id='76000000-0000-4000-8000-000000000012') then raise exception 'email-hash rejection wrote audit'; end if;
+end $$;
+
 -- open_job Candidates do not currently retain a verified sender hash. A
 -- caller-provided hash is insufficient and must fail closed.
 select continuum_private.test_insert_sterling_approval(
@@ -270,6 +291,19 @@ select public.continuum_sterling_execute_approved_change_set('76000000-0000-4000
 reset role;
 do $$ begin
  if not exists (select 1 from public.continuum_candidates where candidate_id=repeat('d',64) and record_version=3 and review_status='pending' and founder_edited_target is null) then raise exception 'suppression compensation failed'; end if;
+ if not exists (
+   select 1
+   from public.continuum_candidate_suppression_events restore_event
+   join public.continuum_candidate_suppression_events suppression_history
+     on suppression_history.proposal_id = restore_event.compensates_proposal_id
+    and suppression_history.candidate_id = restore_event.candidate_id
+    and suppression_history.operation = 'suppress'
+   where restore_event.proposal_id = '76000000-0000-4000-8000-000000000004'
+     and restore_event.operation = 'restore'
+     and restore_event.compensates_proposal_id = '76000000-0000-4000-8000-000000000003'
+     and restore_event.source_refs = suppression_history.source_refs
+     and restore_event.email_hash = suppression_history.email_hash
+ ) then raise exception 'suppression compensation history lookup failed'; end if;
 end $$;
 
 -- Injected later-operation failure proves all earlier canonical/history writes roll back.
@@ -297,6 +331,24 @@ do $$ begin
 end $$;
 drop trigger sterling_test_late_failure on public.continuum_project_lifecycle_states;
 drop function continuum_private.test_reject_completed_lifecycle();
+
+-- After rollback is proven, execute successful lifecycle and Job resolution
+-- operations and require their canonical and audit rows to agree.
+select continuum_private.test_insert_sterling_approval(
+ '76000000-0000-4000-8000-000000000013','canonical_change_set','project','72000000-0000-4000-8000-000000000001',
+ '{"version":1,"kind":"canonical_change_set","approvalId":"76000000-0000-4000-8000-000000000013","projectId":"72000000-0000-4000-8000-000000000001","projectKind":"custom_new_jewelry","evidenceRefs":["founder:test"],"sourceWatermark":"test","requiresFounderApproval":true,"operations":[{"operationId":"77000000-0000-4000-8000-000000000013","kind":"set_project_lifecycle","projectId":"72000000-0000-4000-8000-000000000001","personId":"71000000-0000-4000-8000-000000000001","expectedRecordVersion":"2026-10-30T15:00:00Z","expectedCurrentStage":"cad","targetLifecycleStage":"production","evidenceRefs":["founder:test"]},{"operationId":"77000000-0000-4000-8000-000000000014","kind":"resolve_open_job","projectId":"72000000-0000-4000-8000-000000000001","personId":"71000000-0000-4000-8000-000000000001","jobId":"74000000-0000-4000-8000-000000000001","expectedRecordVersion":"2026-10-30T16:03:00Z","evidenceRefs":["founder:test"]}]}'::jsonb);
+set local role service_role;
+select public.continuum_sterling_record_canonical_decision('76000000-0000-4000-8000-000000000013',1,'approved',original_proposal,'2026-10-30T16:12:15Z','founder',null)
+from public.continuum_sterling_proposals where proposal_id='76000000-0000-4000-8000-000000000013';
+select public.continuum_sterling_execute_approved_change_set('76000000-0000-4000-8000-000000000013',2,'founder','2026-10-30T16:12:30Z');
+reset role;
+do $$ begin
+ if not exists (select 1 from public.continuum_project_lifecycle_states where project_id='72000000-0000-4000-8000-000000000001' and project_kind='custom_new_jewelry' and stage='production' and updated_at='2026-10-30T16:12:30Z') then raise exception 'successful lifecycle operation failed'; end if;
+ if not exists (select 1 from public.continuum_project_lifecycle_events where mutation_id='77000000-0000-4000-8000-000000000013' and prior_stage='cad' and new_stage='production') then raise exception 'successful lifecycle history missing'; end if;
+ if not exists (select 1 from public.continuum_project_jobs where job_id='74000000-0000-4000-8000-000000000001' and state='resolved' and resolved_at='2026-10-30T16:12:30Z') then raise exception 'successful Job resolution failed'; end if;
+ if not exists (select 1 from public.continuum_project_job_mutations where mutation_id='77000000-0000-4000-8000-000000000014' and prior_state='open' and new_state='resolved') then raise exception 'successful Job resolution history missing'; end if;
+ if not exists (select 1 from public.continuum_sterling_proposals where proposal_id='76000000-0000-4000-8000-000000000013' and status='executed' and execution_status='executed') then raise exception 'successful canonical operation ledger missing'; end if;
+end $$;
 
 -- Existing ledger shape remains compatible.
 insert into public.continuum_sterling_proposals (
@@ -344,5 +396,8 @@ do $$ begin
  raise exception 'anon unexpectedly executed privileged function';
 exception when insufficient_privilege then null; end $$;
 reset role;
+
+select 'STERLING_TRANSACTIONAL_CANONICAL_APPROVAL_REGRESSION_PASS'::text
+  as regression_completion_marker;
 
 rollback;

@@ -900,10 +900,10 @@ begin
         raise exception 'invalid-compensation-reference';
       end if;
       select * into suppression_event
-      from public.continuum_candidate_suppression_events
-      where proposal_id = (payload->>'compensatesProposalId')::uuid
-        and candidate_id = candidate.candidate_id
-        and operation = 'suppress'
+      from public.continuum_candidate_suppression_events suppression_history
+      where suppression_history.proposal_id = (payload->>'compensatesProposalId')::uuid
+        and suppression_history.candidate_id = candidate.candidate_id
+        and suppression_history.operation = 'suppress'
       for share;
       if not found then raise exception 'suppression-compensation-not-found'; end if;
       if candidate.founder_edited_target is distinct from suppression_event.resulting_founder_edited_target
