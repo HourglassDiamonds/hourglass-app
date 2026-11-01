@@ -10,6 +10,14 @@ const sqlTestUrl = new URL(
   "../../../supabase/tests/sterling_transactional_canonical_approval.sql",
   import.meta.url,
 );
+const aclMigrationUrl = new URL(
+  "../../../supabase/migrations/20261101213243_sterling_shared_preview_acl_hardening.sql",
+  import.meta.url,
+);
+const aclSqlTestUrl = new URL(
+  "../../../supabase/tests/sterling_shared_preview_acl_hardening.sql",
+  import.meta.url,
+);
 
 describe("Sterling transactional canonical approval migration", () => {
   it("uses private definers, fixed search paths, and service-role-only wrappers", async () => {
@@ -55,6 +63,7 @@ describe("Sterling transactional canonical approval migration", () => {
     assert.match(sql, /continuum_sterling_today_one_active_publication_idx/i);
     assert.match(sql, /continuum_publish_sterling_today/i);
     assert.match(sql, /publication-fingerprint-mismatch/i);
+    assert.match(sql, /update public\.continuum_sterling_today_publications[\s\S]*set status = 'superseded'[\s\S]*where status = 'active'/i);
   });
 
   it("ships an executable disposable-DB regression covering the safety cases", async () => {
@@ -84,5 +93,37 @@ describe("Sterling transactional canonical approval migration", () => {
     assert.match(sql, /STERLING_TRANSACTIONAL_CANONICAL_APPROVAL_REGRESSION_PASS/);
     assert.match(sql, /regression_completion_marker;[\s\S]*rollback;\s*$/i);
     assert.match(sql, /rollback;\s*$/i);
+  });
+
+  it("hardens only the two Sterling table ACLs with revoke-all then narrow grants", async () => {
+    const sql = await readFile(aclMigrationUrl, "utf8");
+    const statements = sql
+      .replace(/^--.*$/gm, "")
+      .split(";")
+      .map((statement) => statement.replace(/\s+/g, " ").trim().toLowerCase())
+      .filter(Boolean);
+
+    assert.deepEqual(statements, [
+      "revoke all on table public.continuum_candidate_suppression_events from public, anon, authenticated, service_role",
+      "grant select, insert on table public.continuum_candidate_suppression_events to service_role",
+      "revoke all on table public.continuum_sterling_today_publications from public, anon, authenticated, service_role",
+      "grant select, insert, update on table public.continuum_sterling_today_publications to service_role",
+    ]);
+  });
+
+  it("ships a read-only runtime regression for exact direct and effective ACLs", async () => {
+    const sql = await readFile(aclSqlTestUrl, "utf8");
+    assert.match(sql, /begin read only/i);
+    assert.match(sql, /pg_catalog\.has_table_privilege/i);
+    assert.match(sql, /pg_catalog\.aclexplode/i);
+    assert.match(sql, /pg_catalog\.pg_auth_members/i);
+    assert.match(sql, /'MAINTAIN'/);
+    assert.match(sql, /pg_catalog\.has_function_privilege/i);
+    assert.match(sql, /relrowsecurity/i);
+    assert.match(sql, /continuum_client_memory_set_project_lifecycle/i);
+    assert.match(sql, /continuum_write_project_job/i);
+    assert.match(sql, /STERLING_SHARED_PREVIEW_ACL_HARDENING_REGRESSION_PASS/);
+    assert.match(sql, /rollback;\s*$/i);
+    assert.doesNotMatch(sql, /^\s*(?:insert|update|delete|truncate|alter|create|drop|grant|revoke)\b/im);
   });
 });
