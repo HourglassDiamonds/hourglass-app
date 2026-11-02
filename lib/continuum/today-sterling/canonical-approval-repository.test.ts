@@ -28,18 +28,25 @@ const original: SterlingCanonicalApprovalEnvelope = {
   }],
 };
 
-function fakeClient() {
+function fakeClient(overrides: Record<string, unknown> = {}) {
   const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
   const row = {
     proposal_id: original.approvalId,
     proposal_type: original.kind,
     status: "proposed",
     record_version: 4,
+    created_at: "2026-10-30T16:00:00.000Z",
+    reasoning_summary: "Synthetic founder review fixture.",
+    evidence_refs: ["founder:test"],
     original_proposal: original,
     approved_payload: null,
     founder_decision: null,
+    founder_decision_at: null,
+    founder_decision_note: null,
+    founder_decided_by: null,
     execution_status: "not_requested",
     execution_receipt: null,
+    ...overrides,
   };
   const client = {
     from(table: string) {
@@ -100,6 +107,77 @@ describe("Sterling canonical approval repository", () => {
     });
     assert.deepEqual(result, { ok: false, reason: "invalid-approved-payload" });
     assert.equal(calls.length, 0);
+  });
+
+  it("recognizes only an exact already-executed approval replay", async () => {
+    const receipt = { version: 1, operations: [original.operations[0]?.operationId] };
+    const exact = fakeClient({
+      status: "executed",
+      record_version: 6,
+      approved_payload: original,
+      founder_decision: "approved",
+      founder_decision_at: "2026-10-30T17:00:00.000Z",
+      founder_decided_by: "founder",
+      execution_status: "executed",
+      execution_receipt: receipt,
+    });
+    const repository = new SupabaseSterlingCanonicalApprovalRepository(exact.client);
+    const replay = await repository.approveAndExecute({
+      proposalId: original.approvalId,
+      expectedRecordVersion: 4,
+      decision: "approved",
+      actor: "founder",
+      now: "2026-10-30T17:00:01.000Z",
+    });
+    assert.deepEqual(replay, { ok: true, status: "already-present", recordVersion: 6, receipt });
+    assert.equal(exact.calls.length, 0);
+
+    const conflict = await repository.approveAndExecute({
+      proposalId: original.approvalId,
+      expectedRecordVersion: 6,
+      decision: "edited_and_approved",
+      approvedPayload: { ...original, sourceWatermark: "conflicting-repeat" },
+      actor: "founder",
+      now: "2026-10-30T17:00:02.000Z",
+    });
+    assert.deepEqual(conflict, { ok: false, reason: "approval-idempotency-conflict" });
+    assert.equal(exact.calls.length, 0);
+  });
+
+  it("rejects stale rejection requests and recognizes only an exact rejection replay", async () => {
+    const stale = fakeClient();
+    const staleRepository = new SupabaseSterlingCanonicalApprovalRepository(stale.client);
+    assert.deepEqual(await staleRepository.reject({
+      proposalId: original.approvalId,
+      expectedRecordVersion: 3,
+      actor: "founder",
+      note: "Not supported",
+      now: "2026-10-30T17:00:00.000Z",
+    }), { ok: false, reason: "stale-ledger-version" });
+
+    const rejected = fakeClient({
+      status: "rejected",
+      record_version: 5,
+      founder_decision: "rejected",
+      founder_decision_at: "2026-10-30T17:00:00.000Z",
+      founder_decision_note: "Not supported",
+      founder_decided_by: "founder",
+    });
+    const rejectedRepository = new SupabaseSterlingCanonicalApprovalRepository(rejected.client);
+    assert.deepEqual(await rejectedRepository.reject({
+      proposalId: original.approvalId,
+      expectedRecordVersion: 4,
+      actor: "founder",
+      note: "Not supported",
+      now: "2026-10-30T17:00:01.000Z",
+    }), { ok: true, status: "already-present", recordVersion: 5 });
+    assert.deepEqual(await rejectedRepository.reject({
+      proposalId: original.approvalId,
+      expectedRecordVersion: 5,
+      actor: "founder",
+      note: "Different rejection",
+      now: "2026-10-30T17:00:02.000Z",
+    }), { ok: false, reason: "rejection-idempotency-conflict" });
   });
 
   it("rejects incomplete, empty-evidence, and mismatched operation shapes", () => {

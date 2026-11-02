@@ -78,4 +78,50 @@ describe("Sterling canonical approval preparation", () => {
       compensatesProposalId: prepared!.approvalId,
     }), null);
   });
+
+  it("prepares the isolated founder-workflow lifecycle fixtures without writing canonical data", () => {
+    const base = fixture();
+    const cases = [
+      {
+        name: "CAD/Design waiting on vendor",
+        mutations: [
+          { ...base.proposal.proposedCanonicalMutations[0]!, proposalKey: "cad", targetLifecycleStage: "cad_design" },
+          { ...base.proposal.proposedCanonicalMutations[1]!, proposalKey: "vendor", kind: "update_open_job_holder" as const, targetJobState: null, targetResponsibleParty: "vendor_shop" as const },
+        ],
+        kinds: ["set_project_lifecycle", "update_open_job_holder"],
+      },
+      {
+        name: "transition to In Production",
+        mutations: [{ ...base.proposal.proposedCanonicalMutations[0]!, proposalKey: "production", targetLifecycleStage: "production" }],
+        kinds: ["set_project_lifecycle"],
+      },
+      {
+        name: "completed lifecycle and resolved obligation",
+        mutations: base.proposal.proposedCanonicalMutations,
+        kinds: ["set_project_lifecycle", "resolve_open_job"],
+      },
+      {
+        name: "cancelled or superseded work",
+        mutations: [{ ...base.proposal.proposedCanonicalMutations[1]!, proposalKey: "cancel", kind: "cancel_open_job" as const, targetJobState: "cancelled" as const }],
+        kinds: ["cancel_open_job"],
+      },
+    ];
+    for (const testCase of cases) {
+      const proposal = { ...base.proposal, proposedCanonicalMutations: testCase.mutations } as SterlingTodayProposal;
+      const validation = {
+        ...base.validation,
+        proposal,
+        mutationValidations: testCase.mutations.map((mutation, index) => ({
+          proposalKey: mutation.proposalKey,
+          validationId: `fixture-${index}`,
+          status: "approved_for_founder_review" as const,
+          reasons: [],
+          rollback: "compensate",
+        })),
+      } as SterlingTodayValidationResult;
+      const result = prepareSterlingCanonicalApprovals({ workingSet: base.workingSet, proposal, validation });
+      assert.equal(result.ok, true, testCase.name);
+      if (result.ok) assert.deepEqual(result.envelopes[0]?.operations.map((row) => row.kind), testCase.kinds, testCase.name);
+    }
+  });
 });

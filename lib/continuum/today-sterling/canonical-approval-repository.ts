@@ -31,9 +31,15 @@ export type CanonicalApprovalRow = {
   proposalType: SterlingCanonicalApprovalPayload["kind"];
   status: string;
   recordVersion: number;
+  createdAt: string;
+  reasoningSummary: string;
+  evidenceRefs: readonly string[];
   originalPayload: SterlingCanonicalApprovalPayload;
   approvedPayload: SterlingCanonicalApprovalPayload | null;
-  founderDecision: "approved" | "edited_and_approved" | null;
+  founderDecision: "approved" | "edited_and_approved" | "rejected" | "deferred" | null;
+  founderDecisionAt: string | null;
+  founderDecisionNote: string | null;
+  founderDecidedBy: string | null;
   executionStatus: string;
   executionReceipt: unknown;
 };
@@ -42,9 +48,15 @@ export type CanonicalApprovalExecutionResult =
   | { ok: true; status: "executed" | "already-present"; recordVersion: number; receipt: unknown }
   | { ok: false; reason: string };
 
+export type CanonicalApprovalRejectionResult =
+  | { ok: true; status: "rejected" | "already-present"; recordVersion: number }
+  | { ok: false; reason: string };
+
 const CANONICAL_COLUMNS = [
-  "proposal_id", "proposal_type", "status", "record_version", "original_proposal",
-  "approved_payload", "founder_decision", "execution_status", "execution_receipt",
+  "proposal_id", "proposal_type", "status", "record_version", "created_at",
+  "reasoning_summary", "evidence_refs", "original_proposal", "approved_payload",
+  "founder_decision", "founder_decision_at", "founder_decision_note", "founder_decided_by",
+  "execution_status", "execution_receipt",
 ].join(", ");
 
 /**
@@ -164,6 +176,16 @@ export class SupabaseSterlingCanonicalApprovalRepository {
     return result.data ? rowToCanonicalApproval(result.data as unknown as Record<string, unknown>) : null;
   }
 
+  async list(limit = 50): Promise<CanonicalApprovalRow[]> {
+    const result = await this.client.from("continuum_sterling_proposals")
+      .select(CANONICAL_COLUMNS)
+      .in("proposal_type", ["canonical_change_set", "source_suppression"])
+      .order("created_at", { ascending: false })
+      .limit(Math.min(Math.max(limit, 1), 100));
+    if (result.error) throw new Error(result.error.message || "canonical-approval-list-failed");
+    return (result.data ?? []).map((row) => rowToCanonicalApproval(row as unknown as Record<string, unknown>));
+  }
+
   async approveAndExecute(input: {
     proposalId: string;
     expectedRecordVersion: number;
@@ -175,14 +197,18 @@ export class SupabaseSterlingCanonicalApprovalRepository {
   }): Promise<CanonicalApprovalExecutionResult> {
     const current = await this.get(input.proposalId);
     if (!current) return { ok: false, reason: "proposal-not-found" };
-    if (current.status === "executed" && current.executionStatus === "executed") {
-      return { ok: true, status: "already-present", recordVersion: current.recordVersion, receipt: current.executionReceipt };
-    }
     const payload = input.decision === "approved"
       ? current.originalPayload
       : input.approvedPayload;
     if (!payload || !isCanonicalApprovalPayload(payload) || payload.approvalId !== input.proposalId ||
       payload.kind !== current.proposalType) return { ok: false, reason: "invalid-approved-payload" };
+    if (current.status === "executed" && current.executionStatus === "executed") {
+      const exactReplay = current.founderDecision === input.decision && current.approvedPayload != null &&
+        stableJson(current.approvedPayload) === stableJson(payload);
+      return exactReplay
+        ? { ok: true, status: "already-present", recordVersion: current.recordVersion, receipt: current.executionReceipt }
+        : { ok: false, reason: "approval-idempotency-conflict" };
+    }
 
     const decision = await this.client.rpc("continuum_sterling_record_canonical_decision", {
       p_proposal_id: input.proposalId,
@@ -212,6 +238,50 @@ export class SupabaseSterlingCanonicalApprovalRepository {
     }
     return { ok: true, status, recordVersion, receipt: execution.data?.receipt ?? null };
   }
+
+  async reject(input: {
+    proposalId: string;
+    expectedRecordVersion: number;
+    actor: string;
+    note?: string | null;
+    now: string;
+  }): Promise<CanonicalApprovalRejectionResult> {
+    const current = await this.get(input.proposalId);
+    if (!current) return { ok: false, reason: "proposal-not-found" };
+    const note = input.note?.trim() || null;
+    if (current.founderDecision === "rejected" && current.status === "rejected") {
+      const exactReplay = current.founderDecisionNote === note && current.founderDecidedBy === input.actor.trim();
+      return exactReplay
+        ? { ok: true, status: "already-present", recordVersion: current.recordVersion }
+        : { ok: false, reason: "rejection-idempotency-conflict" };
+    }
+    if (current.recordVersion !== input.expectedRecordVersion) {
+      return { ok: false, reason: "stale-ledger-version" };
+    }
+    if (current.status !== "proposed" || current.founderDecision != null) {
+      return { ok: false, reason: "invalid-transition" };
+    }
+    const result = await this.client.from("continuum_sterling_proposals")
+      .update({
+        status: "rejected",
+        founder_decision: "rejected",
+        founder_decision_at: input.now,
+        founder_decision_note: note,
+        founder_decided_by: input.actor.trim(),
+        execution_status: "not_requested",
+        updated_at: input.now,
+      })
+      .eq("proposal_id", input.proposalId)
+      .eq("proposal_type", current.proposalType)
+      .eq("status", "proposed")
+      .eq("record_version", input.expectedRecordVersion)
+      .select(CANONICAL_COLUMNS)
+      .maybeSingle();
+    if (result.error) return { ok: false, reason: result.error.message || "rejection-failed" };
+    if (!result.data) return { ok: false, reason: "stale-ledger-version" };
+    const updated = rowToCanonicalApproval(result.data as unknown as Record<string, unknown>);
+    return { ok: true, status: "rejected", recordVersion: updated.recordVersion };
+  }
 }
 
 /** Fail closed before founder review as well as inside the database executor. */
@@ -239,9 +309,15 @@ function rowToCanonicalApproval(row: Record<string, unknown>): CanonicalApproval
     proposalType: String(row.proposal_type) as CanonicalApprovalRow["proposalType"],
     status: String(row.status),
     recordVersion: Number(row.record_version),
+    createdAt: String(row.created_at),
+    reasoningSummary: String(row.reasoning_summary),
+    evidenceRefs: Array.isArray(row.evidence_refs) ? row.evidence_refs.map(String) : [],
     originalPayload: row.original_proposal,
     approvedPayload: approved,
     founderDecision: row.founder_decision == null ? null : String(row.founder_decision) as CanonicalApprovalRow["founderDecision"],
+    founderDecisionAt: row.founder_decision_at == null ? null : String(row.founder_decision_at),
+    founderDecisionNote: row.founder_decision_note == null ? null : String(row.founder_decision_note),
+    founderDecidedBy: row.founder_decided_by == null ? null : String(row.founder_decided_by),
     executionStatus: String(row.execution_status),
     executionReceipt: row.execution_receipt ?? null,
   };
