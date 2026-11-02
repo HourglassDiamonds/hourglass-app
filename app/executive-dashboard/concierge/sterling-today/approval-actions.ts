@@ -47,7 +47,14 @@ export async function reviewCanonicalSterlingProposal(formData: FormData): Promi
         now,
       });
 
-  if (!result.ok) redirectWithResult(proposalId, safeResultCode(result.reason));
+  if (!result.ok) {
+    redirectWithResult(
+      proposalId,
+      "approvalRecorded" in result && result.approvalRecorded === true
+        ? "approved-pending-execution"
+        : safeResultCode(result.reason),
+    );
+  }
   redirectWithResult(proposalId, result.status);
 }
 

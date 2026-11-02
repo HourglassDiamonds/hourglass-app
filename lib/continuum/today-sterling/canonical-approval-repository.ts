@@ -46,7 +46,8 @@ export type CanonicalApprovalRow = {
 
 export type CanonicalApprovalExecutionResult =
   | { ok: true; status: "executed" | "already-present"; recordVersion: number; receipt: unknown }
-  | { ok: false; reason: string };
+  | { ok: false; reason: string; approvalRecorded?: false }
+  | { ok: false; reason: string; approvalRecorded: true; recordVersion: number };
 
 export type CanonicalApprovalRejectionResult =
   | { ok: true; status: "rejected" | "already-present"; recordVersion: number }
@@ -230,11 +231,23 @@ export class SupabaseSterlingCanonicalApprovalRepository {
       p_actor: input.actor,
       p_executed_at: input.now,
     });
-    if (execution.error) return { ok: false, reason: execution.error.message || "canonical-execution-failed" };
+    if (execution.error) {
+      return {
+        ok: false,
+        reason: execution.error.message || "canonical-execution-failed",
+        approvalRecorded: true,
+        recordVersion: approvedVersion,
+      };
+    }
     const status = execution.data?.status;
     const recordVersion = Number(execution.data?.recordVersion);
     if ((status !== "executed" && status !== "already-present") || !Number.isSafeInteger(recordVersion)) {
-      return { ok: false, reason: "invalid-canonical-execution-result" };
+      return {
+        ok: false,
+        reason: "invalid-canonical-execution-result",
+        approvalRecorded: true,
+        recordVersion: approvedVersion,
+      };
     }
     return { ok: true, status, recordVersion, receipt: execution.data?.receipt ?? null };
   }

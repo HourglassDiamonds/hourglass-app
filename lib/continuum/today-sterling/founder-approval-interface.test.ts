@@ -34,10 +34,14 @@ describe("Sterling founder-controlled approval interface", () => {
 
   it("guards exact replay and rejection with payload and record-version comparisons", () => {
     const repository = read("lib/continuum/today-sterling/canonical-approval-repository.ts");
+    const action = read("app/executive-dashboard/concierge/sterling-today/approval-actions.ts");
     assert.match(repository, /stableJson\(current\.approvedPayload\) === stableJson\(payload\)/);
     assert.match(repository, /approval-idempotency-conflict/);
     assert.match(repository, /\.eq\("record_version", input\.expectedRecordVersion\)/);
     assert.match(repository, /rejection-idempotency-conflict/);
+    assert.match(action, /approved-pending-execution/);
+    const page = read("app/executive-dashboard/concierge/sterling-today/page.tsx");
+    assert.match(page, /Founder approval was recorded durably/);
   });
 
   it("documents synthetic-only shared Preview fixtures as a separately authorized gate", () => {

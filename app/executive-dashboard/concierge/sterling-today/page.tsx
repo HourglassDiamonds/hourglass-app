@@ -203,6 +203,10 @@ function reviewResultMessage(result: string): { ok: boolean; message: string } {
     executed: { ok: true, message: "Approved and applied atomically. The receipt below is durable." },
     "already-present": { ok: true, message: "Exact replay recognized. No duplicate canonical or history write was created." },
     rejected: { ok: true, message: "Rejected durably. No canonical record was changed." },
+    "approved-pending-execution": {
+      ok: false,
+      message: "Founder approval was recorded durably, but canonical execution did not complete. The approved decision remains pending without a success receipt; preserve it for review before retrying.",
+    },
     "stale-version": { ok: false, message: "The proposal or canonical record changed. Refresh and review the current version." },
     "conflicting-replay": { ok: false, message: "The repeat request conflicts with the executed decision or payload and was rejected." },
     "review-blocked": { ok: false, message: "Approval is blocked by the identity, version, or evidence findings shown below." },

@@ -73,6 +73,18 @@ function fakeClient(overrides: Record<string, unknown> = {}) {
   return { client: client as unknown as SupabaseClient, calls };
 }
 
+function executionFailureClient() {
+  const fixture = fakeClient();
+  const client = fixture.client as unknown as { rpc: (name: string, args: Record<string, unknown>) => Promise<unknown> };
+  client.rpc = async (name: string, args: Record<string, unknown>) => {
+    fixture.calls.push({ name, args });
+    return name === "continuum_sterling_record_canonical_decision"
+      ? { data: { status: "approved", recordVersion: 5 }, error: null }
+      : { data: null, error: { message: "stale-job-version" } };
+  };
+  return fixture;
+}
+
 describe("Sterling canonical approval repository", () => {
   it("executes the immutable server-loaded payload for a plain approval", async () => {
     const { client, calls } = fakeClient();
@@ -107,6 +119,26 @@ describe("Sterling canonical approval repository", () => {
     });
     assert.deepEqual(result, { ok: false, reason: "invalid-approved-payload" });
     assert.equal(calls.length, 0);
+  });
+
+  it("reports that founder approval remains durable when canonical execution fails", async () => {
+    const { client, calls } = executionFailureClient();
+    const repository = new SupabaseSterlingCanonicalApprovalRepository(client);
+    const result = await repository.approveAndExecute({
+      proposalId: original.approvalId,
+      expectedRecordVersion: 4,
+      decision: "approved",
+      actor: "founder",
+      now: "2026-10-30T17:00:00.000Z",
+    });
+
+    assert.deepEqual(result, {
+      ok: false,
+      reason: "stale-job-version",
+      approvalRecorded: true,
+      recordVersion: 5,
+    });
+    assert.equal(calls.length, 2);
   });
 
   it("recognizes only an exact already-executed approval replay", async () => {
