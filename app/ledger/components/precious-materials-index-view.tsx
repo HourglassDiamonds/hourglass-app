@@ -28,8 +28,8 @@ const INTRO =
 const MATERIAL_STATES = [
   {
     name: "Gold",
-    level: "Rate-sensitive cooling / Fiscal-confidence bid fading",
-    body: "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it disconfirms a simple war-to-gold bid.",
+    level: "Elevated / Below September peak",
+    body: "Gold closed near $3,975 on November 2 after the September reference price reached $4,176. The pullback is meaningful cooling from the peak, but the level remains historically elevated and jewelry demand remains price-sensitive. The rates and fiscal-confidence channel is counted in Financial Conditions, not again here.",
   },
   {
     name: "Silver",
@@ -38,23 +38,23 @@ const MATERIAL_STATES = [
   },
   {
     name: "Platinum / Palladium",
-    level: "Firm",
-    body: "Industrial and jewelry-linked demand keep the complex firm without a broad regime shift.",
+    level: "Firm / Supply-sensitive",
+    body: "Platinum traded near $1,432–$1,444 on November 2. Industrial and jewelry demand remain relevant, but the current evidence does not establish a broad shortage regime.",
   },
   {
     name: "Premium Natural Diamonds",
-    level: "Selectively firm",
-    body: "Higher-value / better goods remain relatively firmer in key sizes and cuts. Rapaport’s August 1-carat RAPI rose 0.5%, the first monthly increase in about 15 months. Supply discipline and producer economics matter; this is not generic natural-diamond scarcity.",
+    level: "Segmented / Better goods firmer",
+    body: "Rapaport's November 2 review showed October gains in 0.30-, 0.50-, and headline 1-carat indices, but softer selected higher-quality 1-carat bands and inventory accumulation. Better goods are not uniformly scarce; the market remains segmented.",
   },
   {
     name: "Commercial Natural Diamonds",
     level: "Price-sensitive",
-    body: "Commercial / lower-value goods remain price-sensitive as buyers discriminate more carefully across grades and sizes. August RAPI showed stronger smalls (0.30-carat +2%, 0.50-carat +2.5%) as supply cuts bite — a segmented rebound, not a shortage.",
+    body: "De Beers reported Q3 production down 11% year over year, sales volume up 71%, average realized price down 45%, and its year-to-date price index down 18%. Lower-value natural goods remain exposed to lab-grown competition and inventory discipline.",
   },
   {
     name: "Lab-Grown Diamonds",
     level: "Continued price compression",
-    body: "Wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure continue. This is an embedded commercial factor, not a new weekly shock.",
+    body: "Caratlytics' November 2 listings showed a much lower median price per carat and wider dispersion than natural listings. These are asking prices, not completed transactions, but they reinforce continued commodity-style compression and uneven retail positioning.",
   },
   {
     name: "Jewelry Demand",

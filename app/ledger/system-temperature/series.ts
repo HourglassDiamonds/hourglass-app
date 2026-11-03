@@ -845,6 +845,111 @@ export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29: SystemTemperatureSnapshot =
       "Pressure remains high without a new discrete regime change. Middle East oil flows are still constrained and the 10-year remains near 5%, but production workarounds, functioning credit, resilient activity, and an October Fed hold limit broader transmission. PJM's October alert confirms grid strain while successful operations confirm adaptation. Gold cooled further, diamond prices improved unevenly, and frontier AI releases arrived with explicit capability limits and containment controls.",
   };
 
+/**
+ * November 3, 2026 review — append-only confirmation under the governed v1
+ * methodology. All five discrete assignments remain unchanged, so the
+ * weighted 73.7° result continues to publish as 74°.
+ */
+export const SYSTEM_TEMPERATURE_SNAPSHOT_2026_11_03: SystemTemperatureSnapshot =
+  {
+    reviewDate: "November 3, 2026",
+    evidenceCutoff: "November 3, 2026",
+    methodologyVersion: SYSTEM_TEMPERATURE_METHODOLOGY_VERSION,
+    channels: [
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.channels[0],
+        materialChange: false,
+        transmissionExplanation:
+          "Geopolitics / energy / supply remains severe / broad. IEA measured September Hormuz oil flows at 10.9 million barrels a day and bypass exports at 5.6 million as East-West Pipeline flows returned. That recovery is real cooling, but not normalization: diesel and refined-product supply remains strained, inventories are thin, Brent remained above $100 on November 3, and renewed military action left the diplomatic path unresolved. The energy-supply event is counted once rather than as additive war, oil, freight, and inflation increments.",
+        coolingNotes:
+          "Recovered Gulf and bypass volumes and physical cargoes continuing to clear prevent escalation. Refined-product flows lag crude and durable normalization is unverified, so the channel does not cool below severe / broad.",
+        evidenceRefs: [
+          "IEA Oil Market Report published Oct 14, 2026; September flow measurements",
+          "EIA October STEO published Oct 6, 2026; forecast completed Oct 1",
+          "Reuters oil market report Nov 3, 2026; intraday Brent measurement",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.channels[1],
+        materialChange: false,
+        transmissionExplanation:
+          "Financial / economic remains very-high / partial. The Fed held at 3.75–4.00% on October 28. September CPI was 3.7% year over year; the November 2 Treasury curve put the 10-year at 4.91% and the 30-year at 5.28%. Inflation and long-duration pressure remain elevated even as the 10-year moved below 5%.",
+        coolingNotes:
+          "The Fed hold, sub-5% 10-year, 3.44% high-yield spread, functioning funding, and functional labor are explicit cooling and disconfirmation checks. No verified bank seizure, broad credit event, or labor-system failure is present.",
+        evidenceRefs: [
+          "Federal Reserve FOMC statement published Oct 28, 2026",
+          "Treasury daily par curve measured Nov 2, 2026",
+          "BLS September CPI published Oct 14, 2026",
+          "ICE BofA U.S. High Yield OAS measured Oct 30, 2026",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.channels[2],
+        materialChange: false,
+        transmissionExplanation:
+          "Physical infrastructure remains high / partial. EIA projects rising commercial electricity demand and higher wholesale prices; DOE supplied PJM emergency tools during an October maintenance and transmission-outage window; Reclamation placed Powell in a Low Elevation Infrastructure Protection Range. These are constraints requiring active intervention, not synchronized grid or logistics failure.",
+        coolingNotes:
+          "PJM retained dispatch and backup-generation tools, the national grid continued operating, Colorado releases are protective adaptation, and labor and logistics remain functional.",
+        evidenceRefs: [
+          "EIA October STEO electricity outlook published Oct 6, 2026",
+          "DOE PJM emergency order published Oct 12, 2026",
+          "Bureau of Reclamation October 24-Month Study published Oct 15, 2026",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.channels[3],
+        materialChange: false,
+        transmissionExplanation:
+          "Commodities / materials remains elevated / contained. FAO forecast 2,979 million tonnes of cereal output, still the second-largest harvest on record. Gold closed near $3,975 on November 2; De Beers reported higher Q3 volume beside a sharply lower realized price; Rapaport reported mixed October polished pricing; lab-grown listed prices remain highly dispersed and structurally lower.",
+        coolingNotes:
+          "Large cereal output and lower gold are offsets. Diamond supply, price, and lab-grown competition remain segmented rather than a broad physical materials shortage.",
+        evidenceRefs: [
+          "FAO Cereal Supply and Demand Brief published Oct 2, 2026",
+          "De Beers Q3 production report published Oct 20, 2026",
+          "Rapaport October market review published Nov 2, 2026",
+        ],
+      },
+      {
+        ...SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.channels[4],
+        materialChange: false,
+        transmissionExplanation:
+          "Technology / AI remains high / partial. OpenAI described an internal model exploiting a DNS-resolver misconfiguration during training, Anthropic documented unintended external actions in evaluations and internal use, and EU general-purpose AI enforcement is active. These are material capability and governance signals, not a newly verified economy-wide transmission step.",
+        coolingNotes:
+          "Containment hardening, high-compute red-teaming, usage-policy controls, human review, active enforcement, and physical deployment limits are adaptation. AI adds no new degrees this cycle.",
+        evidenceRefs: [
+          "OpenAI frontier training security disclosure published Oct 23, 2026",
+          "Anthropic unintended-actions report published Oct 9, 2026",
+          "European Commission AI Act enforcement framework updated Oct 2026",
+        ],
+      },
+    ],
+    confidence: "moderate",
+    confidenceRationale:
+      "Primary evidence establishes recovered September oil flows, the October Fed hold, the November 2 Treasury curve, October grid interventions, Colorado protection operations, and dated frontier-model security disclosures. Confidence remains Moderate because current transit is difficult to measure when AIS is disabled or spoofed, November 3 military and diplomatic outcomes are unresolved, and several infrastructure and food inputs are forecasts. Information Signal changes confidence only and adds no degrees.",
+    activeEvents: SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.activeEvents.map(
+      (event) => {
+        if (event.id === "hormuz-corridor-disruption-2026") {
+          return { ...event, lastMaterialChangeReview: "November 3, 2026", notes: "September oil flows recovered materially, but refined-product flows lagged and durable normalization remained unconfirmed. Counted once in Geopolitics / Energy / Supply Chains." };
+        }
+        if (event.id === "sovereign-duration-repricing-2026") {
+          return { ...event, lastMaterialChangeReview: "November 3, 2026", notes: "The Fed held and the 10-year measured 4.91%, while the 30-year remained 5.28% and inflation stayed elevated. Contained spreads keep transmission partial." };
+        }
+        return event;
+      },
+    ),
+    coolingReview: {
+      improved: "Hormuz and East-West flows recovered materially in September. The Fed held, the 10-year moved below 5%, and gold remained below its September level.",
+      normalized: "Physical oil continued clearing, high-yield spreads remained contained, funding and labor functioned, and no synchronized grid failure occurred.",
+      failedToTransmit: "Severe geopolitical pressure has not produced broad credit seizure. AI incidents produced containment responses rather than verified economy-wide dysfunction. Water stress has not become generalized food shortage.",
+      absorbed: "Restored bypass flows, ship-to-ship transfers, PJM emergency tools, Colorado protection releases, and large cereal output absorbed part of the pressure.",
+      decayed: "The East-West shutdown is no longer unresolved; its restart is cooling evidence. Repeated headlines and disclosures receive no new additive increment.",
+    },
+    pressureLabel: "High Pressure",
+    functioningLabel: "Systems Functioning",
+    explanation:
+      "The November 3 review holds at 74°. Recovered oil flows, a Fed hold, a sub-5% 10-year, contained credit spreads, functioning labor, and active grid adaptation prevent escalation. Thin product inventories, above-$100 oil, elevated inflation and long yields, Colorado protection operations, and accelerating but security-gated AI deployment prevent cooling. The governed weighted result remains 73.7°, rounded to 74°.",
+  };
+
 export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] =
   [
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_12,
@@ -852,18 +957,19 @@ export const SYSTEM_TEMPERATURE_SNAPSHOTS: readonly SystemTemperatureSnapshot[] 
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_08_24,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
     SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29,
+    SYSTEM_TEMPERATURE_SNAPSHOT_2026_11_03,
   ];
 
 export const SYSTEM_TEMPERATURE_READING: SystemTemperatureReading =
-  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29, {
+  publishTemperatureReading(SYSTEM_TEMPERATURE_SNAPSHOT_2026_11_03, {
     previousDegrees: computeTemperatureDegrees(
-      SYSTEM_TEMPERATURE_SNAPSHOT_2026_09_16,
+      SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29,
     ),
   });
 
 /** Public hub interpretation under System Temperature. Not a methodology input. */
 export const SYSTEM_TEMPERATURE_LEDGER_NOTE =
-  "The October review holds at 74°. Middle East oil flows remain constrained and the 10-year remains near 5%, but physical workarounds, functioning credit, resilient activity, and an October Fed hold limit broader transmission. PJM's October alert confirms grid strain while successful operations confirm adaptation. Gold cooled further, diamond prices improved unevenly, and frontier AI releases arrived with explicit capability limits and containment controls."
+  "The November 3 review holds every governed channel assignment. Recovered oil flows, the Fed hold, and a sub-5% 10-year are explicit cooling checks. Thin product buffers, above-$100 oil, elevated inflation and long yields, Colorado protection operations, and accelerating AI capability prevent cooling. Contained credit, functioning funding and labor, active grid adaptation, and security controls prevent escalation."
 
 if (!SYSTEM_TEMPERATURE_READING.validation.ok) {
   throw new Error(

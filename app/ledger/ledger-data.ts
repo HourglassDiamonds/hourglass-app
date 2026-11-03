@@ -144,7 +144,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Pressure Monitor",
     subnavLabel: "Global Pressure",
     hubDescription:
-      "Very high external pressure / Broad energy transmission — EIA still sees constrained Middle East flows and a $105 fourth-quarter Brent path, while workarounds and resilient activity limit broader failure.",
+      "Very high external pressure / Broad energy transmission — Gulf and bypass flows recovered, but above-$100 oil and thin product buffers persist while credit, funding, and labor function.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of external threat pressure and systemic transmission. This page does not publish a numerical index.",
@@ -160,13 +160,13 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Cold", "Stable", "Elevated", "Hot", "Critical"],
     scaleGradient: SCALE_GRADIENT_PRESSURE,
     summary:
-      "External pressure remains very high. EIA's October outlook keeps Middle East oil flows constrained through 4Q26 and raises its Brent forecast, while lower regional shut-ins, export workarounds, functioning credit, and resilient activity remain material counterevidence.",
+      "IEA measured substantial September recovery in Hormuz and East-West flows, but refined-product supply remained strained and Brent stayed above $100 on November 3. The Fed held and the 10-year measured 4.91%; contained credit spreads, orderly funding, and functional labor prevent a crisis reading.",
     summaryLead: "Current state:",
     summaryEmphasis: "Very high external pressure / Broad energy transmission",
     summaryCompact:
       "Very high external pressure / Broad energy transmission. Oil constrained; workarounds and credit still functioning.",
     weeklyNote:
-      "Threat pressure remains very high, but October adds no new regime move. Energy constraints persist while physical workarounds improve; broad systemic financial transmission is not confirmed.",
+      "Recovered flows are real cooling evidence. Thin product buffers, renewed security risk, and unresolved talks keep energy transmission broad; contained financial stress limits wider failure.",
     weeklyNoteCompact:
       "Very high external pressure; broader energy transmission; systems still functioning.",
     methodPills: [
@@ -240,23 +240,23 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Information Signal Map",
     subnavLabel: "Information Map",
     hubDescription:
-      "High-attention / Better-separated signals — pressure persists, while workarounds, resilient activity, lower gold, and explicit AI controls make counterevidence clearer.",
+      "High-attention / Physical evidence converging — measured flow recovery and a Fed hold are clear, while security, transit durability, and policy direction remain unsettled.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative map of how narratives move through markets, media, policy, and institutions — not to chase hidden truths, but to track when different information layers begin describing the same systems story. The goal is orientation: where framing converges, where it diverges, and what remains underweighted.",
     updatedLabel: "",
     reading: 85,
     readingLabel: "Signal Clarity",
-    status: "High-attention / Better-separated signals",
+    status: "High-attention / Physical evidence converging",
     weeklyDelta: 0,
     scaleLabels: ["Quiet", "Clear", "Mixed", "Noisy", "Saturated"],
     scaleGradient: SCALE_GRADIENT_SIGNAL,
     summary:
-      "October evidence separates pressure from adaptation more cleanly. EIA confirms constrained oil flows and improving workarounds; the Fed held with resilient activity; PJM documents tight conditions and successful adaptation; gold cooled while AI deployment broadened under explicit controls. Confidence stays Moderate. Information Signal adds no degrees.",
+      "Measured recovery and unresolved trajectory coexist. September flow data, the Fed hold, Treasury curve, and contained credit are verified; November 3 military and diplomatic outcomes remain provisional. Confidence stays Moderate. Information Signal adds no degrees.",
     summaryCompact:
       "High-attention / Better-separated signals — persistent pressure with clearer counterevidence.",
     weeklyNote:
-      "Recurring first-party releases now separate persistent pressure from adaptation more cleanly. Density remains high and duration uncertain, so confidence stays Moderate.",
+      "Publication date and measurement date are separated. Physical evidence converges, but same-day direction and transit durability remain uncertain.",
     weeklyNoteCompact:
       "Physical evidence converging; duration and policy path still uncertain.",
     methodPills: [
@@ -301,7 +301,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "AI Capability Monitor",
     subnavLabel: "AI Acceleration",
     hubDescription:
-      "Capability pace: Accelerating / Security-gated, capital- and grid-bound — GPT-6 and Gemini 4 Argon broaden deployment while explicit capability limits, containment, power, and capital remain binding.",
+      "Capability pace: Accelerating / Security-gated, capital- and grid-bound — October disclosures confirm containment risk and adaptation without verified economy-wide dysfunction.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of how AI capability, deployment, and physical infrastructure move together: models, agents, enterprise integration, power, grid access, and organizational adaptation. The frame is operational and observational — not promotional.",
@@ -313,11 +313,11 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Early", "Building", "Rising", "Fast", "Surge"],
     scaleGradient: SCALE_GRADIENT_AI,
     summary:
-      "Acceleration continues. GPT-6 and Gemini 4 Argon broaden consumer and agentic surfaces, while OpenAI's October materials classify capability thresholds, disclose another contained training incident, and document remediation. Electricity, interconnection, capital, and security remain co-equal limits. The qualitative state holds.",
+      "Frontier capability and deployment continue to broaden. OpenAI and Anthropic disclosed concrete unintended-action and containment evidence alongside isolation hardening, human review, usage controls, and EU enforcement. Power, capital, cooling, and security remain co-equal limits.",
     summaryCompact:
       "Capability pace accelerating — security-gated, capital- and grid-bound.",
     weeklyNote:
-      "October combines broader frontier access with explicit capability boundaries and containment adaptation. Grid, power, capital, and security remain binding. Technology/AI System Temperature holds high / partial.",
+      "Containment evidence became more concrete, but so did governance adaptation. No verified external-transmission step changes Technology / AI from High / Partial.",
     weeklyNoteCompact:
       "Accelerating capability; industrialization capital- and grid-bound.",
     methodPills: [
@@ -362,7 +362,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Precious Materials Monitor",
     subnavLabel: "Precious Materials",
     hubDescription:
-      "Strategically firm / Highly segmented — gold cooled toward roughly $4,013 while September RAPI gains broadened across tracked sizes, led by smaller goods.",
+      "Strategically firm / Highly segmented — gold remains elevated below its September peak; De Beers volume improved beside lower realized prices, and polished gains remain uneven.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of the material conditions behind fine jewelry — gold, platinum, natural diamonds, and the sourcing realities that shape quality, availability, and long-term value. The purpose is not to chase commodity headlines. It is to clarify when material markets are firm, selective, or shifting beneath the surface.",
@@ -374,13 +374,13 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Soft", "Stable", "Firm", "Tight", "Constrained"],
     scaleGradient: SCALE_GRADIENT_MATERIALS,
     summary:
-      "Precious materials remain strategically firm and highly segmented. Gold cooled toward roughly $4,013 by October 23 despite geopolitical pressure. September RAPI rose across all four tracked round-diamond size bands, led by smaller goods, but the recovery remains supply-led and uneven rather than generic scarcity.",
+      "Gold closed near $3,975 on November 2 and platinum remained firm. De Beers reported much higher Q3 sales volume beside a 45% lower average realized price. Rapaport's October review showed mixed polished gains; lab-grown listings remain structurally cheaper and highly dispersed.",
     summaryLead: "Precious materials remain in a",
     summaryEmphasis: "strategically firm, highly segmented environment",
     summaryCompact:
       "Strategically firm / Highly segmented — gold cooled further; diamond gains broadened unevenly.",
     weeklyNote:
-      "No materials-regime change and no System Temperature increment. Lower gold is counterevidence to a simple war bid; September diamond gains broadened but remain uneven and supply-led.",
+      "No materials-regime change and no extra System Temperature increment. Metals remain rate-sensitive; natural diamonds are segmented; listed lab-grown prices remain compressed and dispersed.",
     weeklyNoteCompact:
       "Strategically firm / Highly segmented — gold cooling, segmented diamonds, lab-grown compression.",
     methodPills: [
@@ -425,7 +425,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Infrastructure Strain Monitor",
     subnavLabel: "Infrastructure",
     hubDescription:
-      "High infrastructure strain — October PJM alerts and elevated wholesale prices confirm large-load pressure, while successful operations confirm adaptation rather than grid failure.",
+      "High infrastructure strain — forecast commercial-load growth, a bounded PJM emergency order, and Colorado low-elevation protection operations confirm strain plus adaptation.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of physical constraints beneath digital and industrial acceleration: AI data-center load, power demand, transformers, interconnection, cooling, transmission, labor, and permitting — where systems function but flexibility narrows.",
@@ -437,11 +437,11 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Rising", "Elevated", "High", "Critical"],
     scaleGradient: SCALE_GRADIENT_INFRASTRUCTURE,
     summary:
-      "Infrastructure strain remains high with active adaptation. EIA places 2026 PJM wholesale prices 41% above 2025 and keeps commercial demand growing. PJM used October maximum-generation and load-management alerts but maintained service without calling large-load backup generation.",
+      "EIA projects continued commercial-load growth and higher wholesale prices. DOE supplied PJM emergency tools during an October outage window, while Reclamation linked Colorado operations directly to infrastructure protection. The grid, labor, and logistics systems continue to function.",
     summaryCompact:
       "High strain / Active adaptation — multi-regional physical pressure beneath still-functioning systems.",
     weeklyNote:
-      "October supplies a live operating test: PJM used alerts and demand response under tight conditions but maintained service. Internal System Temperature infrastructure holds high / partial.",
+      "Power-water constraints required active intervention without establishing national grid failure. Physical Infrastructure remains High / Partial.",
     weeklyNoteCompact:
       "High strain, active adaptation — multi-regional, systems still functioning.",
     methodPills: [
@@ -487,7 +487,7 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     displayTitle: "Global Water Stress Monitor",
     subnavLabel: "Water",
     hubDescription:
-      "High water stress / Multi-system transmission — Powell's seasonal rise is real counterevidence inside structural shortage, while global food-price pressure increased.",
+      "High water stress / Multi-system transmission — Colorado protection operations are explicit, agricultural drought is regional, and global cereal output remains large.",
     kicker: "The Ledger Intelligence System",
     intro:
       "A qualitative monitor of water as a physical evidence layer. Downstream effects appear in power, freight, and security where they are independently visible.",
@@ -499,17 +499,17 @@ export const LEDGER_INDEXES: readonly LedgerIndexDefinition[] = [
     scaleLabels: ["Low", "Watch", "Elevated", "High", "Severe"],
     scaleGradient: SCALE_GRADIENT_WATER,
     summary:
-      "Water stress remains high and uneven. Reclamation's October 26 weekly places Powell at 24% full after a 6.96-foot weekly rise, a seasonal improvement inside structural shortage; Mead remains near 26%. FAO's September Food Price Index rose to 136.0. Water is an evidence layer, not a sixth temperature weight.",
+      "Reclamation recorded preliminary water-year inflow to Powell at 39% of average and placed 2027 operations in a low-elevation protection range. FAO documented regional drought exposure while forecasting the second-largest global cereal harvest on record. Water remains an evidence layer, not a sixth temperature weight.",
     summaryCompact:
       "High water stress / Multi-system transmission — uneven, with improving basins visible.",
     weeklyNote:
-      "Powell's seasonal rise is the clearest counterevidence this cycle, but Colorado storage remains structurally low. FAO's September food index confirms continued agriculture and transport transmission.",
+      "Colorado protection operations confirm structural stress; regional drought is real, while global cereal output and localized moisture are material offsets.",
     weeklyNoteCompact:
       "High, uneven water stress — improving basins shown with worsening ones.",
     methodPills: [
       { label: "Monitor Type", value: "Qualitative evidence layer" },
       { label: "Primary Focus", value: "Rivers, storage, municipal, food, energy, security" },
-      { label: "Current Direction", value: "Structural shortage / Seasonal reservoir improvement" },
+      { label: "Current Direction", value: "Colorado protection operations / Uneven agricultural stress" },
     ],
     recentReadings: [
       { week: "This Week", degrees: 0, state: "High / uneven" },

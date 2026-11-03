@@ -23,13 +23,13 @@ export const GWS_INTRO =
 export const GWS_CURRENT_STATE = "High water stress / Multi-system transmission";
 
 export const GWS_CURRENT_DIRECTION =
-  "Structural shortage / Seasonal reservoir improvement";
+  "Colorado protection operations / Uneven global agricultural stress";
 
 export const GWS_SUMMARY =
-  "Water stress remains high and uneven. Reclamation's October 26 weekly places Powell at 24% full after a 6.96-foot weekly rise, a real seasonal improvement inside severe structural shortage; Mead remains near 26%. FAO's September Food Price Index rose to 136.0 as cereals, vegetable oils, and sugar increased. Tigris–Euphrates remains an important hydrologic counter-signal. Water is an evidence layer, not a sixth temperature weight.";
+  "Water stress remains high and highly uneven. Reclamation's October study recorded preliminary water-year 2026 inflow to Powell at 3.72 maf, 39% of average, and placed water-year 2027 operations in a Low Elevation Infrastructure Protection Range with a 6–7 maf release range and up to 1.0 maf from Flaming Gorge. Late-season precipitation did not erase Intermountain West deficits. FAO identified drought exposure across South and Southeast Asia and other El Niño-sensitive agricultural regions, while its October cereal forecast still described the second-largest global harvest on record. Water remains a qualitative evidence layer and receives no separate System Temperature weight.";
 
 export const GWS_WEEKLY_SIGNAL =
-  "Powell's seasonal rise to 24% full is the clearest counterevidence this cycle, but Colorado storage remains structurally low. FAO's September food index rose to 136.0, confirming continued agriculture and transport transmission. Water is an evidence layer, not a sixth temperature weight.";
+  "Colorado moved from general shortage language to an explicit low-elevation infrastructure-protection operating range. Agricultural drought is active in parts of South and Southeast Asia, but global cereal output remains large. Localized late-season moisture is relief, not basin recovery. Water is an evidence layer, not a sixth temperature weight.";
 
 export const GWS_CATEGORIES = [
   {
@@ -77,7 +77,7 @@ export const GWS_REGIONS = [
     level: "Severe structural stress / Confirmed allocation response",
     direction: "Worsening / policy transmission",
     transmission: "Water / hydropower / allocations",
-    body: "Federal 2027–2028 Lower Basin allocation reductions of about 1.25 million acre-feet a year remain in force. As of the September 8 Reclamation weekly, Lake Powell was about 22% full (elevation about 3,517.6 feet) and Lake Mead about 26% (about 1,038.9 feet), with total system storage near 31%. Upper Basin officials agreed September 15 to continue Flaming Gorge emergency releases to protect Powell. This is confirmed structural shortage plus emergency adaptation, not recovery.",
+    body: "Reclamation reported Powell at 5.16 maf, 22% of live capacity, at the end of September. Preliminary water-year 2026 unregulated inflow was 3.72 maf, 39% of average. Water-year 2027 operations use a 6–7 maf Powell release range and reflect a 1.0 maf Flaming Gorge drought-response release. This is confirmed structural shortage plus protective adaptation, not recovery.",
   },
   {
     name: "Tigris / Euphrates",
@@ -104,8 +104,8 @@ export const GWS_REGIONS = [
 
 export const GWS_WHAT_WATCHING = [
   {
-    title: "European river recovery or deterioration",
-    body: "Whether Danube and Rhine levels, nuclear cooling, hydro, freight, and municipal restrictions ease or deepen.",
+    title: "Powell low-elevation protection",
+    body: "Whether the 6–7 maf release range and Flaming Gorge support keep Powell infrastructure protected without deepening upstream reservoir stress.",
   },
   {
     title: "Actual Gulf desalination outage",
@@ -333,6 +333,53 @@ export const GWS_SERIES: LedgerMonitorSeries = {
           url: "https://insidelines.pjm.com/operations-update-extends-maximum-generation-alert-calls-on-demand-response/",
           supports:
             "Power-system adaptation during unusually warm shoulder-season conditions; no evidence of a water-driven municipal collapse",
+        },
+      ],
+    },
+    {
+      reviewDate: "November 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: GWS_CURRENT_STATE,
+      currentDirection: GWS_CURRENT_DIRECTION,
+      previousState: "High water stress / Multi-system transmission",
+      materialChangeSummary: GWS_WEEKLY_SIGNAL,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Bureau of Reclamation",
+          title: "October 2026 Most Probable 24-Month Study — 6 maf scenario",
+          date: "Published October 15, 2026",
+          dataPeriod: "Observed through September 2026; projected water year 2027 operations",
+          evidenceLabel: "Forecast",
+          url: "https://www.usbr.gov/uc/water/crsp/studies/24Month_10_6.pdf",
+          supports: "Powell at 5.16 maf and 22% live capacity; preliminary WY2026 inflow 3.72 maf, 39% of average; low-elevation protection range and Flaming Gorge support.",
+        },
+        {
+          institution: "National Integrated Drought Information System",
+          title: "Intermountain West Drought Status Update",
+          date: "Published October 15, 2026",
+          dataPeriod: "Water year 2026 through October 2026",
+          evidenceLabel: "Observed",
+          url: "https://www.drought.gov/drought-status-updates/drought-status-update-intermountain-west-2026-10-15",
+          supports: "Late-season moisture did not erase deficits; more than 90% of the region experienced D1–D4 drought during April–September and Powell natural streamflow was 37% of average.",
+        },
+        {
+          institution: "Food and Agriculture Organization of the United Nations",
+          title: "Cereal Supply and Demand Brief",
+          date: "Published October 2, 2026",
+          dataPeriod: "2026/27 production and trade forecast",
+          evidenceLabel: "Forecast",
+          url: "https://www.fao.org/worldfoodsituation/csdb/en/",
+          supports: "Global cereal production forecast at 2,979 million tonnes, below the prior record but still the second-largest harvest on record.",
+        },
+        {
+          institution: "Food and Agriculture Organization of the United Nations",
+          title: "Cambodia drought severely affects agriculture",
+          date: "Published October 5, 2026",
+          dataPeriod: "2026 agricultural season",
+          evidenceLabel: "Observed",
+          url: "https://www.fao.org/countryprofiles/news-archive/detail-news/en/c/1757365/",
+          supports: "Verified severe agricultural drought in Cambodia; a regional event, not proof of global food-system failure.",
         },
       ],
     },

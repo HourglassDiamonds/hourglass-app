@@ -47,27 +47,28 @@ export const PMI_RECENT_READINGS = [
 ] as const;
 
 export const PMI_CROSS_SYSTEM_BRIDGE =
-  "Material markets remain connected to broader macro and reserve-asset conditions, but jewelry sourcing follows its own segmented logic. Gold cooled further in October despite elevated geopolitical pressure, while September diamond gains broadened unevenly across size bands.";
+  "Material markets remain connected to rates and reserve demand, but jewelry sourcing follows its own segmented logic. The Fed hold, Treasury curve, and gold move are Financial-channel evidence and are not counted again. Natural diamonds show improving volume beside much lower realized prices; lab-grown listings remain cheaper and highly dispersed.";
 
 export const PMI_CROSS_SYSTEM_PRESSURE = [
-  "Spot gold eased to around $4,266–$4,297 on September 15, near the lowest since early August, as higher Treasury yields, a firmer dollar, and almost-fully-priced Fed-hike odds overpowered some safe-haven demand. Jewelry demand remains price-sensitive. This is the same rates/dollar event already captured in the Financial System Temperature channel, not a separate materials increment — and it is disconfirming, because geopolitical risk is high while gold is falling.",
-  "World Gold Council Q2 2026 data show official-sector purchases of 289t, supporting the structural reserve-demand read beneath near-term price action.",
-  "Natural-diamond markets remain segmented rather than broadly recovered or collapsed. Rapaport’s August RAPI rose 0.5% for 1-carat goods — the first monthly increase in about 15 months — with 0.30-carat +2% and 0.50-carat +2.5% as supply cuts bite; 3-carat slipped 0.4%. De Beers H1 realized price was $105/ct, down 32%. Larger/higher-quality natural goods remain comparatively resilient; commercial goods stay price-sensitive. This is not a generic diamond shortage.",
-  "Lab-grown continues to track wholesale compression, commodity economics, manufacturing scale, adoption, and retailer margin structure.",
+  "Gold closed near $3,975 on November 2 after the September reference price reached $4,176. The pullback is cooling evidence, but the absolute level remains elevated and jewelry demand remains price-sensitive.",
+  "Platinum traded near $1,432–$1,444 on November 2. The available evidence supports a firm, supply-sensitive market rather than a verified broad shortage.",
+  "De Beers Q3 paired higher sales volume with a 45% lower average realized price and an 18% year-to-date price-index decline. Rapaport's October review showed gains in headline small and 1-carat indices but softer selected higher-quality 1-carat bands. Natural diamonds remain segmented, not generically scarce.",
+  "Caratlytics' November 2 listing sample placed the lab-grown median far below natural and showed wider dispersion. Listings are not completed transactions or appraisals, but they reinforce continued commodity-style compression.",
 ] as const;
 
 export const PMI_WHAT_MOVED = [
-  "No materials-regime change — strategically firm and highly segmented remains the posture.",
-  "Gold moved toward roughly $4,013 by October 23. That further cooling is counterevidence to a simple war bid and is not a separate System Temperature increment.",
-  "September RAPI rose across the four tracked round-diamond size bands, led by smaller goods. The recovery is broader but still supply-led and uneven, not generic scarcity.",
+  "Gold closed near $3,975 on November 2 and platinum traded around $1,432–$1,444; gold remained below its September level despite continuing geopolitical stress.",
+  "De Beers reported Q3 sales volume of 9.8 million carats and $731 million of consolidated rough revenue, while average realized price fell 45% year over year to $84 per carat.",
+  "Rapaport's November 2 review described mixed October polished pricing: firmer small goods, a second monthly 1-carat gain, and softer higher-quality 1-carat subsegments by month-end.",
+  "Lab-grown retail listings remain structurally cheaper and highly dispersed; listed-price datasets are not transaction prices or appraisals.",
 ] as const;
 
 export const PMI_WHAT_TO_WATCH = [
   "Whether gold stabilizes after late-October cooling or reaccelerates with inflation, yields, or energy risk.",
   "Whether official-sector accumulation remains a multi-quarter support after the strong Q2 rebound.",
-  "Whether September's broader RAPI gains survive the holiday cycle without renewed inventory pressure.",
+  "Whether October's small-stone gains broaden or reverse as Indian inventory builds.",
   "Producer economics, supply discipline, and rough / polished dynamics — not a generic scarcity headline.",
-  "Lab-grown wholesale compression, manufacturing scale, adoption, and retailer margin structure.",
+  "Lab-grown listed-price dispersion, manufacturing scale, adoption, disclosure, and retailer margin structure.",
   "Sourcing discipline in a segmented market — provenance and selective inventory over reactive accumulation.",
 ] as const;
 
@@ -285,6 +286,71 @@ export const PMI_SERIES: LedgerMonitorSeries = {
           url: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
           supports:
             "Persistently elevated inflation and restrictive rates as context for gold's rate sensitivity; the same event remains scored in Financial",
+        },
+      ],
+    },
+    {
+      reviewDate: "November 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Strategically firm / Highly segmented",
+      currentDirection: "Rate-sensitive metals / Mixed natural diamonds / Lab-grown dispersion",
+      previousState: "Strategically firm / Highly segmented",
+      materialChangeSummary: PMI_WHAT_MOVED.join(" "),
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "Reuters",
+          title: "Gold rises on softer oil; markets parse Fed signals",
+          date: "Published November 2, 2026",
+          dataPeriod: "November 2, 2026 intraday market",
+          evidenceLabel: "Provisional",
+          url: "https://www.marketscreener.com/news/gold-rises-on-softer-oil-markets-parse-fed-signals-ce785fd8dc88f220",
+          supports: "Gold rebounded as oil softened; platinum was about $1,431.50 during the cited measurement window.",
+        },
+        {
+          institution: "World Gold Council",
+          title: "Gold Market Commentary: Go with the flow",
+          date: "Published October 7, 2026",
+          dataPeriod: "September 2026",
+          evidenceLabel: "Lagged",
+          url: "https://www.gold.org/goldhub/research/gold-market-commentary-september-2026",
+          supports: "September reference price of $4,176 and the distinction between price weakness, ETF inflows, and futures positioning.",
+        },
+        {
+          institution: "De Beers Group",
+          title: "Production Report for the Third Quarter of 2026",
+          date: "Published October 20, 2026",
+          dataPeriod: "Third quarter and year-to-date 2026",
+          evidenceLabel: "Observed",
+          url: "https://www.debeersgroup.com/news-insights/latest-group-news/2026/production-report-for-the-third-quarter-of-2026",
+          supports: "Q3 production down 11% year over year; sales volume up 71%; revenue up 4%; average realized price down 45%; lower-value naturals still pressured by lab-grown competition.",
+        },
+        {
+          institution: "Rapaport Trade",
+          title: "Small Gains, Big Moves: October's Diamond Market and Industry Highlights",
+          date: "Published November 2, 2026",
+          dataPeriod: "October 2026",
+          evidenceLabel: "Observed",
+          url: "https://rapaport.com/trade/blog/octobers-diamond-market-and-industry-highlights/",
+          supports: "Mixed polished market: 0.30-carat +3.2%, 0.50-carat +2.5%, 1-carat +0.3%, with softer selected 1-carat quality bands and inventory pressure by month-end.",
+        },
+        {
+          institution: "Caratlytics",
+          title: "Diamond Price Index — October 2026",
+          date: "Generated November 2, 2026",
+          dataPeriod: "October 2026 live listings",
+          evidenceLabel: "Estimated",
+          url: "https://caratlytics.com/price-index/",
+          supports: "Systematic listed-price sample shows lab-grown median far below natural and much wider cross-retailer dispersion; listings are not transactions.",
+        },
+        {
+          institution: "Gemological Institute of America",
+          title: "Disclosing Treated or Laboratory-Grown Gem Material to GIA",
+          date: "Accessed November 3, 2026",
+          dataPeriod: "Current disclosure practice",
+          evidenceLabel: "Observed",
+          url: "https://www.gia.edu/gem-lab-disclosure",
+          supports: "Identification, disclosure, and inscription practices for laboratory-grown material.",
         },
       ],
     },

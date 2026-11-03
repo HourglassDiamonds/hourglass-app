@@ -24,23 +24,23 @@ export const ISI_INTRO =
   "A weekly reading of the physical constraints beneath digital, economic, and industrial acceleration: power, transmission, transformers, data centers, water, skilled labor, semiconductors, and logistics. The purpose is not to predict failure. It is to track a capacity expansion race — where capital deploys quickly, buildout timing stays uneven, and flexibility narrows beneath functioning systems.";
 
 export const ISI_SUMMARY =
-  "Public infrastructure strain remains high, with active adaptation. EIA's October outlook places 2026 PJM wholesale prices 41% above 2025 and keeps commercial demand, including data centers, growing through 2027. PJM used maximum-generation and load-management alerts during unusually warm October shoulder-season weather, while retaining authority to direct large loads to backup generation. PJM did not need that authority and maintained service. This confirms high strain, not grid failure.";
+  "Infrastructure strain remains high, with active adaptation rather than synchronized failure. EIA's October outlook projects continuing commercial-load growth, including data centers, and average wholesale electricity prices 11% above 2025. DOE's October 12 PJM order supplied emergency dispatch and backup-generation tools during a maintenance and transmission-outage window. Reclamation placed Lake Powell in its Low Elevation Infrastructure Protection Range for water year 2027. These are real power-water constraints; the grid, labor, and logistics systems continue to function. Physical Infrastructure holds High / Partial.";
 
 export const ISI_WEEKLY_SIGNAL =
-  "October adds a live operating test: PJM used alerts and demand response during tight shoulder-season conditions but served load without calling large-load backup generation. EIA still shows elevated PJM prices and growing commercial demand. Internal System Temperature infrastructure holds high / partial.";
+  "October added a bounded PJM emergency order and a Colorado River infrastructure-protection operating range. Both confirm thinner reserve and active intervention; neither establishes national grid failure. Forecast demand remains labeled as forecast, and observed labor remains functional. Physical Infrastructure holds High / Partial.";
 
 export const ISI_CATEGORIES = [
   {
     name: "Grid & Transmission",
     score: 87,
     state: "High",
-    body: "EIA forecasts record U.S. electricity sales in 2026 and 2027. Texas paused new data-center grid connections pending an audit and is enforcing water reporting. Previously scored PJM congestion remains structural. European operators continue compensating through imports, alternate generation, and river engineering. Systems function; spare flexibility is narrower.",
+    body: "EIA's October outlook forecasts continued commercial-load growth, including data centers, and higher wholesale prices. DOE's October 12 PJM order addressed elevated demand, planned generator maintenance, and transmission outages with specified dispatch and backup-generation authority. Systems function; spare flexibility is narrower.",
   },
   {
     name: "Data-Center Load",
     score: 90,
     state: "High",
-    body: "Large-load / data-center adaptation is now an explicit reliability and resource problem: Texas interconnection pause and water-reporting enforcement sit beside previously identified bring-your-own-capacity, registry, and curtailment pathways. EIA still sees data centers as a significant driver of record national demand.",
+    body: "Large-load adaptation remains an explicit reliability problem: PJM resource-adequacy pathways, utility interconnection gates, water reporting, and EIA's projected commercial-demand growth all constrain the pace of deployment.",
   },
   {
     name: "Transformer Supply",
@@ -64,7 +64,7 @@ export const ISI_CATEGORIES = [
     name: "Water & Cooling",
     score: 82,
     state: "High",
-    body: "Texas data-center water reporting is now an enforcement issue alongside European river-level constraints that transmit into nuclear cooling, hydro output, freight, and some municipal / agricultural restrictions. This is multi-regional operational strain, not a continental water-system collapse. Improving basins are tracked on the Water monitor.",
+    body: "Water and power planning are coupled. Reclamation's October study places Powell in a Low Elevation Infrastructure Protection Range and uses Flaming Gorge releases as protective adaptation. Data-center water reporting remains a siting constraint. Water evidence is not double-counted beyond verified infrastructure transmission.",
   },
 ] as const;
 
@@ -85,20 +85,20 @@ export const ISI_BENCHMARKS = [
 
 export const ISI_WHAT_WATCHING = [
   {
-    title: "Texas power/water gating",
-    body: "Whether the data-center interconnection pause and water-reporting enforcement remain adaptation gates, or whether load is re-admitted faster than supply and water plans can absorb.",
+    title: "PJM emergency posture",
+    body: "Whether the October maintenance-window order remains episodic or recurs outside bounded outage and demand conditions.",
   },
   {
-    title: "EIA demand path versus Texas pause",
-    body: "Whether national record-demand forecasts hold even after EIA lowered the West South Central path, or whether other regions offset the Texas gate.",
+    title: "EIA commercial-load path",
+    body: "Whether forecast commercial electricity growth, including data centers, is matched by generation, interconnection, transmission, and demand response.",
   },
   {
     title: "PJM reliability actions",
     body: "Whether the 6,831 MW shortfall, reliability-backstop auction, and IRAS / large-load path advance, face challenge, or are revised.",
   },
   {
-    title: "European river recovery or deterioration",
-    body: "Whether Danube and Rhine levels, nuclear cooling, hydro output, and freight constraints ease seasonally or deepen.",
+    title: "Colorado power-water protection",
+    body: "Whether Flaming Gorge releases and the 6–7 maf Powell operating range protect low-elevation infrastructure without shifting unacceptable stress upstream.",
   },
   {
     title: "Transformer manufacturing",
@@ -428,6 +428,62 @@ export const ISI_SERIES: LedgerMonitorSeries = {
           url: "https://insidelines.pjm.com/pjm-ferc-focus-on-large-load-challenges-at-tech-conference/",
           supports:
             "Persistent planning and operating challenges from near-constant data-center load and slower generation and transmission expansion",
+        },
+      ],
+    },
+    {
+      reviewDate: "November 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "High infrastructure strain",
+      currentDirection: "Power-water constraints / Active adaptation",
+      previousState: "High infrastructure strain",
+      materialChangeSummary: ISI_WEEKLY_SIGNAL,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — electricity",
+          date: "Published October 6, 2026; forecast completed October 1, 2026",
+          dataPeriod: "2026–2027 forecast",
+          evidenceLabel: "Forecast",
+          url: "https://www.eia.gov/outlooks/steo/report/electricity.php",
+          supports: "Commercial-sector demand, including data centers, continues rising; 2026 average wholesale prices forecast 11% above 2025.",
+        },
+        {
+          institution: "U.S. Department of Energy",
+          title: "Energy Secretary Secures Mid-Atlantic Grid Ahead of Anticipated Stressed System Conditions",
+          date: "Published October 12, 2026",
+          dataPeriod: "October 2026 maintenance and transmission-outage window",
+          evidenceLabel: "Observed",
+          url: "https://www.energy.gov/articles/energy-secretary-secures-mid-atlantic-grid-ahead-anticipated-stressed-system-conditions",
+          supports: "PJM emergency dispatch and backup-generation authority as active adaptation under bounded stress, not proof of grid failure.",
+        },
+        {
+          institution: "U.S. Department of Energy, Office of Electricity",
+          title: "2026 Draft National Transmission Needs Study",
+          date: "Published August 2026; reviewed November 3, 2026",
+          dataPeriod: "Draft 2026 national needs assessment",
+          evidenceLabel: "Forecast",
+          url: "https://www.energy.gov/oe/articles/does-office-electricity-publishes-2026-draft-national-transmission-needs-study",
+          supports: "Accelerating demand from data centers and manufacturing alongside large regional transmission portfolios.",
+        },
+        {
+          institution: "Bureau of Reclamation",
+          title: "October 2026 Most Probable 24-Month Study — 6 maf scenario",
+          date: "Published October 15, 2026",
+          dataPeriod: "Observed through September 2026; projected water year 2027 operations",
+          evidenceLabel: "Forecast",
+          url: "https://www.usbr.gov/uc/water/crsp/studies/24Month_10_6.pdf",
+          supports: "Low Elevation Infrastructure Protection Range, 6–7 maf Powell release range, and 1.0 maf Flaming Gorge drought-response release.",
+        },
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Real-time Operating Grid",
+          date: "Accessed November 3, 2026",
+          dataPeriod: "October 26–November 2, 2026 preliminary operations",
+          evidenceLabel: "Provisional",
+          url: "https://www.eia.gov/electricity/gridmonitor/",
+          supports: "Continuing national grid operation; preliminary data are not evidence of loss of system function.",
         },
       ],
     },

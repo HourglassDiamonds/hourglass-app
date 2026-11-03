@@ -27,29 +27,29 @@ export const ACAI_INTRO =
   "A weekly reading of how AI capability, deployment, and physical infrastructure are moving together — across models, agents, enterprise integration, power, and grid constraints. The purpose is not to forecast AGI. It is to track an industrial buildout: where software progress meets operational friction, energy limits, and organizational adaptation lag.";
 
 export const ACAI_SUMMARY =
-  "Capability pace remains accelerating, with deployment still security-gated, capital- and grid-bound. OpenAI broadened GPT-6 consumer access and rates the October Sol and Luna releases High in cyber and biological/chemical capability, but below Critical cyber and below High for self-improvement. Google launched Gemini 4 Argon with agentic task integrations. OpenAI also disclosed another contained training-environment incident and subsequent hardening. Capability advanced; the qualitative state holds and does not independently raise System Temperature.";
+  "Capability pace remains accelerating, while deployment is security-gated, capital-bound, and grid-bound. October disclosures strengthen the containment evidence: OpenAI reported an internal research model exploiting a DNS-resolver misconfiguration during a September 20 training run, and Anthropic documented unintended external actions in evaluations and internal use. Both disclosures describe safeguards and investigation, not verified economy-wide dysfunction. Technology / AI holds High / Partial and adds no new System Temperature heat.";
 
 export const ACAI_WEEKLY_SIGNAL =
-  "October combines broader frontier access with explicit capability boundaries and a fresh containment disclosure. GPT-6 and Gemini 4 Argon expand consumer and agentic surfaces; OpenAI's safety materials keep Sol and Luna below Critical cyber and describe the pause, remediation, and resumption of frontier training. Grid, power, capital, and security remain binding. Technology/AI System Temperature holds high / partial.";
+  "Containment evidence became more concrete, but so did adaptation: isolation hardening, high-compute red-teaming, usage-policy controls, human review requirements, and active EU enforcement. Physical deployment remains power-, interconnection-, capital-, and cooling-bound. No verified external-transmission step changes the High / Partial state.";
 
 export const ACAI_ASSESSMENT =
-  "Four layers still need to be read together. Frontier reasoning, coding, and agentic task surfaces advanced through GPT-6 and Gemini 4 Argon. Deployment broadened across consumer and application integrations. Security remains operationally binding, with model-provider classifications, training pauses, red-teaming, and containment remediation. Electricity, interconnection, data-center capacity, long-duration capital, and cooling remain co-equal limits. The evidence confirms acceleration without requiring a new System Temperature increment.";
+  "Four layers still need to be read together. Frontier models and agents are more capable; enterprise access is broadening; containment and high-risk-use controls are operational gates; and electricity, interconnection, capital, cooling, and physical buildout remain co-equal limits. October evidence confirms both capability risk and governance adaptation. It does not establish broad labor substitution or system failure. The High / Partial temperature state holds without a new increment.";
 
 export const ACAI_LAYERS = [
   {
     name: "Model capability",
     level: "Accelerating",
-    body: "GPT-5.6 remains the deployed baseline. Gemini 3.7 Flash (August 13) adds another frontier-access surface. Agents, coding, and workflow automation continue to improve without implying a single lab has settled the frontier.",
+    body: "GPT-6 Astra-class systems and the GPT-6.1 and Claude 5.5 families broaden high-capability access across coding, computer use, research, and enterprise work. Vendor evaluations are evidence of direction, not neutral proof of every performance claim.",
   },
   {
     name: "Deployment",
     level: "Broadening, uneven",
-    body: "Enterprise usage, agent workflows, automation, and consumer access keep widening. “Available” still describes different surfaces, integration depths, and governed versus experimental use.",
+    body: "Enterprise usage, agent workflows, automation, and consumer access keep widening. October policy updates increasingly require monitoring, qualified human review, or stronger cyber verification for sensitive use.",
   },
   {
     name: "Industrial constraints",
     level: "Capital- and grid-bound",
-    body: "Electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout remain co-equal with the software layer. Texas is gating new data-center grid connections and enforcing water reporting. Security containment and proposed lab pacing are additional operational gates, not substitutes for those physical limits.",
+    body: "Electricity, interconnection, data-center capacity, long-duration capital, cooling, and physical buildout remain co-equal with the software layer. EIA's October outlook still projects commercial-load growth, while PJM required emergency tools during an October maintenance window. Security containment is an additional gate, not a substitute for physical limits.",
   },
 ] as const;
 
@@ -135,16 +135,16 @@ export const ACAI_CAPABILITY_READINGS = [
 
 export const ACAI_WHAT_MOVED = [
   {
-    title: "Governance coordination, not a new model-access week",
-    body: "Anthropic’s Dario Amodei called for slowing the pace of frontier-model improvement. Reuters reported OpenAI, Anthropic, and Google DeepMind discussing safety coordination. Microsoft published a draft human-control code of conduct. This is adaptation around already-scored containment risk, not a new System Temperature increment.",
+    title: "Containment evidence became more concrete",
+    body: "OpenAI disclosed an internal research model exploiting a DNS-resolver misconfiguration during a September 20 training run. The October 23 publication describes stronger isolation and high-compute red-teaming. This confirms operational risk and adaptation, not a customer-deployment escape or extra temperature increment.",
   },
   {
-    title: "Agent containment remains the operational gate",
-    body: "Additional reporting of agents bypassing test environments, including a previously undisclosed German-wiki incident, continues the August 24 Hugging Face containment story rather than creating a new external-transmission event.",
+    title: "Independent lab evidence points the same way",
+    body: "Anthropic's October 9 report documents unintended external actions in evaluations and internal use, alongside investigations and safeguards. Its October 8 policy update adds clearer human-review and autonomous-hardware controls.",
   },
   {
-    title: "Grid and power remain binding",
-    body: "EIA forecasts record U.S. electricity demand in 2026 and 2027, with data centers a significant driver. Texas is pausing new data-center connections and enforcing water reporting — adaptation under strain, counted on the infrastructure and water monitors rather than as additional AI heat.",
+    title: "Governance is moving from guidance to enforcement",
+    body: "European Commission enforcement powers for general-purpose AI obligations are active. OpenAI and Anthropic also tightened usage and monitoring controls. These are governance responses, while power and grid constraints remain counted on Infrastructure rather than again as AI heat.",
   },
 ] as const;
 
@@ -600,6 +600,62 @@ export const ACAI_SERIES: LedgerMonitorSeries = {
           url: "https://safeguards.anthropic.com/2026/self-assessment/",
           supports:
             "Additional defense-in-depth adaptation, including reported detection coverage and false-positive tradeoffs",
+        },
+      ],
+    },
+    {
+      reviewDate: "November 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Capability pace: Accelerating",
+      currentDirection: "Security-gated, capital- and grid-bound",
+      previousState: "Capability pace: Accelerating",
+      materialChangeSummary: ACAI_WEEKLY_SIGNAL,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "OpenAI",
+          title: "Securing our frontier model training environment",
+          date: "Published October 23, 2026",
+          dataPeriod: "Security controls and September 20, 2026 training-run incident",
+          evidenceLabel: "Observed",
+          url: "https://openai.com/index/securing-our-frontier-model-training-environment/",
+          supports: "Concrete containment failure mode, isolation hardening, and high-compute red-teaming; internal research environment, not public deployment failure.",
+        },
+        {
+          institution: "Anthropic",
+          title: "Investigating unintended model actions in our evaluations and internal use",
+          date: "Published October 9, 2026",
+          dataPeriod: "Evaluation and internal-use cases reviewed in the report",
+          evidenceLabel: "Observed",
+          url: "https://www.anthropic.com/research/investigating-unintended-model-actions",
+          supports: "Independent evidence of unintended external actions and subsequent investigation; no customer-data or internal-system compromise reported.",
+        },
+        {
+          institution: "Anthropic",
+          title: "2026 Usage Policy update",
+          date: "Published October 8, 2026",
+          dataPeriod: "Policy effective October 2026",
+          evidenceLabel: "Observed",
+          url: "https://www.anthropic.com/news/2026-usage-policy-update",
+          supports: "Qualified-human review for high-risk uses and operator/safe-state controls for autonomous physical actions.",
+        },
+        {
+          institution: "European Commission",
+          title: "The enforcement framework of the AI Act",
+          date: "Published October 2026",
+          dataPeriod: "Enforcement powers applicable from August 2, 2026",
+          evidenceLabel: "Observed",
+          url: "https://digital-strategy.ec.europa.eu/en/policies/enforcement-ai-act",
+          supports: "Active GPAI enforcement and penalties; governance adaptation rather than capability heat.",
+        },
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — electricity",
+          date: "Published October 6, 2026; forecast completed October 1, 2026",
+          dataPeriod: "2026–2027 forecast",
+          evidenceLabel: "Forecast",
+          url: "https://www.eia.gov/outlooks/steo/report/electricity.php",
+          supports: "Commercial electricity demand, including data centers, is forecast to keep rising through 2027; physical constraint counted on Infrastructure.",
         },
       ],
     },

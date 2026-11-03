@@ -502,7 +502,7 @@ describe("August 24, 2026 snapshot (history unchanged)", () => {
   });
 });
 
-describe("October 29, 2026 published reading", () => {
+describe("November 3, 2026 published reading", () => {
   it("holds 74° / High / Systems Functioning / Moderate from 73.7", () => {
     const weighted = computeWeightedTemperature(
       SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.channels,
@@ -517,7 +517,7 @@ describe("October 29, 2026 published reading", () => {
       "Systems Functioning",
     );
     assert.equal(SYSTEM_TEMPERATURE_READING.confidence, "moderate");
-    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "October 29, 2026");
+    assert.equal(SYSTEM_TEMPERATURE_READING.evidenceCutoff, "November 3, 2026");
     assert.equal(SYSTEM_TEMPERATURE_READING.validation.ok, true);
     assert.equal(SYSTEM_TEMPERATURE_READING.validation.issues.length, 0);
     assert.ok(!SYSTEM_TEMPERATURE_SNAPSHOT_2026_10_29.editorialOverrideDegrees);
@@ -579,12 +579,13 @@ describe("October 29, 2026 published reading", () => {
   });
 
   it("appends after August and September reviews without inventing a September 2 reading", () => {
-    assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS.length, 5);
+    assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS.length, 6);
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[0]?.reviewDate, "August 12, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[1]?.reviewDate, "August 18, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[2]?.reviewDate, "August 24, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[3]?.reviewDate, "September 16, 2026");
     assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[4]?.reviewDate, "October 29, 2026");
+    assert.equal(SYSTEM_TEMPERATURE_SNAPSHOTS[5]?.reviewDate, "November 3, 2026");
     assert.equal(
       SYSTEM_TEMPERATURE_SNAPSHOTS.some(
         (snapshot) => snapshot.reviewDate === "September 2, 2026",
@@ -632,9 +633,9 @@ describe("Public route wiring", () => {
 });
 
 describe("Hub / monitor status sync", () => {
-  it("keeps evidence cutoff at October 29, 2026", async () => {
+  it("keeps evidence cutoff at November 3, 2026", async () => {
     const { LEDGER_EVIDENCE_CUTOFF } = await import("../ledger-monitor-framework");
-    assert.equal(LEDGER_EVIDENCE_CUTOFF, "October 29, 2026");
+    assert.equal(LEDGER_EVIDENCE_CUTOFF, "November 3, 2026");
   });
 
   it("has no stale public interim-methodology language", () => {
@@ -693,7 +694,7 @@ describe("Hub / monitor status sync", () => {
       assert.doesNotMatch(source, /LedgerIndexMeter/);
     }
     const hub = readLedger("components/weekly-synopsis.tsx");
-    assert.match(hub, /October 29, 2026/);
+    assert.match(hub, /November 3, 2026/);
     assert.match(hub, /74°/);
     assert.doesNotMatch(hub, /72°/);
   });
