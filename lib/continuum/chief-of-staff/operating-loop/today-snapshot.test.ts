@@ -163,6 +163,11 @@ function record(
 }
 
 describe("persisted Today snapshot", () => {
+  it("persists an honest correspondence completeness marker across refresh", () => {
+    const payload = projectTodaySnapshot(docket(), null, "unavailable");
+    assert.equal(readTodaySnapshotPayload(payload)?.correspondenceStatus, "unavailable");
+  });
+
   it("renders a compatible snapshot when the watermark matches", () => {
     assert.equal(
       decideSnapshotUse({ record: record("v1"), liveWatermark: "v1" }),

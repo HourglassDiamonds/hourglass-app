@@ -79,6 +79,7 @@ import {
   COS_OPERATING_LOOP_CONTRACT_VERSION,
   type CosMasterSprintItem,
   type CosOperatingLoopView,
+  type TodayCorrespondenceStatus,
 } from "./types";
 
 function unassignedLiveIdentityThreadIds(
@@ -255,8 +256,8 @@ async function rebuildTodayLoop(
   let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
   const attemptedThreadIds = new Set<string>();
-  const enrichedThreadIds = new Set<string>();
   const unavailableIndexedThreadIds = new Set<string>();
+  const criticalOutcomes = new Map<string, "complete_live" | "indexed_excerpt_only" | "unavailable">();
   for (let pass = 0; pass < 2; pass += 1) {
     const plan = liveThreadPlan(loop, candidates, now.toISOString());
     const critical = partitionIndexedTodayLiveThreadIds({
@@ -268,12 +269,13 @@ async function rebuildTodayLoop(
     if (critical.eligible.length > 0) {
       threadContext = await loadLiveTodayOperationalFacts(threadContext, {
         threadIds: critical.eligible,
-        requireComplete: true,
+        // Gmail completeness gates Sterling, but cannot make canonical work disappear.
+        requireComplete: false,
         onDiagnostics: emitTodayLiveEnrichmentDiagnostics,
+        onThreadOutcome: (outcome) => criticalOutcomes.set(outcome.threadId, outcome.status),
       });
       for (const threadId of critical.eligible) {
         attemptedThreadIds.add(threadId);
-        enrichedThreadIds.add(threadId);
       }
     }
     const identity = partitionIndexedTodayLiveThreadIds({
@@ -290,9 +292,6 @@ async function rebuildTodayLoop(
       });
       for (const threadId of identity.eligible) {
         attemptedThreadIds.add(threadId);
-        if (threadContext.get(threadId)?.liveIdentityLoaded === true) {
-          enrichedThreadIds.add(threadId);
-        }
       }
     }
     if (critical.eligible.length === 0 && identity.eligible.length === 0) break;
@@ -300,7 +299,7 @@ async function rebuildTodayLoop(
   }
   const unresolvedRequired = liveThreadPlan(loop, candidates, now.toISOString()).criticalThreadIds.filter(
     (threadId) =>
-      !enrichedThreadIds.has(threadId) &&
+      !attemptedThreadIds.has(threadId) &&
       !unavailableIndexedThreadIds.has(threadId) &&
       Boolean(threadContext.get(threadId)?.messages?.length),
   );
@@ -318,7 +317,18 @@ async function rebuildTodayLoop(
       now,
     }).catch(() => []);
   }
-  return loop;
+  const finalRequired = liveThreadPlan(loop, candidates, now.toISOString()).criticalThreadIds;
+  const completedRequired = finalRequired.filter(
+    (threadId) => criticalOutcomes.get(threadId) === "complete_live",
+  ).length;
+  const correspondenceStatus: TodayCorrespondenceStatus = finalRequired.length === 0
+    ? "not-required"
+    : completedRequired === finalRequired.length
+      ? "complete"
+      : completedRequired > 0
+        ? "partial"
+        : "unavailable";
+  return { ...loop, todayCorrespondenceStatus: correspondenceStatus };
 }
 
 async function loadActiveConditionalHolds(client: SupabaseClient) {
@@ -380,6 +390,7 @@ async function commitComposedLoop(
       payload: projectTodaySnapshot(
         composeTodayDocket(loop),
         loop.attentionValidUntil ?? null,
+        loop.todayCorrespondenceStatus,
       ),
       composedAt,
       evaluationTime: evaluationTime.toISOString(),
@@ -445,6 +456,7 @@ export type TodayPageModel = {
   freshness: "current" | "refreshing";
   readModelStatus: "ready" | "refreshing" | "unavailable";
   readModelWatermark: string | null;
+  correspondenceStatus?: TodayCorrespondenceStatus;
 };
 
 function pageFromLoop(
@@ -458,6 +470,7 @@ function pageFromLoop(
     freshness,
     readModelStatus: freshness === "refreshing" ? "refreshing" : "ready",
     readModelWatermark: watermark,
+    correspondenceStatus: loop.todayCorrespondenceStatus,
   };
 }
 
@@ -524,6 +537,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
         freshness: "current",
         readModelStatus: "ready",
         readModelWatermark: snapshot.sourceWatermark,
+        correspondenceStatus: snapshot.payload.correspondenceStatus,
       };
     }
     if (snapshot && snapshotUse === "refreshing") {
@@ -536,6 +550,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
           ? "unavailable"
           : pending ? "refreshing" : "ready",
         readModelWatermark: snapshot.sourceWatermark,
+        correspondenceStatus: snapshot.payload.correspondenceStatus,
       };
     }
     const loop = await rebuildTodayLoop(now, watermark);

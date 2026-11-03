@@ -78,17 +78,9 @@ The publisher must remain off until all of the following are implemented and acc
 - Capture it before assembly and compare it immediately before publication. If any component changes, discard the proposal and rebuild.
 - Store the watermark with the publication and require the reader to validate it. Never relabel an older publication with a newer watermark.
 
-### Publication expiration
+### Publication expiration (superseded by Beta C constraint audit)
 
-The current 15-minute publisher TTL is safe but incompatible with the intended daily cadence. Use an explicit schedule-derived expiry with a 45-minute late-run grace:
-
-- 6:00 a.m. publication expires at 10:15 a.m.
-- 9:30 a.m. publication expires at 1:15 p.m.
-- 12:30 p.m. publication expires at 3:15 p.m.
-- 2:30 p.m. publication expires at 4:45 p.m.
-- 4:00 p.m. publication expires at 8:00 p.m.; after that, use canonical fallback until the next successful 6:00 a.m. run.
-
-Expiry must be fixed when the publication is created. A missed run must not extend or roll forward old Sterling evidence, and an expired row must never appear current.
+The installed database constraint caps a Sterling publication at 30 minutes. The longer schedule-derived windows previously proposed here are not deployable and must not be used. Retain the current 15-minute publisher TTL until separately reviewed; any future value must remain at or below 30 minutes. Canonical fallback covers all time outside a valid publication window. See `continuum-beta-c-readiness.md`.
 
 ### Legacy fallback
 

@@ -43,6 +43,9 @@ export default async function SterlingTodayShadowPage({ searchParams }: {
           Viewing a proposal never changes canonical records. Approval executes the exact server-loaded payload through the
           reviewed transaction; rejection records a durable decision without a canonical mutation.
         </p>
+        <Link href="/executive-dashboard/concierge/sterling-today/readiness" className="mt-4 inline-block text-[11px] uppercase tracking-[0.14em] text-[#ad9164] underline underline-offset-4">
+          Open read-only publication readiness
+        </Link>
         {!reviewAccess.ok ? (
           <p role="alert" className="mt-6 rounded-xl border border-[#d39a8a]/30 p-4 text-[13px] text-[#d39a8a]">
             {reviewAccess.reason === "not-preview"

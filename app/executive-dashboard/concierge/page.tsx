@@ -41,6 +41,7 @@ export default async function ConciergeHomePage() {
         refreshing={today.freshness === "refreshing"}
         rebuildUnavailable={today.readModelStatus === "unavailable"}
         baselineWatermark={today.readModelWatermark}
+        correspondenceStatus={today.correspondenceStatus}
       />
       <TodayIntelligenceStatus status={today.intelligence} />
       <Suspense fallback={<ConditionalHoldPanelFallback />}>

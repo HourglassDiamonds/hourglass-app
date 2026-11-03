@@ -13,6 +13,7 @@ import {
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-refresh";
 import { refreshGmailOperatingFreshness } from "../gmail-freshness-actions";
 import { probeTodayRecompute, probeTodayCanonicalWatermark } from "../today-read-model-actions";
+import type { TodayCorrespondenceStatus } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 
 const TODAY_RECOMPUTE_POLL_MS = 1_000;
 
@@ -28,10 +29,12 @@ export function GmailOperatingFreshness({
   refreshing = false,
   rebuildUnavailable = false,
   baselineWatermark = null,
+  correspondenceStatus,
 }: {
   refreshing?: boolean;
   rebuildUnavailable?: boolean;
   baselineWatermark?: string | null;
+  correspondenceStatus?: TodayCorrespondenceStatus;
 }) {
   const router = useRouter();
   const inFlight = useRef(false);
@@ -175,6 +178,14 @@ export function GmailOperatingFreshness({
           className="text-[0.72rem] uppercase tracking-[0.16em] text-[#d6a66f]"
         >
           Today refresh unavailable · showing the last verified view
+        </p>
+      ) : null}
+      {correspondenceStatus === "partial" || correspondenceStatus === "unavailable" ? (
+        <p
+          data-today-correspondence={correspondenceStatus}
+          className="text-[0.72rem] uppercase tracking-[0.16em] text-[#d6a66f]"
+        >
+          Correspondence incomplete · canonical Projects and Jobs remain available
         </p>
       ) : null}
     </div>
