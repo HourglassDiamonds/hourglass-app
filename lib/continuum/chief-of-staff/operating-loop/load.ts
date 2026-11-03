@@ -65,6 +65,7 @@ import {
   shouldScheduleTodayRecompute,
   storeCachedTodayLoop,
   todayRecomputeInFlight,
+  todayRecomputeUnavailable,
   waitForTodayRecompute,
 } from "./today-read-model";
 import { parseGmailWebHref } from "./evidence";
@@ -442,6 +443,7 @@ async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boole
 export type TodayPageModel = {
   docket: CosTodayDocketView;
   freshness: "current" | "refreshing";
+  readModelStatus: "ready" | "refreshing" | "unavailable";
   readModelWatermark: string | null;
 };
 
@@ -454,6 +456,7 @@ function pageFromLoop(
   return {
     docket: composeTodayDocket(presented),
     freshness,
+    readModelStatus: freshness === "refreshing" ? "refreshing" : "ready",
     readModelWatermark: watermark,
   };
 }
@@ -463,11 +466,14 @@ function disconnectedPage(): TodayPageModel {
 }
 
 function reconstructionUnavailablePage(): TodayPageModel {
-  return pageFromLoop({
-    ...disconnectedLoop(),
-    heading: "Today couldn't refresh.",
-    quietDetail: "Canonical Open Jobs remain connected. Try again shortly.",
-  }, "current", null);
+  return {
+    ...pageFromLoop({
+      ...disconnectedLoop(),
+      heading: "Today couldn't refresh.",
+      quietDetail: "Canonical Open Jobs remain connected. Try again shortly.",
+    }, "current", null),
+    readModelStatus: "unavailable",
+  };
 }
 
 export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel> {
@@ -494,11 +500,18 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
     }
     if (choice === "refreshing" && lastKnown) {
       const scheduled = watermark ? await scheduleTodayRebuild(now, watermark) : false;
-      return pageFromLoop(
+      const pending = scheduled || todayRecomputeInFlight();
+      const page = pageFromLoop(
         lastKnown.loop,
-        scheduled || todayRecomputeInFlight() ? "refreshing" : "current",
+        pending ? "refreshing" : "current",
         lastKnown.watermark,
       );
+      return {
+        ...page,
+        readModelStatus: !pending && watermark && todayRecomputeUnavailable(watermark, now.getTime())
+          ? "unavailable"
+          : page.readModelStatus,
+      };
     }
     const snapshotUse = decideSnapshotUse({
       record: snapshot,
@@ -509,14 +522,19 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
       return {
         docket: snapshot.payload.docket,
         freshness: "current",
+        readModelStatus: "ready",
         readModelWatermark: snapshot.sourceWatermark,
       };
     }
     if (snapshot && snapshotUse === "refreshing") {
       const scheduled = watermark ? await scheduleTodayRebuild(now, watermark) : false;
+      const pending = scheduled || todayRecomputeInFlight();
       return {
         docket: snapshot.payload.docket,
-        freshness: scheduled || todayRecomputeInFlight() ? "refreshing" : "current",
+        freshness: pending ? "refreshing" : "current",
+        readModelStatus: !pending && watermark && todayRecomputeUnavailable(watermark, now.getTime())
+          ? "unavailable"
+          : pending ? "refreshing" : "ready",
         readModelWatermark: snapshot.sourceWatermark,
       };
     }

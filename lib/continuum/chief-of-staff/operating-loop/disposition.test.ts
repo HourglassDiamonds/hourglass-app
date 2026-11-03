@@ -472,6 +472,125 @@ describe("Today founder disposition", () => {
     assert.equal(world.jobs.getJob(topId)?.state, "snoozed");
   });
 
+  it("Beta B keeps founder confirm, snooze, and vendor dismiss durable across refresh and recomposition", async () => {
+    const world = await seedWorld();
+    const confirmed = await world.jobWriter.createJob({
+      mutationId: randomUUID(),
+      projectId: null,
+      kind: "required_action",
+      subject: "Confirm the founder decision",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    const snoozed = await world.jobWriter.createJob({
+      mutationId: randomUUID(),
+      projectId: null,
+      kind: "request",
+      subject: "Call Taylor to confirm the finger size",
+      waitingOnActor: "founder",
+      actor: ACTOR,
+    });
+    const vendor = await world.jobWriter.createJob({
+      mutationId: randomUUID(),
+      projectId: null,
+      kind: "commitment",
+      subject: "Wait for the vendor delivery",
+      waitingOnActor: "vendor",
+      actor: ACTOR,
+    });
+    assert.equal(confirmed.ok && snoozed.ok && vendor.ok, true);
+    if (!confirmed.ok || !snoozed.ok || !vendor.ok) return;
+
+    const before = composeTodayDocket(composeCosOperatingLoop({
+      jobs: world.jobs.listJobs(),
+      projects: new Map(),
+      nowIso: NOW,
+    }));
+    assert.ok(before.items.some((item) => item.id === confirmed.job.jobId));
+    assert.equal(before.items.some((item) => item.id === vendor.job.jobId), false);
+
+    const confirmResult = await disposeDocketItem(
+      { nowIso: () => NOW, jobs: world.jobWriter },
+      {
+        verb: "complete",
+        origin: "open_job",
+        itemId: confirmed.job.jobId,
+        projectId: null,
+        jobId: confirmed.job.jobId,
+        candidateIds: [],
+        mutationId: randomUUID(),
+        actor: ACTOR,
+      },
+    );
+    const snoozeUntil = "2026-09-16T00:00:00.000Z";
+    const snoozeResult = await disposeDocketItem(
+      { nowIso: () => NOW, jobs: world.jobWriter },
+      {
+        verb: "snooze",
+        origin: "open_job",
+        itemId: snoozed.job.jobId,
+        projectId: null,
+        jobId: snoozed.job.jobId,
+        candidateIds: [],
+        mutationId: randomUUID(),
+        actor: ACTOR,
+        snoozeUntil,
+      },
+    );
+    const dismissResult = await disposeDocketItem(
+      { nowIso: () => NOW, jobs: world.jobWriter },
+      {
+        verb: "dismiss",
+        origin: "open_job",
+        itemId: vendor.job.jobId,
+        projectId: null,
+        jobId: vendor.job.jobId,
+        candidateIds: [],
+        mutationId: randomUUID(),
+        actor: ACTOR,
+      },
+    );
+    assert.equal(confirmResult.ok, true);
+    assert.equal(snoozeResult.ok, true);
+    assert.equal(dismissResult.ok, true);
+
+    // A new writer represents a fresh request after a browser refresh. It
+    // reads the same durable canonical job store rather than optimistic UI.
+    const refreshedWriter = createInMemoryProjectJobWriter(world.memory, world.jobs, () => NOW);
+    assert.equal((await refreshedWriter.getJob(null, confirmed.job.jobId))?.state, "resolved");
+    assert.equal((await refreshedWriter.getJob(null, snoozed.job.jobId))?.state, "snoozed");
+    assert.equal((await refreshedWriter.getJob(null, snoozed.job.jobId))?.deferredUntil, snoozeUntil);
+    assert.equal((await refreshedWriter.getJob(null, vendor.job.jobId))?.state, "cancelled");
+
+    const rebuilt = composeTodayDocket(composeCosOperatingLoop({
+      jobs: world.jobs.listJobs(),
+      projects: new Map(),
+      nowIso: NOW,
+    }));
+    assert.equal(rebuilt.items.some((item) => item.id === confirmed.job.jobId), false);
+    assert.equal(rebuilt.items.some((item) => item.id === snoozed.job.jobId), false);
+    assert.equal(rebuilt.items.some((item) => item.id === vendor.job.jobId), false);
+
+    const afterSnoozeLoop = composeCosOperatingLoop({
+      jobs: world.jobs.listJobs(),
+      projects: new Map(),
+      nowIso: "2026-09-16T00:00:01.000Z",
+    });
+    const afterSnooze = composeTodayDocket(afterSnoozeLoop);
+    assert.ok(
+      afterSnooze.items.some((item) => item.id === snoozed.job.jobId),
+      JSON.stringify({
+        expected: snoozed.job.jobId,
+        jobs: world.jobs.listJobs().map((job) => ({ id: job.jobId, state: job.state, until: job.deferredUntil })),
+        top5: afterSnoozeLoop.top5.map((item) => ({ id: item.id, subject: item.subject })),
+        items: afterSnooze.items.map((item) => ({ id: item.id, subject: item.subject })),
+        watching: afterSnooze.watching.map((item) => ({ id: item.id, title: item.title })),
+      }),
+    );
+    assert.equal(afterSnooze.items.some((item) => item.id === confirmed.job.jobId), false);
+    assert.equal(afterSnooze.items.some((item) => item.id === vendor.job.jobId), false);
+  });
+
   it("persists Master Sprint complete and disregard on the canonical backlog", async () => {
     const { InMemoryPersistenceAdapter } = await import(
       "@/lib/agent-os/persistence/adapters/memory"

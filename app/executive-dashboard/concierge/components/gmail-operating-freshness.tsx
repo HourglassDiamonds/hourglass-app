@@ -26,14 +26,17 @@ const TODAY_RECOMPUTE_POLL_MS = 1_000;
  */
 export function GmailOperatingFreshness({
   refreshing = false,
+  rebuildUnavailable = false,
   baselineWatermark = null,
 }: {
   refreshing?: boolean;
+  rebuildUnavailable?: boolean;
   baselineWatermark?: string | null;
 }) {
   const router = useRouter();
   const inFlight = useRef(false);
   const [checking, setChecking] = useState(refreshing);
+  const [refreshUnavailable, setRefreshUnavailable] = useState(rebuildUnavailable);
   const [sourceHealth, setSourceHealth] = useState<TodaySourceHealth>("checking");
   const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -112,6 +115,11 @@ export function GmailOperatingFreshness({
       try {
         const probe = await probeTodayRecompute();
         if (cancelled) return;
+        if (probe.unavailable) {
+          setRefreshUnavailable(true);
+          setChecking(false);
+          return;
+        }
         if (probe.pending) observedPending.current = true;
         const decision = shouldSwapTodayAfterRecompute({
           baselineWatermark,
@@ -147,19 +155,28 @@ export function GmailOperatingFreshness({
     };
   }, [baselineWatermark, refreshing, router]);
 
-  const activelyChecking = refreshing || checking;
+  const activelyChecking = !refreshUnavailable && (refreshing || checking);
   const health = activelyChecking ? "checking" : sourceHealth;
   const label = health === "checking"
     ? "Checking for updates…"
     : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock });
   return (
-    <p
-      data-today-freshness={health}
-      data-today-refreshing={activelyChecking ? "" : undefined}
-      className={`mb-3 text-[0.72rem] uppercase tracking-[0.16em] ${health === "delayed" ? "text-[#d6a66f]" : "text-[#81776d]"}`}
-      role="status"
-    >
-      {label}
-    </p>
+    <div className="mb-3 space-y-1" role="status">
+      <p
+        data-today-freshness={health}
+        data-today-refreshing={activelyChecking ? "" : undefined}
+        className={`text-[0.72rem] uppercase tracking-[0.16em] ${health === "delayed" ? "text-[#d6a66f]" : "text-[#81776d]"}`}
+      >
+        {label}
+      </p>
+      {refreshUnavailable ? (
+        <p
+          data-today-read-model="unavailable"
+          className="text-[0.72rem] uppercase tracking-[0.16em] text-[#d6a66f]"
+        >
+          Today refresh unavailable · showing the last verified view
+        </p>
+      ) : null}
+    </div>
   );
 }

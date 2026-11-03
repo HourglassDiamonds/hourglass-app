@@ -36,6 +36,7 @@ afterEach(() => {
 function legacy(): TodayPageModel {
   return {
     freshness: "current",
+    readModelStatus: "ready",
     readModelWatermark: "legacy-watermark",
     docket: {
       todayDocketVersion: TODAY_DOCKET_VERSION,

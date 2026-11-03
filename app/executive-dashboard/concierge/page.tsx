@@ -39,6 +39,7 @@ export default async function ConciergeHomePage() {
     <ConciergeShell variant="home">
       <GmailOperatingFreshness
         refreshing={today.freshness === "refreshing"}
+        rebuildUnavailable={today.readModelStatus === "unavailable"}
         baselineWatermark={today.readModelWatermark}
       />
       <TodayIntelligenceStatus status={today.intelligence} />
