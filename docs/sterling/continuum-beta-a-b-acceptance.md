@@ -13,7 +13,17 @@ Date: 2026-11-03 (America/New_York)
 
 Source deployment `dpl_8QYvgtrXnBRLFc22EZcdV59TJVv2` is READY at commit `98ff28e436a8efd2b2a83f0e885fd1f35130f2b9`. The branch alias protects `/executive-dashboard/concierge` and redirected an unauthenticated browser to `/executive-dashboard/login?next=%2Fexecutive-dashboard%2Fconcierge`, so route protection passes.
 
-Founder-authenticated page acceptance remains an interactive gate: the acceptance browser has no founder session and the login fields are empty. Until a founder signs in, canonical fallback labeling, loaded Projects/Jobs, refresh, and mobile rendering cannot be honestly marked hosted PASS.
+Founder-authenticated hosted acceptance is **PASS** on deployment `dpl_FfKN61FeANHARjasXfbJHZyPZHj6` at commit `171396180b79a8a67c56a0b98a11623288e1b452`.
+
+- Founder authentication succeeded and survived a full page reload.
+- Today is explicitly labeled `Canonical Today`; the page states that Sterling publication is off. No false Sterling-verified state appears.
+- The obsolete September snapshot is not presented as current. The page fails safely with `Today couldn't refresh` and `Today refresh unavailable · showing the last verified view` while retaining canonical held Jobs.
+- Projects and Jobs load. The active project desk exposes canonical action, spec, and progress details; Morgan remains waiting on shop, Zane remains shop-owned production, and Madi remains unchanged in CAD/design despite the `Declined` title.
+- Past projects load separately: Dylan and J. Pennock remain distinct completed records.
+- A full reload settles from `Checking for updates…` to the same explicit `Email source delayed` and read-model-unavailable state, and held Jobs repopulate.
+- At a 390-by-844 mobile viewport, the page has no horizontal document overflow and retains the canonical, delayed-source, and unavailable-refresh labels. The browser viewport was restored after verification.
+
+This is a PASS for truthful degraded behavior, not evidence that Gmail or the Today rebuild is healthy.
 
 ### Actual Preview read-model evidence
 
