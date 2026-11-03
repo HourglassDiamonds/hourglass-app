@@ -14,6 +14,7 @@ import {
 } from "./components/conditional-hold-panel";
 import { loadActiveClientWebsiteIntakes } from "@/lib/continuum/client-memory/read/website-intake-load";
 import { composeBusinessTodayContext } from "@/lib/continuum/chief-of-staff/operating-loop/business-today-context";
+import { TodayIntelligenceStatus } from "./components/today-intelligence-status";
 
 export const fetchCache = "force-no-store";
 // Today can perform a one-time synchronous read-model rebuild after a version
@@ -40,6 +41,7 @@ export default async function ConciergeHomePage() {
         refreshing={today.freshness === "refreshing"}
         baselineWatermark={today.readModelWatermark}
       />
+      <TodayIntelligenceStatus status={today.intelligence} />
       <Suspense fallback={<ConditionalHoldPanelFallback />}>
         <ConditionalHoldPanel />
       </Suspense>

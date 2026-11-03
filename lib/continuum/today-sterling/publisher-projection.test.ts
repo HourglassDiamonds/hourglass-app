@@ -118,6 +118,7 @@ describe("Sterling Preview Today publisher", () => {
         return { data: {
           run_id: expected.runId,
           proposal: expected,
+          source_watermark: "watermark-1",
           validation_summary: { verdict: "PASS", accepted: true, mutationsReviewable: true },
           published_at: "2026-10-30T12:00:00.000Z",
           expires_at: "2026-10-30T12:15:00.000Z",
@@ -126,7 +127,14 @@ describe("Sterling Preview Today publisher", () => {
     };
     const client = { from: () => query } as unknown as SupabaseClient;
     const loaded = await loadFreshSterlingTodayPublication(client, new Date("2026-10-30T12:05:00.000Z"));
-    assert.deepEqual(loaded, expected);
+    assert.deepEqual(loaded, {
+      proposal: expected,
+      runId: expected.runId,
+      sourceWatermark: "watermark-1",
+      validationResult: "PASS",
+      publishedAt: "2026-10-30T12:00:00.000Z",
+      expiresAt: "2026-10-30T12:15:00.000Z",
+    });
     assert.ok(calls.some(([name, value]) => name === "eq:status" && value === "active"));
     assert.ok(calls.some(([name]) => name === "gt:expires_at"));
   });
