@@ -19,7 +19,7 @@ export const GPM_SEO_DESCRIPTION =
   "Hourglass Ledger Global Pressure Monitor — qualitative status of external threat pressure and systemic transmission.";
 
 export const GPM_HUB_DESCRIPTION =
-  "Very high external pressure / Broad energy transmission — EIA still sees constrained Middle East flows and a $105 fourth-quarter Brent path, while physical workarounds, credit, funding, and resilient activity limit broader failure.";
+  "Very high external pressure / Broad energy transmission — Gulf and bypass flows recovered, but above-$100 oil and thin product buffers persist while credit, funding, and labor continue to function.";
 
 export const GPM_KICKER = "The Ledger Intelligence System";
 
@@ -34,23 +34,23 @@ export const GPM_CURRENT_STATE =
 export const GPM_CURRENT_DIRECTION_LABEL = "Current Direction";
 
 export const GPM_CURRENT_DIRECTION =
-  "Persistent constraint / Physical workarounds improving";
+  "Recovered flows / Fragile normalization and renewed security risk";
 
 export const GPM_LEAD =
-  "External pressure remains very high. EIA's October outlook keeps Middle East oil flows constrained through the fourth quarter and raises its 4Q Brent forecast to $105 after September averaged $114. The same release supplies important counterevidence: regional shut-in production was the lowest since hostilities began, and convoys, bypass routes, and ship-to-ship transfers are lifting output and exports. The Fed held on October 28; activity and market function remain resilient. This is persistent broad energy transmission, not a confirmed financial-system seizure.";
+  "September Gulf flows recovered materially: the IEA measured Hormuz oil flows at 10.9 million barrels a day and bypass exports at 5.6 million as East-West Pipeline flows returned. That is meaningful cooling, not full normalization. Refined-product supply still lags crude, inventories remain thin, Brent remained above $100 on November 3, and renewed U.S. strikes left the diplomatic path unresolved. The Fed held and the 10-year measured 4.91% on November 2; contained credit spreads, orderly funding, and functional labor still block a financial-system crisis reading.";
 
 export const GPM_WHAT_CHANGED =
-  "Since September 16, the pressure state has held rather than moved higher. EIA confirmed the $100+ oil regime and lifted its fourth-quarter forecast, while also documenting lower regional shut-ins and improving export workarounds. The October Fed decision resolved one uncertainty: rates held after September's hike. Long yields remain near 5%, but resilient activity and functioning credit are material counterevidence. No additional degree increment is justified.";
+  "Since October 29, official releases confirm recovered September crude and bypass flows while diesel and refined-product availability remain strained. The Fed held on October 28 and the 10-year moved below 5%, but the 30-year remained 5.28%, September CPI was 3.7%, and Brent stayed above $100. November 3 military action and incomplete talks keep trajectory uncertain. The governed channel states hold; market scenarios are not treated as forecasts.";
 
 export const GPM_THREAT_PANEL = {
   title: "Threat Pressure",
   level: "Very High",
   listLabel: "Drivers",
   items: [
-    "East-West Pipeline shut; Yanbu loadings reported suspended — principal Hormuz-bypass route disrupted",
-    "Hormuz commodity-vessel traffic at four on Monday vs ~130–140 daily pre-conflict",
-    "Brent around $108 — a $100+ regime still in place on the morning of September 16",
-    "Libya field shutdowns and Russian diesel-refinery outages in the same energy-supply channel",
+    "IEA measured a large September recovery in Hormuz and bypass oil flows",
+    "Refined-product and diesel availability still lagged crude recovery",
+    "Brent remained above $100 on November 3 amid renewed military action",
+    "Talks may provide an off-ramp, but no durable transit normalization is verified",
   ],
 } as const;
 
@@ -59,10 +59,10 @@ export const GPM_TRANSMISSION_PANEL = {
   level: "Broad (energy supply) / Partial (financial path)",
   listLabel: "Evidence",
   items: [
-    "Energy-price transmission is now in a $100+ oil regime, with diesel futures sharply higher",
-    "Multi-corridor supply pressure: Hormuz, Red Sea/Yanbu, Libya, and Russian refining",
-    "Credit, funding, and equities continue to function; no confirmed financial-system seizure",
-    "Pipeline repair estimates range from very soon to about eight weeks; physical oil continues clearing",
+    "The Fed held at 3.75–4.00%; the November 2 10-year measured 4.91%",
+    "High-yield spreads remained contained at 3.44% on October 30",
+    "Funding markets remain orderly and labor remains functional",
+    "PJM required emergency tools in October without a national grid failure",
   ],
 } as const;
 
@@ -72,20 +72,20 @@ export const GPM_WATCHING_TITLE = "What We're Watching";
 
 export const GPM_WATCHING_BLOCKS = [
   {
-    title: "East-West Pipeline / Yanbu restoration",
-    body: "Whether the principal East-West Pipeline / Yanbu route resumes on a days-to-weeks timeline, or whether a multi-week outage keeps the $100+ oil regime in place. Analyst $120/$130 paths are scenarios, not forecasts.",
+    title: "Hormuz normalization versus renewed escalation",
+    body: "Whether mediation produces verified, durable transit normalization after November 3 strikes, rather than another headline-driven pause.",
   },
   {
-    title: "Hormuz transit vs continued restriction",
-    body: "Whether independently trackable commodity-vessel traffic recovers from single-digit prints, or whether restriction deepens from the four-vessel Monday print.",
+    title: "Crude recovery versus product scarcity",
+    body: "Whether recovered crude and bypass flows rebuild diesel and refined-product inventories, which remained materially tighter than crude supply.",
   },
   {
     title: "Diesel and refining durability",
-    body: "Whether Russian diesel-refinery outages and U.S. diesel-price spikes fade, or whether a broader middle-distillate shortage transmits further into freight and inflation.",
+    body: "Whether the IEA's measured diesel-export shortfall eases before winter demand, or transmits further into freight and inflation.",
   },
   {
     title: "Credit, stress & volatility confirmation",
-    body: "Whether corporate-credit spreads, financial-stress measures, or funding markets begin confirming a seizure. Absent that, financial-system stress stays below crisis bands.",
+    body: "Whether high-yield spreads and funding remain contained while long yields and inflation stay elevated. Absent broader transmission, financial-system stress stays below crisis bands.",
   },
   {
     title: "Supply-chain transmission beyond energy",
@@ -380,6 +380,62 @@ export const GPM_SERIES: LedgerMonitorSeries = {
           url: "https://www.federalreserve.gov/Releases/H15/Update/",
           supports:
             "Long-duration Treasury yields remained around the 5% pressure threshold without evidence of a market-functioning seizure",
+        },
+      ],
+    },
+    {
+      reviewDate: "November 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: "Very high external pressure / Broad energy transmission",
+      currentDirection: GPM_CURRENT_DIRECTION,
+      previousState: "Very high external pressure / Broad energy transmission",
+      materialChangeSummary: GPM_WHAT_CHANGED,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "International Energy Agency",
+          title: "Oil Market Report — October 2026",
+          date: "Published October 14, 2026",
+          dataPeriod: "September 2026",
+          evidenceLabel: "Observed",
+          url: "https://www.iea.org/reports/oil-market-report-october-2026",
+          supports: "Hormuz oil flows rose to 10.9 mb/d and bypass exports to 5.6 mb/d; refined-product and diesel supply remained strained.",
+        },
+        {
+          institution: "U.S. Energy Information Administration",
+          title: "Short-Term Energy Outlook — October 2026",
+          date: "Published October 6, 2026; forecast completed October 1, 2026",
+          dataPeriod: "September observations and fourth-quarter forecast",
+          evidenceLabel: "Forecast",
+          url: "https://www.eia.gov/outlooks/steo/marketreview/crude.php",
+          supports: "East-West Pipeline restart, lower September shut-ins, continued flow volatility, and a $105/b fourth-quarter Brent forecast.",
+        },
+        {
+          institution: "Federal Reserve",
+          title: "FOMC statement",
+          date: "Published October 28, 2026",
+          dataPeriod: "October 27–28 policy meeting",
+          evidenceLabel: "Observed",
+          url: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+          supports: "Target range held at 3.75–4.00%; two voters preferred a further increase; activity described as strong and inflation elevated.",
+        },
+        {
+          institution: "U.S. Department of the Treasury",
+          title: "Daily Treasury Par Yield Curve Rates",
+          date: "Published November 2, 2026",
+          dataPeriod: "November 2, 2026 close",
+          evidenceLabel: "Observed",
+          url: "https://home.treasury.gov/resource-center/data-chart-center/interest-rates/TextView?field_tdr_date_value=2026&type=daily_treasury_yield_curve",
+          supports: "10-year 4.91%; 30-year 5.28%.",
+        },
+        {
+          institution: "Reuters",
+          title: "Oil prices slide as markets weigh Iran talks and renewed attacks",
+          date: "Published November 3, 2026",
+          dataPeriod: "November 3, 2026 at 10:44 a.m. ET",
+          evidenceLabel: "Provisional",
+          url: "https://uk.marketscreener.com/news/oil-edges-up-after-report-of-us-strike-on-iran-s-qeshm-island-ce785fd9dc8df323",
+          supports: "Intraday Brent near $103.14; renewed U.S. strikes and continuing mediation left the trajectory unsettled.",
         },
       ],
     },

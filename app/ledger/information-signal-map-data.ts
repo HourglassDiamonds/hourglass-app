@@ -22,20 +22,20 @@ export const ISM_READING = {
 } as const;
 
 export const ISM_SUMMARY =
-  "October evidence separates pressure from adaptation more cleanly. EIA confirms constrained 4Q oil flows while documenting lower shut-ins and export workarounds. The Fed held after September's hike; inflation remains elevated and activity resilient. PJM documents both tight operating conditions and successful adaptation. Gold cooled further while diamonds improved. AI providers document broader deployment beside explicit capability limits and containment. Confidence stays Moderate. Information Signal adds no degrees.";
+  "The November 3 evidence pass separates measured recovery from unresolved trajectory. IEA and EIA releases converge on recovered September Gulf and bypass flows, while product scarcity and tanker risk remain. The Fed hold, Treasury curve, inflation print, credit spreads, Colorado River study, and dated AI security disclosures are verifiable; same-day military and diplomatic outcomes are still provisional. Confidence stays Moderate. Information Signal adds no degrees.";
 
 export const ISM_SIGNAL_GRID = [
   {
     title: "Consensus",
-    body: "Hormuz remains extremely constrained on independently trackable shipping; Saudi Arabia’s principal Hormuz-bypass route is disrupted; Brent is above $100; the 10-year crossed 5% on September 15; credit and equities are still functioning.",
+    body: "IEA and EIA agree that September Gulf and bypass flows recovered materially; Brent remains above $100; the Fed held; credit, funding, labor, and the national grid continue to function.",
   },
   {
     title: "Divergence",
-    body: "Repair-timeline claims for the Saudi pipeline range from very soon to about eight weeks. Analyst $120/$130 oil paths are scenarios, not a settled market fact. AI coverage mixes additional agent-breakout reporting with proposed slowdowns and safety coordination. Gold is falling despite elevated geopolitical risk.",
+    body: "Current shipping is hard to measure when AIS is disabled or spoofed. November 3 strikes and talks point in opposite directions. Forecast food, power, and reservoir paths are not observed failure, and AI governance evidence is not extra heat.",
   },
   {
     title: "Underweighted",
-    body: "Diesel-refining disruption and the disruption of Saudi Arabia’s principal Hormuz-bypass route as a distinct transmission step — and the fact that Information Signal still sets confidence only.",
+    body: "Refined-product scarcity despite crude-flow recovery; publication date versus measurement period; and explicit cooling checks that challenge a one-direction crisis narrative.",
   },
 ] as const;
 
@@ -78,7 +78,7 @@ export const ISM_NARRATIVE_MAP = [
 ] as const;
 
 export const ISM_NARRATIVE_SHIFT =
-  "Physical energy and rates evidence converged further while duration and policy path stayed uncertain. Independently trackable Hormuz traffic, $100+ oil, Yanbu loadings, and the 10-year’s September 15 print above 5% now tell one physical story. Gold’s decline and resilient equities are the main disconfirmations of a simple crisis frame. Density remains high; confidence stays Moderate; Information Signal adds no degrees.";
+  "Measured recovery and unresolved trajectory now coexist. September flow data, the Fed hold, Treasury yields, and contained credit are verified; November 3 military and diplomatic outcomes are provisional. The right reading is not calm or crisis certainty: pressure remains high, adaptation is visible, and same-day direction is unsettled. Confidence stays Moderate; Information Signal adds no degrees.";
 
 export const ISM_WHAT_TO_WATCH = [
   {
@@ -121,15 +121,15 @@ export const ISM_WHAT_WOULD_CHANGE = [
 export const ISM_FOOTER_NOTE =
   "Narrative analysis and framing comparison — observational, without speculation or certainty claims. Information Signal informs confidence in the System Temperature reading; it does not raise the temperature itself.";
 
-export const ISM_CURRENT_STATE = "High-attention / Better-separated signals";
+export const ISM_CURRENT_STATE = "High-attention / Physical evidence converging";
 
 export const ISM_CURRENT_DIRECTION =
-  "Persistent pressure / More explicit counterevidence";
+  "Measured recovery clearer / Current trajectory unsettled";
 
 export const ISM_HUB_STATUS = ISM_CURRENT_STATE;
 
 export const ISM_HUB_DESCRIPTION =
-  "High-attention / Better-separated signals — energy and rates pressure persists, while physical workarounds, resilient activity, lower gold, and explicit AI controls make the counterevidence clearer.";
+  "High-attention / Physical evidence converging — measured flow recovery and a Fed hold are clear, while current security, transit durability, and policy trajectory remain unsettled.";
 
 /** Append-only public series. Future reviews push a new snapshot. */
 export const ISM_SERIES: LedgerMonitorSeries = {
@@ -364,6 +364,53 @@ export const ISM_SERIES: LedgerMonitorSeries = {
           url: "https://deploymentsafety.openai.com/gpt-6-october/jailbreaks",
           supports:
             "Broader deployment, High cyber and bio/chemical capability classifications, below-Critical cyber findings, and disclosed evaluation regressions",
+        },
+      ],
+    },
+    {
+      reviewDate: "November 3, 2026",
+      evidenceCutoff: LEDGER_EVIDENCE_CUTOFF,
+      currentState: ISM_CURRENT_STATE,
+      currentDirection: ISM_CURRENT_DIRECTION,
+      previousState: "High-attention / Better-separated signals",
+      materialChangeSummary: ISM_NARRATIVE_SHIFT,
+      methodologyVersion: LEDGER_METHODOLOGY_VERSION,
+      sources: [
+        {
+          institution: "International Energy Agency",
+          title: "Oil Market Report — October 2026",
+          date: "Published October 14, 2026",
+          dataPeriod: "September 2026",
+          evidenceLabel: "Observed",
+          url: "https://www.iea.org/reports/oil-market-report-october-2026",
+          supports: "Cross-confirmed physical flow recovery and continuing diesel/product stress.",
+        },
+        {
+          institution: "International Energy Agency",
+          title: "Middle East Maritime Chokepoints Shipping Monitor",
+          date: "Updated October 7, 2026",
+          dataPeriod: "Conflict-period AIS observations through early October",
+          evidenceLabel: "Estimated",
+          url: "https://www.iea.org/data-and-statistics/data-tools/middle-east-maritime-chokepoints-shipping-monitor",
+          supports: "Explicit AIS undercount, spoofing, and transponder-off limitations; current transit cannot be claimed with false precision.",
+        },
+        {
+          institution: "Federal Reserve",
+          title: "FOMC statement",
+          date: "Published October 28, 2026",
+          dataPeriod: "October 27–28 policy meeting",
+          evidenceLabel: "Observed",
+          url: "https://www.federalreserve.gov/newsevents/pressreleases/monetary20261028a.htm",
+          supports: "Policy hold, split vote, strong-activity language, and elevated-inflation assessment.",
+        },
+        {
+          institution: "Associated Press / Reuters",
+          title: "November 3 Hormuz military and market updates",
+          date: "Published November 3, 2026",
+          dataPeriod: "November 3, 2026 intraday",
+          evidenceLabel: "Provisional",
+          url: "https://apnews.com/article/183b3d32d9bf5241f744abb917e6713e",
+          supports: "Verified renewed U.S. action and continuing mediation, with outcome and duration unresolved at cutoff.",
         },
       ],
     },

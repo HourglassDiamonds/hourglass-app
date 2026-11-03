@@ -98,7 +98,7 @@ export default function InformationSignalMapView() {
       </div>
 
       <div className="im-section ledger-index-section">
-        <h3>Narrative Shift This Week</h3>
+        <h3>Narrative shift in this review</h3>
         <div className="im-box">
           <p>{ISM_NARRATIVE_SHIFT}</p>
         </div>

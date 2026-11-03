@@ -73,6 +73,12 @@ export function LedgerSourcesReviewed({
               )}
             </p>
             <p className="ledger-source-meta">{source.date}</p>
+            {source.dataPeriod ? (
+              <p className="ledger-source-meta">
+                Measurement: {source.dataPeriod}
+                {source.evidenceLabel ? ` · ${source.evidenceLabel}` : ""}
+              </p>
+            ) : null}
             <p className="ledger-source-supports">Supports: {source.supports}</p>
           </li>
         ))}

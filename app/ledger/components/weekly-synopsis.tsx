@@ -5,15 +5,15 @@ export const WEEKLY_SYNOPSIS = {
   blocks: [
     {
       title: "What changed",
-      body: "Evidence reviewed through October 29, 2026. EIA still sees constrained Middle East oil flows and a $105 fourth-quarter Brent path, but regional shut-ins eased and export workarounds improved. The Fed held after September's hike; the 10-year remains near 5% while domestic activity and market function remain resilient. PJM used October alerts and demand response but maintained service. Gold cooled toward roughly $4,013, September diamond gains broadened unevenly, Powell rose seasonally to 24% full, and GPT-6 and Gemini 4 Argon expanded frontier access under explicit capability and containment controls.",
+      body: "Evidence reviewed through November 3, 2026. September oil flows recovered: the IEA measured Hormuz flows at 10.9 million barrels a day and bypass exports at 5.6 million, while EIA confirmed the East-West Pipeline restart. That cooling is incomplete: refined-product supply and inventories remain strained, Brent was still about $103 on November 3, and renewed U.S. strikes left the diplomatic path unresolved. The Fed held at 3.75–4.00%; the November 2 Treasury curve put the 10-year at 4.91%, while high-yield spreads remained contained at 3.44% on October 30. System Temperature remains 74°, High, Systems Functioning, Confidence Moderate — unchanged from October 29.",
     },
     {
       title: "Why temperature held",
-      body: "All five discrete channel states are unchanged, so System Temperature remains 74°, High, Systems Functioning, Confidence Moderate. Oil and rates pressure remain confirmed; PJM and frontier-model evidence confirm infrastructure and security constraints. What prevents a higher reading is equally concrete: physical oil workarounds, functioning credit and funding, resilient activity, successful grid operations, lower gold, seasonal Powell improvement, and explicit AI containment. No numerical move was forced to create publication activity.",
+      body: "The governed weighted result remains 73.7°, rounded to 74°. Oil, product scarcity, long yields, inflation, Colorado River protection operations, and AI security constraints prevent cooling. Recovered Gulf flows, the Fed hold, a sub-5% 10-year, contained credit spreads, functioning labor and funding, active grid adaptation, and explicit AI controls prevent escalation. Information Signal affects confidence only and adds no heat.",
     },
     {
       title: "What to watch next",
-      body: "Whether improving Middle East exports reduce the fourth-quarter oil premium; whether long yields and inflation force another Fed move; whether PJM's large-load tools remain precautionary or become operationally necessary; whether September diamond gains hold through holiday demand; whether Powell's seasonal rise persists; and whether frontier-model containment keeps pace with broader agentic deployment.",
+      body: "Whether mediation produces durable Gulf transit normalization; whether crude recovery rebuilds diesel and refined-product inventories; whether long yields and inflation broaden into credit stress; whether PJM emergency tools remain bounded; whether Powell's protection range can hold without deeper upstream transfer; and whether frontier-model containment keeps pace with wider agentic deployment.",
     },
   ],
 } as const;

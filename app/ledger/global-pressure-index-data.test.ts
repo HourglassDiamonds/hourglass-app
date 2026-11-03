@@ -59,17 +59,17 @@ describe("Global Pressure Monitor interim copy", () => {
     );
     assert.equal(
       GPM_CURRENT_DIRECTION,
-      "Persistent constraint / Physical workarounds improving",
+      "Recovered flows / Fragile normalization and renewed security risk",
     );
     assert.match(GPM_LEAD, /credit|function/i);
-    assert.match(GPM_LEAD, /convoys|bypass routes/i);
+    assert.match(GPM_LEAD, /recovered|bypass exports/i);
     assert.doesNotMatch(GPM_LEAD, /\d+°/);
     assert.doesNotMatch(GPM_INTRO, /System Temperature/i);
     assert.doesNotMatch(GPM_INTRO, /interim|methodology revision/i);
     assert.match(GPM_METHODOLOGY_NOTICE, /System Temperature/);
-    assert.match(GPM_WHAT_CHANGED, /September 16/i);
+    assert.match(GPM_WHAT_CHANGED, /October 29/i);
     assert.equal(GPM_SNAPSHOT.evidenceCutoff, LEDGER_EVIDENCE_CUTOFF);
-    assert.equal(GPM_SNAPSHOT.reviewDate, "October 29, 2026");
+    assert.equal(GPM_SNAPSHOT.reviewDate, "November 3, 2026");
     assert.ok(
       GPM_SNAPSHOT.sources.some((source) =>
         source.institution.includes("Federal Reserve"),
@@ -82,15 +82,16 @@ describe("Global Pressure Monitor interim copy", () => {
     );
   });
 
-  it("appends October 29 after preserved August and September snapshots", async () => {
+  it("appends November 3 after preserved October history", async () => {
     const { GPM_SERIES } = await import("./global-pressure-monitor-data");
-    assert.equal(GPM_SERIES.snapshots.length, 6);
+    assert.equal(GPM_SERIES.snapshots.length, 7);
     assert.equal(GPM_SERIES.snapshots[0]?.reviewDate, "August 3, 2026");
     assert.equal(GPM_SERIES.snapshots[1]?.reviewDate, "August 12, 2026");
     assert.equal(GPM_SERIES.snapshots[2]?.reviewDate, "August 18, 2026");
     assert.equal(GPM_SERIES.snapshots[3]?.reviewDate, "August 24, 2026");
     assert.equal(GPM_SERIES.snapshots[4]?.reviewDate, "September 16, 2026");
     assert.equal(GPM_SERIES.snapshots[5]?.reviewDate, "October 29, 2026");
+    assert.equal(GPM_SERIES.snapshots[6]?.reviewDate, "November 3, 2026");
     assert.equal(GPM_SERIES.snapshots[3]?.evidenceCutoff, "August 24, 2026");
   });
 
