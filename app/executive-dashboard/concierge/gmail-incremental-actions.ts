@@ -14,6 +14,10 @@ import {
   blockedManualPreviewChunk,
   executeOneManualPreviewChunk,
   isBetaRecoveryPreviewRuntime,
+  MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC,
+  MANUAL_PREVIEW_GMAIL_MAX_RETRIES,
+  MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS,
+  MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO,
   type ManualPreviewChunkResult,
 } from "@/lib/continuum/gmail/manual-preview-chunk";
 import { resolveContinuumIsolationState } from "@/lib/continuum/runtime-env";
@@ -90,6 +94,10 @@ export async function runOnePreviewGmailIngestionChunk(
         refreshAccessToken: (refreshToken) =>
           liveGmailAccessTokenRefresher.refreshAccessToken(refreshToken),
         createApi: (accessToken) => createLiveGmailApi(accessToken),
+        maxGetsPerSec: MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC,
+        maxRetries: MANUAL_PREVIEW_GMAIL_MAX_RETRIES,
+        retryJitterRatio: MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO,
+        maxRetryDelayMs: MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS,
       });
     },
   });

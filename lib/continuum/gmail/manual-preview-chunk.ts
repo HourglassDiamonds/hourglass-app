@@ -2,6 +2,10 @@ import type { GmailIncrementalChunkResult } from "./incremental";
 
 export const BETA_RECOVERY_PREVIEW_BRANCH =
   "codex/continuum-beta-recovery" as const;
+export const MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC = 0.8;
+export const MANUAL_PREVIEW_GMAIL_MAX_RETRIES = 3;
+export const MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO = 0.25;
+export const MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS = 10_000;
 
 export type ManualPreviewChunkStatus =
   | "idle"

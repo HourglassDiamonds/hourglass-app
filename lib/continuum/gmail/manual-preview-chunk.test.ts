@@ -5,6 +5,10 @@ import { describe, it } from "node:test";
 import {
   executeOneManualPreviewChunk,
   isBetaRecoveryPreviewRuntime,
+  MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC,
+  MANUAL_PREVIEW_GMAIL_MAX_RETRIES,
+  MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS,
+  MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO,
   manualPreviewSnapshotFromIncremental,
 } from "./manual-preview-chunk";
 import type { GmailIncrementalChunkResult } from "./incremental";
@@ -218,6 +222,19 @@ describe("one-time Beta Recovery Gmail chunk", () => {
       join(ROOT, "lib/continuum/gmail/incremental.ts"),
       "utf8",
     );
+    const gmailPage = readFileSync(
+      join(ROOT, "app/executive-dashboard/concierge/gmail/page.tsx"),
+      "utf8",
+    );
+    assert.equal(MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC, 0.8);
+    assert.equal(MANUAL_PREVIEW_GMAIL_MAX_RETRIES, 3);
+    assert.equal(MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO, 0.25);
+    assert.equal(MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS, 10_000);
+    assert.match(actions, /maxGetsPerSec: MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC/);
+    assert.match(actions, /maxRetries: MANUAL_PREVIEW_GMAIL_MAX_RETRIES/);
+    assert.match(actions, /retryJitterRatio: MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO/);
+    assert.match(actions, /maxRetryDelayMs: MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS/);
+    assert.match(gmailPage, /export const maxDuration = 120/);
     assert.match(actions, /export async function runNextGmailIncrementalChunk/);
     assert.match(actions, /isGmailIncrementalSyncEnabled/);
     assert.match(freshness, /isGmailIncrementalSyncEnabled/);

@@ -1543,6 +1543,131 @@ describe("Gmail incremental cursor capture race", () => {
 });
 
 describe("Gmail recovery failure diagnostics", () => {
+  it("paces a full 20-message recovery page at 0.8 gets per second", async () => {
+    const { api, index, attachments, connections } = await seed();
+    await seedRecoveryCheckpoint(index);
+    const messages = Array.from({ length: 20 }, (_, offset) => ({
+      ...NEW_INBOUND,
+      id: `paced-${offset + 1}`,
+      threadId: `paced-thread-${offset + 1}`,
+    }));
+    for (const message of messages) api.setMessage(message);
+    api.setListPage("catch-2", {
+      messages: messages.map(({ id, threadId }) => ({ id, threadId })),
+      nextPageToken: "catch-3",
+    });
+    const sleeps: number[] = [];
+
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock: { now: () => NOW, sleep: async (ms) => void sleeps.push(ms) },
+      maxGetsPerSec: 0.8,
+    });
+
+    assert.equal(result.status, "running");
+    assert.equal(result.insertedCount, 20);
+    assert.deepEqual(sleeps, Array.from({ length: 19 }, () => 1_250));
+    assert.equal(sleeps.reduce((total, ms) => total + ms, 0), 23_750);
+    const checkpoint = await index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+    assert.equal(checkpoint?.pageToken, "catch-3");
+    assert.equal(checkpoint?.cursorMessageId, encodePendingHistoryCursor("999"));
+    assert.equal(checkpoint?.indexedCount, 344);
+  });
+
+  it("respects Retry-After and adds bounded positive jitter", async () => {
+    const { api, index, attachments, connections } = await seed();
+    await seedRecoveryCheckpoint(index);
+    api.setListPage("catch-2", { messages: [], nextPageToken: null });
+    api.statusErrors.push({ status: 429, reason: "http", retryAfter: "2" });
+    const sleeps: number[] = [];
+
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock: { now: () => NOW, sleep: async (ms) => void sleeps.push(ms) },
+      maxRetries: 3,
+      retryJitterRatio: 0.25,
+      maxRetryDelayMs: 10_000,
+      retryRandom: () => 0.5,
+    });
+
+    assert.equal(result.status, "completed");
+    assert.deepEqual(sleeps, [2_250]);
+    assert.equal(
+      (await index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY))?.historyId,
+      "999",
+    );
+  });
+
+  it("stops after bounded retries when rate limiting continues", async () => {
+    const { api, index, attachments, connections } = await seed();
+    await seedRecoveryCheckpoint(index);
+    api.errors.set("listMessages", new GmailHttpError(429, "http", "1"));
+    const sleeps: number[] = [];
+
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock: { now: () => NOW, sleep: async (ms) => void sleeps.push(ms) },
+      maxRetries: 3,
+      retryJitterRatio: 0.25,
+      maxRetryDelayMs: 10_000,
+      retryRandom: () => 0,
+    });
+
+    assert.equal(result.errorCode, GMAIL_RATE_LIMITED);
+    assert.deepEqual(sleeps, [1_000, 1_000, 2_000]);
+    assert.equal(
+      api.calls.filter((call) => call.method === "listMessages").length,
+      4,
+    );
+    const checkpoint = await index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+    assert.equal(checkpoint?.pageToken, "catch-2");
+    assert.equal(checkpoint?.cursorMessageId, encodePendingHistoryCursor("999"));
+    assert.equal(checkpoint?.indexedCount, 324);
+  });
+
+  it("does not retry earlier than a Retry-After beyond the action budget", async () => {
+    const { api, index, attachments, connections } = await seed();
+    await seedRecoveryCheckpoint(index);
+    api.errors.set("listMessages", new GmailHttpError(429, "http", "30"));
+    const sleeps: number[] = [];
+
+    const result = await runIncrementalSync({
+      api,
+      index,
+      attachments,
+      connections,
+      founderMailboxHash: FOUNDER_HASH,
+      clock: { now: () => NOW, sleep: async (ms) => void sleeps.push(ms) },
+      maxRetries: 3,
+      retryJitterRatio: 0.25,
+      maxRetryDelayMs: 10_000,
+      retryRandom: () => 0.5,
+    });
+
+    assert.equal(result.errorCode, GMAIL_RATE_LIMITED);
+    assert.deepEqual(sleeps, []);
+    assert.equal(
+      api.calls.filter((call) => call.method === "listMessages").length,
+      1,
+    );
+    assert.equal(
+      (await index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY))?.pageToken,
+      "catch-2",
+    );
+  });
+
   it("preserves recovery cursors while reporting an exhausted rate limit", async () => {
     const { api, index, attachments, connections } = await seed();
     await seedRecoveryCheckpoint(index);

@@ -21,6 +21,7 @@ import {
 import { resolveContinuumIsolationState } from "@/lib/continuum/runtime-env";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 
 export const metadata = {
   title: "Gmail",

@@ -107,6 +107,11 @@ export type GmailIncrementalChunkInput = {
   refreshAccessToken: (refreshToken: string) => Promise<GmailAccessTokenRefresh>;
   createApi: (accessToken: string) => GmailApi;
   clock?: SyncClock;
+  maxGetsPerSec?: number;
+  maxRetries?: number;
+  retryJitterRatio?: number;
+  maxRetryDelayMs?: number;
+  retryRandom?: () => number;
 };
 
 function isIncrementalErrorCode(
@@ -338,6 +343,11 @@ export async function runGmailIncrementalChunk(
       connections: input.connections,
       founderMailboxHash: connection.mailboxEmailHash,
       clock: input.clock,
+      maxGetsPerSec: input.maxGetsPerSec,
+      maxRetries: input.maxRetries,
+      retryJitterRatio: input.retryJitterRatio,
+      maxRetryDelayMs: input.maxRetryDelayMs,
+      retryRandom: input.retryRandom,
     });
 
     const after = await input.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);

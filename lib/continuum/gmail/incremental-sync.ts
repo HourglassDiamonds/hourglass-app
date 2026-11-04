@@ -155,6 +155,9 @@ export type IncrementalSyncDeps = {
   pageSize?: number;
   maxRetries?: number;
   maxPages?: number;
+  retryJitterRatio?: number;
+  maxRetryDelayMs?: number;
+  retryRandom?: () => number;
 };
 
 export type IncrementalSyncResult = {
@@ -189,6 +192,11 @@ async function withRetry<T>(
   clock: SyncClock,
   maxRetries: number,
   work: () => Promise<T>,
+  options: {
+    jitterRatio: number;
+    maxDelayMs: number;
+    random: () => number;
+  },
 ): Promise<T> {
   let attempt = 0;
   for (;;) {
@@ -202,10 +210,29 @@ async function withRetry<T>(
         throw error;
       }
       if (!isRetryableGmailError(error) || attempt >= maxRetries) throw error;
-      await clock.sleep(retryDelayMs(error, attempt));
+      const providerDelay = retryDelayMs(
+        error,
+        attempt,
+        500,
+        clock.now().getTime(),
+      );
+      // Never violate a provider Retry-After that would outlive this bounded
+      // server action. Stop and preserve the checkpoint for a later founder run.
+      if (providerDelay > options.maxDelayMs) throw error;
+      const random = Math.min(1, Math.max(0, options.random()));
+      const jitter = Math.floor(providerDelay * options.jitterRatio * random);
+      await clock.sleep(Math.min(options.maxDelayMs, providerDelay + jitter));
       attempt += 1;
     }
   }
+}
+
+function retryOptions(deps: IncrementalSyncDeps) {
+  return {
+    jitterRatio: Math.min(1, Math.max(0, deps.retryJitterRatio ?? 0)),
+    maxDelayMs: Math.max(0, deps.maxRetryDelayMs ?? Number.POSITIVE_INFINITY),
+    random: deps.retryRandom ?? Math.random,
+  };
 }
 
 function leaseError(existing: GmailCheckpoint): string | null {
@@ -340,8 +367,11 @@ async function fetchAndPersist(
   const wait = minInterval - (clock.now().getTime() - gate.lastGetAt);
   if (gate.lastGetAt > 0 && wait > 0) await clock.sleep(wait);
   try {
-    const message = await withRetry(clock, maxRetries, () =>
-      deps.api.getMessage(messageId),
+    const message = await withRetry(
+      clock,
+      maxRetries,
+      () => deps.api.getMessage(messageId),
+      retryOptions(deps),
     );
     gate.lastGetAt = clock.now().getTime();
     return persistFetchedMessage(deps, message, nowIso);
@@ -364,11 +394,15 @@ async function persistTransactionalNoticeOverlap(
   counts: PageCounts,
   indexedCount: { value: number },
 ): Promise<void> {
-  const page = await withRetry(clock, maxRetries, () =>
-    deps.api.listMessages({
-      q: GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY,
-      maxResults: GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_MAX_RESULTS,
-    }),
+  const page = await withRetry(
+    clock,
+    maxRetries,
+    () =>
+      deps.api.listMessages({
+        q: GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY,
+        maxResults: GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_MAX_RESULTS,
+      }),
+    retryOptions(deps),
   );
   const nowIso = clock.now().toISOString();
   for (const listed of page.messages) {
@@ -535,8 +569,11 @@ async function runCatchUpList(
   try {
     if (!pendingId) {
       failureOperation = "profile";
-      const profile = await withRetry(clock, maxRetries, () =>
-        deps.api.getProfile(),
+      const profile = await withRetry(
+        clock,
+        maxRetries,
+        () => deps.api.getProfile(),
+        retryOptions(deps),
       );
       pendingId = profile.historyId?.trim() ?? "";
       if (!pendingId) {
@@ -574,12 +611,16 @@ async function runCatchUpList(
     while (true) {
       if (pages >= maxPages) break;
       failureOperation = "list-messages";
-      const page = await withRetry(clock, maxRetries, () =>
-        deps.api.listMessages({
-          q: query,
-          pageToken,
-          maxResults: pageSize,
-        }),
+      const page = await withRetry(
+        clock,
+        maxRetries,
+        () =>
+          deps.api.listMessages({
+            q: query,
+            pageToken,
+            maxResults: pageSize,
+          }),
+        retryOptions(deps),
       );
       for (const listed of page.messages) {
         failureOperation = "message";
@@ -917,13 +958,17 @@ export async function runIncrementalSync(
       if (pages >= maxPages) break;
       let page;
       try {
-        page = await withRetry(clock, maxRetries, () =>
-          deps.api.listHistory({
-            startHistoryId,
-            pageToken,
-            maxResults: pageSize,
-            historyTypes: GMAIL_HISTORY_TYPES,
-          }),
+        page = await withRetry(
+          clock,
+          maxRetries,
+          () =>
+            deps.api.listHistory({
+              startHistoryId,
+              pageToken,
+              maxResults: pageSize,
+              historyTypes: GMAIL_HISTORY_TYPES,
+            }),
+          retryOptions(deps),
         );
       } catch (error) {
         if (isHistoryTooOldError(error)) {
