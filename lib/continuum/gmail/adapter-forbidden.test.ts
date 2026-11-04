@@ -49,7 +49,7 @@ describe("Gmail forbidden diagnostics", () => {
       isRetryableGmailError(
         new GmailHttpError(403, "http", undefined, "rate_limited"),
       ),
-      false,
+      true,
     );
   });
 

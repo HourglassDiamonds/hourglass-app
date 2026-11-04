@@ -8,7 +8,7 @@
 import type { GmailIndexStore } from "@/lib/continuum/client-memory/gmail/store";
 import type { GmailCheckpoint } from "@/lib/continuum/client-memory/gmail/types";
 import { GMAIL_SYNC_ALREADY_RUNNING } from "@/lib/continuum/client-memory/gmail/types";
-import type { GmailApi } from "./adapter";
+import { GmailHttpError, type GmailApi } from "./adapter";
 import {
   isGmailNotFoundError,
   isHistoryTooOldError,
@@ -45,6 +45,83 @@ export const HISTORICAL_INCOMPLETE = "historical-incomplete" as const;
 export const GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_MAX_RESULTS = 20 as const;
 export const GMAIL_TRANSACTIONAL_NOTICE_CATCHUP_QUERY =
   '(invoice ("payment received" OR customer)) -in:spam -in:trash newer_than:7d';
+
+export const GMAIL_RATE_LIMITED = "gmail-rate-limited" as const;
+export const GMAIL_PROVIDER_TEMPORARY = "gmail-provider-temporary" as const;
+export const GMAIL_INVALID_PAGE_TOKEN = "gmail-invalid-page-token" as const;
+export const GMAIL_DATABASE_FAILED = "gmail-database-failed" as const;
+export const GMAIL_PROVIDER_TIMEOUT = "gmail-provider-timeout" as const;
+export const GMAIL_PROVIDER_FORBIDDEN = "gmail-provider-forbidden" as const;
+export const GMAIL_PROVIDER_UNAUTHORIZED = "gmail-provider-unauthorized" as const;
+
+type SyncFailurePhase = "catch-up" | "history";
+type SyncFailureOperation =
+  | "profile"
+  | "list-messages"
+  | "message"
+  | "checkpoint"
+  | "history";
+
+function isTimeoutError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const code = "code" in error ? String(error.code) : "";
+  return (
+    error.name === "AbortError" ||
+    error.name === "TimeoutError" ||
+    code === "ETIMEDOUT"
+  );
+}
+
+function isDatabaseError(error: unknown): boolean {
+  if (!error || typeof error !== "object" || error instanceof GmailHttpError) {
+    return false;
+  }
+  const candidate = error as Record<string, unknown>;
+  const code = typeof candidate.code === "string" ? candidate.code : "";
+  return /^(?:PGRST|[0-9A-Z]{5}$)/.test(code);
+}
+
+/** Returns an allowlisted code only; raw provider/database details never escape. */
+export function classifyIncrementalSyncError(input: {
+  error: unknown;
+  phase: SyncFailurePhase;
+  operation: SyncFailureOperation;
+  hasPageToken: boolean;
+}): string {
+  const { error, phase, operation, hasPageToken } = input;
+  if (isDatabaseError(error)) return GMAIL_DATABASE_FAILED;
+  if (isTimeoutError(error)) return GMAIL_PROVIDER_TIMEOUT;
+  if (error instanceof TypeError) return GMAIL_PROVIDER_TEMPORARY;
+  if (!(error instanceof GmailHttpError)) return "gmail-sync-failed";
+  if (phase === "history" && isHistoryTooOldError(error)) {
+    return HISTORY_TOO_OLD;
+  }
+  if (
+    phase === "catch-up" &&
+    operation === "list-messages" &&
+    hasPageToken &&
+    error.status === 400
+  ) {
+    return GMAIL_INVALID_PAGE_TOKEN;
+  }
+  if (
+    error.status === 429 ||
+    error.forbiddenCategory === "rate_limited" ||
+    error.reason === "rateLimitExceeded" ||
+    error.reason === "userRateLimitExceeded"
+  ) {
+    return GMAIL_RATE_LIMITED;
+  }
+  if (
+    (error.status >= 500 && error.status <= 599) ||
+    error.reason === "backendError"
+  ) {
+    return GMAIL_PROVIDER_TEMPORARY;
+  }
+  if (error.status === 401) return GMAIL_PROVIDER_UNAUTHORIZED;
+  if (error.status === 403) return GMAIL_PROVIDER_FORBIDDEN;
+  return "gmail-sync-failed";
+}
 
 /**
  * Catch-up holds a captured profile historyId in cursorMessageId until every
@@ -448,6 +525,7 @@ async function runCatchUpList(
   const recovery = existing.errorCode === HISTORY_TOO_OLD || Boolean(existing.historyId);
   const catchUpError = recovery ? HISTORY_TOO_OLD : leaseError(existing);
   const nowIso = clock.now().toISOString();
+  let failureOperation: SyncFailureOperation = "checkpoint";
 
   let pendingId = parsePendingHistoryCursor(existing.cursorMessageId);
   let pendingCursor = pendingId
@@ -456,6 +534,7 @@ async function runCatchUpList(
 
   try {
     if (!pendingId) {
+      failureOperation = "profile";
       const profile = await withRetry(clock, maxRetries, () =>
         deps.api.getProfile(),
       );
@@ -488,11 +567,13 @@ async function runCatchUpList(
       updatedAt: nowIso,
       errorCode: catchUpError,
     };
+    failureOperation = "checkpoint";
     await deps.index.putCheckpoint(held);
 
     let pages = 0;
     while (true) {
       if (pages >= maxPages) break;
+      failureOperation = "list-messages";
       const page = await withRetry(clock, maxRetries, () =>
         deps.api.listMessages({
           q: query,
@@ -501,6 +582,7 @@ async function runCatchUpList(
         }),
       );
       for (const listed of page.messages) {
+        failureOperation = "message";
         const status = await fetchAndPersist(
           deps,
           clock,
@@ -523,6 +605,7 @@ async function runCatchUpList(
       pageToken = page.nextPageToken;
       pages += 1;
       if (!pageToken) break;
+      failureOperation = "checkpoint";
       await deps.index.putCheckpoint({
         ...held,
         status: "running",
@@ -537,6 +620,7 @@ async function runCatchUpList(
     }
 
     if (pageToken) {
+      failureOperation = "checkpoint";
       await deps.index.putCheckpoint({
         ...held,
         status: "running",
@@ -566,6 +650,7 @@ async function runCatchUpList(
     }
 
     const overlapIndexed = { value: indexedCount };
+    failureOperation = "message";
     await persistTransactionalNoticeOverlap(
       deps,
       clock,
@@ -577,6 +662,7 @@ async function runCatchUpList(
     );
     indexedCount = overlapIndexed.value;
 
+    failureOperation = "checkpoint";
     await deps.index.putCheckpoint({
       jobKey: GMAIL_INCREMENTAL_JOB_KEY,
       status: "completed",
@@ -622,6 +708,8 @@ async function runCatchUpList(
       indexedCount,
       error,
       recovery,
+      "catch-up",
+      failureOperation,
     );
   }
 }
@@ -637,6 +725,8 @@ async function handleSyncError(
   indexedCount: number,
   error: unknown,
   recovery: boolean,
+  phase: SyncFailurePhase,
+  operation: SyncFailureOperation,
 ): Promise<IncrementalSyncResult> {
   const message = error instanceof Error ? error.message : "gmail-sync-failed";
   if (message === "invalid_grant" || message.includes("invalid_grant")) {
@@ -669,7 +759,12 @@ async function handleSyncError(
       errorCode: "invalid_grant",
     };
   }
-  const failedCode = recovery ? HISTORY_TOO_OLD : "gmail-sync-failed";
+  const failedCode = classifyIncrementalSyncError({
+    error,
+    phase,
+    operation,
+    hasPageToken: Boolean(pageToken),
+  });
   await deps.index.putCheckpoint({
     ...existing,
     status: "failed",
@@ -696,7 +791,7 @@ async function handleSyncError(
     labelUpdateCount: 0,
     initialized: false,
     recovery,
-    errorCode: "gmail-sync-failed",
+    errorCode: failedCode,
   };
 }
 
@@ -974,6 +1069,8 @@ export async function runIncrementalSync(
       indexedCount,
       error,
       false,
+      "history",
+      "history",
     );
   }
 }

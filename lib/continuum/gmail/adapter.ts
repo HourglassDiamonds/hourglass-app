@@ -282,10 +282,18 @@ export function isHistoryTooOldError(error: unknown): boolean {
 }
 
 export function isRetryableGmailError(error: unknown): boolean {
+  if (error instanceof Error) {
+    if (error.name === "AbortError" || error.name === "TimeoutError") return true;
+    // WHATWG fetch reports transport failures as TypeError without exposing a
+    // provider response. Retrying remains bounded by the caller.
+    if (error instanceof TypeError) return true;
+  }
   if (!(error instanceof GmailHttpError)) return false;
   if (error.status === 429) return true;
+  if (error.status >= 500 && error.status <= 599) return true;
   if (error.status !== 403) return false;
   return (
+    error.forbiddenCategory === "rate_limited" ||
     error.reason === "rateLimitExceeded" ||
     error.reason === "userRateLimitExceeded" ||
     error.reason === "backendError"

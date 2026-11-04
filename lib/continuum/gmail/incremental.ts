@@ -17,6 +17,14 @@ import { isSyncEligible } from "./connection";
 import {
   HISTORICAL_INCOMPLETE,
   HISTORY_TOO_OLD,
+  GMAIL_DATABASE_FAILED,
+  GMAIL_INVALID_PAGE_TOKEN,
+  GMAIL_PROVIDER_FORBIDDEN,
+  GMAIL_PROVIDER_TEMPORARY,
+  GMAIL_PROVIDER_TIMEOUT,
+  GMAIL_PROVIDER_UNAUTHORIZED,
+  GMAIL_RATE_LIMITED,
+  parsePendingHistoryCursor,
   runIncrementalSync,
 } from "./incremental-sync";
 import type { GmailAccessTokenRefresh } from "./oauth";
@@ -39,6 +47,13 @@ export const GMAIL_INCREMENTAL_CHUNK_ERROR_CODES = [
   "invalid_grant",
   "gmail-sync-already-running",
   "gmail-sync-failed",
+  GMAIL_RATE_LIMITED,
+  GMAIL_PROVIDER_TEMPORARY,
+  GMAIL_INVALID_PAGE_TOKEN,
+  GMAIL_DATABASE_FAILED,
+  GMAIL_PROVIDER_TIMEOUT,
+  GMAIL_PROVIDER_FORBIDDEN,
+  GMAIL_PROVIDER_UNAUTHORIZED,
   "connection-inactive",
   "sync-disabled",
   HISTORICAL_INCOMPLETE,
@@ -191,8 +206,10 @@ export function snapshotFromIncrementalCheckpoint(
     });
   }
   const completed = row.status === "completed" && row.pageToken == null && Boolean(row.historyId);
-  const morePagesRemain = row.status === "running" && Boolean(row.pageToken);
-  const recovery = row.errorCode === HISTORY_TOO_OLD;
+  const morePagesRemain = Boolean(row.pageToken);
+  const recovery =
+    row.errorCode === HISTORY_TOO_OLD ||
+    Boolean(parsePendingHistoryCursor(row.cursorMessageId));
   return sanitizeGmailIncrementalChunkResult({
     chunkSucceeded: row.status !== "failed",
     checkpointStatus: row.status,
