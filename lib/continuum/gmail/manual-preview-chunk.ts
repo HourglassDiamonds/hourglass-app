@@ -6,6 +6,7 @@ export const BETA_RECOVERY_PREVIEW_BRANCH =
 export type ManualPreviewChunkStatus =
   | "idle"
   | "blocked"
+  | "recovering"
   | "progressed"
   | "completed"
   | "failed";
@@ -17,6 +18,7 @@ export type ManualPreviewChunkResult = {
   indexedThisChunk: number;
   indexedCount: number;
   morePagesRemain: boolean;
+  recovery: boolean;
   completed: boolean;
   historyIdPresent: boolean;
   safeErrorCode: string | null;
@@ -29,6 +31,7 @@ export const INITIAL_MANUAL_PREVIEW_CHUNK_RESULT: ManualPreviewChunkResult = {
   indexedThisChunk: 0,
   indexedCount: 0,
   morePagesRemain: false,
+  recovery: false,
   completed: false,
   historyIdPresent: false,
   safeErrorCode: null,
@@ -61,6 +64,13 @@ export function blockedManualPreviewChunk(
 }
 
 function publicResult(chunk: GmailIncrementalChunkResult): ManualPreviewChunkResult {
+  const recoveryInProgress =
+    chunk.recovery &&
+    chunk.indexedThisChunk > 0 &&
+    chunk.checkpointStatus === "running" &&
+    chunk.morePagesRemain &&
+    (chunk.safeErrorCode === "history-too-old" ||
+      chunk.safeErrorCode === "historical-incomplete");
   const completed =
     chunk.chunkSucceeded &&
     !chunk.safeErrorCode &&
@@ -69,12 +79,19 @@ function publicResult(chunk: GmailIncrementalChunkResult): ManualPreviewChunkRes
     chunk.historyIdPresent;
   const progressed = chunk.chunkSucceeded && !chunk.safeErrorCode;
   return {
-    status: completed ? "completed" : progressed ? "progressed" : "failed",
+    status: completed
+      ? "completed"
+      : recoveryInProgress
+        ? "recovering"
+        : progressed
+          ? "progressed"
+          : "failed",
     blockedReason: null,
     checkpointStatus: chunk.checkpointStatus,
     indexedThisChunk: chunk.indexedThisChunk,
     indexedCount: chunk.indexedCount,
     morePagesRemain: chunk.morePagesRemain,
+    recovery: chunk.recovery,
     completed,
     historyIdPresent: chunk.historyIdPresent,
     safeErrorCode: chunk.safeErrorCode,

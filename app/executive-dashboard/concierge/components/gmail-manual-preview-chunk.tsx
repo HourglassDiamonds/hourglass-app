@@ -10,6 +10,10 @@ import {
 function statusText(result: ManualPreviewChunkResult): string | null {
   if (result.status === "idle") return null;
   if (result.status === "completed") return "Checkpoint completed successfully.";
+  if (result.status === "recovering") {
+    const noun = result.indexedThisChunk === 1 ? "message" : "messages";
+    return `Recovery in progress · ${result.indexedThisChunk} ${noun} persisted in this chunk · more pages remain.`;
+  }
   if (result.status === "progressed") {
     return result.morePagesRemain
       ? "One chunk persisted. More pages remain; run another chunk only with explicit founder approval."

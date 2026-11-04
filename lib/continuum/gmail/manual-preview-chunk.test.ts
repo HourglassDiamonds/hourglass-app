@@ -134,6 +134,47 @@ describe("one-time Beta Recovery Gmail chunk", () => {
     assert.equal(result.safeErrorCode, "token-refresh-failed");
   });
 
+  it("reports persisted history-too-old catch-up as recovery without claiming completion", async () => {
+    const result = await executeOneManualPreviewChunk({
+      founderAuthenticated: true,
+      betaRecoveryPreviewVerified: true,
+      runChunk: async () =>
+        chunk({
+          chunkSucceeded: false,
+          checkpointStatus: "running",
+          indexedCount: 22,
+          indexedThisChunk: 20,
+          morePagesRemain: true,
+          recovery: true,
+          safeErrorCode: "history-too-old",
+        }),
+    });
+    assert.equal(result.status, "recovering");
+    assert.equal(result.indexedThisChunk, 20);
+    assert.equal(result.indexedCount, 22);
+    assert.equal(result.morePagesRemain, true);
+    assert.equal(result.recovery, true);
+    assert.equal(result.completed, false);
+    assert.equal(result.safeErrorCode, "history-too-old");
+  });
+
+  it("does not treat recovery as complete until the checkpoint clears its error", async () => {
+    const result = await executeOneManualPreviewChunk({
+      founderAuthenticated: true,
+      betaRecoveryPreviewVerified: true,
+      runChunk: async () =>
+        chunk({
+          checkpointStatus: "completed",
+          morePagesRemain: false,
+          completed: true,
+          recovery: true,
+          safeErrorCode: "history-too-old",
+        }),
+    });
+    assert.equal(result.status, "failed");
+    assert.equal(result.completed, false);
+  });
+
   it("keeps recurring sync kill-switched and the manual surface free of client/Sterling writes", () => {
     const actions = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/gmail-incremental-actions.ts"),
