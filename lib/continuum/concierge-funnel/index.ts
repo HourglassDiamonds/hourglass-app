@@ -4,3 +4,5 @@ export * from "./memory";
 export * from "./fake-providers";
 export * from "./preview-acceptance";
 export * from "./persistence-contract";
+export * from "./application";
+export * from "./copy";
