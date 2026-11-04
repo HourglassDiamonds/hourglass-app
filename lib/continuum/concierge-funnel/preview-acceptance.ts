@@ -105,6 +105,8 @@ export type SterlingTodayNextAction = CosFounderAttentionItem & {
   writesCanonicalProject: false;
 };
 
+export const WEBSITE_CONCIERGE_SOURCE_LABEL = "Website Concierge" as const;
+
 export function prepareSterlingTodayNextAction(
   record: ConciergeFunnelRecord,
 ): SterlingTodayNextAction {
@@ -116,7 +118,7 @@ export function prepareSterlingTodayNextAction(
     detail: record.nextAction.detail,
     projectId: null,
     projectTitle: null,
-    sourceLabel: "Website Concierge",
+    sourceLabel: WEBSITE_CONCIERGE_SOURCE_LABEL,
     sourceHref: null,
     candidateIds: [record.nextAction.candidate.candidateId],
     recap: null,
