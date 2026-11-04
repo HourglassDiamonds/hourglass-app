@@ -13,6 +13,9 @@ import {
 import { GmailConnectionTestForm } from "../components/gmail-connection-test";
 import { GmailHistoryForm } from "../components/gmail-history";
 import { GmailIncrementalForm } from "../components/gmail-incremental";
+import { GmailManualPreviewChunk } from "../components/gmail-manual-preview-chunk";
+import { isBetaRecoveryPreviewRuntime } from "@/lib/continuum/gmail/manual-preview-chunk";
+import { resolveContinuumIsolationState } from "@/lib/continuum/runtime-env";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +25,13 @@ export const metadata = {
 };
 
 export default async function ConciergeGmailPage() {
+  const manualChunkEnabled = isBetaRecoveryPreviewRuntime({
+    vercel: process.env.VERCEL,
+    vercelEnv: process.env.VERCEL_ENV,
+    continuumEnv: process.env.CONTINUUM_ENV,
+    gitBranch: process.env.VERCEL_GIT_COMMIT_REF,
+    isolationState: resolveContinuumIsolationState(),
+  });
   const auth = await getAuthenticatedGmailHistoryStores();
   let connected = false;
   let history = snapshotFromCheckpoint(null);
@@ -60,6 +70,7 @@ export default async function ConciergeGmailPage() {
           Gmail
         </h1>
         <GmailConnectionTestForm connected={connected} />
+        {manualChunkEnabled ? <GmailManualPreviewChunk /> : null}
         <GmailHistoryForm initial={history} />
         <GmailIncrementalForm initial={incremental} publicState={publicState} />
         <Link
