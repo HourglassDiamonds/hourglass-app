@@ -230,6 +230,10 @@ export function sourceLabelFor(row: ContinuumCandidate): string {
   if (row.sourceSystem === "gmail") return "Gmail evidence";
   if (row.sourceSystem === "plaud") return "PLAUD";
   if (row.sourceSystem === "remarkable") return "reMarkable";
+  if (
+    row.sourceSystem === "human-intake" &&
+    row.sourceRef.startsWith("website-intake:")
+  ) return "Website Concierge";
   if (row.sourceSystem === "human-intake") return "Human Intake";
   if (row.sourceSystem === "google_calendar") return "Calendar";
   return "Evidence";

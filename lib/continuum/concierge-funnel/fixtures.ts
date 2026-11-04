@@ -1,14 +1,10 @@
 import type { WebsiteInquiry } from "../website-intake/types";
+import { APPROVED_CONCIERGE_ACKNOWLEDGEMENT_COPY } from "./copy";
 import type { AcknowledgementCopy, CommunicationConsent, IntakeInput } from "./types";
 
 export const FIXTURE_NOW = "2026-11-04T15:00:00.000Z";
 
-export const APPROVED_PREVIEW_COPY: AcknowledgementCopy = {
-  copyVersion: "quiet-luxury-v1",
-  approvalStatus: "founder_approved",
-  subject: "Your Hourglass Concierge inquiry",
-  text: "Thank you for reaching out to Hourglass Diamonds. Justin will personally review your note and follow up thoughtfully. There is nothing more you need to do for now.",
-};
+export const APPROVED_PREVIEW_COPY = APPROVED_CONCIERGE_ACKNOWLEDGEMENT_COPY;
 
 export const PENDING_COPY: AcknowledgementCopy = {
   ...APPROVED_PREVIEW_COPY,
