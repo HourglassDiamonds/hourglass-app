@@ -5,6 +5,7 @@ import { describe, it } from "node:test";
 import {
   executeOneManualPreviewChunk,
   isBetaRecoveryPreviewRuntime,
+  manualPreviewSnapshotFromIncremental,
 } from "./manual-preview-chunk";
 import type { GmailIncrementalChunkResult } from "./incremental";
 
@@ -175,6 +176,24 @@ describe("one-time Beta Recovery Gmail chunk", () => {
     assert.equal(result.completed, false);
   });
 
+  it("restores visible recovery state from the durable checkpoint after refresh", () => {
+    const result = manualPreviewSnapshotFromIncremental(
+      chunk({
+        chunkSucceeded: true,
+        checkpointStatus: "running",
+        indexedCount: 42,
+        indexedThisChunk: 0,
+        morePagesRemain: true,
+        recovery: true,
+        safeErrorCode: "history-too-old",
+      }),
+    );
+    assert.equal(result.status, "recovering");
+    assert.equal(result.indexedCount, 42);
+    assert.equal(result.morePagesRemain, true);
+    assert.equal(result.completed, false);
+  });
+
   it("keeps recurring sync kill-switched and the manual surface free of client/Sterling writes", () => {
     const actions = readFileSync(
       join(ROOT, "app/executive-dashboard/concierge/gmail-incremental-actions.ts"),
@@ -205,8 +224,12 @@ describe("one-time Beta Recovery Gmail chunk", () => {
     assert.match(cron, /executeLiveGmailFreshnessCycle/);
     assert.match(actions, /runGmailIncrementalChunk/);
     assert.match(incremental, /tryClaimIncrementalChunk/);
-    assert.match(manualUi, /Run one Gmail ingestion chunk/);
-    assert.doesNotMatch(manualUi, /createGmailIncrementalContinuation|useEffect|retry/);
+    assert.match(manualUi, /Start Gmail Catch-Up/);
+    assert.match(manualUi, /Stop after current chunk/);
+    assert.match(manualUi, /createManualPreviewCatchUp/);
+    const effect = manualUi.match(/useEffect\(\(\) => \{[\s\S]*?\}, \[initial\]\);/)?.[0] ?? "";
+    assert.match(effect, /continuation\.cancel\(\)/);
+    assert.doesNotMatch(effect, /continuation\.start\(/);
     for (const source of [actions, manualUi]) {
       assert.doesNotMatch(source, /continuum_open_jobs|continuum_projects|createPersonAtomic/);
       assert.doesNotMatch(source, /CandidateStore|createSupabaseCandidateStore|runGmailNewProjectIntakeScan/);

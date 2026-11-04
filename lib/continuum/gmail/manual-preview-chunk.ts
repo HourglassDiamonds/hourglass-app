@@ -37,6 +37,42 @@ export const INITIAL_MANUAL_PREVIEW_CHUNK_RESULT: ManualPreviewChunkResult = {
   safeErrorCode: null,
 };
 
+export function manualPreviewSnapshotFromIncremental(
+  chunk: GmailIncrementalChunkResult,
+): ManualPreviewChunkResult {
+  const recoveryInProgress =
+    chunk.recovery &&
+    chunk.checkpointStatus === "running" &&
+    chunk.morePagesRemain &&
+    (chunk.safeErrorCode === "history-too-old" ||
+      chunk.safeErrorCode === "historical-incomplete");
+  const completed =
+    !chunk.safeErrorCode &&
+    chunk.completed &&
+    chunk.checkpointStatus === "completed" &&
+    chunk.historyIdPresent;
+  return {
+    status: completed
+      ? "completed"
+      : recoveryInProgress
+        ? "recovering"
+        : chunk.checkpointStatus === "failed" || chunk.safeErrorCode
+          ? "failed"
+          : chunk.checkpointStatus === "running" && chunk.morePagesRemain
+            ? "progressed"
+            : "idle",
+    blockedReason: null,
+    checkpointStatus: chunk.checkpointStatus,
+    indexedThisChunk: 0,
+    indexedCount: chunk.indexedCount,
+    morePagesRemain: chunk.morePagesRemain,
+    recovery: chunk.recovery,
+    completed,
+    historyIdPresent: chunk.historyIdPresent,
+    safeErrorCode: chunk.safeErrorCode,
+  };
+}
+
 export function isBetaRecoveryPreviewRuntime(input: {
   vercel: string | undefined;
   vercelEnv: string | undefined;

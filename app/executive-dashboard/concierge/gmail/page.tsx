@@ -14,7 +14,10 @@ import { GmailConnectionTestForm } from "../components/gmail-connection-test";
 import { GmailHistoryForm } from "../components/gmail-history";
 import { GmailIncrementalForm } from "../components/gmail-incremental";
 import { GmailManualPreviewChunk } from "../components/gmail-manual-preview-chunk";
-import { isBetaRecoveryPreviewRuntime } from "@/lib/continuum/gmail/manual-preview-chunk";
+import {
+  isBetaRecoveryPreviewRuntime,
+  manualPreviewSnapshotFromIncremental,
+} from "@/lib/continuum/gmail/manual-preview-chunk";
 import { resolveContinuumIsolationState } from "@/lib/continuum/runtime-env";
 
 export const dynamic = "force-dynamic";
@@ -70,7 +73,12 @@ export default async function ConciergeGmailPage() {
           Gmail
         </h1>
         <GmailConnectionTestForm connected={connected} />
-        {manualChunkEnabled ? <GmailManualPreviewChunk /> : null}
+        {manualChunkEnabled ? (
+          <GmailManualPreviewChunk
+            key={`${incremental.checkpointStatus}:${incremental.indexedCount}:${incremental.safeErrorCode ?? "ok"}`}
+            initial={manualPreviewSnapshotFromIncremental(incremental)}
+          />
+        ) : null}
         <GmailHistoryForm initial={history} />
         <GmailIncrementalForm initial={incremental} publicState={publicState} />
         <Link
