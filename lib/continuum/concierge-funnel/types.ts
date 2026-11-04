@@ -3,7 +3,7 @@ import type { ContinuumCandidate } from "../candidates/types";
 import type { WebsiteInquiry, WebsiteIntakeCategory } from "../website-intake/types";
 
 export type IdentityResolution =
-  | { status: "new"; personId: null }
+  | { status: "new"; personId: string }
   | { status: "matched"; personId: string }
   | { status: "needs_review"; personId: null };
 

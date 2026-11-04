@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { sanitizeAttributionRecord } from "@/lib/attribution";
 import type { ContinuumCandidate } from "../candidates/types";
+import { assignCandidateId } from "../candidates/identity";
 import type {
   AcceptIntakeResult,
   AcknowledgementOutboxItem,
@@ -50,9 +51,8 @@ function actionSubject(input: IntakeInput, qualification: Qualification): string
 
 function buildCandidate(input: IntakeInput, subject: string): ContinuumCandidate {
   const sourceRef = `website-intake:${input.intakeId}`;
-  const candidateId = deterministicId("candidate", sourceRef);
-  return {
-    candidateId,
+  return assignCandidateId({
+    candidateId: "",
     sourceSystem: "human-intake",
     sourceRef,
     sourceTimestamp: input.now,
@@ -70,18 +70,11 @@ function buildCandidate(input: IntakeInput, subject: string): ContinuumCandidate
     confidence: input.identity.status === "needs_review" ? "ambiguous" : "high",
     evidenceBasis: { ruleIds: ["concierge-intake-v1", "founder-review-required"], matchedText: null },
     candidateState: "active",
-    reviewStatus: "pending",
-    lastReviewAction: null,
-    founderEditedPayload: null,
-    founderEditedTarget: null,
-    reviewedAt: null,
     createdAt: input.now,
     canonical: false,
     automaticApply: false,
     parserVersion: "concierge-funnel-preview-v1",
-    supersedesCandidateId: null,
-    supersededByCandidateId: null,
-  };
+  });
 }
 
 export function buildFunnelRecord(input: IntakeInput): ConciergeFunnelRecord {
@@ -111,7 +104,7 @@ export function buildFunnelRecord(input: IntakeInput): ConciergeFunnelRecord {
     lead: {
       leadId,
       intakeId: input.intakeId,
-      personId: input.identity.status === "matched" ? input.identity.personId : null,
+      personId: input.identity.status === "needs_review" ? null : input.identity.personId,
       category: input.inquiry.category,
       qualification,
       attribution,
