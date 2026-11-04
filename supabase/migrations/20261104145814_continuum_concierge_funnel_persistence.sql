@@ -120,6 +120,9 @@ begin
   if intake.source <> 'hourglassdiamonds.com/concierge' then
     raise exception 'website-intake-source-mismatch';
   end if;
+  if intake.acknowledgement_state <> 'pending' then
+    raise exception 'website-acknowledgement-not-pending';
+  end if;
 
   select * into existing_outbox
     from public.continuum_concierge_ack_outbox

@@ -1,5 +1,5 @@
 /**
- * Disposable loopback-only PostgreSQL acceptance for Concierge P0.5.
+ * Disposable loopback-only PostgreSQL acceptance for Concierge P0.6.
  * Requires EMBEDDED_POSTGRES_MODULE and POSTGRES_CTL on Windows. It never
  * connects to a shared Supabase project or sends a client-facing message.
  */
@@ -37,12 +37,34 @@ create table public.continuum_website_intakes (
   person_id uuid,
   email text not null,
   synthetic boolean not null default false,
+  acknowledgement_state text not null default 'pending',
   attribution jsonb not null default '{}'::jsonb,
   submitted_at timestamptz not null
 );
 alter table public.continuum_website_intakes enable row level security;
 revoke all on public.continuum_website_intakes from public, anon, authenticated;
 grant select, insert, update on public.continuum_website_intakes to service_role;
+`;
+
+// Current shared Preview drift layered over the original Candidate contract:
+// transactional founder review added record_version and its bump trigger.
+const currentPreviewCandidateDrift = `
+create schema continuum_private;
+alter table public.continuum_candidates
+  add column record_version bigint not null default 1,
+  add constraint continuum_candidates_record_version_check check (record_version > 0);
+create function continuum_private.bump_record_version() returns trigger
+language plpgsql security invoker set search_path = '' as $$
+begin
+  new.record_version := old.record_version + 1;
+  return new;
+end;
+$$;
+revoke all on function continuum_private.bump_record_version() from public, anon, authenticated;
+grant execute on function continuum_private.bump_record_version() to service_role;
+create trigger continuum_candidates_record_version_trg
+before update on public.continuum_candidates
+for each row execute function continuum_private.bump_record_version();
 `;
 
 const hex = (character) => character.repeat(64);
@@ -125,7 +147,35 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       // The bundled Windows cluster defaults to WIN1252; normalize a comment-only
       // mathematical glyph before sending the otherwise canonical schema text.
       await observer.query(candidateSchema.replaceAll('≠', '!='));
+      await observer.query(currentPreviewCandidateDrift);
+
+      // Existing Preview-shaped records must remain unchanged when the additive
+      // migration is installed. These are synthetic local fixtures, never a
+      // copy of customer data.
+      const legacyIntakeId = randomUUID();
+      await observer.query(`insert into public.continuum_website_intakes
+        (intake_id,idempotency_key_hash,payload_hash,source,identity_status,person_id,email,synthetic,submitted_at)
+        values ($1,$2,$3,'hourglassdiamonds.com/concierge','new',$4,'legacy@example.test',false,$5)`,
+        [legacyIntakeId, hex('8'), hex('9'), randomUUID(), stamp]);
+      await observer.query(`insert into public.continuum_candidates (
+        candidate_id,source_system,source_ref,source_timestamp,candidate_type,
+        proposed_target,payload,confidence,evidence_basis,candidate_state,review_status,
+        created_at,canonical,automatic_apply,parser_version
+      ) values ($1,'gmail','gm1|legacy-thread|legacy-message',$2,'note',
+        '{"kind":"none"}'::jsonb,'{"kind":"note","text":"Local fixture","contextLayer":null}'::jsonb,
+        'high','{"ruleIds":["fixture"],"matchedText":null}'::jsonb,'active','pending',$2,false,false,'fixture-v1')`,
+        [hex('e'), stamp]);
       await observer.query(conciergeMigration);
+
+      const legacyAfterMigration = (await observer.query(`select
+        (select idempotency_key_hash from public.continuum_website_intakes where intake_id=$1) intake_hash,
+        (select record_version from public.continuum_candidates where candidate_id=$2) record_version,
+        (select source_ref from public.continuum_candidates where candidate_id=$2) source_ref`,
+        [legacyIntakeId, hex('e')])).rows[0];
+      assert.deepEqual(legacyAfterMigration, {
+        intake_hash: hex('8'), record_version: '1',
+        source_ref: 'gm1|legacy-thread|legacy-message',
+      });
 
       const seed = async ({ intakeId, hash, email, identityStatus, personId = null }) => {
         await observer.query(`insert into public.continuum_website_intakes
@@ -177,6 +227,33 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       assert.equal(Number((await observer.query(
         "select count(*) as n from pg_policies where schemaname='public' and tablename='continuum_concierge_ack_outbox'"
       )).rows[0].n), 0);
+      assert.equal(Number((await observer.query(`select count(*) as n
+        from pg_constraint con
+        join unnest(con.conkey) key(attnum) on true
+        where con.conrelid='public.continuum_concierge_ack_outbox'::regclass
+          and con.contype='f'
+          and not exists (
+            select 1 from pg_index idx
+            where idx.indrelid=con.conrelid and key.attnum=any(idx.indkey)
+          )`)).rows[0].n), 0, 'every new outbox foreign key is covered by an index');
+
+      const noAcknowledgementIntake = randomUUID();
+      await seed({ intakeId: noAcknowledgementIntake, hash: hex('6'),
+        email: '3@example.test', identityStatus: 'new', personId: randomUUID() });
+      await observer.query(`update public.continuum_website_intakes
+        set acknowledgement_state='not_expected' where intake_id=$1`, [noAcknowledgementIntake]);
+      const noAcknowledgementInput = values({
+        intakeId: noAcknowledgementIntake, candidateId: hex('f'), suffix: '3',
+      });
+      await observer.query('set role service_role');
+      await assert.rejects(
+        accept(observer, noAcknowledgementIntake, hex('6'), hex('7'), noAcknowledgementInput),
+        /website-acknowledgement-not-pending/,
+      );
+      assert.equal(Number((await observer.query(`select count(*) as n
+        from public.continuum_concierge_ack_outbox where intake_id=$1`,
+        [noAcknowledgementIntake])).rows[0].n), 0);
+      await observer.query('reset role');
 
       const first = pg.getPgClient();
       const second = pg.getPgClient();
@@ -189,7 +266,9 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       ]);
       assert.deepEqual(concurrent.map((item) => item.status).sort(), ['already-present', 'created']);
       assert.equal(Number((await observer.query('select count(*) as n from public.continuum_concierge_ack_outbox')).rows[0].n), 1);
-      assert.equal(Number((await observer.query('select count(*) as n from public.continuum_candidates')).rows[0].n), 1);
+      assert.equal(Number((await observer.query('select count(*) as n from public.continuum_candidates')).rows[0].n), 2);
+      assert.equal((await observer.query('select record_version from public.continuum_candidates where candidate_id=$1',
+        [matchedInput.candidate.candidateId])).rows[0].record_version, '1');
       await assert.rejects(accept(first, matchedIntake, hex('1'), hex('3'), matchedInput), /idempotency-conflict/);
       assert.equal((await observer.query('select person_id from public.continuum_website_intakes where intake_id=$1',
         [matchedIntake])).rows[0].person_id, existingPerson);
@@ -228,13 +307,13 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       await observer.connect();
       await observer.query('set role service_role');
       const durable = (await observer.query(`select o.state,o.attempt_count,o.reconciliation_required,
-        o.provider_message_id,o.source_label,c.review_status,c.payload->>'subject' as subject
+        o.provider_message_id,o.source_label,c.review_status,c.record_version,c.payload->>'subject' as subject
         from public.continuum_concierge_ack_outbox o
         join public.continuum_candidates c using (candidate_id)
         where o.intake_id=$1`, [matchedIntake])).rows[0];
       assert.deepEqual(durable, {
         state: 'delivery_unknown', attempt_count: 1, reconciliation_required: true,
-        provider_message_id: null, source_label: 'Website Concierge', review_status: 'pending',
+        provider_message_id: null, source_label: 'Website Concierge', review_status: 'pending', record_version: '1',
         subject: 'Personally review this inquiry',
       });
       assert.equal(Number((await observer.query(
