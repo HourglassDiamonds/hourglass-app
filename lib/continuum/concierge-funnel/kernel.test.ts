@@ -24,7 +24,6 @@ describe("Concierge funnel Preview acceptance", () => {
     assert.equal(first.status, "created");
     assert.equal(replay.status, "duplicate");
     assert.equal(store.snapshot().length, 1);
-    if (first.status === "idempotency_conflict" || replay.status === "idempotency_conflict") return;
     assert.equal(first.record.lead.leadId, replay.record.lead.leadId);
     assert.equal(first.record.acknowledgement.outboxId, replay.record.acknowledgement.outboxId);
     assert.deepEqual(first.record.lead.attribution, {
