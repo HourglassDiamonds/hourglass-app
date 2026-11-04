@@ -59,7 +59,9 @@ export function connectFounderMailbox(input: {
     refreshToken: input.refreshToken,
     grantedScope: input.grantedScope,
     providerTokenType: input.providerTokenType,
-    connectedAt: input.existing?.connectedAt ?? input.now,
+    // This is the authorization epoch, not merely the row-creation time. A
+    // subsequent readiness check must require provider ingestion after it.
+    connectedAt: input.now,
     updatedAt: input.now,
     lastSyncAt: input.existing?.lastSyncAt ?? null,
     statusErrorCode: null,

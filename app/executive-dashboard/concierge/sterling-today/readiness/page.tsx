@@ -38,6 +38,7 @@ function ReadinessReport({ report }: { report: SterlingReadinessReport }) {
     ["Gmail authorization", `${report.gmail.authorizationStatus}${report.gmail.authorizationReason ? ` · ${report.gmail.authorizationReason}` : ""}`],
     ["Last successful ingestion", report.gmail.lastSuccessfulIngestionAt ?? "None recorded"],
     ["Checkpoint", `${report.gmail.checkpointStatus ?? "missing"} · ${report.gmail.checkpointAgeHours ?? "unknown"}h old`],
+    ["Post-authorization ingestion", report.gmail.successfulIngestionAfterAuthorization ? "verified" : "required"],
     ["Indexed coverage", `${report.gmail.indexedMessageCount} messages / ${report.gmail.indexedThreadCount} threads · ${report.gmail.missingCandidateThreadCount} candidate-thread gaps`],
     ["Canonical Project/Job watermark", report.watermarks.canonicalProjectJob],
     ["Founder correction / Candidate watermark", report.watermarks.founderCorrectionCandidateReview],

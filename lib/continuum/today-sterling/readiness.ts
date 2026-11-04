@@ -17,6 +17,7 @@ import {
   isSterlingTodayPreviewPublisherEnabled,
   isVerifiedSterlingTodayPreviewRuntime,
 } from "./server-config";
+import { hasSuccessfulGmailIngestionAfterAuthorization } from "./gmail-readiness";
 
 const DAILY_EVIDENCE_MAX_AGE_MS = 36 * 60 * 60 * 1000;
 
@@ -32,6 +33,7 @@ export type SterlingReadinessReport = {
     checkpointAt: string | null;
     checkpointAgeHours: number | null;
     checkpointStatus: string | null;
+    successfulIngestionAfterAuthorization: boolean;
     indexedMessageCount: number;
     indexedThreadCount: number;
     candidateReferencedThreadCount: number;
@@ -169,12 +171,23 @@ export async function buildSterlingReadinessReport(
   const checkpointAt = latestCheckpoint?.updated_at ? String(latestCheckpoint.updated_at) : null;
   const checkpointAgeHours = ageHours(checkpointAt, nowMs);
   const checkpointFresh = checkpointAgeHours !== null && checkpointAgeHours * 3_600_000 <= DAILY_EVIDENCE_MAX_AGE_MS;
+  const successfulIngestionAfterAuthorization = hasSuccessfulGmailIngestionAfterAuthorization(
+    connection?.connectedAt,
+    checkpointRows.map((row) => ({
+      status: row.status == null ? null : String(row.status),
+      errorCode: row.error_code == null ? null : String(row.error_code),
+      updatedAt: row.updated_at == null ? null : String(row.updated_at),
+    })),
+  );
   const coverageComplete = candidateThreads.size === indexedCandidateThreadCount;
   const correspondenceComplete = payload?.correspondenceStatus === "complete" || payload?.correspondenceStatus === "not-required";
 
   const blockers: string[] = [];
   if (authorizationReason) blockers.push(`gmail:${authorizationReason}`);
   if (!checkpointFresh) blockers.push("gmail:checkpoint-older-than-36-hours");
+  if (!successfulIngestionAfterAuthorization) {
+    blockers.push("gmail:new-ingestion-required-after-authorization");
+  }
   if (!coverageComplete) blockers.push(`gmail:indexed-thread-gaps:${candidateThreads.size - indexedCandidateThreadCount}`);
   if (todayStatus !== "current") blockers.push(`today:read-model-${todayStatus}`);
   if (!correspondenceComplete) blockers.push("today:correspondence-incomplete");
@@ -183,7 +196,7 @@ export async function buildSterlingReadinessReport(
   const publication = publicationResult.error ? null : publicationResult.data;
   const expiresAt = publication?.expires_at ? String(publication.expires_at) : null;
   const expired = expiresAt ? Date.parse(expiresAt) <= nowMs : null;
-  const validationReady = !authorizationReason && checkpointFresh && coverageComplete &&
+  const validationReady = !authorizationReason && checkpointFresh && successfulIngestionAfterAuthorization && coverageComplete &&
     todayStatus === "current" && correspondenceComplete;
   return {
     generatedAt: now.toISOString(),
@@ -191,7 +204,7 @@ export async function buildSterlingReadinessReport(
       connectionStatus: connection?.status ?? "missing",
       authorizationStatus: authorizationReason
         ? "unavailable"
-        : checkpointFresh
+        : checkpointFresh && successfulIngestionAfterAuthorization
           ? "verified-by-fresh-ingestion"
           : "configured-unverified",
       authorizationReason,
@@ -201,6 +214,7 @@ export async function buildSterlingReadinessReport(
       checkpointAt,
       checkpointAgeHours,
       checkpointStatus: latestCheckpoint?.status ? String(latestCheckpoint.status) : null,
+      successfulIngestionAfterAuthorization,
       indexedMessageCount: messageRows.length,
       indexedThreadCount: indexedThreads.size,
       candidateReferencedThreadCount: candidateThreads.size,

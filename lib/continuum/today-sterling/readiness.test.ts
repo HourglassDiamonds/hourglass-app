@@ -13,6 +13,8 @@ describe("Sterling readiness preflight", () => {
     assert.match(source, /requireInternalClientMemorySession/);
     assert.match(source, /publisher-disabled/);
     assert.match(source, /token-kek-missing|loadGmailTokenKek/);
+    assert.match(source, /new-ingestion-required-after-authorization/);
+    assert.match(source, /successfulIngestionAfterAuthorization/);
     assert.doesNotMatch(source, /\.insert\(|\.upsert\(|\.delete\(|\.from\([^)]*\)[\s\S]{0,80}\.update\(/);
     assert.doesNotMatch(source, /server-runner|generateObject|generateText|createProposal|publishPersisted/);
   });

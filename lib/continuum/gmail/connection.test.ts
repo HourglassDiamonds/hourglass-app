@@ -69,4 +69,20 @@ describe("Gmail connection controls", () => {
     assert.equal(next?.refreshToken, null);
     assert.equal(next?.statusErrorCode, "invalid_grant");
   });
+
+  it("moves the authorization epoch when the mailbox is reauthorized", async () => {
+    const store = await connectedStore();
+    const existing = await store.getFounderConnection();
+    const next = connectFounderMailbox({
+      existing,
+      mailboxEmailHash: existing!.mailboxEmailHash,
+      refreshToken: encryptRefreshToken("replacement-refresh", KEY),
+      grantedScope: GMAIL_READONLY_SCOPE,
+      providerTokenType: "Bearer",
+      now: "2026-11-04T15:00:00.000Z",
+    });
+    assert.equal(next.connectionId, existing?.connectionId);
+    assert.equal(next.connectedAt, "2026-11-04T15:00:00.000Z");
+    assert.equal(next.updatedAt, "2026-11-04T15:00:00.000Z");
+  });
 });
