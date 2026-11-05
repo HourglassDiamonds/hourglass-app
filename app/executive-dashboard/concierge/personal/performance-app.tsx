@@ -890,14 +890,18 @@ export function PerformanceApp({ initialView = "today" }: { initialView?: View }
     </section> : null}
 
     {state.program.status === "active" && state.tonal.selectedProgramId === "fit-over-40" ? <section className={styles.card} data-program-restart>
-      <p className={styles.kicker}>Founder-controlled cycle restart</p>
-      <h2>Start a distinct Fit Over 40 cycle.</h2>
-      <p>The current cycle, its photos, workout history, and audit trail stay preserved. The new cycle starts at Session 1 with twelve fresh ordered slots and Sunday hard rest.</p>
-      <div className={styles.formGrid}><label>New Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div>
-      {currentFitOver40CycleSelected ? <p role="status" aria-live="polite" className={styles.provenance} data-program-cycle-current>Already active — this is the current Fit Over 40 cycle. Session 1 remains next; no restart will be created.</p> : null}
-      <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy || currentFitOver40CycleSelected}>{currentFitOver40CycleSelected ? "Current cycle already active" : "Review new cycle"}</button></div>
-      {activationError ? <p role="status" aria-live="polite" className={styles.warning}>{activationError}</p> : null}
-      {activationReview ? <div className={styles.proposal}><strong>Proposed - nothing has changed yet</strong><p>Session 1 begins {prettyDate(programStartDate)}. Existing occurrences remain available as history; unfinished old-cycle slots are retired, never completed or skipped.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min - {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy}>{activationBusy ? "Saving new cycle..." : "Confirm new cycle"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
+      <p className={styles.kicker}>Current program</p>
+      <h2>Fit Over 40 is active{state.program.anchorDate ? ` from ${prettyDate(state.program.anchorDate)}` : ""}.</h2>
+      <p>Session {rolloverPlan.nextSession?.order ?? 1} remains next. Automatic rollover preserves the sequence and Sunday rest; another restart is not required.</p>
+      <details className={styles.restartDetails}>
+        <summary className={styles.restartSummary}>Plan an optional future Fit Over 40 cycle</summary>
+        <p>This is only for a deliberate future restart. The current cycle, its photos, workout history, and audit trail stay preserved.</p>
+        <div className={styles.formGrid}><label>Future Week 1 start (Monday)<input type="date" min={today} value={programStartDate} onChange={(event) => { setProgramStartDate(event.target.value); setActivationReview(false); setActivationError(""); }} /></label></div>
+        {currentFitOver40CycleSelected ? <p role="status" aria-live="polite" className={styles.provenance} data-program-cycle-current>Already active — this is the current Fit Over 40 cycle. No restart will be created.</p> : null}
+        <div className={styles.actions}><button className={styles.primary} onClick={reviewActivation} disabled={activationBusy || currentFitOver40CycleSelected}>{currentFitOver40CycleSelected ? "Current cycle already active" : "Review optional future cycle"}</button></div>
+        {activationError ? <p role="status" aria-live="polite" className={styles.warning}>{activationError}</p> : null}
+        {activationReview ? <div className={styles.proposal}><strong>Proposed future cycle - nothing has changed yet</strong><p>Session 1 begins {prettyDate(programStartDate)}. Existing occurrences remain available as history; unfinished old-cycle slots are retired, never completed or skipped.</p><div className={styles.proposalGrid}>{activationPreview.map((workout) => <div key={workout.id}><span>{prettyDate(workout.date)}</span><strong>{workout.prescription.name}</strong><small>{workout.prescription.durationMinutes} min - {workout.prescription.intent}</small></div>)}</div><div className={styles.actions}><button className={styles.primary} onClick={() => void confirmActivation()} disabled={activationBusy}>{activationBusy ? "Saving new cycle..." : "Confirm future cycle"}</button><button onClick={() => setActivationReview(false)} disabled={activationBusy}>Cancel</button></div></div> : null}
+      </details>
     </section> : null}
 
     {state.program.status === "active" && rolloverPlan.nextSession && rolloverPlan.missedSessionCount > 0 ? <section className={styles.card} data-workout-rollover>

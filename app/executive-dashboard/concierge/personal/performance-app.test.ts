@@ -150,13 +150,18 @@ test("missed Tonal sessions use a deterministic founder-controlled projection", 
 
 test("an active Fit Over 40 cycle exposes one reviewed restart without rewriting history", () => {
   assert.match(source, /data-program-restart/);
+  assert.match(source, /Fit Over 40 is active/);
+  assert.match(source, /another restart is not required/);
+  assert.match(source, /<details>/);
+  assert.match(source, /restartSummary/);
+  assert.match(source, /Plan an optional future Fit Over 40 cycle/);
   assert.match(source, /restartFitOver40Cycle/);
   assert.match(source, /restart-fit-over-40/);
   assert.match(source, /Prior workout evidence remains in history/);
   assert.match(source, /unfinished old-cycle slots are retired, never completed or skipped/);
   assert.match(source, /isCurrentFitOver40CycleStart/);
   assert.match(source, /data-program-cycle-current/);
-  assert.match(source, /Already active — this is the current Fit Over 40 cycle/);
+  assert.match(source, /Already active — this is the current Fit Over 40 cycle\. No restart will be created/);
   assert.match(source, /disabled=\{activationBusy \|\| currentFitOver40CycleSelected\}/);
 });
 
