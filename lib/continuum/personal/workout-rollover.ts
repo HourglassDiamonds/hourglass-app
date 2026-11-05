@@ -34,16 +34,26 @@ function laterDate(left: string, right: string): string {
 }
 
 export function projectWorkoutRollover(state: PersonalState, today: string): WorkoutRolloverPlan {
+  const terminal = new Set(["completed", "skipped", "replaced"]);
+  const activeWorkoutIds = new Set(state.tonal.enrollment.sessions.flatMap((session) => session.scheduledWorkoutId ? [session.scheduledWorkoutId] : []));
+  const schedule = state.program.status === "active"
+    ? state.schedule.filter((workout) => {
+        const isTonalOccurrence = workout.prescription.tonalSessionOrder !== undefined;
+        const isUnfinishedOldCycleOccurrence = isTonalOccurrence && !activeWorkoutIds.has(workout.id) && !terminal.has(workout.status);
+        return !isUnfinishedOldCycleOccurrence;
+      })
+    : state.schedule;
   const nextSession = nextTonalSession(state);
   if (state.program.status !== "active" || !nextSession) {
-    return { schedule: state.schedule, nextSession, missedSessionCount: 0, doubleUpAvailable: false, doubleUpActive: false };
+    return { schedule, nextSession, missedSessionCount: 0, doubleUpAvailable: false, doubleUpActive: false };
   }
 
-  const terminal = new Set(["completed", "skipped", "replaced"]);
-  const unfinished = state.tonal.enrollment.sessions.filter((session) => !terminal.has(tonalSessionStatus(state, session)));
+  const unfinished = [...state.tonal.enrollment.sessions]
+    .filter((session) => !terminal.has(tonalSessionStatus(state, session)))
+    .sort((left, right) => left.order - right.order);
   const workoutBySession = new Map<number, ScheduledWorkout>();
   for (const session of unfinished) {
-    const workout = state.schedule.find((candidate) => candidate.id === session.scheduledWorkoutId);
+    const workout = schedule.find((candidate) => candidate.id === session.scheduledWorkoutId);
     if (workout) workoutBySession.set(session.order, workout);
   }
   const weekdays = strengthWeekdays(state.tonal.enrollment.weeklyFrequency);
@@ -75,12 +85,12 @@ export function projectWorkoutRollover(state: PersonalState, today: string): Wor
       : { ...workout, date: projectedDate, projection: { canonicalDate: workout.date, reason } });
   }
 
-  const schedule = state.schedule.map((workout) => projectedById.get(workout.id) ?? workout).sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id));
+  const projectedSchedule = schedule.map((workout) => projectedById.get(workout.id) ?? workout).sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id));
   const firstWorkout = workoutBySession.get(nextSession.order);
   const nextProjectedDate = firstWorkout ? projectedById.get(firstWorkout.id)?.date ?? firstWorkout.date : undefined;
   const missedSessionCount = unfinished.filter((session) => (workoutBySession.get(session.order)?.date ?? today) < today).length;
   return {
-    schedule,
+    schedule: projectedSchedule,
     nextSession,
     nextProjectedDate,
     missedSessionCount,
