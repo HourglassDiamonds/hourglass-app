@@ -5,6 +5,7 @@ import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { PROJECT_EVIDENCE_TABLE } from "@/lib/continuum/project-evidence/types";
 import {
   buildRealClientAssociationBatch,
+  type AssociationAttachment,
   type AssociationJob,
   type AssociationMessage,
   type AssociationPerson,
@@ -55,12 +56,36 @@ async function loadAllMessages(client: SupabaseClient): Promise<AssociationMessa
   return rows;
 }
 
+async function loadAllAttachments(client: SupabaseClient): Promise<AssociationAttachment[]> {
+  const rows: AssociationAttachment[] = [];
+  for (let from = 0; from < MAX_MESSAGE_ROWS; from += PAGE_SIZE) {
+    const result = await client
+      .from("continuum_gmail_attachments")
+      .select("message_id,thread_id,filename,indexed_at")
+      .order("indexed_at", { ascending: true })
+      .order("message_id", { ascending: true })
+      .range(from, from + PAGE_SIZE - 1);
+    if (result.error) throw result.error;
+    const page = result.data ?? [];
+    for (const row of page) {
+      rows.push({
+        messageId: String(row.message_id),
+        threadId: String(row.thread_id),
+        filename: String(row.filename ?? ""),
+      });
+    }
+    if (page.length < PAGE_SIZE) break;
+  }
+  return rows;
+}
+
 export async function loadRealClientAssociationBatch(
   client: SupabaseClient,
   now = new Date(),
 ): Promise<RealClientAssociationBatch> {
-  const [messages, peopleResult, projectsResult, jobsResult, relationshipsResult, connectionResult, associationResult] = await Promise.all([
+  const [messages, attachments, peopleResult, projectsResult, jobsResult, relationshipsResult, connectionResult, associationResult] = await Promise.all([
     loadAllMessages(client),
+    loadAllAttachments(client),
     client.from("continuum_person_profiles").select("person_id,display_name,email,source_system").limit(500),
     client.from("continuum_project_profiles").select("project_id,display_title,source_system").limit(500),
     client.from("continuum_project_jobs").select("job_id,project_id,subject,state,waiting_on_actor,source_system").limit(1000),
@@ -106,6 +131,7 @@ export async function loadRealClientAssociationBatch(
   }));
   return buildRealClientAssociationBatch({
     messages,
+    attachments,
     people,
     projects,
     jobs,

@@ -23,6 +23,12 @@ export type AssociationMessage = {
   participantHashes: readonly string[];
 };
 
+export type AssociationAttachment = {
+  messageId: string;
+  threadId: string;
+  filename: string;
+};
+
 export type AssociationPerson = {
   personId: string;
   label: string;
@@ -66,6 +72,7 @@ export type RealClientThreadReview = {
   latestInboundAt: string | null;
   latestOutboundAt: string | null;
   latestDirection: AssociationMessage["direction"];
+  sourceAttachmentIdentifiers: readonly string[];
   plausibleNextOwner: "founder" | "client" | "unknown";
   identityEvidence: "exact-canonical-email" | "subject-discovery-only";
   target: {
@@ -133,8 +140,21 @@ function latest(values: readonly string[]): string | null {
   return values.filter(Boolean).sort().at(-1) ?? null;
 }
 
+function attachmentIdentifiers(
+  threadId: string,
+  attachments: readonly AssociationAttachment[],
+): string[] {
+  return [...new Set(
+    attachments
+      .filter((row) => row.threadId === threadId)
+      .flatMap((row) => row.filename.match(/\bC\d{6}\b/gi) ?? [])
+      .map((value) => value.toUpperCase()),
+  )].sort();
+}
+
 function buildThread(input: {
   messages: readonly AssociationMessage[];
+  attachments: readonly AssociationAttachment[];
   people: readonly AssociationPerson[];
   projects: readonly AssociationProject[];
   jobs: readonly AssociationJob[];
@@ -208,6 +228,7 @@ function buildThread(input: {
     latestInboundAt,
     latestOutboundAt,
     latestDirection: newest.direction,
+    sourceAttachmentIdentifiers: attachmentIdentifiers(newest.threadId, input.attachments),
     plausibleNextOwner: newest.direction === "inbound" ? "founder" : newest.direction === "outbound" ? "client" : "unknown",
     identityEvidence: exactPeople.length === 1 ? "exact-canonical-email" : "subject-discovery-only",
     target,
@@ -220,6 +241,7 @@ function buildThread(input: {
 
 export function buildRealClientAssociationBatch(input: {
   messages: readonly AssociationMessage[];
+  attachments?: readonly AssociationAttachment[];
   people: readonly AssociationPerson[];
   projects: readonly AssociationProject[];
   jobs: readonly AssociationJob[];
@@ -245,7 +267,12 @@ export function buildRealClientAssociationBatch(input: {
       byThread.set(row.threadId, bucket);
     }
     const currentProviderThreads = [...byThread.values()]
-      .map((messages) => buildThread({ ...input, reviewedAssociations: input.reviewedAssociations ?? [], messages }))
+      .map((messages) => buildThread({
+        ...input,
+        attachments: input.attachments ?? [],
+        reviewedAssociations: input.reviewedAssociations ?? [],
+        messages,
+      }))
       .sort((a, b) => b.latestAt.localeCompare(a.latestAt));
     return {
       key: cohort.key,

@@ -1,4 +1,5 @@
 import type { RealClientAssociationBatch } from "@/lib/continuum/today-sterling/real-client-association";
+import Link from "next/link";
 
 function time(value: string | null): string {
   if (!value) return "None indexed";
@@ -58,6 +59,7 @@ export function RealClientAssociationReview({
                     <div><dt className="text-[#81766c]">Provider thread</dt><dd className="break-all font-mono text-[11px]">{thread.threadId}</dd></div>
                     <div><dt className="text-[#81766c]">Evidence strength</dt><dd>{thread.identityEvidence === "exact-canonical-email" ? "Exact canonical email participant" : "Subject discovery only — not identity proof"}</dd></div>
                     <div><dt className="text-[#81766c]">Messages</dt><dd>{thread.messageCount} · {time(thread.earliestAt)} to {time(thread.latestAt)}</dd></div>
+                    <div><dt className="text-[#81766c]">Attachment identifiers</dt><dd>{thread.sourceAttachmentIdentifiers.length ? thread.sourceAttachmentIdentifiers.join(", ") : "None indexed"}</dd></div>
                     <div><dt className="text-[#81766c]">Latest directions</dt><dd>Inbound {time(thread.latestInboundAt)} · Outbound {time(thread.latestOutboundAt)}</dd></div>
                     <div><dt className="text-[#81766c]">Plausible next owner</dt><dd>{thread.plausibleNextOwner} · chronology only, not a lifecycle decision</dd></div>
                     <div><dt className="text-[#81766c]">Proposed target</dt><dd>{thread.target ? `${thread.target.personLabel} → ${thread.target.projectLabel}${thread.target.jobLabel ? ` → ${thread.target.jobLabel}` : ""}` : "Unresolved — no supported non-fixture canonical target"}</dd></div>
@@ -65,6 +67,18 @@ export function RealClientAssociationReview({
                   </dl>
                   {thread.fixtureTargetsExcluded.length ? <p className="mt-3 text-[11px] text-[#d6a66f]">Excluded fixture target: {thread.fixtureTargetsExcluded.join(", ")}</p> : null}
                   {thread.conflict ? <p className="mt-3 text-[11px] text-[#d39a8a]">Conflict: {thread.conflict}</p> : null}
+                  {!thread.target && thread.sourceAttachmentIdentifiers.length ? (
+                    <div className="mt-4 rounded-xl border border-[#ad9164]/25 bg-[#ad9164]/5 p-4 text-[12px] leading-relaxed text-[#c9b9a9]">
+                      <p className="text-[10px] uppercase tracking-[0.14em] text-[#ad9164]">Founder-reviewable canonical proposal</p>
+                      <p className="mt-2">
+                        Create a canonical Person only from the exact provider participant, then create or link one client Project only after its lifecycle is confirmed. Keep {thread.sourceAttachmentIdentifiers.join(", ")} as a source attachment identifier until the founder confirms whether it is the CAD job number. No Job or Today ownership is proposed from subject text alone.
+                      </p>
+                      <div className="mt-3 flex flex-wrap gap-3">
+                        <Link href="/executive-dashboard/concierge/client/new" className="text-[#d6a66f] underline underline-offset-4">Open Add Client</Link>
+                        <Link href="/executive-dashboard/concierge" className="text-[#d6a66f] underline underline-offset-4">Open founder project intake</Link>
+                      </div>
+                    </div>
+                  ) : null}
                   <div className="mt-4 flex flex-wrap gap-2" aria-label={`Founder decision contract for ${review.label} thread ${thread.threadId}`}>
                     {thread.target && batch.associationPersistence === "available" && !thread.conflict && reviewAction ? (
                       <>

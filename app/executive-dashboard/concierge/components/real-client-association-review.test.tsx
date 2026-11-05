@@ -13,12 +13,17 @@ describe("real-client association review presentation", () => {
         indexedAt: "2026-11-05T14:34:48.000Z", direction: "inbound", participantHashes: [],
       }],
       people: [], projects: [], jobs: [], relationships: [],
+      attachments: [{ messageId: "m1", threadId: "abc123def456", filename: "NL-H017-Morgan-C026937-Mod1.jpg" }],
       authorizationAt: "2026-11-04T15:00:50.223Z", associationPersistence: "missing", nowIso: "2026-11-05T15:00:00.000Z",
     });
     const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch }));
     assert.match(html, /abc123def456/);
     assert.match(html, /Subject discovery only — not identity proof/);
     assert.match(html, /Unresolved — no supported non-fixture canonical target/);
+    assert.match(html, /C026937/);
+    assert.match(html, /Founder-reviewable canonical proposal/);
+    assert.match(html, /Open Add Client/);
+    assert.match(html, /No Job or Today ownership is proposed from subject text alone/);
     assert.match(html, />Confirm</);
     assert.match(html, />Reject</);
     assert.match(html, />Leave unresolved</);

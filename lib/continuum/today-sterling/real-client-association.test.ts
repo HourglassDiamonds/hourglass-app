@@ -42,6 +42,20 @@ describe("real-client association review batch", () => {
     assert.equal(morgan.currentProviderThreads[0].recommendedDecision, "leave-unresolved");
   });
 
+  it("carries exact attachment identifiers into an unresolved creation proposal without treating them as identity proof", () => {
+    const result = batch({
+      attachments: [
+        { messageId: "m1", threadId: "abc123def456", filename: "NL-H017-Morgan-C026937-Mod1.jpg" },
+        { messageId: "m2", threadId: "abc123def456", filename: "NL-H017-Morgan-C026937.jpg" },
+      ],
+    });
+    const thread = result.reviews.find((row) => row.key === "morgan")!.currentProviderThreads[0];
+    assert.deepEqual(thread.sourceAttachmentIdentifiers, ["C026937"]);
+    assert.equal(thread.identityEvidence, "subject-discovery-only");
+    assert.equal(thread.target, null);
+    assert.equal(thread.recommendedDecision, "leave-unresolved");
+  });
+
   it("excludes fixture-era ids and fixture canonical targets", () => {
     const result = batch({
       messages: [
