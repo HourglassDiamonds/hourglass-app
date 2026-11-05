@@ -15,8 +15,14 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
-export default async function RealClientAssociationsPage() {
-  const jar = await cookies();
+export default async function RealClientAssociationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ client?: string | string[] }>;
+}) {
+  const [params, jar] = await Promise.all([searchParams, cookies()]);
+  const requestedClient = params.client;
+  const selectedKey = typeof requestedClient === "string" ? requestedClient : "morgan";
   const session = await requireInternalClientMemorySession(jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value);
   const client = getSupabaseAdmin();
   const allowed = isVerifiedSterlingTodayPreviewRuntime() && session.ok && client;
@@ -28,9 +34,9 @@ export default async function RealClientAssociationsPage() {
         <p className="text-[10px] uppercase tracking-[0.24em] text-[#ad9164]">Preview only · founder authenticated · read only</p>
         <h1 className="mt-3 font-serif text-[1.9rem] text-[#efe8de]">Real-client correspondence review</h1>
         <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-[#a99c90]">
-          Provider thread IDs and aggregate chronology are shown for founder review. Subject matching discovers candidates only; it never proves identity, merges people, changes lifecycle, creates work, or publishes Sterling.
+          Review one client at a time. Nothing is created or changed until the founder uses an authenticated action.
         </p>
-        {batch ? <RealClientAssociationReview batch={batch} reviewAction={reviewFounderCorrespondenceAssociation} /> : (
+        {batch ? <RealClientAssociationReview batch={batch} reviewAction={reviewFounderCorrespondenceAssociation} selectedKey={selectedKey} /> : (
           <p role="alert" className="mt-6 rounded-xl border border-[#d39a8a]/30 p-4 text-[13px] text-[#d39a8a]">This protected Preview review batch is unavailable.</p>
         )}
       </section>
