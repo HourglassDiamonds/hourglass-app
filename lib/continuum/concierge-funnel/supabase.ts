@@ -23,6 +23,7 @@ import type {
   FollowUpPolicy,
   IdentityResolution,
 } from "./types";
+import { CONTROLLED_ACCEPTANCE_RULE } from "./controlled-acceptance";
 
 const OUTBOX_TABLE = "continuum_concierge_ack_outbox";
 const INTAKE_TABLE = "continuum_website_intakes";
@@ -257,12 +258,19 @@ export class SupabaseConciergeFunnelStore implements ConciergeFunnelStore {
       if (!candidateData) continue;
       const candidate = rowToCandidate(requireRow(candidateData, "concierge-founder-action-candidate"));
       if (candidate.payload.kind !== "open_job") continue;
+      const controlledAcceptance = candidate.evidenceBasis.ruleIds.includes(
+        CONTROLLED_ACCEPTANCE_RULE,
+      );
       actions.push({
         id: `attention:website-intake:${String(row.intake_id)}`,
         lane: "decision",
-        title: "New Concierge inquiry",
+        title: controlledAcceptance
+          ? "Synthetic Concierge acceptance"
+          : "New Concierge inquiry",
         headline: candidate.payload.subject,
-        detail: "Founder review is required before any canonical Project change or personal outreach.",
+        detail: controlledAcceptance
+          ? "Controlled Preview fixture only. Do not contact, book, or treat as customer work."
+          : "Founder review is required before any canonical Project change or personal outreach.",
         projectId: null,
         projectTitle: null,
         sourceLabel: WEBSITE_CONCIERGE_SOURCE_LABEL,

@@ -80,6 +80,24 @@ Changed replay bodies must return conflict. Existing website intakes whose
 acknowledgment state is `not_expected` are rejected atomically by the installed
 RPC; no Candidate or outbox row is created and no state is converted.
 
+### Founder-operated P0.9 control
+
+The authenticated page at
+`/executive-dashboard/concierge/preview-acceptance-control` is available only
+while both Preview acceptance flags pass the existing isolation gate. It does
+nothing on load or refresh. A founder click posts the reserved fixture once,
+replays the exact body once, and then calls a same-origin, authenticated,
+server-only verification route. The result reports the durable intake, Person,
+Job, Candidate and outbox identities without exposing Supabase credentials.
+
+The installed website-intake RPC treats `synthetic=true` as a bypass that does
+not create the Person and Job being accepted. The control therefore retains
+`synthetic=false` for RPC compatibility, but durably marks the record as the
+P0.9 synthetic acceptance fixture in its reserved identity, attribution,
+notes, Candidate evidence, Job subject and Sterling Today presentation. It also
+starts with follow-up suppressed and never invokes a delivery or booking
+provider.
+
 ## Compatibility and rollback
 
 The latest Beta Recovery delta through `72f4ad22` changes only Gmail manual

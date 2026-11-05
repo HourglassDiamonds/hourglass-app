@@ -64,11 +64,16 @@ describe("authenticated Preview Concierge acceptance endpoint", () => {
     assert.equal(firstBody.identityStatus, "new");
     assert.equal(firstBody.qualification, "needs_review");
     assert.equal(firstBody.founderAction.sourceLabel, "Website Concierge");
+    assert.equal(firstBody.founderAction.reviewStatus, "pending");
+    assert.match(firstBody.founderAction.headline, /SYNTHETIC ACCEPTANCE/);
+    assert.equal(firstBody.personId, replayBody.personId);
+    assert.equal(firstBody.jobId, replayBody.jobId);
     assert.deepEqual(firstBody.acknowledgement, {
       outboxId: firstBody.acknowledgement.outboxId,
       state: "ready",
       attemptCount: 0,
       reconciliationRequired: false,
+      providerMessageId: null,
     });
     assert.equal(firstBody.deliveryMode, "preview-fake-not-dispatched");
     assert.equal(firstBody.booking.state, "requested");

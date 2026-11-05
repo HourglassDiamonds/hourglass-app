@@ -16,6 +16,10 @@ import type {
   Qualification,
   SuppressionReason,
 } from "./types";
+import {
+  CONTROLLED_ACCEPTANCE_RULE,
+  isControlledAcceptanceFixture,
+} from "./controlled-acceptance";
 
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(",")}]`;
@@ -51,6 +55,7 @@ function actionSubject(input: IntakeInput, qualification: Qualification): string
 
 function buildCandidate(input: IntakeInput, subject: string): ContinuumCandidate {
   const sourceRef = `website-intake:${input.intakeId}`;
+  const controlledAcceptance = isControlledAcceptanceFixture(input.inquiry);
   return assignCandidateId({
     candidateId: "",
     sourceSystem: "human-intake",
@@ -61,14 +66,27 @@ function buildCandidate(input: IntakeInput, subject: string): ContinuumCandidate
     payload: {
       kind: "open_job",
       jobKind: "required_action",
-      subject,
-      detail: "Review the verified intake evidence and decide the personal next step. No Project is created automatically.",
+      subject: controlledAcceptance
+        ? "SYNTHETIC ACCEPTANCE — verify Concierge persistence"
+        : subject,
+      detail: controlledAcceptance
+        ? "Controlled Preview fixture only. Do not contact, book, or treat as customer work."
+        : "Review the verified intake evidence and decide the personal next step. No Project is created automatically.",
       waitingOnActor: "founder",
       dueAt: null,
       createJob: false,
     },
     confidence: input.identity.status === "needs_review" ? "ambiguous" : "high",
-    evidenceBasis: { ruleIds: ["concierge-intake-v1", "founder-review-required"], matchedText: null },
+    evidenceBasis: {
+      ruleIds: controlledAcceptance
+        ? [
+            "concierge-intake-v1",
+            "founder-review-required",
+            CONTROLLED_ACCEPTANCE_RULE,
+          ]
+        : ["concierge-intake-v1", "founder-review-required"],
+      matchedText: null,
+    },
     candidateState: "active",
     createdAt: input.now,
     canonical: false,
@@ -84,6 +102,7 @@ export function buildFunnelRecord(input: IntakeInput): ConciergeFunnelRecord {
   const qualification = qualificationFor(input);
   const subject = actionSubject(input, qualification);
   const candidate = buildCandidate(input, subject);
+  const controlledAcceptance = isControlledAcceptanceFixture(input.inquiry);
   const leadId = deterministicId("lead", input.intakeId);
   const copyApproved = input.acknowledgementCopy.approvalStatus === "founder_approved";
   return {
@@ -116,7 +135,9 @@ export function buildFunnelRecord(input: IntakeInput): ConciergeFunnelRecord {
       intakeId: input.intakeId,
       kind: "required_action",
       subject,
-      detail: "Founder review is required before any canonical Project change or personal outreach.",
+      detail: controlledAcceptance
+        ? "Synthetic acceptance evidence only. No personal outreach or canonical Project change is permitted."
+        : "Founder review is required before any canonical Project change or personal outreach.",
       waitingOnActor: "founder",
       reviewStatus: "pending",
       writesCanonicalProject: false,
@@ -135,7 +156,12 @@ export function buildFunnelRecord(input: IntakeInput): ConciergeFunnelRecord {
       reconciliationRequired: false,
       createdAt: input.now,
     },
-    followUp: { consent: input.consent, suppressions: [] },
+    followUp: {
+      consent: input.consent,
+      suppressions: controlledAcceptance
+        ? [{ reason: "lead_status_changed", occurredAt: input.now }]
+        : [],
+    },
   };
 }
 
