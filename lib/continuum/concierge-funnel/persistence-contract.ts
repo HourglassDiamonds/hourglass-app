@@ -40,17 +40,58 @@ function stableJson(value: unknown): string {
 }
 
 export function conciergeAcceptancePayloadHash(record: ConciergeFunnelRecord): string {
+  const candidate = record.nextAction.candidate;
   return createHash("sha256")
-    .update(stableJson({
-      intakeId: record.intake.intakeId,
-      payloadHash: record.intake.payloadHash,
-      identity: record.intake.identity,
-      emailVerification: record.intake.emailVerification,
-      lead: record.lead,
-      nextAction: record.nextAction,
-      acknowledgement: record.acknowledgement,
-      followUp: record.followUp,
-    }))
+    .update(
+      stableJson({
+        intake: {
+          submissionId: record.intake.submissionId,
+          idempotencyKey: record.intake.idempotencyKey,
+          payloadHash: record.intake.payloadHash,
+          identity: record.intake.identity,
+          emailVerification: record.intake.emailVerification,
+        },
+        lead: {
+          personId: record.lead.personId,
+          category: record.lead.category,
+          qualification: record.lead.qualification,
+          attribution: record.lead.attribution,
+          canonicalProjectId: record.lead.canonicalProjectId,
+        },
+        action: {
+          kind: record.nextAction.kind,
+          waitingOnActor: record.nextAction.waitingOnActor,
+          writesCanonicalProject: record.nextAction.writesCanonicalProject,
+        },
+        candidate: {
+          sourceSystem: candidate.sourceSystem,
+          candidateType: candidate.candidateType,
+          proposedTarget: candidate.proposedTarget,
+          payload: candidate.payload,
+          confidence: candidate.confidence,
+          evidenceBasis: {
+            ruleIds: candidate.evidenceBasis.ruleIds,
+            matchedText: candidate.evidenceBasis.matchedText,
+            supportingSourceRefs:
+              candidate.evidenceBasis.supportingSourceRefs ?? [],
+          },
+          canonical: candidate.canonical,
+          automaticApply: candidate.automaticApply,
+          parserVersion: candidate.parserVersion,
+        },
+        acknowledgement: {
+          to: record.acknowledgement.to,
+          copy: record.acknowledgement.copy,
+        },
+        consent: {
+          serviceAcknowledgement:
+            record.followUp.consent.serviceAcknowledgement,
+          followUp: record.followUp.consent.followUp,
+          textReply: record.followUp.consent.textReply,
+          source: record.followUp.consent.source,
+        },
+      }),
+    )
     .digest("hex");
 }
 

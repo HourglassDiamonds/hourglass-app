@@ -41,6 +41,10 @@ describe("authenticated Preview Concierge acceptance endpoint", () => {
   it("prepares and replays one persisted fixture with no message dispatch", async () => {
     const websiteStore = new PreviewWebsiteIntakeStore();
     const funnelStore = new InMemoryConciergeFunnelStore();
+    const times = [
+      "2026-11-04T15:00:00.000Z",
+      "2026-11-04T15:00:01.000Z",
+    ];
     const handler = createPreviewConciergeAcceptanceHandler({
       enabled: () => true,
       authorize: async () => true,
@@ -49,7 +53,7 @@ describe("authenticated Preview Concierge acceptance endpoint", () => {
         websiteStore,
         funnelStore,
       }),
-      now: () => "2026-11-04T15:00:00.000Z",
+      now: () => times.shift() ?? "2026-11-04T15:00:01.000Z",
     });
 
     const first = await handler(request());
@@ -60,6 +64,7 @@ describe("authenticated Preview Concierge acceptance endpoint", () => {
     const replayBody = await replay.json();
     assert.equal(firstBody.funnelStatus, "created");
     assert.equal(replayBody.funnelStatus, "duplicate");
+    assert.equal(firstBody.intakeId, replayBody.intakeId);
     assert.equal(firstBody.candidateId, replayBody.candidateId);
     assert.equal(firstBody.identityStatus, "new");
     assert.equal(firstBody.qualification, "needs_review");
@@ -68,6 +73,10 @@ describe("authenticated Preview Concierge acceptance endpoint", () => {
     assert.match(firstBody.founderAction.headline, /SYNTHETIC ACCEPTANCE/);
     assert.equal(firstBody.personId, replayBody.personId);
     assert.equal(firstBody.jobId, replayBody.jobId);
+    assert.equal(
+      firstBody.acknowledgement.outboxId,
+      replayBody.acknowledgement.outboxId,
+    );
     assert.deepEqual(firstBody.acknowledgement, {
       outboxId: firstBody.acknowledgement.outboxId,
       state: "ready",
@@ -78,6 +87,18 @@ describe("authenticated Preview Concierge acceptance endpoint", () => {
     assert.equal(firstBody.deliveryMode, "preview-fake-not-dispatched");
     assert.equal(firstBody.booking.state, "requested");
     assert.equal(firstBody.booking.offeredWindow, null);
+    assert.equal(websiteStore.intakeCount, 1);
+    assert.equal(funnelStore.snapshot().length, 1);
+
+    const changed = await handler(
+      request({ ...BODY, fullName: "Changed Replay" }),
+    );
+    assert.equal(changed.status, 409);
+    assert.deepEqual(await changed.json(), {
+      ok: false,
+      stage: "website-intake",
+      error: "idempotency-conflict",
+    });
     assert.equal(websiteStore.intakeCount, 1);
     assert.equal(funnelStore.snapshot().length, 1);
   });

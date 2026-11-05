@@ -1,4 +1,5 @@
 import type { AcceptIntakeResult, AcknowledgementOutboxItem, ConciergeFunnelRecord, ConciergeFunnelStore } from "./types";
+import { conciergeAcceptancePayloadHash } from "./persistence-contract";
 
 /** Deterministic Preview acceptance store. Production adapters require separate infrastructure authorization. */
 export class InMemoryConciergeFunnelStore implements ConciergeFunnelStore {
@@ -7,7 +8,12 @@ export class InMemoryConciergeFunnelStore implements ConciergeFunnelStore {
   async accept(record: ConciergeFunnelRecord): Promise<AcceptIntakeResult> {
     const existing = this.bySubmission.get(record.intake.submissionId);
     if (existing) {
-      if (existing.intake.payloadHash !== record.intake.payloadHash) return { status: "idempotency_conflict" };
+      if (
+        conciergeAcceptancePayloadHash(existing) !==
+        conciergeAcceptancePayloadHash(record)
+      ) {
+        return { status: "idempotency_conflict" };
+      }
       return { status: "duplicate", record: existing };
     }
     this.bySubmission.set(record.intake.submissionId, structuredClone(record));
