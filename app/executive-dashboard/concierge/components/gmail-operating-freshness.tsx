@@ -158,7 +158,10 @@ export function GmailOperatingFreshness({
     };
   }, [baselineWatermark, refreshing, router]);
 
-  const activelyChecking = !refreshUnavailable && (refreshing || checking);
+  // `refreshing` is the server snapshot that starts the probe. Once the probe
+  // settles, local state owns the label; otherwise a true initial prop pins
+  // the UI to "Checking for updates…" even after the durable check completes.
+  const activelyChecking = !refreshUnavailable && checking;
   const health = activelyChecking ? "checking" : sourceHealth;
   const label = health === "checking"
     ? "Checking for updates…"

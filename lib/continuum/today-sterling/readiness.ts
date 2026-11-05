@@ -18,6 +18,7 @@ import {
   isVerifiedSterlingTodayPreviewRuntime,
 } from "./server-config";
 import { hasSuccessfulGmailIngestionAfterAuthorization } from "./gmail-readiness";
+import { loadRealClientAssociationBatch } from "./real-client-association-load";
 
 const DAILY_EVIDENCE_MAX_AGE_MS = 36 * 60 * 60 * 1000;
 
@@ -39,6 +40,12 @@ export type SterlingReadinessReport = {
     candidateReferencedThreadCount: number;
     indexedCandidateThreadCount: number;
     missingCandidateThreadCount: number;
+    fixtureCandidateThreadCount: number;
+    currentCandidateThreadCount: number;
+    realClientThreadCount: number;
+    trustedRealClientThreadCount: number;
+    unresolvedRealClientThreadCount: number;
+    associationPersistence: "available" | "missing" | "unavailable";
   };
   watermarks: {
     canonicalProjectJob: string;
@@ -90,7 +97,7 @@ export async function buildSterlingReadinessReport(
   const [
     connection,
     checkpoints,
-    messages,
+    associationBatch,
     candidates,
     jobs,
     projects,
@@ -103,7 +110,7 @@ export async function buildSterlingReadinessReport(
     client.from("continuum_gmail_checkpoints")
       .select("job_key,status,updated_at,indexed_count,history_id,error_code")
       .order("updated_at", { ascending: false }),
-    client.from("continuum_gmail_messages").select("thread_id,indexed_at,sent_at"),
+    loadRealClientAssociationBatch(client, now),
     client.from("continuum_candidates").select("source_system,source_ref,created_at,reviewed_at"),
     client.from("continuum_project_jobs").select("updated_at"),
     client.from("continuum_project_profiles").select("updated_at"),
@@ -124,7 +131,7 @@ export async function buildSterlingReadinessReport(
       .maybeSingle(),
     readTodaySourceWatermark(client, now),
   ]);
-  for (const result of [checkpoints, messages, candidates, jobs, projects, corrections]) {
+  for (const result of [checkpoints, candidates, jobs, projects, corrections]) {
     if (result.error) throw result.error;
   }
 
@@ -136,8 +143,8 @@ export async function buildSterlingReadinessReport(
     .sort()
     .at(-1) ?? connection?.lastSyncAt ?? null;
   const latestCheckpoint = checkpointRows[0] ?? null;
-  const messageRows = messages.data ?? [];
-  const indexedThreads = new Set(messageRows.map((row) => String(row.thread_id ?? "")).filter(Boolean));
+  const indexedThreads = new Set(associationBatch.allIndexedThreadIds);
+  const currentProviderThreads = new Set(associationBatch.postAuthorizationThreadIds);
   const candidateThreads = new Set(
     (candidates.data ?? []).flatMap((row) => {
       if (row.source_system !== "gmail") return [];
@@ -146,6 +153,8 @@ export async function buildSterlingReadinessReport(
     }),
   );
   const indexedCandidateThreadCount = [...candidateThreads].filter((id) => indexedThreads.has(id)).length;
+  const currentCandidateThreadCount = [...candidateThreads].filter((id) => currentProviderThreads.has(id)).length;
+  const fixtureCandidateThreadCount = candidateThreads.size - currentCandidateThreadCount;
   const kek = loadGmailTokenKek();
   const oauthConfigured = isContinuumGmailOAuthConfigured();
   let authorizationReason: string | null = null;
@@ -179,7 +188,8 @@ export async function buildSterlingReadinessReport(
       updatedAt: row.updated_at == null ? null : String(row.updated_at),
     })),
   );
-  const coverageComplete = candidateThreads.size === indexedCandidateThreadCount;
+  const coverageComplete = associationBatch.currentProviderThreadCount > 0 &&
+    associationBatch.unresolvedCurrentProviderThreadCount === 0;
   const correspondenceComplete = payload?.correspondenceStatus === "complete" || payload?.correspondenceStatus === "not-required";
 
   const blockers: string[] = [];
@@ -188,7 +198,12 @@ export async function buildSterlingReadinessReport(
   if (!successfulIngestionAfterAuthorization) {
     blockers.push("gmail:new-ingestion-required-after-authorization");
   }
-  if (!coverageComplete) blockers.push(`gmail:indexed-thread-gaps:${candidateThreads.size - indexedCandidateThreadCount}`);
+  if (associationBatch.associationPersistence !== "available") {
+    blockers.push(`gmail:association-persistence-${associationBatch.associationPersistence}`);
+  }
+  if (!coverageComplete) {
+    blockers.push(`gmail:real-client-associations-unresolved:${associationBatch.unresolvedCurrentProviderThreadCount}`);
+  }
   if (todayStatus !== "current") blockers.push(`today:read-model-${todayStatus}`);
   if (!correspondenceComplete) blockers.push("today:correspondence-incomplete");
   if (!isSterlingTodayPreviewPublisherEnabled()) blockers.push("sterling:publisher-disabled");
@@ -215,11 +230,17 @@ export async function buildSterlingReadinessReport(
       checkpointAgeHours,
       checkpointStatus: latestCheckpoint?.status ? String(latestCheckpoint.status) : null,
       successfulIngestionAfterAuthorization,
-      indexedMessageCount: messageRows.length,
-      indexedThreadCount: indexedThreads.size,
+      indexedMessageCount: associationBatch.indexedMessageCount,
+      indexedThreadCount: associationBatch.indexedThreadCount,
       candidateReferencedThreadCount: candidateThreads.size,
       indexedCandidateThreadCount,
       missingCandidateThreadCount: candidateThreads.size - indexedCandidateThreadCount,
+      fixtureCandidateThreadCount,
+      currentCandidateThreadCount,
+      realClientThreadCount: associationBatch.currentProviderThreadCount,
+      trustedRealClientThreadCount: associationBatch.trustedCurrentProviderThreadCount,
+      unresolvedRealClientThreadCount: associationBatch.unresolvedCurrentProviderThreadCount,
+      associationPersistence: associationBatch.associationPersistence,
     },
     watermarks: {
       canonicalProjectJob: digest([

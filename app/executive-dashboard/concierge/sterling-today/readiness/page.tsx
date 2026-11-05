@@ -2,6 +2,7 @@ import { ConciergeBackLink } from "../../components/concierge-back-link";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { getAuthenticatedSterlingReadiness } from "@/lib/continuum/today-sterling/readiness";
 import type { SterlingReadinessReport } from "@/lib/continuum/today-sterling/readiness";
+import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -27,6 +28,9 @@ export default async function SterlingTodayReadinessPage() {
               access.reason === "unauthorized" ? "Founder authentication is required." : "Readiness data is unavailable."}
           </p>
         ) : <ReadinessReport report={access.report} />}
+        <Link href="/executive-dashboard/concierge/sterling-today/associations" className="mt-6 inline-block text-[11px] uppercase tracking-[0.14em] text-[#ad9164] underline underline-offset-4">
+          Open real-client correspondence review
+        </Link>
       </section>
     </ConciergeShell>
   );
@@ -39,7 +43,10 @@ function ReadinessReport({ report }: { report: SterlingReadinessReport }) {
     ["Last successful ingestion", report.gmail.lastSuccessfulIngestionAt ?? "None recorded"],
     ["Checkpoint", `${report.gmail.checkpointStatus ?? "missing"} · ${report.gmail.checkpointAgeHours ?? "unknown"}h old`],
     ["Post-authorization ingestion", report.gmail.successfulIngestionAfterAuthorization ? "verified" : "required"],
-    ["Indexed coverage", `${report.gmail.indexedMessageCount} messages / ${report.gmail.indexedThreadCount} threads · ${report.gmail.missingCandidateThreadCount} candidate-thread gaps`],
+    ["Indexed coverage", `${report.gmail.indexedMessageCount} messages / ${report.gmail.indexedThreadCount} threads`],
+    ["Fixture Candidate references", `${report.gmail.fixtureCandidateThreadCount} fixture-era / ${report.gmail.currentCandidateThreadCount} current-provider threads · diagnostic only`],
+    ["Real-client association coverage", `${report.gmail.trustedRealClientThreadCount} trusted / ${report.gmail.realClientThreadCount} discovered · ${report.gmail.unresolvedRealClientThreadCount} unresolved`],
+    ["Association persistence", report.gmail.associationPersistence],
     ["Canonical Project/Job watermark", report.watermarks.canonicalProjectJob],
     ["Founder correction / Candidate watermark", report.watermarks.founderCorrectionCandidateReview],
     ["Today rebuild", `${report.today.status} · ${report.today.lastSuccessfulRebuildAt ?? "never"}`],
