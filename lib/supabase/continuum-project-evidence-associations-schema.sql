@@ -65,6 +65,13 @@ comment on column public.continuum_project_evidence_associations.basis is
 create unique index if not exists continuum_project_evidence_associations_identity_uq
   on public.continuum_project_evidence_associations (project_id, source_type, source_identity);
 
+-- One provider thread may be rejected for more than one proposed project, but
+-- it may be trusted by only one project at a time. This is the database-level
+-- replay/concurrency guard for founder-confirmed membership.
+create unique index if not exists continuum_project_evidence_associations_trusted_source_uq
+  on public.continuum_project_evidence_associations (source_type, source_identity)
+  where status = 'trusted';
+
 alter table public.continuum_project_evidence_associations enable row level security;
 
 revoke all on table public.continuum_project_evidence_associations from public;

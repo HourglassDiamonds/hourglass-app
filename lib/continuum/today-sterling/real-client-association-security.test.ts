@@ -14,6 +14,17 @@ describe("real-client association Preview review security", () => {
     assert.doesNotMatch(page + loader, /refreshAccessToken|createProposal|publishSterling|generateText|generateObject/);
   });
 
+  it("keeps the founder decision action Preview-only, authenticated, and membership-only", () => {
+    const action = readFileSync(resolve("app/executive-dashboard/concierge/sterling-today/associations/actions.ts"), "utf8");
+    const adapter = readFileSync(resolve("lib/continuum/today-sterling/founder-association-decision.ts"), "utf8");
+    assert.match(action, /isVerifiedSterlingTodayPreviewRuntime/);
+    assert.match(action, /getAuthenticatedFounderProjectWriter/);
+    assert.match(adapter, /PROJECT_EVIDENCE_TABLE/);
+    assert.match(adapter, /expectedUpdatedAt/);
+    assert.doesNotMatch(action + adapter, /continuum_project_jobs"\)\.update|continuum_project_profiles"\)\.update|continuum_person_profiles"\)\.update/);
+    assert.doesNotMatch(action + adapter, /publishSterling|createProposal|sendEmail|messages\.send/);
+  });
+
   it("paginates beyond the Supabase default result cap", () => {
     const loader = readFileSync(resolve("lib/continuum/today-sterling/real-client-association-load.ts"), "utf8");
     assert.match(loader, /PAGE_SIZE = 1000/);

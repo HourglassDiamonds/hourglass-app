@@ -28,6 +28,7 @@ returns text[]
 language sql
 immutable
 parallel safe
+security invoker
 set search_path = pg_catalog
 as $$
   select coalesce(

@@ -72,6 +72,8 @@ function flagsOf(flags: readonly ProjectEvidenceBasisFlag[]): ProjectEvidenceBas
         "exact_stored_gmail_thread",
         "founder_approval",
         "founder_rejection",
+        "exact_canonical_email",
+        "founder_explicit_linkage",
         "exact_attachment_project_number",
         "known_person_commercial",
         "conflicting_project_numbers",

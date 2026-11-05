@@ -11,6 +11,7 @@ import {
   type AssociationProject,
   type AssociationRelationship,
   type RealClientAssociationBatch,
+  type ReviewedAssociation,
 } from "./real-client-association";
 
 const PAGE_SIZE = 1000;
@@ -65,7 +66,7 @@ export async function loadRealClientAssociationBatch(
     client.from("continuum_project_jobs").select("job_id,project_id,subject,state,waiting_on_actor,source_system").limit(1000),
     client.from("continuum_relationships").select("from_entity_id,to_entity_id,kind,status").eq("kind", "client-project").eq("status", "active").limit(1000),
     client.from("continuum_gmail_connections").select("connected_at").eq("mailbox_slot", "founder-v1").limit(1).maybeSingle(),
-    client.from(PROJECT_EVIDENCE_TABLE).select("source_identity,status").eq("source_type", "gmail").eq("status", "trusted").limit(1000),
+    client.from(PROJECT_EVIDENCE_TABLE).select("id,project_id,source_identity,status,updated_at").eq("source_type", "gmail").in("status", ["trusted", "rejected"]).limit(1000),
   ]);
   for (const result of [peopleResult, projectsResult, jobsResult, relationshipsResult, connectionResult]) {
     if (result.error) throw result.error;
@@ -96,6 +97,13 @@ export async function loadRealClientAssociationBatch(
     personId: String(row.from_entity_id),
     projectId: String(row.to_entity_id),
   }));
+  const reviewedAssociations: ReviewedAssociation[] = associationResult.error ? [] : (associationResult.data ?? []).map((row) => ({
+    id: String(row.id),
+    projectId: String(row.project_id),
+    threadId: String(row.source_identity),
+    status: row.status === "trusted" ? "trusted" : "rejected",
+    updatedAt: String(row.updated_at),
+  }));
   return buildRealClientAssociationBatch({
     messages,
     people,
@@ -103,7 +111,8 @@ export async function loadRealClientAssociationBatch(
     jobs,
     relationships,
     authorizationAt: connectionResult.data?.connected_at == null ? null : String(connectionResult.data.connected_at),
-    trustedThreadIds: associationResult.error ? [] : (associationResult.data ?? []).map((row) => String(row.source_identity ?? "")).filter(Boolean),
+    trustedThreadIds: reviewedAssociations.filter((row) => row.status === "trusted").map((row) => row.threadId),
+    reviewedAssociations,
     associationPersistence,
     nowIso: now.toISOString(),
   });

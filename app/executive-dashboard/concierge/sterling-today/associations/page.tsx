@@ -7,6 +7,7 @@ import { loadRealClientAssociationBatch } from "@/lib/continuum/today-sterling/r
 import { ConciergeBackLink } from "../../components/concierge-back-link";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { RealClientAssociationReview } from "../../components/real-client-association-review";
+import { reviewFounderCorrespondenceAssociation } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -29,7 +30,7 @@ export default async function RealClientAssociationsPage() {
         <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-[#a99c90]">
           Provider thread IDs and aggregate chronology are shown for founder review. Subject matching discovers candidates only; it never proves identity, merges people, changes lifecycle, creates work, or publishes Sterling.
         </p>
-        {batch ? <RealClientAssociationReview batch={batch} /> : (
+        {batch ? <RealClientAssociationReview batch={batch} reviewAction={reviewFounderCorrespondenceAssociation} /> : (
           <p role="alert" className="mt-6 rounded-xl border border-[#d39a8a]/30 p-4 text-[13px] text-[#d39a8a]">This protected Preview review batch is unavailable.</p>
         )}
       </section>

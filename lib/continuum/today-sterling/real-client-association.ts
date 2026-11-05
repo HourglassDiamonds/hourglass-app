@@ -1,3 +1,5 @@
+import { createHash } from "node:crypto";
+
 export const REAL_CLIENT_COHORT = [
   { key: "morgan", label: "Morgan", token: "morgan" },
   { key: "audrey", label: "Audrey", token: "audrey" },
@@ -48,6 +50,14 @@ export type AssociationRelationship = {
   projectId: string;
 };
 
+export type ReviewedAssociation = {
+  id: string;
+  projectId: string;
+  threadId: string;
+  status: "trusted" | "rejected";
+  updatedAt: string;
+};
+
 export type RealClientThreadReview = {
   threadId: string;
   messageCount: number;
@@ -65,6 +75,8 @@ export type RealClientThreadReview = {
     projectLabel: string;
     jobId: string | null;
     jobLabel: string | null;
+    reviewKey: string;
+    currentDecision: "trusted" | "rejected" | null;
   } | null;
   fixtureTargetsExcluded: readonly string[];
   founderConfirmationRequired: boolean;
@@ -127,6 +139,7 @@ function buildThread(input: {
   projects: readonly AssociationProject[];
   jobs: readonly AssociationJob[];
   relationships: readonly AssociationRelationship[];
+  reviewedAssociations: readonly ReviewedAssociation[];
 }): RealClientThreadReview {
   const ordered = [...input.messages].sort((a, b) => a.sentAt.localeCompare(b.sentAt));
   const newest = ordered.at(-1)!;
@@ -151,14 +164,27 @@ function buildThread(input: {
     ? input.jobs.filter((row) => row.projectId === sole.project.projectId && row.state === "open" && !isFixtureAssociationSource(row.sourceSystem, row.label))
     : [];
   const target = sole
-    ? {
+    ? (() => {
+        const current = input.reviewedAssociations.find(
+          (row) => row.threadId === newest.threadId && row.projectId === sole.project.projectId,
+        ) ?? null;
+        return {
         personId: sole.person.personId,
         personLabel: sole.person.label,
         projectId: sole.project.projectId,
         projectLabel: sole.project.label,
         jobId: openJobs.length === 1 ? openJobs[0].jobId : null,
         jobLabel: openJobs.length === 1 ? openJobs[0].label : null,
-      }
+        reviewKey: founderAssociationReviewKey({
+          threadId: newest.threadId,
+          personId: sole.person.personId,
+          projectId: sole.project.projectId,
+          jobId: openJobs.length === 1 ? openJobs[0].jobId : null,
+          current,
+        }),
+        currentDecision: current?.status ?? null,
+      };
+      })()
     : null;
   const latestInboundAt = latest(ordered.filter((row) => row.direction === "inbound").map((row) => row.sentAt));
   const latestOutboundAt = latest(ordered.filter((row) => row.direction === "outbound").map((row) => row.sentAt));
@@ -168,6 +194,10 @@ function buildThread(input: {
       ? "The exact person match is linked to more than one current project."
       : target && openJobs.length > 1
         ? "The project has more than one open Job; Job ownership remains unresolved."
+        : target && input.reviewedAssociations.some(
+          (row) => row.threadId === newest.threadId && row.status === "trusted" && row.projectId !== target.projectId,
+        )
+          ? "This provider thread is already trusted by another project."
         : null;
   const confirmable = Boolean(target && !conflict);
   return {
@@ -194,6 +224,7 @@ export function buildRealClientAssociationBatch(input: {
   projects: readonly AssociationProject[];
   jobs: readonly AssociationJob[];
   relationships: readonly AssociationRelationship[];
+  reviewedAssociations?: readonly ReviewedAssociation[];
   authorizationAt: string | null;
   trustedThreadIds?: readonly string[];
   associationPersistence: RealClientAssociationBatch["associationPersistence"];
@@ -214,7 +245,7 @@ export function buildRealClientAssociationBatch(input: {
       byThread.set(row.threadId, bucket);
     }
     const currentProviderThreads = [...byThread.values()]
-      .map((messages) => buildThread({ ...input, messages }))
+      .map((messages) => buildThread({ ...input, reviewedAssociations: input.reviewedAssociations ?? [], messages }))
       .sort((a, b) => b.latestAt.localeCompare(a.latestAt));
     return {
       key: cohort.key,
@@ -246,4 +277,24 @@ export function buildRealClientAssociationBatch(input: {
     currentProviderThreadIds,
     reviews,
   };
+}
+
+export function founderAssociationReviewKey(input: {
+  threadId: string;
+  personId: string;
+  projectId: string;
+  jobId: string | null;
+  current: ReviewedAssociation | null;
+}): string {
+  const state = input.current ? `${input.current.status}:${input.current.updatedAt}` : "absent";
+  return createHash("sha256")
+    .update([
+      "continuum-founder-association:v1",
+      input.threadId,
+      input.personId,
+      input.projectId,
+      input.jobId ?? "",
+      state,
+    ].join("\0"))
+    .digest("hex");
 }
