@@ -98,6 +98,26 @@ notes, Candidate evidence, Job subject and Sterling Today presentation. It also
 starts with follow-up suppressed and never invokes a delivery or booking
 provider.
 
+### P0.9 replay correction
+
+The first hosted run exposed a compatibility defect in the application hash,
+not in the installed RPC: the acceptance payload hash included request-time
+timestamps (`occurredAt`, Candidate/lead/outbox creation times, consent
+`capturedAt`, and suppression time). The website idempotency key, Concierge
+payload hash, Candidate identity, and acknowledgment identity were stable, but
+the second POST computed a different acceptance hash and correctly received an
+RPC conflict.
+
+The corrected hash covers immutable acceptance intent only: the website
+payload and identity decision, qualification and attribution, Candidate
+proposal, approved acknowledgment copy, and communication-consent decisions.
+It excludes request-time metadata, generated retry identities, mutable review
+and delivery state, and later suppression timestamps. The server adapter also
+compares this semantic hash with an existing durable record before invoking the
+RPC. This makes the retained pre-fix fixture safely replayable without updating
+or deleting it, while changed inquiry, copy, identity, qualification, or
+consent input still conflicts.
+
 ## Compatibility and rollback
 
 The latest Beta Recovery delta through `72f4ad22` changes only Gmail manual

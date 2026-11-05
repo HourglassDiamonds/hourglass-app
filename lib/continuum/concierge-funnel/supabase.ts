@@ -8,6 +8,7 @@ import { rowToCandidate } from "../candidates/rows";
 import type { WebsiteInquiry } from "../website-intake/types";
 import {
   CONCIERGE_ACCEPTANCE_RPC,
+  conciergeAcceptancePayloadHash,
   toSupabaseConciergeAcceptanceParams,
   type SupabaseConciergeAcceptanceResult,
 } from "./persistence-contract";
@@ -175,12 +176,30 @@ export class SupabaseConciergeFunnelStore implements ConciergeFunnelStore {
   constructor(private readonly client: SupabaseClient) {}
 
   async accept(record: ConciergeFunnelRecord): Promise<AcceptIntakeResult> {
+    const existing = await this.getBySubmissionId(record.intake.submissionId);
+    if (existing) {
+      return conciergeAcceptancePayloadHash(existing) ===
+        conciergeAcceptancePayloadHash(record)
+        ? { status: "duplicate", record: existing }
+        : { status: "idempotency_conflict" };
+    }
+
     const { data, error } = await this.client.rpc(
       CONCIERGE_ACCEPTANCE_RPC,
       toSupabaseConciergeAcceptanceParams(record),
     );
     if (error) {
-      if (error.message?.includes("idempotency-conflict")) return { status: "idempotency_conflict" };
+      if (error.message?.includes("idempotency-conflict")) {
+        const raced = await this.getBySubmissionId(record.intake.submissionId);
+        if (
+          raced &&
+          conciergeAcceptancePayloadHash(raced) ===
+            conciergeAcceptancePayloadHash(record)
+        ) {
+          return { status: "duplicate", record: raced };
+        }
+        return { status: "idempotency_conflict" };
+      }
       databaseError(error, "concierge-acceptance-failed");
     }
     const result = data as SupabaseConciergeAcceptanceResult | null;

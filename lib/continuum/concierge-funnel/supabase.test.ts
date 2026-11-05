@@ -5,7 +5,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { candidateToRow } from "../candidates/rows";
 import { buildFunnelRecord } from "./kernel";
 import { APPROVED_PREVIEW_COPY, FIXTURE_NOW, SERVICE_ONLY_CONSENT, fixtureInquiry } from "./fixtures";
-import { toSupabaseConciergeAcceptanceParams } from "./persistence-contract";
+import {
+  conciergeAcceptancePayloadHash,
+  toSupabaseConciergeAcceptanceParams,
+} from "./persistence-contract";
 import { WEBSITE_CONCIERGE_SOURCE_LABEL } from "./preview-acceptance";
 import { SupabaseConciergeFunnelStore } from "./supabase";
 
@@ -33,6 +36,7 @@ class Query {
 
 class FakeSupabase {
   readonly tables: Record<string, Row[]>;
+  rpcCalls = 0;
 
   constructor(tables: Record<string, Row[]>) {
     this.tables = tables;
@@ -43,6 +47,7 @@ class FakeSupabase {
   }
 
   async rpc(name: string, params: Row) {
+    this.rpcCalls += 1;
     if (name === "continuum_accept_concierge_funnel_v1") {
       return { data: { status: "created", intake_id: params.p_intake_id,
         candidate_id: (params.p_candidate as Row).candidateId,
@@ -112,7 +117,8 @@ describe("Supabase Concierge persistence adapter", () => {
     const { record, client } = fixture();
     const store = new SupabaseConciergeFunnelStore(client as unknown as SupabaseClient);
     const accepted = await store.accept(record);
-    assert.equal(accepted.status, "created");
+    assert.equal(accepted.status, "duplicate");
+    assert.equal(client.rpcCalls, 0);
     assert.equal(accepted.record.intake.identity.status, "matched");
     assert.equal(accepted.record.lead.personId, "77777777-7777-4777-8777-777777777777");
     assert.equal(accepted.record.nextAction.candidate.candidateId, record.nextAction.candidate.candidateId);
@@ -120,6 +126,61 @@ describe("Supabase Concierge persistence adapter", () => {
     assert.equal(actions.length, 1);
     assert.equal(actions[0]?.sourceLabel, WEBSITE_CONCIERGE_SOURCE_LABEL);
     assert.equal(actions[0]?.candidateIds[0], record.nextAction.candidate.candidateId);
+  });
+
+  it("treats request-time timestamps as replay metadata but rejects changed intent", async () => {
+    const { record, client } = fixture();
+    const replay = buildFunnelRecord({
+      intakeId: record.intake.intakeId,
+      inquiry: record.intake.inquiry,
+      identity: record.intake.identity,
+      emailVerification: record.intake.emailVerification,
+      acknowledgementCopy: record.acknowledgement.copy,
+      consent: {
+        ...record.followUp.consent,
+        capturedAt: "2026-11-04T15:05:00.000Z",
+      },
+      now: "2026-11-04T15:05:00.000Z",
+    });
+
+    assert.equal(
+      conciergeAcceptancePayloadHash(replay),
+      conciergeAcceptancePayloadHash(record),
+    );
+    const store = new SupabaseConciergeFunnelStore(
+      client as unknown as SupabaseClient,
+    );
+    const duplicate = await store.accept(replay);
+    assert.equal(duplicate.status, "duplicate");
+    assert.equal(duplicate.record.intake.intakeId, record.intake.intakeId);
+    assert.equal(
+      duplicate.record.nextAction.candidate.candidateId,
+      record.nextAction.candidate.candidateId,
+    );
+    assert.equal(
+      duplicate.record.acknowledgement.outboxId,
+      record.acknowledgement.outboxId,
+    );
+    assert.equal(client.rpcCalls, 0);
+
+    const changedCopy = {
+      ...replay,
+      acknowledgement: {
+        ...replay.acknowledgement,
+        copy: {
+          ...replay.acknowledgement.copy,
+          text: `${replay.acknowledgement.copy.text} Changed.`,
+        },
+      },
+    };
+    assert.notEqual(
+      conciergeAcceptancePayloadHash(changedCopy),
+      conciergeAcceptancePayloadHash(record),
+    );
+    assert.deepEqual(await store.accept(changedCopy), {
+      status: "idempotency_conflict",
+    });
+    assert.equal(client.rpcCalls, 0);
   });
 
   it("reloads quarantined unknown delivery state through a fresh adapter", async () => {
