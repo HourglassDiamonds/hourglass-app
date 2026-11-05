@@ -11,6 +11,7 @@ import {
 } from "./application";
 import { APPROVED_CONCIERGE_ACKNOWLEDGEMENT_COPY } from "./copy";
 import type { CommunicationConsent } from "./types";
+import { stampControlledAcceptanceInquiry } from "./controlled-acceptance";
 
 const MAX_JSON_BYTES = 32_000;
 const PRIVATE_HEADERS = {
@@ -89,14 +90,14 @@ function parseInquiry(body: Record<string, unknown>): WebsiteInquiry | null {
   if (!validated.ok || !validated.value.email.endsWith("@example.test")) return null;
   const attribution = record(body.attribution);
   if (!attribution) return null;
-  return {
+  return stampControlledAcceptanceInquiry({
     ...validated.value,
     category: classifyWebsiteInquiry(validated.value.projectType),
     attribution: sanitizeAttributionRecord(attribution),
     source: CONCIERGE_WEBSITE_SOURCE,
     acknowledgementExpected: true,
     synthetic: false,
-  };
+  });
 }
 
 /** Authenticated, dual-flagged, Preview-only controlled fixture endpoint. */
@@ -154,6 +155,8 @@ export function createPreviewConciergeAcceptanceHandler(
         intakeStatus: result.intake.status,
         funnelStatus: result.funnelStatus,
         intakeId: result.record.intake.intakeId,
+        personId: result.intake.personId,
+        jobId: result.intake.jobId,
         candidateId: result.record.nextAction.candidate.candidateId,
         identityStatus: result.record.intake.identity.status,
         qualification: result.record.lead.qualification,
@@ -161,12 +164,14 @@ export function createPreviewConciergeAcceptanceHandler(
           id: result.todayAction.id,
           sourceLabel: result.todayAction.sourceLabel,
           headline: result.todayAction.headline,
+          reviewStatus: result.record.nextAction.reviewStatus,
         },
         acknowledgement: {
           outboxId: result.acknowledgement.outboxId,
           state: result.acknowledgement.state,
           attemptCount: result.acknowledgement.attemptCount,
           reconciliationRequired: result.acknowledgement.reconciliationRequired,
+          providerMessageId: result.acknowledgement.providerMessageId,
         },
         booking: result.booking,
         deliveryMode: result.deliveryMode,

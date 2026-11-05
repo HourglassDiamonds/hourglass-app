@@ -7,7 +7,9 @@
   "include": [
     "next-env.d.ts",
     "lib/continuum/concierge-funnel/**/*.ts",
-    "app/executive-dashboard/concierge/preview-acceptance/route.ts"
+    "app/executive-dashboard/concierge/preview-acceptance/route.ts",
+    "app/executive-dashboard/concierge/preview-acceptance-control/**/*.ts",
+    "app/executive-dashboard/concierge/preview-acceptance-control/**/*.tsx"
   ],
   "exclude": ["node_modules"]
 }

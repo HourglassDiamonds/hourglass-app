@@ -13,6 +13,7 @@ import { dispatchAcknowledgement, maySendFollowUp } from "./kernel";
 import { InMemoryConciergeFunnelStore } from "./memory";
 import { PreviewWebsiteIntakeStore } from "./preview-acceptance";
 import { preparePersistentConciergeAcceptance } from "./application";
+import { stampControlledAcceptanceInquiry } from "./controlled-acceptance";
 import type {
   AcceptIntakeResult,
   ConciergeFunnelRecord,
@@ -77,6 +78,33 @@ describe("persistent Concierge application integration", () => {
     const reloaded = await funnelStore.getBySubmissionId(inquiry.submissionId);
     assert.equal(reloaded?.nextAction.candidate.candidateId, result.record.nextAction.candidate.candidateId);
     assert.equal(reloaded?.acknowledgement.state, "ready");
+  });
+
+  it("durably classifies the controlled fixture without using the website synthetic bypass", async () => {
+    const inquiry = stampControlledAcceptanceInquiry(
+      fixtureInquiry({
+        fullName: "Preview Fixture",
+        email: "concierge-acceptance@example.test",
+        attribution: { utm_source: "preview_acceptance", landing_path: "/concierge" },
+        inspirationNotes: "Controlled Preview acceptance fixture.",
+      }),
+    );
+    assert.ok(inquiry);
+    const result = await preparePersistentConciergeAcceptance(
+      args({ inquiry: inquiry ?? undefined }),
+    );
+    assert.equal(result.ok, true);
+    if (!result.ok) return;
+    assert.equal(result.record.intake.inquiry.synthetic, false);
+    assert.equal(result.todayAction.title, "Synthetic Concierge acceptance");
+    assert.match(result.todayAction.headline, /SYNTHETIC ACCEPTANCE/);
+    assert.ok(
+      result.record.nextAction.candidate.evidenceBasis.ruleIds.includes(
+        "concierge-controlled-synthetic-acceptance",
+      ),
+    );
+    assert.equal(result.record.followUp.suppressions[0]?.reason, "lead_status_changed");
+    assert.equal(result.todayAction.sourceLabel, "Website Concierge");
   });
 
   it("defaults new email identities to unverified and preserves ambiguous identity review", async () => {

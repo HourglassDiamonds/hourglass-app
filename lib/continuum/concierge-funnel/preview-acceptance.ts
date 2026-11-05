@@ -22,6 +22,7 @@ import type {
   EmailVerification,
   IdentityResolution,
 } from "./types";
+import { CONTROLLED_ACCEPTANCE_RULE } from "./controlled-acceptance";
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -110,10 +111,16 @@ export const WEBSITE_CONCIERGE_SOURCE_LABEL = "Website Concierge" as const;
 export function prepareSterlingTodayNextAction(
   record: ConciergeFunnelRecord,
 ): SterlingTodayNextAction {
+  const controlledAcceptance =
+    record.nextAction.candidate.evidenceBasis.ruleIds.includes(
+      CONTROLLED_ACCEPTANCE_RULE,
+    );
   return {
     id: `attention:website-intake:${record.intake.intakeId}`,
     lane: "decision",
-    title: "New Concierge inquiry",
+    title: controlledAcceptance
+      ? "Synthetic Concierge acceptance"
+      : "New Concierge inquiry",
     headline: record.nextAction.subject,
     detail: record.nextAction.detail,
     projectId: null,
