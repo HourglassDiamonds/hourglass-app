@@ -50,4 +50,30 @@ describe("real-client association review presentation", () => {
     assert.match(html, /name="decision" value="reject"/);
     assert.match(html, /Leave unresolved/);
   });
+
+  it("renders Morgan's verified response state and an unselected founder decision worksheet", () => {
+    const batch = buildRealClientAssociationBatch({
+      messages: [{
+        messageId: "m1", threadId: "1a15fb0c9b520621", subject: "Justin x Morgan - Marquise",
+        sentAt: "2026-11-05T14:32:22.000Z", indexedAt: "2026-11-05T14:34:48.000Z",
+        direction: "inbound", participantHashes: [],
+      }],
+      attachments: [{ messageId: "m1", threadId: "1a15fb0c9b520621", filename: "NL-H017-Morgan-C026937-Mod1.jpg" }],
+      people: [], projects: [], jobs: [], relationships: [],
+      authorizationAt: "2026-11-04T15:00:50.223Z", associationPersistence: "missing", nowIso: "2026-11-05T15:00:00.000Z",
+    });
+    const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch }));
+    assert.match(html, /Exact provider participant: Morgan Jines/);
+    assert.match(html, /received a founder response/);
+    assert.match(html, /No additional Today action is supported/);
+    assert.match(html, /Open founder-controlled bounded Gmail refresh/);
+    assert.match(html, /Create Morgan Jines as a real Person/);
+    assert.match(html, /Create the Marquise\/custom engagement Project/);
+    assert.match(html, /Select lifecycle — required before creation/);
+    assert.match(html, /No lifecycle is preselected/);
+    assert.match(html, /Confirm as the CAD job number/);
+    assert.doesNotMatch(html, /name="morgan-person-decision"[^>]*checked/);
+    assert.doesNotMatch(html, /name="morgan-project-decision"[^>]*checked/);
+    assert.doesNotMatch(html, /name="morgan-cad-number-decision"[^>]*checked/);
+  });
 });

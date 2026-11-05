@@ -1,5 +1,14 @@
 import type { RealClientAssociationBatch } from "@/lib/continuum/today-sterling/real-client-association";
+import {
+  CUSTOM_LIFECYCLE_STAGES,
+  CUSTOM_LIFECYCLE_STAGE_LABELS,
+} from "@/lib/continuum/client-memory/project-lifecycle";
 import Link from "next/link";
+
+const MORGAN_THREAD_ID = "1a15fb0c9b520621";
+const MORGAN_VERIFIED_PROVIDER_MESSAGES = 35;
+const MORGAN_LATEST_INBOUND_AT = "2026-11-05T14:49:47.000Z";
+const MORGAN_LATEST_FOUNDER_RESPONSE_AT = "2026-11-05T14:58:46.000Z";
 
 function time(value: string | null): string {
   if (!value) return "None indexed";
@@ -11,6 +20,90 @@ function time(value: string | null): string {
     minute: "2-digit",
     timeZoneName: "short",
   }).format(new Date(value));
+}
+
+function MorganFounderDecisionReadiness({
+  indexedMessages,
+  indexedLatestAt,
+}: {
+  indexedMessages: number;
+  indexedLatestAt: string;
+}) {
+  const chronologyCurrent = Date.parse(indexedLatestAt) >= Date.parse(MORGAN_LATEST_FOUNDER_RESPONSE_AT);
+  const missingMessages = Math.max(0, MORGAN_VERIFIED_PROVIDER_MESSAGES - indexedMessages);
+  return (
+    <div className="mt-4 rounded-xl border border-[#ad9164]/30 bg-[#ad9164]/5 p-4">
+      <p className="text-[10px] uppercase tracking-[0.14em] text-[#ad9164]">Morgan founder decision</p>
+      <p className="mt-2 text-[12px] leading-relaxed text-[#c9b9a9]">
+        Exact provider participant: Morgan Jines. The latest verified Morgan message at {time(MORGAN_LATEST_INBOUND_AT)} received a founder response at {time(MORGAN_LATEST_FOUNDER_RESPONSE_AT)}. The appointment is confirmed; its time is intentionally not restated here. No additional Today action is supported by this exchange.
+      </p>
+      <p className={`mt-2 text-[11px] ${chronologyCurrent ? "text-[#8fb59d]" : "text-[#d6a66f]"}`}>
+        {chronologyCurrent
+          ? "Indexed chronology includes the verified founder response."
+          : `${missingMessages} verified provider message${missingMessages === 1 ? " is" : "s are"} not yet indexed. Refresh before using index chronology for ownership.`}
+      </p>
+      {!chronologyCurrent ? (
+        <Link href="/executive-dashboard/concierge/gmail" className="mt-3 inline-flex text-[11px] text-[#d6a66f] underline underline-offset-4">
+          Open founder-controlled bounded Gmail refresh
+        </Link>
+      ) : null}
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <fieldset className="rounded-lg border border-white/10 p-3">
+          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">Real Person decision</legend>
+          {[
+            "Create Morgan Jines as a real Person",
+            "Link the exact participant to an existing non-fixture Person",
+            "Leave Person unresolved",
+          ].map((label, index) => (
+            <label key={label} className="mt-2 flex gap-2 text-[11px] text-[#c9b9a9]">
+              <input type="radio" name="morgan-person-decision" value={["create", "link", "unresolved"][index]} />
+              <span>{label}</span>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="rounded-lg border border-white/10 p-3">
+          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">Project decision</legend>
+          {[
+            "Create the Marquise/custom engagement Project",
+            "Link an existing non-fixture Project",
+            "Leave Project unresolved",
+          ].map((label, index) => (
+            <label key={label} className="mt-2 flex gap-2 text-[11px] text-[#c9b9a9]">
+              <input type="radio" name="morgan-project-decision" value={["create", "link", "unresolved"][index]} />
+              <span>{label}</span>
+            </label>
+          ))}
+        </fieldset>
+        <fieldset className="rounded-lg border border-white/10 p-3">
+          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">Custom Project lifecycle</legend>
+          <select name="morgan-project-lifecycle" defaultValue="" className="mt-2 w-full rounded-lg border border-white/10 bg-[#17130f] p-2 text-[11px] text-[#c9b9a9]">
+            <option value="" disabled>Select lifecycle — required before creation</option>
+            {CUSTOM_LIFECYCLE_STAGES.map((stage) => (
+              <option key={stage} value={stage}>{CUSTOM_LIFECYCLE_STAGE_LABELS[stage]}</option>
+            ))}
+          </select>
+          <p className="mt-2 text-[10px] text-[#81766c]">No lifecycle is preselected or inferred from correspondence.</p>
+        </fieldset>
+        <fieldset className="rounded-lg border border-white/10 p-3">
+          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">C026937 decision</legend>
+          {[
+            "Confirm as the CAD job number",
+            "Decline; retain only as an attachment identifier",
+            "Leave its canonical role unresolved",
+          ].map((label, index) => (
+            <label key={label} className="mt-2 flex gap-2 text-[11px] text-[#c9b9a9]">
+              <input type="radio" name="morgan-cad-number-decision" value={["confirm", "decline", "unresolved"][index]} />
+              <span>{label}</span>
+            </label>
+          ))}
+        </fieldset>
+      </div>
+      <p className="mt-4 text-[10px] leading-relaxed text-[#81766c]">
+        This worksheet does not save or create records. After the founder chooses, use the existing authenticated Add Client and founder Project intake controls below.
+      </p>
+    </div>
+  );
 }
 
 export function RealClientAssociationReview({
@@ -67,6 +160,9 @@ export function RealClientAssociationReview({
                   </dl>
                   {thread.fixtureTargetsExcluded.length ? <p className="mt-3 text-[11px] text-[#d6a66f]">Excluded fixture target: {thread.fixtureTargetsExcluded.join(", ")}</p> : null}
                   {thread.conflict ? <p className="mt-3 text-[11px] text-[#d39a8a]">Conflict: {thread.conflict}</p> : null}
+                  {thread.threadId === MORGAN_THREAD_ID ? (
+                    <MorganFounderDecisionReadiness indexedMessages={thread.messageCount} indexedLatestAt={thread.latestAt} />
+                  ) : null}
                   {!thread.target && thread.sourceAttachmentIdentifiers.length ? (
                     <div className="mt-4 rounded-xl border border-[#ad9164]/25 bg-[#ad9164]/5 p-4 text-[12px] leading-relaxed text-[#c9b9a9]">
                       <p className="text-[10px] uppercase tracking-[0.14em] text-[#ad9164]">Founder-reviewable canonical proposal</p>
