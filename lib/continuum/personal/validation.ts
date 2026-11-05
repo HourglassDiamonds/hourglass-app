@@ -105,14 +105,24 @@ export function validatePersonalState(state: PersonalState): string[] {
     if (state.tonal.enrollment.founderVerifiedAt && !tonalEnrollmentReady(state.tonal)) errors.push("tonal-session-sequence");
     if (state.program.status === "active" && (!tonalEnrollmentReady(state.tonal) || !["active", "completed", "paused"].includes(state.tonal.enrollment.status))) errors.push("tonal-active-state");
     if (state.program.status === "setup" && state.tonal.enrollment.status !== "setup") errors.push("tonal-setup-state");
+    if (state.tonal.historicalEnrollments.some((enrollment) => !["paused", "completed"].includes(enrollment.status) || !enrollment.startedOn || !enrollment.founderVerifiedAt || !enrollment.sources.length)) errors.push("tonal-historical-enrollment");
     if (state.tonal.completedEnrollments.some((enrollment) => enrollment.status !== "completed" || !enrollment.completedAt)) errors.push("tonal-completed-history");
   }
   if (state.meals.length > 5_000 || state.activities.length > 5_000 || state.recoveryEntries.length > 5_000) errors.push("state-size");
   errors.push(...state.meals.flatMap(validateMealLog), ...state.activities.flatMap(validateActivityLog), ...state.recoveryEntries.flatMap(validateRecoveryEntry));
   if (state.activities.some((activity) => activity.scheduledWorkoutId && !state.schedule.some((workout) => workout.id === activity.scheduledWorkoutId))) errors.push("activity-scheduled-workout");
+  if (state.schedule.some((workout) => workout.projection)) errors.push("workout-projection-not-canonical");
   if (!finite(state.nutritionTargets.calories, 500, 10_000) || !finite(state.nutritionTargets.protein, 0, 500)) errors.push("nutrition-targets");
   if (state.nutritionTargetHistory?.some((entry) => !DATE_KEY.test(entry.effectiveOn)
     || !finite(entry.calories, 500, 10_000) || !finite(entry.protein, 0, 500)
     || !finite(entry.carbs, 0, 800) || !finite(entry.fat, 0, 500))) errors.push("nutrition-target-history");
+  if (state.workoutRolloverChoice && (
+    !["succession", "double_up"].includes(state.workoutRolloverChoice.mode)
+    || !Number.isSafeInteger(state.workoutRolloverChoice.primarySessionOrder)
+    || state.workoutRolloverChoice.primarySessionOrder < 1
+    || !DATE_KEY.test(state.workoutRolloverChoice.targetDate)
+    || !state.workoutRolloverChoice.reviewedAt
+    || state.workoutRolloverChoice.mode === "double_up" && (!Number.isSafeInteger(state.workoutRolloverChoice.secondarySessionOrder) || state.workoutRolloverChoice.secondarySessionOrder! <= state.workoutRolloverChoice.primarySessionOrder)
+  )) errors.push("workout-rollover-choice");
   return [...new Set(errors)];
 }

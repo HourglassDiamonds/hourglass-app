@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { deletePerformanceSourceWithClient, loadPerformanceStateWithClient, PerformanceRevisionConflict, savePerformanceStateWithClient } from "./persistence-core";
-import { activateTrainingProgram, createInitialPersonalState } from "./program";
+import { activateTrainingProgram, createInitialPersonalState, restartFitOver40Cycle } from "./program";
 import { createHash } from "node:crypto";
 import { correctActivityDate } from "./mutations";
 import type { NaturalIngestionProposal } from "./types";
@@ -132,6 +132,29 @@ test("founder-confirmed activation is an idempotent durable mutation", async () 
   assert.equal(retry.duplicate, true);
   assert.equal(db.audits.size, 1);
   assert.equal(first.state.program.anchorDate, "2026-10-19");
+});
+
+test("a distinct Fit Over 40 restart persists once and reloads with preserved history", async () => {
+  const db = fakeSupabase();
+  const prior = activateTrainingProgram(configuredState(), "2026-10-19", "2026-10-17T12:00:00Z");
+  const restarted = restartFitOver40Cycle(prior, "2026-11-02", "2026-10-30T12:00:00Z");
+  const mutation = {
+    idempotencyKey: "restart-fit-over-40-2026-11-02",
+    action: "activate_program" as const,
+    accepted: { kind: "restart_fit_over_40", startDate: "2026-11-02", priorStartDate: "2026-10-19", prescribedSessions: 12 },
+  };
+  const first = await savePerformanceStateWithClient({ founderKey: "restart-fixture", expectedRevision: 0, state: restarted, mutation }, db.client);
+  const retry = await savePerformanceStateWithClient({ founderKey: "restart-fixture", expectedRevision: 0, state: restarted, mutation }, db.client);
+  const reloaded = await loadPerformanceStateWithClient("restart-fixture", "2026-11-02", db.client);
+
+  assert.equal(first.revision, 1);
+  assert.equal(retry.duplicate, true);
+  assert.equal(retry.revision, 1);
+  assert.equal(db.audits.size, 1);
+  assert.equal(reloaded?.state.program.anchorDate, "2026-11-02");
+  assert.equal(reloaded?.state.tonal.historicalEnrollments.length, 1);
+  assert.equal(reloaded?.state.tonal.enrollment.sessions.length, 12);
+  assert.equal(reloaded?.state.schedule.filter((workout) => workout.status === "replaced").length > 0, true);
 });
 
 test("Tonal program screenshot configuration preserves digest provenance and deduplicates", async () => {

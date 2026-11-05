@@ -77,7 +77,7 @@ test("just-in-time Tonal plans and completion screenshots remain editable and ex
 });
 
 test("mobile completion selection stays available while canonical completion remains match-gated", () => {
-  assert.match(source, /Add After Photo<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\}/);
+  assert.match(source, /Add After Photo · after workout<input type="file"[^>]+onChange=\{chooseTonalCompletionScreenshot\}/);
   assert.match(source, /Training schedule/);
   assert.match(source, /Today · upcoming · history/);
   assert.match(source, /data-unified-workout-cards/);
@@ -85,8 +85,8 @@ test("mobile completion selection stays available while canonical completion rem
   assert.match(source, /Completed \/ Deferred \/ Skipped \/ Pending|tonalSessionOutcome/);
   assert.match(source, /Completion screenshot selected\. Sterling is reading only the visible results/);
   assert.match(source, /Extraction complete\. Review the selected Tonal session below; nothing is saved until you approve it/);
-  assert.match(source, /matchesTonalSessionCompletion/);
-  assert.match(source, /does not match the founder-selected Tonal session/);
+  assert.match(source, /evaluateTonalSessionCompletion/);
+  assert.match(source, /Nothing was saved/);
   assert.match(source, /Add Before Photo/);
   assert.match(source, /No plan details will be fabricated/);
   assert.match(source, /Completion evidence added without creating another completed session/);
@@ -99,6 +99,15 @@ test("mobile completion selection stays available while canonical completion rem
   assert.doesNotMatch(source, /Today is resolved/);
 });
 
+test("Tonal evidence controls present Before as the first step without weakening After gates", () => {
+  assert.match(source, /Add Before Photo\{!selectedWorkoutTonalSession\.plannedSource \? " · first step" : ""\}/);
+  assert.match(source, /selectedWorkoutTonalSession\.plannedSource && selectedWorkout\.date <= today \? styles\.primary/);
+  assert.match(source, /disabled=\{intakeBusy \|\| selectedWorkout\.date > today \|\| !selectedWorkoutTonalSession\.plannedSource\}/);
+  assert.match(source, /Add After Photo · after workout/);
+  assert.match(source, /Scheduled for \$\{prettyDate\(selectedWorkout\.date\)\}\. Approve the Before Photo first; After Photo opens on or after the scheduled workout date\./);
+  assert.match(source, /Step 1: approve the matching Before Photo\. Step 2: complete the workout, then add After Photo\./);
+});
+
 test("the unified card keeps Tonal and non-Tonal completion paths distinct", () => {
   assert.match(source, /selectedWorkoutTonalSession \?/);
   assert.match(source, /chooseSelectedWorkoutCompletion/);
@@ -109,7 +118,7 @@ test("the unified card keeps Tonal and non-Tonal completion paths distinct", () 
 
 test("the primary mobile experience is a Monday through Sunday day-centered week", () => {
   assert.match(source, /data-weekly-performance/);
-  assert.match(source, /weekRecords\(state, displayWeekStart\)/);
+  assert.match(source, /weekRecords\(projectedState, displayWeekStart\)/);
   assert.match(source, /Previous/);
   assert.match(source, /This week/);
   assert.match(source, /Next →/);
@@ -119,6 +128,41 @@ test("the primary mobile experience is a Monday through Sunday day-centered week
   assert.match(css, /\.daySummary/);
   assert.match(css, /\.dayBody/);
   assert.match(css, /@media\(max-width:390px\)[\s\S]*\.dailyTotals/);
+});
+
+test("activity approval has immediate saving feedback and actionable fail-closed errors", () => {
+  assert.match(source, /activitySaveBusy/);
+  assert.match(source, /Saving…/);
+  assert.match(source, /Validating the selected session and source evidence/);
+  assert.match(source, /Performance changed elsewhere\. The latest state was loaded/);
+  assert.match(source, /Activity already logged/);
+  assert.match(source, /disabled=\{busy/);
+});
+
+test("missed Tonal sessions use a deterministic founder-controlled projection", () => {
+  assert.match(source, /projectWorkoutRollover/);
+  assert.match(source, /Session \{rolloverPlan\.nextSession\.order\} remains next/);
+  assert.match(source, /Continue in Succession/);
+  assert.match(source, /Double Up \/ Makeup/);
+  assert.match(source, /Two strength sessions together increase fatigue/);
+  assert.match(source, /action: "accept_adjustment"/);
+});
+
+test("an active Fit Over 40 cycle exposes one reviewed restart without rewriting history", () => {
+  assert.match(source, /data-program-restart/);
+  assert.match(source, /Fit Over 40 is active/);
+  assert.match(source, /another restart is not required/);
+  assert.match(source, /<details>/);
+  assert.match(source, /restartSummary/);
+  assert.match(source, /Plan an optional future Fit Over 40 cycle/);
+  assert.match(source, /restartFitOver40Cycle/);
+  assert.match(source, /restart-fit-over-40/);
+  assert.match(source, /Prior workout evidence remains in history/);
+  assert.match(source, /unfinished old-cycle slots are retired, never completed or skipped/);
+  assert.match(source, /isCurrentFitOver40CycleStart/);
+  assert.match(source, /data-program-cycle-current/);
+  assert.match(source, /Already active — this is the current Fit Over 40 cycle\. No restart will be created/);
+  assert.match(source, /disabled=\{activationBusy \|\| currentFitOver40CycleSelected\}/);
 });
 
 test("daily nutrition shows exact remaining values and audited historical corrections", () => {
@@ -208,6 +252,14 @@ test("Tonal completion extraction exposes the exact historical-session review", 
   assert.match(source, /Before photo already attached to this workout/);
   assert.doesNotMatch(source, /Workout plan already saved/);
   assert.match(source, /!selectedWorkoutTonalSession\.plannedSource/);
+});
+
+test("Before Photo approval reports the exact sequence rejection at the review", () => {
+  assert.match(source, /setTonalPlanFeedback\("Saving the reviewed Before Photo…"\)/);
+  assert.match(source, /Session \$\{nextOrder\} is still next\. Session \$\{session\.order\} cannot be approved/);
+  assert.match(source, /aria-live="assertive"/);
+  assert.match(source, /performance-source-digest-invalid/);
+  assert.doesNotMatch(source, /The planned session was not saved\. Review the current sequence and retry\./);
 });
 
 test("recovery screenshots have date-gated editable review and confirmed persistence feedback", () => {

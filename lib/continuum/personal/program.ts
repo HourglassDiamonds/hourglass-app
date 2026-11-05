@@ -27,10 +27,10 @@ export function weekdayIndex(key: string): number {
   return day === 0 ? 6 : day - 1;
 }
 
-export function plannedWorkout(key: string, anchorDate = PROGRAM_RESTART_DATE, tonal = createInitialTonalPlan()): ScheduledWorkout {
+export function plannedWorkout(key: string, anchorDate = PROGRAM_RESTART_DATE, tonal = createInitialTonalPlan(), cycleKey?: string): ScheduledWorkout {
   const prescription = programPrescription(key, anchorDate, tonal);
   return {
-    id: `program-${key}-${prescription.id}`,
+    id: cycleKey ? `program-${cycleKey}-${key}-${prescription.id}` : `program-${key}-${prescription.id}`,
     date: key,
     originalDate: key,
     status: "planned",
@@ -75,6 +75,79 @@ function programPrescription(key: string, anchorDate: string, tonal: TonalProgra
 
 export function previewTrainingWeek(tonal: TonalProgramPlan, anchorDate: string): ScheduledWorkout[] {
   return Array.from({ length: 7 }, (_, offset) => plannedWorkout(shiftDate(anchorDate, offset), anchorDate, tonal));
+}
+
+function freshFitOver40Plan(state: PersonalState, startDate: string): TonalProgramPlan {
+  const current = state.tonal.enrollment;
+  return {
+    ...state.tonal,
+    selectedProgramId: "fit-over-40",
+    enrollment: {
+      programId: "fit-over-40",
+      weeklyFrequency: 3,
+      status: "active",
+      sessions: createTonalSessionSlots("fit-over-40", 3),
+      sources: current.sources.map((source) => ({ ...source, file: source.file ? { ...source.file } : undefined })),
+      founderVerifiedAt: current.founderVerifiedAt,
+      startedOn: startDate,
+    },
+  };
+}
+
+export function previewFitOver40RestartWeek(state: PersonalState, startDate: string): ScheduledWorkout[] {
+  const tonal = freshFitOver40Plan(state, startDate);
+  return Array.from({ length: 7 }, (_, offset) => plannedWorkout(shiftDate(startDate, offset), startDate, tonal, `fit-over-40-${startDate}`));
+}
+
+export function isCurrentFitOver40CycleStart(state: PersonalState, startDate: string): boolean {
+  return state.program.status === "active"
+    && state.tonal.enrollment.status === "active"
+    && state.tonal.selectedProgramId === "fit-over-40"
+    && Boolean(state.program.anchorDate)
+    && startDate === state.program.anchorDate;
+}
+
+export function restartFitOver40Cycle(state: PersonalState, startDate: string, restartedAt = new Date().toISOString()): PersonalState {
+  if (state.program.status !== "active" || state.tonal.enrollment.status !== "active" || state.tonal.selectedProgramId !== "fit-over-40") throw new Error("fit-over-40-restart-requires-active-cycle");
+  if (!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(startDate) || weekdayIndex(startDate) !== 0) throw new Error("performance-program-start-must-be-monday");
+  if (!state.program.anchorDate || startDate <= state.program.anchorDate) throw new Error("performance-cycle-restart-date-invalid");
+  if (!state.tonal.enrollment.founderVerifiedAt || !state.tonal.enrollment.sources.length) throw new Error("tonal-session-sequence-required");
+
+  const archived: TonalProgramPlan["enrollment"] = {
+    ...state.tonal.enrollment,
+    status: "paused",
+    sessions: state.tonal.enrollment.sessions.map((session) => ({
+      ...session,
+      movements: session.movements.map((movement) => ({ ...movement })),
+      plannedSource: session.plannedSource ? { ...session.plannedSource, file: session.plannedSource.file ? { ...session.plannedSource.file } : undefined } : undefined,
+    })),
+    sources: state.tonal.enrollment.sources.map((source) => ({ ...source, file: source.file ? { ...source.file } : undefined })),
+  };
+  const tonal = freshFitOver40Plan(state, startDate);
+  tonal.historicalEnrollments = [...state.tonal.historicalEnrollments, archived];
+  const block = TONAL_PROGRAM_CATALOG["fit-over-40"];
+  const generated = Array.from({ length: block.durationWeeks * 7 }, (_, offset) => plannedWorkout(shiftDate(startDate, offset), startDate, tonal, `fit-over-40-${startDate}`));
+  tonal.enrollment.sessions = tonal.enrollment.sessions.map((session) => ({
+    ...session,
+    scheduledWorkoutId: generated.find((workout) => workout.prescription.tonalSessionOrder === session.order)?.id,
+  }));
+  if (tonal.enrollment.sessions.some((session) => !session.scheduledWorkoutId)) throw new Error("tonal-session-schedule-invalid");
+
+  const retired = state.schedule.map((workout): ScheduledWorkout => workout.provenance.includes("program") && ["planned", "unresolved", "in_progress"].includes(workout.status)
+    ? {
+        ...workout,
+        status: "replaced",
+        history: [...workout.history, { at: restartedAt, action: "replaced", actor: "user", note: `Founder preserved this occurrence and started a distinct Fit Over 40 cycle on ${startDate}.` }],
+      }
+    : workout);
+  return {
+    ...state,
+    program: { ...state.program, anchorDate: startDate, activatedAt: restartedAt },
+    tonal,
+    schedule: [...retired, ...generated].sort((left, right) => left.date.localeCompare(right.date) || left.id.localeCompare(right.id)),
+    workoutRolloverChoice: undefined,
+    progressionProposals: state.progressionProposals.filter((proposal) => proposal.status !== "pending" && proposal.status !== "edited"),
+  };
 }
 
 export function createInitialPersonalState(today = dateKey()): PersonalState {
@@ -136,6 +209,7 @@ export function transitionTrainingProgram(state: PersonalState, input: {
     ...state.tonal,
     selectedProgramId: input.nextProgramId,
     enrollment: { programId: input.nextProgramId, weeklyFrequency: input.weeklyFrequency, status: "active", sessions, sources: [input.source], founderVerifiedAt: input.approvedAt, startedOn: input.startDate },
+    historicalEnrollments: state.tonal.historicalEnrollments,
     completedEnrollments: [...state.tonal.completedEnrollments, current],
     transitions: [...state.tonal.transitions, { from: current.programId, to: input.nextProgramId, reviewedAt: input.reviewedAt, approvedAt: input.approvedAt, readiness: input.readiness }],
   };
