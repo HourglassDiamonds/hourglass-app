@@ -123,7 +123,7 @@ describe("real-client association review batch", () => {
     const result = batch({
       messages: [
         message({ messageId: "vendor", threadId: "1a08d1c1443a8ede", subject: "HGD- J.Pennock-C025519-RN08286", participantHashes: [] }),
-        message({ messageId: "client", threadId: "19fdca18f516310d", subject: "Sapphire / Platinum Ring - John Pennock", participantHashes: ["pennock-hash"] }),
+        message({ messageId: "client", threadId: "19fdca18f516310d", subject: "Re: Your sapphire ring", participantHashes: ["pennock-hash"] }),
       ],
       people: [{ personId: "person-pennock", label: "John Pennock", emailHash: "pennock-hash", sourceSystem: "concierge-manual" }],
       projects: [{ projectId: "project-pennock", label: "John Pennock — Sapphire / Platinum Ring", sourceSystem: "concierge-manual", lifecycleStage: "completed" }],

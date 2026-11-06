@@ -11,6 +11,8 @@ export const REAL_CLIENT_COHORT = [
   { key: "jp", label: "JP", token: "jp" },
 ] as const;
 
+const PENNOCK_DIRECT_CLIENT_THREAD_ID = "19fdca18f516310d";
+
 export type RealClientCohortKey = (typeof REAL_CLIENT_COHORT)[number]["key"];
 
 export type AssociationMessage = {
@@ -215,9 +217,9 @@ function founderPacketFor(
     safeguards: ["Do not infer Audrey's identity or Project solely from vendor identifier C026401."],
   };
   if (key === "pennock" && available.has("1a08d1c1443a8ede")) return {
-    primaryThreadId: available.has("19fdca18f516310d") ? "19fdca18f516310d" : "1a08d1c1443a8ede",
+    primaryThreadId: available.has(PENNOCK_DIRECT_CLIENT_THREAD_ID) ? PENNOCK_DIRECT_CLIENT_THREAD_ID : "1a08d1c1443a8ede",
     supportingThreadIds: [
-      ...(available.has("19fdca18f516310d") ? ["1a08d1c1443a8ede"] : []),
+      ...(available.has(PENNOCK_DIRECT_CLIENT_THREAD_ID) ? ["1a08d1c1443a8ede"] : []),
       ...(available.has("1a10c5b8e4a52db7") ? ["1a10c5b8e4a52db7"] : []),
     ],
     verifiedEvidence: [
@@ -372,7 +374,9 @@ export function buildRealClientAssociationBatch(input: {
     Number.isFinite(authorizationMs) && Date.parse(row.indexedAt) > authorizationMs;
   const trusted = new Set(input.trustedThreadIds ?? []);
   const reviews = REAL_CLIENT_COHORT.map((cohort) => {
-    const matching = input.messages.filter((row) => cohortForSubject(row.subject).includes(cohort.key));
+    const matching = input.messages.filter((row) =>
+      cohortForSubject(row.subject).includes(cohort.key) ||
+      (cohort.key === "pennock" && row.threadId === PENNOCK_DIRECT_CLIENT_THREAD_ID));
     const fixtureEraThreadIds = [...new Set(matching.filter((row) => !postAuthorization(row)).map((row) => row.threadId))];
     const current = matching.filter(postAuthorization);
     const byThread = new Map<string, AssociationMessage[]>();
