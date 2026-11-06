@@ -27,6 +27,15 @@ describe("Sterling readiness preflight", () => {
     assert.match(page, /does not contact Gmail, run a model, create a proposal/);
   });
 
+  it("offers only a founder-authenticated, Preview-only one-shot Today recomputation", () => {
+    const action = readFileSync(join(ROOT, "app/executive-dashboard/concierge/sterling-today/readiness/actions.ts"), "utf8");
+    const page = readFileSync(join(ROOT, "app/executive-dashboard/concierge/sterling-today/readiness/page.tsx"), "utf8");
+    assert.match(action, /isVerifiedSterlingTodayPreviewRuntime/);
+    assert.match(action, /refreshTodayAfterFounderMutation/);
+    assert.match(page, /Recompute canonical Today/);
+    assert.doesNotMatch(action, /Gmail|publishPersisted|createProposal|\.insert\(|\.upsert\(|\.delete\(/);
+  });
+
   it("keeps Today fail-soft only at the live correspondence boundary", () => {
     const load = readFileSync(join(ROOT, "lib/continuum/chief-of-staff/operating-loop/load.ts"), "utf8");
     assert.match(load, /threadIds: critical\.eligible,[\s\S]*requireComplete: false/);

@@ -3,6 +3,7 @@ import { ConciergeShell } from "../../components/concierge-shell";
 import { getAuthenticatedSterlingReadiness } from "@/lib/continuum/today-sterling/readiness";
 import type { SterlingReadinessReport } from "@/lib/continuum/today-sterling/readiness";
 import Link from "next/link";
+import { recomputeCanonicalToday } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -10,8 +11,13 @@ export const metadata = {
   robots: { index: false, follow: false, nocache: true, noarchive: true },
 };
 
-export default async function SterlingTodayReadinessPage() {
+export default async function SterlingTodayReadinessPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ recompute?: string }>;
+}) {
   const access = await getAuthenticatedSterlingReadiness();
+  const { recompute } = await searchParams;
   return (
     <ConciergeShell>
       <ConciergeBackLink />
@@ -27,7 +33,21 @@ export default async function SterlingTodayReadinessPage() {
             {access.reason === "not-preview" ? "Unavailable outside verified isolated Preview." :
               access.reason === "unauthorized" ? "Founder authentication is required." : "Readiness data is unavailable."}
           </p>
-        ) : <ReadinessReport report={access.report} />}
+        ) : <>
+          <ReadinessReport report={access.report} />
+          <form action={recomputeCanonicalToday} className="mt-6 rounded-2xl border border-white/10 p-4">
+            <p className="text-[12px] leading-relaxed text-[#a99c90]">
+              Rebuild canonical Today once from current Preview evidence. This does not ingest Gmail, publish Sterling,
+              change client records, or enable recurring work.
+            </p>
+            {recompute ? <p role="status" className={`mt-3 text-[12px] ${recompute === "completed" ? "text-[#a9bd8e]" : "text-[#d39a8a]"}`}>
+              {recompute === "completed" ? "Canonical Today recomputation completed." : "Canonical Today recomputation did not complete."}
+            </p> : null}
+            <button type="submit" className="mt-4 rounded-full border border-[#ad9164]/50 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-[#d8c6aa] hover:border-[#ad9164]">
+              Recompute canonical Today
+            </button>
+          </form>
+        </>}
         <Link href="/executive-dashboard/concierge/sterling-today/associations" className="mt-6 inline-block text-[11px] uppercase tracking-[0.14em] text-[#ad9164] underline underline-offset-4">
           Open real-client correspondence review
         </Link>
