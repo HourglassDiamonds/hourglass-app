@@ -15,6 +15,7 @@ import {
 import { loadActiveClientWebsiteIntakes } from "@/lib/continuum/client-memory/read/website-intake-load";
 import { composeBusinessTodayContext } from "@/lib/continuum/chief-of-staff/operating-loop/business-today-context";
 import { TodayIntelligenceStatus } from "./components/today-intelligence-status";
+import { isOperationalWebsiteIntake } from "@/lib/continuum/chief-of-staff/operating-loop/operational-fixtures";
 
 export const fetchCache = "force-no-store";
 // Today can perform a one-time synchronous read-model rebuild after a version
@@ -30,9 +31,10 @@ export default async function ConciergeHomePage() {
     loadTodayUpcoming(),
     loadActiveClientWebsiteIntakes(),
   ]);
+  const operationalIntakes = intakes.filter(isOperationalWebsiteIntake);
   const businessTodayContext = composeBusinessTodayContext({
     docket: today.docket,
-    intakes,
+    intakes: operationalIntakes,
     nowIso: new Date().toISOString(),
   });
   return (
@@ -56,7 +58,7 @@ export default async function ConciergeHomePage() {
         disposeAction={disposeTodayDocketItemAction}
         askAction={askConcierge}
         upcoming={upcoming}
-        intakes={intakes}
+        intakes={operationalIntakes}
         businessTodayContext={businessTodayContext}
       />
     </ConciergeShell>

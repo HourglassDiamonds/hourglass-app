@@ -1,5 +1,6 @@
 import { getAuthenticatedConditionalHoldRepository } from "@/lib/continuum/sterling/holds/load";
 import type { ConditionalHoldRecord } from "@/lib/continuum/sterling/holds/types";
+import { isOperationalConditionalHold } from "@/lib/continuum/chief-of-staff/operating-loop/operational-fixtures";
 import { ConditionalHoldControls } from "./conditional-hold-controls";
 
 export function ConditionalHoldPanelFallback() {
@@ -19,7 +20,7 @@ export function ConditionalHoldPanelFallback() {
 export async function ConditionalHoldPanel() {
   const loaded = await getAuthenticatedConditionalHoldRepository();
   if (!loaded.ok) return null;
-  const holds = await loaded.repository.listActive().catch(() => []);
+  const holds = (await loaded.repository.listActive().catch(() => [])).filter(isOperationalConditionalHold);
   if (holds.length === 0) return null;
   return (
     <section className="mx-auto mb-5 w-full max-w-3xl border-y border-white/[0.08] py-4" aria-label="Held items">

@@ -105,6 +105,18 @@ export type RealClientAssociationReview = {
   currentProviderThreads: readonly RealClientThreadReview[];
   fixtureEraThreadIds: readonly string[];
   status: "confirmable" | "founder-review-required" | "no-current-evidence";
+  founderPacket: FounderReviewPacket | null;
+};
+
+export type FounderReviewPacket = {
+  primaryThreadId: string;
+  supportingThreadIds: readonly string[];
+  verifiedEvidence: readonly string[];
+  founderSuppliedContext: readonly string[];
+  ownershipAssessment: string;
+  unresolvedDecisions: readonly string[];
+  proposedChangesAfterApproval: readonly string[];
+  safeguards: readonly string[];
 };
 
 export type RealClientAssociationBatch = {
@@ -146,6 +158,83 @@ export function isFixtureAssociationSource(sourceSystem: string, label = ""): bo
 
 function latest(values: readonly string[]): string | null {
   return values.filter(Boolean).sort().at(-1) ?? null;
+}
+
+function founderPacketFor(
+  key: RealClientCohortKey,
+  threads: readonly RealClientThreadReview[],
+): FounderReviewPacket | null {
+  const available = new Set(threads.map((thread) => thread.threadId));
+  if (key === "zane" && available.has("1a1212396a8ac111")) return {
+    primaryThreadId: "1a1212396a8ac111",
+    supportingThreadIds: [],
+    verifiedEvidence: [
+      "Six indexed messages in the direct Zane wedding-band thread.",
+      "Latest client inbound: October 13 at 16:56:38 UTC; latest founder outbound: October 13 at 17:02:40 UTC.",
+      "The founder replied after Zane's latest indexed message, so no email-reply obligation is supported.",
+    ],
+    founderSuppliedContext: [
+      "Zane was previously reported as In Production. The only existing matching canonical record is an excluded Sterling acceptance fixture, so that lifecycle cannot be reused as proof.",
+    ],
+    ownershipAssessment: "Correspondence is founder-answered. Current production/vendor ownership is not established by the indexed thread chronology.",
+    unresolvedDecisions: [
+      "Confirm the exact real Zane Kennedy Person and wedding-band Project identities.",
+      "Confirm that the founder-supplied In Production status belongs to this exact person/project and remains current.",
+      "Confirm whether any production checkpoint is genuinely outstanding; do not create a reply action.",
+    ],
+    proposedChangesAfterApproval: [
+      "Create or link one non-fixture Person and one wedding-band Project, then record the confirmed lifecycle.",
+      "Trust thread 1a1212396a8ac111 for that Project only.",
+    ],
+    safeguards: ["Do not reuse the synthetic Zane fixture or infer a canonical identifier from an attachment or subject."],
+  };
+  if (key === "audrey" && available.has("1a0d00fedde6906a")) return {
+    primaryThreadId: "1a0d00fedde6906a",
+    supportingThreadIds: available.has("1a0cf8910f00606f") ? ["1a0cf8910f00606f"] : [],
+    verifiedEvidence: [
+      "Twelve indexed messages in the vendor CAD/pricing thread, plus one earlier founder outbound discovery thread.",
+      "Latest founder outbound: October 7 at 20:20:31 UTC; latest vendor inbound: October 8 at 15:07:39 UTC.",
+      "Attachments reference C026401 and modified CAD images; this is discovery evidence, not canonical identity proof.",
+    ],
+    founderSuppliedContext: [],
+    ownershipAssessment: "The latest indexed message is vendor inbound. A founder CAD/pricing decision may be due, but no client-reply obligation is established.",
+    unresolvedDecisions: [
+      "Confirm Audrey's exact real Person and Project identities.",
+      "Confirm whether vendor thread 1a0d00fedde6906a belongs exclusively to that Project.",
+      "Confirm the actual CAD/pricing decision and whether C026401 may be recorded as a Project CAD identifier.",
+    ],
+    proposedChangesAfterApproval: [
+      "Create or link the approved non-fixture Person and Project.",
+      "Trust only the confirmed vendor thread and create only the founder-owned CAD/pricing action the founder approves.",
+    ],
+    safeguards: ["Do not infer Audrey's identity or Project solely from vendor identifier C026401."],
+  };
+  if (key === "pennock" && available.has("1a08d1c1443a8ede")) return {
+    primaryThreadId: "1a08d1c1443a8ede",
+    supportingThreadIds: available.has("1a10c5b8e4a52db7") ? ["1a10c5b8e4a52db7"] : [],
+    verifiedEvidence: [
+      "Four indexed messages in the dedicated vendor thread for J. Pennock / C025519 / RN08286.",
+      "The dedicated thread's latest message is vendor inbound on September 24 at 21:56:22 UTC.",
+      "A separate two-message status thread mixes Tim/Jenn C025964 with J. Pennock C025519; it is not safe as an exclusive Pennock association.",
+    ],
+    founderSuppliedContext: [
+      "The founder reports a paid sapphire and shipment history. Indexed metadata does not establish whether the item was shipped only or actually received.",
+    ],
+    ownershipAssessment: "Shipping ownership remains unresolved. No new shipping action is safe until shipped-versus-received is confirmed.",
+    unresolvedDecisions: [
+      "Confirm J. Pennock's exact real Person and Project identities, kept separate from JP.",
+      "Confirm whether the shipment was sent, received, or neither.",
+      "Confirm whether the dedicated thread may be trusted; leave the mixed Tim/Jenn thread unresolved unless message-level evidence is explicitly scoped.",
+    ],
+    proposedChangesAfterApproval: [
+      "Create or link the approved non-fixture Person and Project.",
+      "Trust the dedicated thread only; create tracking/receipt work only if the founder confirms it remains incomplete.",
+    ],
+    safeguards: [
+      "Do not duplicate shipping work, merge J. Pennock with JP, or treat C025519/RN08286 as identity proof.",
+    ],
+  };
+  return null;
 }
 
 function attachmentIdentifiers(
@@ -292,6 +381,7 @@ export function buildRealClientAssociationBatch(input: {
       label: cohort.label,
       currentProviderThreads,
       fixtureEraThreadIds,
+      founderPacket: founderPacketFor(cohort.key, currentProviderThreads),
       status: currentProviderThreads.length === 0
         ? "no-current-evidence" as const
         : currentProviderThreads.some((row) => row.recommendedDecision === "confirm")

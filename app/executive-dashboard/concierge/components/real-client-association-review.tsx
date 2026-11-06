@@ -1,4 +1,5 @@
 import type {
+  FounderReviewPacket,
   RealClientAssociationBatch,
   RealClientThreadReview,
 } from "@/lib/continuum/today-sterling/real-client-association";
@@ -136,6 +137,46 @@ function MorganFounderWorksheet({
   );
 }
 
+function ClientFounderPacket({ packet }: { packet: FounderReviewPacket }) {
+  return (
+    <section className="mt-5 rounded-2xl border border-[#ad9164]/30 bg-[#ad9164]/5 p-4 md:p-5" aria-label="Founder decision packet">
+      <h3 className="text-[11px] uppercase tracking-[0.16em] text-[#ad9164]">Founder decision packet</h3>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <section className="rounded-xl border border-white/10 p-4">
+          <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Current verified evidence</h4>
+          <ul className="mt-2 space-y-2 text-[11px] leading-relaxed text-[#c9b9a9]">
+            {packet.verifiedEvidence.map((item) => <li key={item}>{item}</li>)}
+          </ul>
+        </section>
+        <section className="rounded-xl border border-white/10 p-4">
+          <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Action ownership</h4>
+          <p className="mt-2 text-[11px] leading-relaxed text-[#efe8de]">{packet.ownershipAssessment}</p>
+          {packet.founderSuppliedContext.length ? <>
+            <h4 className="mt-4 text-[10px] uppercase tracking-[0.14em] text-[#8fb59d]">Founder-supplied context</h4>
+            <ul className="mt-2 space-y-2 text-[11px] leading-relaxed text-[#c9b9a9]">
+              {packet.founderSuppliedContext.map((item) => <li key={item}>{item}</li>)}
+            </ul>
+          </> : null}
+        </section>
+      </div>
+      <section className="mt-4 rounded-xl border border-[#d6a66f]/25 p-4">
+        <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#d6a66f]">Only unresolved founder decisions</h4>
+        <ol className="mt-2 list-decimal space-y-2 pl-4 text-[11px] leading-relaxed text-[#efe8de]">
+          {packet.unresolvedDecisions.map((item) => <li key={item}>{item}</li>)}
+        </ol>
+      </section>
+      <details className="mt-4 rounded-xl border border-white/10 p-4">
+        <summary className="cursor-pointer text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Proposed record and action changes after approval</summary>
+        <ul className="mt-3 space-y-2 text-[11px] leading-relaxed text-[#c9b9a9]">
+          {packet.proposedChangesAfterApproval.map((item) => <li key={item}>{item}</li>)}
+        </ul>
+        {packet.safeguards.map((item) => <p key={item} className="mt-3 text-[10px] leading-relaxed text-[#d6a66f]">{item}</p>)}
+      </details>
+      <p className="mt-4 text-[10px] text-[#81766c]">This packet is read only. It does not create a Person, Project, action, lifecycle change, or trusted association.</p>
+    </section>
+  );
+}
+
 export function RealClientAssociationReview({
   batch,
   reviewAction,
@@ -147,7 +188,9 @@ export function RealClientAssociationReview({
 }) {
   const selected = batch.reviews.find((review) => review.key === selectedKey) ?? batch.reviews.find((review) => review.key === "morgan") ?? batch.reviews[0];
   if (!selected) return null;
-  const focus = selected.currentProviderThreads[0] ?? null;
+  const focus = selected.currentProviderThreads.find(
+    (thread) => thread.threadId === selected.founderPacket?.primaryThreadId,
+  ) ?? selected.currentProviderThreads[0] ?? null;
   const isMorgan = selected.key === "morgan";
   return (
     <div className="mt-7">
@@ -172,7 +215,7 @@ export function RealClientAssociationReview({
             <div><dt className="text-[#81766c]">Verified Project evidence</dt><dd className="mt-1 text-[#efe8de]">{projectEvidence(focus, isMorgan)}</dd></div>
           </dl>
           {isMorgan ? <p className="mt-4 text-[11px] leading-relaxed text-[#a99c90]">The latest client communication has a founder response. The confirmed appointment is not presented as outstanding work.</p> : null}
-          {isMorgan && focus.threadId === MORGAN_THREAD_ID ? <MorganFounderWorksheet batch={batch} thread={focus} reviewAction={reviewAction} /> : <section className="mt-5 rounded-xl border border-white/10 p-4"><h3 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Association decision</h3><p className="mt-2 text-[11px] text-[#a99c90]">Saved decision: <strong className="text-[#efe8de]">{focus.target?.currentDecision ?? "None"}</strong></p><AssociationDecisionControls batch={batch} thread={focus} reviewAction={reviewAction} /></section>}
+          {isMorgan && focus.threadId === MORGAN_THREAD_ID ? <MorganFounderWorksheet batch={batch} thread={focus} reviewAction={reviewAction} /> : selected.founderPacket ? <ClientFounderPacket packet={selected.founderPacket} /> : <section className="mt-5 rounded-xl border border-white/10 p-4"><h3 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Association decision</h3><p className="mt-2 text-[11px] text-[#a99c90]">Saved decision: <strong className="text-[#efe8de]">{focus.target?.currentDecision ?? "None"}</strong></p><AssociationDecisionControls batch={batch} thread={focus} reviewAction={reviewAction} /></section>}
         </> : <p className="mt-5 text-[13px] leading-relaxed text-[#a99c90]">No post-authorization provider thread was discovered. This is missing discoverability, not evidence of no correspondence or no reply.</p>}
 
         <details className="mt-5 rounded-xl border border-white/10 p-4">

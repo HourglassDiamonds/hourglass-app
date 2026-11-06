@@ -74,6 +74,12 @@ import { parseGmailWebHref } from "./evidence";
 import { parseGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import { selectMasterSprintCapacityItems } from "./master-sprint";
 import {
+  isOperationalCandidate,
+  isOperationalConditionalHold,
+  isOperationalProjectJob,
+  isOperationalProjectSummary,
+} from "./operational-fixtures";
+import {
   COS_DISCONNECTED_DETAIL,
   COS_DISCONNECTED_HEADING,
 } from "./present";
@@ -258,10 +264,11 @@ async function rebuildTodayLoop(
     client,
     listed,
   );
+  const operationalSummaries = summaries.filter(isOperationalProjectSummary);
   const trustedProjectThreads = client
     ? await loadTrustedProjectThreadAssociations(
         client,
-        new Set(summaries.map((summary) => summary.projectId)),
+        new Set(operationalSummaries.map((summary) => summary.projectId)),
       )
     : new Map<string, string>();
   const indexedContext = await loadIndexedTodayThreadContext(candidates, {
@@ -272,21 +279,31 @@ async function rebuildTodayLoop(
     indexedContext,
     gmailConnection?.connectedAt,
   );
+  const currentOrTrustedThreadIds = new Set([
+    ...(currentProviderThreadIds ?? []),
+    ...trustedProjectThreads.keys(),
+  ]);
+  const operationalCandidates = candidates.filter((candidate) =>
+    isOperationalCandidate(candidate, currentOrTrustedThreadIds),
+  );
+  const operationalProjectIds = new Set(operationalSummaries.map((summary) => summary.projectId));
+  const operationalJobs = jobs?.filter((job) => isOperationalProjectJob(job, operationalProjectIds)) ?? jobs;
+  const operationalHolds = activeHolds.filter(isOperationalConditionalHold);
   const founderCorrections = [
     ...(client ? await loadFounderCorrectionEvents(client) : []),
-    ...candidateDispositionCorrectionEvents(candidates),
+    ...candidateDispositionCorrectionEvents(operationalCandidates),
   ];
   const composeInput = {
     founderCorrections,
-    jobs,
-    summaries,
-    candidates,
+    jobs: operationalJobs,
+    summaries: operationalSummaries,
+    candidates: operationalCandidates,
     nowIso: now.toISOString(),
     masterSprint,
     threadContext: indexedContext,
     trustedProjectThreads,
     knownPeople,
-    heldJobIds: new Set(activeHolds.map((row) => row.entityId)),
+    heldJobIds: new Set(operationalHolds.map((row) => row.entityId)),
   };
   let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
@@ -294,7 +311,7 @@ async function rebuildTodayLoop(
   const unavailableIndexedThreadIds = new Set<string>();
   const criticalOutcomes = new Map<string, "complete_live" | "indexed_excerpt_only" | "unavailable">();
   for (let pass = 0; pass < 2; pass += 1) {
-    const plan = liveThreadPlan(loop, candidates, now.toISOString(), currentProviderThreadIds);
+    const plan = liveThreadPlan(loop, operationalCandidates, now.toISOString(), currentProviderThreadIds);
     const critical = partitionIndexedTodayLiveThreadIds({
       requiredThreadIds: plan.criticalThreadIds,
       threadContext,
@@ -332,7 +349,7 @@ async function rebuildTodayLoop(
     if (critical.eligible.length === 0 && identity.eligible.length === 0) break;
     loop = composeCosOperatingLoop({ ...composeInput, threadContext });
   }
-  const unresolvedRequired = liveThreadPlan(loop, candidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds.filter(
+  const unresolvedRequired = liveThreadPlan(loop, operationalCandidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds.filter(
     (threadId) =>
       !attemptedThreadIds.has(threadId) &&
       !unavailableIndexedThreadIds.has(threadId) &&
@@ -344,15 +361,15 @@ async function rebuildTodayLoop(
   if (unavailableIndexedThreadIds.size > 0) {
     emitTodayUnindexedSourceRefCount(unavailableIndexedThreadIds.size);
   }
-  if (client && jobs) {
+  if (client && operationalJobs) {
     await reconcileConditionalHolds({
       repository: new SupabaseConditionalHoldRepository(client),
-      jobs,
+      jobs: operationalJobs,
       events: sourceEventsIn(loop),
       now,
     }).catch(() => []);
   }
-  const finalRequired = liveThreadPlan(loop, candidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds;
+  const finalRequired = liveThreadPlan(loop, operationalCandidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds;
   const completedRequired = finalRequired.filter(
     (threadId) => criticalOutcomes.get(threadId) === "complete_live",
   ).length;

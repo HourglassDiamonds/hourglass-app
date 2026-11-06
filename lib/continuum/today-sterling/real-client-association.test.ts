@@ -90,4 +90,24 @@ describe("real-client association review batch", () => {
     assert.deepEqual(cohortForSubject("JP custom ring"), ["jp"]);
     assert.deepEqual(cohortForSubject("J. Pennock CAD"), ["pennock"]);
   });
+
+  it("builds focused founder packets without converting vendor identifiers into canonical identity", () => {
+    const result = batch({
+      messages: [
+        message({ messageId: "z1", threadId: "1a1212396a8ac111", subject: "Hourglass Diamonds x Zane - Wedding Band" }),
+        message({ messageId: "a1", threadId: "1a0d00fedde6906a", subject: "HGD x Audrey-C026401" }),
+        message({ messageId: "p1", threadId: "1a08d1c1443a8ede", subject: "HGD- J.Pennock-C025519-RN08286" }),
+        message({ messageId: "p2", threadId: "1a10c5b8e4a52db7", subject: "HGD - Tim/Jenn C025964 & J. Pennock C025519 status" }),
+      ],
+    });
+    const zane = result.reviews.find((row) => row.key === "zane")!;
+    const audrey = result.reviews.find((row) => row.key === "audrey")!;
+    const pennock = result.reviews.find((row) => row.key === "pennock")!;
+    assert.equal(zane.founderPacket?.primaryThreadId, "1a1212396a8ac111");
+    assert.match(zane.founderPacket?.ownershipAssessment ?? "", /founder-answered/);
+    assert.match(audrey.founderPacket?.safeguards[0] ?? "", /not infer Audrey's identity/);
+    assert.deepEqual(pennock.founderPacket?.supportingThreadIds, ["1a10c5b8e4a52db7"]);
+    assert.match(pennock.founderPacket?.unresolvedDecisions.join(" ") ?? "", /separate from JP/);
+    assert.match(pennock.founderPacket?.safeguards[0] ?? "", /Do not duplicate shipping work/);
+  });
 });

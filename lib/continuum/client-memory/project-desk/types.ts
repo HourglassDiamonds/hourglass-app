@@ -81,6 +81,7 @@ export type ProjectDeskNote = {
 export type ProjectDeskSummary = {
   projectId: string;
   title: string;
+  sourceSystem?: ProjectProfile["sourceSystem"];
   projectKind: ProjectKind | null;
   people: ProjectDeskPerson[];
   specs?: ProjectSpecField[];

@@ -125,4 +125,21 @@ describe("real-client association review presentation", () => {
     assert.match(html, /\?client=audrey/);
     assert.match(html, /Founder responded after the latest indexed inbound|No indexed inbound message/);
   });
+
+  it("shows only unresolved Zane founder decisions and does not expose association controls", () => {
+    const batch = buildRealClientAssociationBatch({
+      messages: [
+        { messageId: "z1", threadId: "1a1212396a8ac111", subject: "Hourglass Diamonds x Zane - Wedding Band", sentAt: "2026-10-13T16:56:38.000Z", indexedAt: "2026-11-05T13:39:15.630Z", direction: "inbound", participantHashes: [] },
+        { messageId: "z2", threadId: "1a1212396a8ac111", subject: "Hourglass Diamonds x Zane - Wedding Band", sentAt: "2026-10-13T17:02:40.000Z", indexedAt: "2026-11-05T13:39:14.130Z", direction: "outbound", participantHashes: [] },
+      ],
+      people: [], projects: [], jobs: [], relationships: [],
+      authorizationAt: "2026-11-04T15:00:50.223Z", associationPersistence: "available", nowIso: "2026-11-06T18:00:00.000Z",
+    });
+    const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch, selectedKey: "zane" }));
+    assert.match(html, /Founder decision packet/);
+    assert.match(html, /Only unresolved founder decisions/);
+    assert.match(html, /no email-reply obligation is supported/);
+    assert.match(html, /only existing matching canonical record is an excluded Sterling acceptance fixture/);
+    assert.doesNotMatch(html, /name="decision"/);
+  });
 });
