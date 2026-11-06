@@ -31,9 +31,26 @@ describe("Sterling readiness preflight", () => {
     const action = readFileSync(join(ROOT, "app/executive-dashboard/concierge/sterling-today/readiness/actions.ts"), "utf8");
     const page = readFileSync(join(ROOT, "app/executive-dashboard/concierge/sterling-today/readiness/page.tsx"), "utf8");
     assert.match(action, /isVerifiedSterlingTodayPreviewRuntime/);
+    assert.match(action, /requireInternalClientMemorySession/);
     assert.match(action, /refreshTodayAfterFounderMutation/);
     assert.match(page, /Recompute canonical Today/);
-    assert.doesNotMatch(action, /Gmail|publishPersisted|createProposal|\.insert\(|\.upsert\(|\.delete\(/);
+    const recomputeAction = action.slice(action.indexOf("export async function recomputeCanonicalToday"));
+    assert.doesNotMatch(recomputeAction, /runOnePreviewGmailIngestionChunk|publishPersisted|createProposal|\.insert\(|\.upsert\(|\.delete\(/);
+  });
+
+  it("exposes explicit zero-write readiness and one bounded leased Gmail chunk without enabling recurring sync", () => {
+    const action = readFileSync(join(ROOT, "app/executive-dashboard/concierge/sterling-today/readiness/actions.ts"), "utf8");
+    const page = readFileSync(join(ROOT, "app/executive-dashboard/concierge/sterling-today/readiness/page.tsx"), "utf8");
+    const gmailAction = readFileSync(join(ROOT, "app/executive-dashboard/concierge/gmail-incremental-actions.ts"), "utf8");
+    assert.match(action, /runZeroWriteGmailReadinessCheck/);
+    assert.match(action, /runOneControlledGmailRefreshChunk/);
+    assert.match(action, /runOnePreviewGmailIngestionChunk/);
+    assert.match(action, /requireFounderPreviewAccess/);
+    assert.match(page, /Check Gmail readiness/);
+    assert.match(page, /Run one Gmail refresh chunk/);
+    assert.match(gmailAction, /runGmailIncrementalChunk/);
+    assert.doesNotMatch(action, /process\.env\.[A-Z0-9_]+\s*=|CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED\s*=/);
+    assert.doesNotMatch(action, /publishPersisted|createProposal|sendMessage|sendMail/);
   });
 
   it("keeps Today fail-soft only at the live correspondence boundary", () => {

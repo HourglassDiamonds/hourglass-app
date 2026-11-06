@@ -2,6 +2,8 @@ import type { GmailIncrementalChunkResult } from "./incremental";
 
 export const BETA_RECOVERY_PREVIEW_BRANCH =
   "codex/continuum-beta-recovery" as const;
+export const CONTROLLED_RELEASE_PREVIEW_BRANCH =
+  "codex/continuum-controlled-release" as const;
 export const MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC = 0.8;
 export const MANUAL_PREVIEW_GMAIL_MAX_RETRIES = 3;
 export const MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO = 0.25;
@@ -84,11 +86,14 @@ export function isBetaRecoveryPreviewRuntime(input: {
   gitBranch: string | undefined;
   isolationState: string;
 }): boolean {
+  const approvedBranch =
+    input.gitBranch?.trim() === BETA_RECOVERY_PREVIEW_BRANCH ||
+    input.gitBranch?.trim() === CONTROLLED_RELEASE_PREVIEW_BRANCH;
   return (
     input.vercel?.trim() === "1" &&
     input.vercelEnv?.trim().toLowerCase() === "preview" &&
     input.continuumEnv?.trim().toLowerCase() === "preview" &&
-    input.gitBranch?.trim() === BETA_RECOVERY_PREVIEW_BRANCH &&
+    approvedBranch &&
     input.isolationState === "preview-isolated"
   );
 }

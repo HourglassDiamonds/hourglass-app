@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import {
+  CONTROLLED_RELEASE_PREVIEW_BRANCH,
   executeOneManualPreviewChunk,
   isBetaRecoveryPreviewRuntime,
   MANUAL_PREVIEW_GMAIL_MAX_GETS_PER_SEC,
@@ -46,6 +47,13 @@ describe("one-time Beta Recovery Gmail chunk", () => {
       isolationState: "preview-isolated",
     };
     assert.equal(isBetaRecoveryPreviewRuntime(base), true);
+    assert.equal(
+      isBetaRecoveryPreviewRuntime({
+        ...base,
+        gitBranch: CONTROLLED_RELEASE_PREVIEW_BRANCH,
+      }),
+      true,
+    );
     assert.equal(
       isBetaRecoveryPreviewRuntime({ ...base, vercelEnv: "production" }),
       false,

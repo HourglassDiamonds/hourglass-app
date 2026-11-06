@@ -3,9 +3,14 @@ import { ConciergeShell } from "../../components/concierge-shell";
 import { getAuthenticatedSterlingReadiness } from "@/lib/continuum/today-sterling/readiness";
 import type { SterlingReadinessReport } from "@/lib/continuum/today-sterling/readiness";
 import Link from "next/link";
-import { recomputeCanonicalToday } from "./actions";
+import {
+  recomputeCanonicalToday,
+  runOneControlledGmailRefreshChunk,
+  runZeroWriteGmailReadinessCheck,
+} from "./actions";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 120;
 export const metadata = {
   title: "Sterling Today readiness",
   robots: { index: false, follow: false, nocache: true, noarchive: true },
@@ -14,10 +19,17 @@ export const metadata = {
 export default async function SterlingTodayReadinessPage({
   searchParams,
 }: {
-  searchParams: Promise<{ recompute?: string }>;
+  searchParams: Promise<{
+    readiness?: string;
+    gmail?: string;
+    indexed?: string;
+    remaining?: string;
+    code?: string;
+    recompute?: string;
+  }>;
 }) {
   const access = await getAuthenticatedSterlingReadiness();
-  const { recompute } = await searchParams;
+  const { readiness, gmail, indexed, remaining, code, recompute } = await searchParams;
   return (
     <ConciergeShell>
       <ConciergeBackLink />
@@ -35,6 +47,30 @@ export default async function SterlingTodayReadinessPage({
           </p>
         ) : <>
           <ReadinessReport report={access.report} />
+          <div className="mt-6 grid gap-4 md:grid-cols-2">
+            <form action={runZeroWriteGmailReadinessCheck} className="rounded-2xl border border-white/10 p-4">
+              <p className="text-[12px] leading-relaxed text-[#a99c90]">
+                Re-read connection, authorization, checkpoint, coverage, and publication metadata. This never contacts Gmail or writes data.
+              </p>
+              {readiness ? <p role="status" className={`mt-3 text-[12px] ${readiness === "completed" ? "text-[#a9bd8e]" : "text-[#d39a8a]"}`}>
+                {readiness === "completed" ? "Zero-write Gmail readiness check completed." : `Readiness check blocked · ${readiness}`}
+              </p> : null}
+              <button type="submit" className="mt-4 rounded-full border border-[#ad9164]/50 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-[#d8c6aa] hover:border-[#ad9164]">
+                Check Gmail readiness
+              </button>
+            </form>
+            <form action={runOneControlledGmailRefreshChunk} className="rounded-2xl border border-white/10 p-4">
+              <p className="text-[12px] leading-relaxed text-[#a99c90]">
+                Run exactly one bounded, lease-protected Gmail page. The recurring kill switch remains off and no retry or second chunk starts automatically.
+              </p>
+              {gmail ? <p role="status" className={`mt-3 text-[12px] ${gmail === "completed" || gmail === "progressed" || gmail === "recovering" ? "text-[#a9bd8e]" : "text-[#d39a8a]"}`}>
+                Gmail chunk · {gmail} · {indexed ?? "0"} indexed · pages remaining {remaining ?? "unknown"}{code ? ` · ${code}` : ""}
+              </p> : null}
+              <button type="submit" className="mt-4 rounded-full border border-[#ad9164]/50 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-[#d8c6aa] hover:border-[#ad9164]">
+                Run one Gmail refresh chunk
+              </button>
+            </form>
+          </div>
           <form action={recomputeCanonicalToday} className="mt-6 rounded-2xl border border-white/10 p-4">
             <p className="text-[12px] leading-relaxed text-[#a99c90]">
               Rebuild canonical Today once from current Preview evidence. This does not ingest Gmail, publish Sterling,

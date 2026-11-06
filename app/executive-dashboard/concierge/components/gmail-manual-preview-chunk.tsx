@@ -37,7 +37,7 @@ function statusText(state: ManualPreviewCatchUpState): string {
         return "Founder authentication is required. Catch-up stopped.";
       }
       if (state.result.blockedReason === "not-beta-recovery-preview") {
-        return "Unavailable outside the isolated Beta Recovery Preview deployment.";
+        return "Unavailable outside an approved isolated founder-controlled Preview deployment.";
       }
       return "Catch-up could not continue safely. Refresh the page before trying again.";
     case "failed":
