@@ -86,7 +86,15 @@ function UnsavedChoices({
   ));
 }
 
-function MorganFounderWorksheet({ thread }: { thread: RealClientThreadReview }) {
+function MorganFounderWorksheet({
+  batch,
+  thread,
+  reviewAction,
+}: {
+  batch: RealClientAssociationBatch;
+  thread: RealClientThreadReview;
+  reviewAction?: (formData: FormData) => Promise<void>;
+}) {
   const chronologyCurrent = Date.parse(thread.latestAt) >= Date.parse(MORGAN_LATEST_FOUNDER_RESPONSE_AT);
   const missingMessages = Math.max(0, MORGAN_PROVIDER_MESSAGES - thread.messageCount);
   return (
@@ -157,6 +165,20 @@ function MorganFounderWorksheet({ thread }: { thread: RealClientThreadReview }) 
         </div>
       </div>
 
+      <section className="mt-5 rounded-xl border border-[#8fb59d]/30 bg-[#8fb59d]/5 p-4" data-association-write-set>
+        <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#8fb59d]">Exact association write set</h4>
+        <p className="mt-2 text-[11px] leading-relaxed text-[#c9b9a9]">Nothing is written until the founder chooses Confirm. The decision writes one evidence-membership row only.</p>
+        <dl className="mt-3 grid gap-2 text-[11px] text-[#a99c90] md:grid-cols-2">
+          <div><dt className="text-[#81766c]">Person evidence</dt><dd className="mt-1 break-all font-mono">{thread.target?.personId ?? "Unresolved"}</dd></div>
+          <div><dt className="text-[#81766c]">Project</dt><dd className="mt-1 break-all font-mono">{thread.target?.projectId ?? "Unresolved"}</dd></div>
+          <div><dt className="text-[#81766c]">Provider source</dt><dd className="mt-1 font-mono">gmail · {thread.threadId}</dd></div>
+          <div><dt className="text-[#81766c]">Status after Confirm</dt><dd className="mt-1">trusted · founder reviewed</dd></div>
+          <div><dt className="text-[#81766c]">Job scope</dt><dd className="mt-1">Project-level association; target Job remains null. Both open Jobs stay separate and incomplete.</dd></div>
+          <div><dt className="text-[#81766c]">C026937</dt><dd className="mt-1">Excluded from canonical project-number provenance; remains an unresolved attachment identifier.</dd></div>
+        </dl>
+        <AssociationDecisionControls batch={batch} thread={thread} reviewAction={reviewAction} />
+      </section>
+
       {!chronologyCurrent ? <p className="mt-4 text-[11px] leading-relaxed text-[#d6a66f]">{missingMessages} verified provider message{missingMessages === 1 ? " is" : "s are"} not yet indexed. <Link href="/executive-dashboard/concierge/gmail" className="underline underline-offset-4">Open bounded Gmail refresh</Link>, then return here to recheck chronology.</p> : null}
     </section>
   );
@@ -198,7 +220,7 @@ export function RealClientAssociationReview({
             <div><dt className="text-[#81766c]">Verified Project evidence</dt><dd className="mt-1 text-[#efe8de]">{projectEvidence(focus, isMorgan)}</dd></div>
           </dl>
           {isMorgan ? <p className="mt-4 text-[11px] leading-relaxed text-[#a99c90]">The latest client communication has a founder response. The confirmed appointment is not presented as outstanding work.</p> : null}
-          {isMorgan && focus.threadId === MORGAN_THREAD_ID ? <MorganFounderWorksheet thread={focus} /> : <section className="mt-5 rounded-xl border border-white/10 p-4"><h3 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Association decision</h3><p className="mt-2 text-[11px] text-[#a99c90]">Saved decision: <strong className="text-[#efe8de]">{focus.target?.currentDecision ?? "None"}</strong></p><AssociationDecisionControls batch={batch} thread={focus} reviewAction={reviewAction} /></section>}
+          {isMorgan && focus.threadId === MORGAN_THREAD_ID ? <MorganFounderWorksheet batch={batch} thread={focus} reviewAction={reviewAction} /> : <section className="mt-5 rounded-xl border border-white/10 p-4"><h3 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Association decision</h3><p className="mt-2 text-[11px] text-[#a99c90]">Saved decision: <strong className="text-[#efe8de]">{focus.target?.currentDecision ?? "None"}</strong></p><AssociationDecisionControls batch={batch} thread={focus} reviewAction={reviewAction} /></section>}
         </> : <p className="mt-5 text-[13px] leading-relaxed text-[#a99c90]">No post-authorization provider thread was discovered. This is missing discoverability, not evidence of no correspondence or no reply.</p>}
 
         <details className="mt-5 rounded-xl border border-white/10 p-4">

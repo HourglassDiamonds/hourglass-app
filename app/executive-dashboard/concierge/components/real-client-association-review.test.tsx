@@ -81,6 +81,36 @@ describe("real-client association review presentation", () => {
     assert.doesNotMatch(html, /value="design" selected/);
   });
 
+  it("shows Morgan's exact project-level association write set without assigning either open Job", () => {
+    const personId = "2cd354da-9c7b-4f71-84c3-4bdf0945dcc4";
+    const projectId = "17ef9d5b-39d2-48bf-85f6-93209a4c4e38";
+    const batch = buildRealClientAssociationBatch({
+      messages: [{
+        messageId: "m1", threadId: "1a15fb0c9b520621", subject: "Justin x Morgan - Marquise",
+        sentAt: "2026-11-05T14:58:46.000Z", indexedAt: "2026-11-06T15:21:33.000Z",
+        direction: "outbound", participantHashes: ["exact-hash"],
+      }],
+      attachments: [{ messageId: "m1", threadId: "1a15fb0c9b520621", filename: "NL-H017-Morgan-C026937-Mod1.jpg" }],
+      people: [{ personId, label: "Morgan Jines", emailHash: "exact-hash", sourceSystem: "concierge-manual" }],
+      projects: [{ projectId, label: "Morgan Jines — Marquise", sourceSystem: "concierge-manual" }],
+      jobs: [
+        { jobId: "f37af8a7-1659-4a83-bdaa-45ae5983604d", projectId, label: "Send Morgan's invoice", state: "open", waitingOn: "founder", sourceSystem: "concierge-manual" },
+        { jobId: "94e2373e-3257-4ada-8592-1c574349e11f", projectId, label: "Ship Morgan's approved marquise", state: "open", waitingOn: "founder", sourceSystem: "concierge-manual" },
+      ],
+      relationships: [{ personId, projectId }],
+      authorizationAt: "2026-11-04T15:00:50.223Z", associationPersistence: "available", nowIso: "2026-11-06T15:22:00.000Z",
+    });
+    const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch, reviewAction: async () => {} }));
+    assert.match(html, /Exact association write set/);
+    assert.match(html, new RegExp(personId));
+    assert.match(html, new RegExp(projectId));
+    assert.match(html, /Project-level association; target Job remains null/);
+    assert.match(html, /C026937[\s\S]*remains an unresolved attachment identifier/);
+    assert.match(html, /name="decision" value="confirm"/);
+    assert.match(html, /name="jobId" value=""/);
+    assert.doesNotMatch(html, /more than one open Job/);
+  });
+
   it("shows one selected client while keeping the rest individually selectable", () => {
     const batch = buildRealClientAssociationBatch({
       messages: [

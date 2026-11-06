@@ -164,7 +164,8 @@ export async function persistFounderAssociationDecision(input: {
       "exact_canonical_email",
       "founder_explicit_linkage",
     ],
-    projectNumbers: [...new Set(facts.projectNumbers)].slice(0, 12),
+    // Attachment identifiers remain review evidence; linkage does not promote them to canonical numbers.
+    projectNumbers: [],
     conflictingProjectNumbers: [],
     attachmentNames: [],
     targetPersonId: personId,

@@ -212,9 +212,7 @@ function buildThread(input: {
     ? "More than one canonical person has an exact participant match."
     : uniqueTargets.size > 1
       ? "The exact person match is linked to more than one current project."
-      : target && openJobs.length > 1
-        ? "The project has more than one open Job; Job ownership remains unresolved."
-        : target && input.reviewedAssociations.some(
+      : target && input.reviewedAssociations.some(
           (row) => row.threadId === newest.threadId && row.status === "trusted" && row.projectId !== target.projectId,
         )
           ? "This provider thread is already trusted by another project."

@@ -78,6 +78,10 @@ revoke all on table public.continuum_project_evidence_associations from public;
 revoke all on table public.continuum_project_evidence_associations from anon;
 revoke all on table public.continuum_project_evidence_associations from authenticated;
 
+revoke all
+on table public.continuum_project_evidence_associations
+from service_role;
+
 grant select, insert, update on table public.continuum_project_evidence_associations to service_role;
 
 -- Rollback, in order:

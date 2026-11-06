@@ -66,8 +66,15 @@ function input(store: FounderAssociationDecisionStore, decision: "confirm" | "re
 describe("founder-reviewed real correspondence persistence", () => {
   it("persists an approved exact linkage and survives recomputation", async () => {
     const fake = fakeStore();
+    let savedProjectNumbers: unknown = null;
+    const insert = fake.store.insert;
+    fake.store.insert = async (row) => {
+      savedProjectNumbers = row.basis.projectNumbers;
+      return insert(row);
+    };
     assert.deepEqual(await persistFounderAssociationDecision(input(fake.store, "confirm", key(null))), { ok: true, status: "trusted" });
     assert.equal(fake.writes(), 1);
+    assert.deepEqual(savedProjectNumbers, []);
     const saved = fake.current()!;
     const reviewed: ReviewedAssociation[] = [{ ...saved }];
     const batch = buildRealClientAssociationBatch({
