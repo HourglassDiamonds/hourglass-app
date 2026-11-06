@@ -28,6 +28,7 @@ import { correlateExactProjectThread } from "@/lib/continuum/gmail/projects";
 import type { CosProjectContext, CosProjectPerson } from "./types";
 
 export const THREAD_ASSOCIATION_VIAS = [
+  "founder_trusted",
   "explicit",
   "thread",
   "person",
@@ -227,7 +228,11 @@ export function projectBySupportedAssociation(
   rows: readonly ContinuumCandidate[],
   projects: ReadonlyMap<string, CosProjectContext>,
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+  trustedProjectThreads?: ReadonlyMap<string, string> | null,
 ): Map<string, SupportedThreadProject> {
+  if (trustedProjectThreads && trustedProjectThreads.size > 0) {
+    return computeProjectBySupportedAssociation(rows, projects, threadContext, trustedProjectThreads);
+  }
   const threadKey = threadContext ?? NO_THREAD_CONTEXT;
   let byProjects = associationCache.get(rows);
   if (!byProjects) {
@@ -250,11 +255,18 @@ function computeProjectBySupportedAssociation(
   rows: readonly ContinuumCandidate[],
   projects: ReadonlyMap<string, CosProjectContext>,
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext> | null,
+  trustedProjectThreads?: ReadonlyMap<string, string> | null,
 ): Map<string, SupportedThreadProject> {
   const map = new Map<string, SupportedThreadProject>();
+  for (const [threadId, projectId] of trustedProjectThreads ?? []) {
+    if (!projects.has(projectId)) continue;
+    const coerced = coerceGmailThreadId(threadId);
+    if (coerced.status !== "canonical") continue;
+    map.set(coerced.value, { projectId, via: "founder_trusted" });
+  }
   const explicit = projectByThreadFromCandidates(rows);
   for (const [threadId, projectId] of explicit) {
-    map.set(threadId, { projectId, via: "explicit" });
+    if (!map.has(threadId)) map.set(threadId, { projectId, via: "explicit" });
   }
 
   const threadPointers = [...projects.values()].map((project) => ({

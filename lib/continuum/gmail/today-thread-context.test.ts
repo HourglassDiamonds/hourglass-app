@@ -200,6 +200,36 @@ describe("Today live Gmail rebuild batch", () => {
     assert.deepEqual(result.get(timThread)?.attachmentFilenames, ["Tim-Jenn-C025964-order.pdf"]);
   });
 
+  it("loads an exact founder-trusted Project thread without a Candidate and preserves provider ids", async () => {
+    const threadId = "1a15fb0c9b520621";
+    const messageId = "1a15fb0c9b520622";
+    const result = await loadIndexedTodayThreadContext([], {
+      client: pagedClient([{
+        thread_id: threadId,
+        message_id: messageId,
+        sent_at: "2026-11-05T14:58:46.000Z",
+        direction: "outbound",
+        subject: "Morgan marquise",
+        label_ids: ["SENT"],
+        from_email_hash: "f".repeat(64),
+        to_email_hashes: ["a".repeat(64)],
+        has_attachments: false,
+      }], []) as never,
+      additionalThreadIds: [threadId],
+    });
+    assert.deepEqual([...result.keys()], [threadId]);
+    assert.equal(result.get(threadId)?.messages?.[0]?.messageId, messageId);
+    assert.equal(result.get(threadId)?.messages?.[0]?.direction, "outbound");
+  });
+
+  it("does not manufacture context for a trusted association whose indexed source is stale or missing", async () => {
+    const result = await loadIndexedTodayThreadContext([], {
+      client: pagedClient([], []) as never,
+      additionalThreadIds: ["1a15fb0c9b520621"],
+    });
+    assert.equal(result.size, 0);
+  });
+
   it("loads one credential context and reads each stable thread once", async () => {
     const base = new Map<string, TodayGmailThreadContext>([
       [

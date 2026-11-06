@@ -85,6 +85,7 @@ export type ComposeCosOperatingLoopInput = {
   newMutationId?: () => string;
   masterSprint?: CosOperatingLoopView["masterSprint"];
   threadContext?: ReadonlyMap<string, TodayGmailThreadContext>;
+  trustedProjectThreads?: ReadonlyMap<string, string>;
   vendorDirectory?: readonly string[];
   evidenceTexts?: readonly string[];
   knownPeople?: readonly TodayKnownPerson[];
@@ -187,6 +188,7 @@ export function composeCosOperatingLoop(
     candidates,
     projects,
     input.threadContext,
+    input.trustedProjectThreads,
   );
   const associatedGmailThreads = associatedGmailThreadsByProject(
     association,

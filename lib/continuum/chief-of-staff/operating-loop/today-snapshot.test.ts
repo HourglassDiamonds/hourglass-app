@@ -348,6 +348,7 @@ describe("persisted Today snapshot", () => {
     assert.match(watermark, /created_at/);
     assert.match(watermark, /continuum_project_jobs/);
     assert.match(watermark, /continuum_project_profiles/);
+    assert.match(watermark, /continuum_project_evidence_associations/);
     assert.match(watermark, /updated_at/);
     assert.match(review, /reviewedAt/);
   });

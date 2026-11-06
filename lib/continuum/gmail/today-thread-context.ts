@@ -235,11 +235,18 @@ export async function loadIndexedTodayThreadContext(
   candidates: readonly ContinuumCandidate[],
   options: {
     client?: NonNullable<ReturnType<typeof getSupabaseAdmin>>;
+    additionalThreadIds?: readonly string[];
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const ids = collectExactGmailIds(candidates);
+  const exactAdditionalThreadIds = [...new Set(
+    (options.additionalThreadIds ?? [])
+      .map((value) => value.trim())
+      .filter((value) => /^[0-9a-fA-F]{10,64}$/.test(value)),
+  )];
+  const requestedThreadIds = [...new Set([...ids.threadIds, ...exactAdditionalThreadIds])];
   const out = new Map<string, TodayGmailThreadContext>();
-  if (ids.threadIds.length === 0 && ids.messageIds.length === 0) return out;
+  if (requestedThreadIds.length === 0 && ids.messageIds.length === 0) return out;
   const client = options.client ?? getSupabaseAdmin();
   if (!client) return out;
 
@@ -266,7 +273,7 @@ export async function loadIndexedTodayThreadContext(
     }
   };
 
-  await loadThreads(ids.threadIds);
+  await loadThreads(requestedThreadIds);
 
   const seenMessageIds = new Set(
     [...out.values()].flatMap((thread) =>

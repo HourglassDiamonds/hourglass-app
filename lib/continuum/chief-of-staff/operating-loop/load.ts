@@ -30,6 +30,7 @@ import {
   loadIndexedTodayThreadContext,
   loadLiveTodayOperationalFacts,
 } from "@/lib/continuum/gmail/today-thread-context";
+import { loadTrustedProjectThreadAssociations } from "@/lib/continuum/project-evidence/today-associations";
 import {
   partitionIndexedTodayLiveThreadIds,
   planTodayLiveThreads,
@@ -237,7 +238,16 @@ async function rebuildTodayLoop(
     client,
     listed,
   );
-  const indexedContext = await loadIndexedTodayThreadContext(candidates);
+  const trustedProjectThreads = client
+    ? await loadTrustedProjectThreadAssociations(
+        client,
+        new Set(summaries.map((summary) => summary.projectId)),
+      )
+    : new Map<string, string>();
+  const indexedContext = await loadIndexedTodayThreadContext(candidates, {
+    ...(client ? { client } : {}),
+    additionalThreadIds: [...trustedProjectThreads.keys()],
+  });
   const founderCorrections = [
     ...(client ? await loadFounderCorrectionEvents(client) : []),
     ...candidateDispositionCorrectionEvents(candidates),
@@ -250,6 +260,7 @@ async function rebuildTodayLoop(
     nowIso: now.toISOString(),
     masterSprint,
     threadContext: indexedContext,
+    trustedProjectThreads,
     knownPeople,
     heldJobIds: new Set(activeHolds.map((row) => row.entityId)),
   };
