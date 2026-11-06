@@ -132,7 +132,7 @@ function MorganFounderWorksheet({ thread }: { thread: RealClientThreadReview }) 
       </div>
 
       <div className="mt-4 rounded-xl border border-white/10 p-4">
-        <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Tomorrow’s review-only actions</h4>
+        <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">November 6 review-only actions</h4>
         <div className="mt-3 grid gap-4 md:grid-cols-2">
           <fieldset>
             <legend className="text-[11px] text-[#efe8de]">Send Morgan’s invoice · November 6</legend>

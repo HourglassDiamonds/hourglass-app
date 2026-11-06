@@ -65,6 +65,8 @@ describe("real-client association review presentation", () => {
     assert.match(html, /Current lifecycle: Design \/ pre-production/);
     assert.match(html, /Planned — not sent/);
     assert.match(html, /Planned — not shipped/);
+    assert.match(html, /November 6 review-only actions/);
+    assert.doesNotMatch(html, /Tomorrow’s review-only actions/);
     assert.match(html, /Propose In Production only after founder-confirmed shipment or handoff evidence/);
     assert.match(html, /Open bounded Gmail refresh/);
     assert.match(html, /Create Morgan Jines as a real Person/);
