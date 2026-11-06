@@ -1,7 +1,3 @@
-import {
-  CUSTOM_LIFECYCLE_STAGES,
-  CUSTOM_LIFECYCLE_STAGE_LABELS,
-} from "@/lib/continuum/client-memory/project-lifecycle";
 import type {
   RealClientAssociationBatch,
   RealClientThreadReview,
@@ -71,21 +67,6 @@ function AssociationDecisionControls({
   );
 }
 
-function UnsavedChoices({
-  name,
-  choices,
-}: {
-  name: string;
-  choices: readonly (readonly [string, string])[];
-}) {
-  return choices.map(([value, label]) => (
-    <label key={value} className="mt-2 flex gap-2 text-[11px] text-[#c9b9a9]">
-      <input type="radio" name={name} value={value} />
-      <span>{label}</span>
-    </label>
-  ));
-}
-
 function MorganFounderWorksheet({
   batch,
   thread,
@@ -101,9 +82,9 @@ function MorganFounderWorksheet({
     <section className="mt-5 rounded-2xl border border-[#ad9164]/30 bg-[#ad9164]/5 p-4 md:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-[11px] uppercase tracking-[0.16em] text-[#ad9164]">Founder review</h3>
-        <span className="rounded-full border border-[#d6a66f]/30 px-3 py-1 text-[10px] text-[#d6a66f]">Unsaved worksheet</span>
+        <span className="rounded-full border border-[#8fb59d]/30 px-3 py-1 text-[10px] text-[#8fb59d]">{thread.target ? "Canonical records persisted" : "Canonical target unresolved"}</span>
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-[#a99c90]">Selections below are not persisted and reset when you leave. Saved association decision: <strong className="text-[#efe8de]">{thread.target?.currentDecision ?? "None"}</strong>.</p>
+      <p className="mt-2 text-[11px] leading-relaxed text-[#a99c90]">{thread.target ? "Morgan’s Person, Project, relationship, lifecycle, and two actions already exist. Confirming correspondence does not create or modify any of them. " : "No exact canonical target is currently supported. "}Saved association decision: <strong className="text-[#efe8de]">{thread.target?.currentDecision ?? "None"}</strong>.</p>
 
       <div className="mt-4 rounded-xl border border-[#8fb59d]/25 bg-[#8fb59d]/5 p-4">
         <p className="text-[10px] uppercase tracking-[0.14em] text-[#8fb59d]">Founder-supplied evidence · November 5</p>
@@ -116,54 +97,25 @@ function MorganFounderWorksheet({
         <p className="mt-2 text-[10px] text-[#d6a66f]">These are founder statements, distinct from Gmail provider evidence. The invoice is not marked sent and the stone is not marked shipped.</p>
       </div>
 
-      <div className="mt-4 grid gap-4 md:grid-cols-2">
-        <fieldset className="rounded-lg border border-white/10 p-3">
-          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">Person</legend>
-          <UnsavedChoices name="morgan-person-decision" choices={[["create", "Create Morgan Jines as a real Person"], ["link", "Link the exact participant to an existing non-fixture Person"], ["unresolved", "Leave Person unresolved"]]} />
-        </fieldset>
-        <fieldset className="rounded-lg border border-white/10 p-3">
-          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">Project</legend>
-          <UnsavedChoices name="morgan-project-decision" choices={[["create", "Create the Marquise/custom engagement Project"], ["link", "Link an existing non-fixture Project"], ["unresolved", "Leave Project unresolved"]]} />
-        </fieldset>
-        <fieldset className="rounded-lg border border-white/10 p-3">
-          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">Lifecycle</legend>
-          <p className="text-[11px] text-[#8fb59d]">Founder evidence supports Design / pre-production.</p>
-          <select name="morgan-project-lifecycle" defaultValue="" className="mt-2 w-full rounded-lg border border-white/10 bg-[#17130f] p-2 text-[11px] text-[#c9b9a9]">
-            <option value="" disabled>Approve lifecycle — none saved</option>
-            {CUSTOM_LIFECYCLE_STAGES.map((stage) => <option key={stage} value={stage}>{CUSTOM_LIFECYCLE_STAGE_LABELS[stage]}</option>)}
-          </select>
-        </fieldset>
-        <fieldset className="rounded-lg border border-white/10 p-3">
-          <legend className="px-1 text-[10px] uppercase tracking-[0.12em] text-[#81766c]">C026937</legend>
-          <UnsavedChoices name="morgan-cad-number-decision" choices={[["confirm", "Confirm as the CAD job number"], ["decline", "Keep only as an attachment identifier"], ["unresolved", "Leave its canonical role unresolved"]]} />
-        </fieldset>
-      </div>
-
-      <div className="mt-4 rounded-xl border border-white/10 p-4">
-        <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">November 6 review-only actions</h4>
-        <div className="mt-3 grid gap-4 md:grid-cols-2">
-          <fieldset>
-            <legend className="text-[11px] text-[#efe8de]">Send Morgan’s invoice · November 6</legend>
-            <p className="mt-1 text-[10px] text-[#d6a66f]">Planned — not sent</p>
-            <UnsavedChoices name="morgan-invoice-action" choices={[["approve", "Approve as a founder action"], ["unresolved", "Leave unresolved"]]} />
-          </fieldset>
-          <fieldset>
-            <legend className="text-[11px] text-[#efe8de]">Ship approved marquise to Niurka · November 6</legend>
-            <p className="mt-1 text-[10px] text-[#d6a66f]">Planned — not shipped; grouped with James Bowron and Sarah materials</p>
-            <UnsavedChoices name="morgan-shipping-action" choices={[["approve", "Approve as a founder action"], ["unresolved", "Leave unresolved"]]} />
-          </fieldset>
-        </div>
-        <p className="mt-4 rounded-lg border border-[#d6a66f]/25 p-3 text-[10px] leading-relaxed text-[#d6a66f]">Lifecycle gate: remain in Design / pre-production. Propose In Production only after founder-confirmed shipment or handoff evidence is recorded.</p>
-      </div>
-
-      <div className="mt-5 rounded-xl border border-white/10 bg-black/10 p-4">
-        <p className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Next action</p>
-        <p className="mt-2 text-[11px] leading-relaxed text-[#a99c90]">Create or link the real Person first, then create or link the Marquise Project with the founder-confirmed Design lifecycle. The review-only actions can be approved only after that canonical target exists.</p>
-        <div className="mt-3 flex flex-wrap gap-3">
-          <Link href="/executive-dashboard/concierge/client/new" className="rounded-full border border-[#ad9164]/50 px-4 py-2 text-[10px] uppercase tracking-[0.12em] text-[#efe8de]">Add Morgan as client</Link>
-          <Link href="/executive-dashboard/concierge" className="rounded-full border border-white/15 px-4 py-2 text-[10px] uppercase tracking-[0.12em] text-[#c9b9a9]">Open Project intake</Link>
-        </div>
-      </div>
+      <section className="mt-4 rounded-xl border border-white/10 p-4" aria-label="Persisted Morgan canonical records">
+        <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Persisted canonical records · read only</h4>
+        {thread.target ? <>
+          <dl className="mt-3 grid gap-3 text-[11px] text-[#a99c90] md:grid-cols-2">
+            <div><dt className="text-[#81766c]">Person</dt><dd className="mt-1 text-[#efe8de]">{thread.target.personLabel}</dd><dd className="break-all font-mono text-[10px]">{thread.target.personId}</dd></div>
+            <div><dt className="text-[#81766c]">Project</dt><dd className="mt-1 text-[#efe8de]">{thread.target.projectLabel}</dd><dd className="break-all font-mono text-[10px]">{thread.target.projectId}</dd></div>
+            <div><dt className="text-[#81766c]">Lifecycle</dt><dd className="mt-1 text-[#8fb59d]">{thread.target.lifecycleStage === "design" ? "Design / pre-production" : thread.target.lifecycleStage ?? "Not set"}</dd></div>
+            <div><dt className="text-[#81766c]">CAD attachment identifier</dt><dd className="mt-1">C026937 · unresolved; not a canonical Project or Job number</dd></div>
+          </dl>
+          <div className="mt-4 grid gap-3 md:grid-cols-2">
+            {thread.target.openJobs.map((job) => <article key={job.jobId} className="rounded-lg border border-white/10 p-3 text-[11px]">
+              <p className="text-[#efe8de]">{job.label}</p>
+              <p className="mt-1 text-[#d6a66f]">{job.state === "open" ? "Incomplete" : job.state} · waiting on {job.waitingOn}</p>
+              <p className="mt-1 break-all font-mono text-[10px] text-[#81766c]">{job.jobId}</p>
+            </article>)}
+          </div>
+        </> : <p className="mt-3 text-[11px] text-[#d39a8a]">The validated canonical target is unavailable; association confirmation remains closed.</p>}
+        <p className="mt-4 rounded-lg border border-[#d6a66f]/25 p-3 text-[10px] leading-relaxed text-[#d6a66f]">Lifecycle remains Design / pre-production. In Production stays blocked until founder-confirmed shipment or handoff evidence is recorded.</p>
+      </section>
 
       <section className="mt-5 rounded-xl border border-[#8fb59d]/30 bg-[#8fb59d]/5 p-4" data-association-write-set>
         <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#8fb59d]">Exact association write set</h4>

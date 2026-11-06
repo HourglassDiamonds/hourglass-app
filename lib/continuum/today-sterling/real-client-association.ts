@@ -40,6 +40,7 @@ export type AssociationProject = {
   projectId: string;
   label: string;
   sourceSystem: string;
+  lifecycleStage?: string | null;
 };
 
 export type AssociationJob = {
@@ -82,6 +83,13 @@ export type RealClientThreadReview = {
     projectLabel: string;
     jobId: string | null;
     jobLabel: string | null;
+    lifecycleStage: string | null;
+    openJobs: readonly {
+      jobId: string;
+      label: string;
+      state: string;
+      waitingOn: string;
+    }[];
     reviewKey: string;
     currentDecision: "trusted" | "rejected" | null;
   } | null;
@@ -195,6 +203,13 @@ function buildThread(input: {
         projectLabel: sole.project.label,
         jobId: openJobs.length === 1 ? openJobs[0].jobId : null,
         jobLabel: openJobs.length === 1 ? openJobs[0].label : null,
+        lifecycleStage: sole.project.lifecycleStage ?? null,
+        openJobs: openJobs.map((job) => ({
+          jobId: job.jobId,
+          label: job.label,
+          state: job.state,
+          waitingOn: job.waitingOn,
+        })),
         reviewKey: founderAssociationReviewKey({
           threadId: newest.threadId,
           personId: sole.person.personId,

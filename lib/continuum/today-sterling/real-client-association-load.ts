@@ -83,17 +83,18 @@ export async function loadRealClientAssociationBatch(
   client: SupabaseClient,
   now = new Date(),
 ): Promise<RealClientAssociationBatch> {
-  const [messages, attachments, peopleResult, projectsResult, jobsResult, relationshipsResult, connectionResult, associationResult] = await Promise.all([
+  const [messages, attachments, peopleResult, projectsResult, lifecycleResult, jobsResult, relationshipsResult, connectionResult, associationResult] = await Promise.all([
     loadAllMessages(client),
     loadAllAttachments(client),
     client.from("continuum_person_profiles").select("person_id,display_name,email,source_system").limit(500),
     client.from("continuum_project_profiles").select("project_id,display_title,source_system").limit(500),
+    client.from("continuum_project_lifecycle_states").select("project_id,stage").limit(500),
     client.from("continuum_project_jobs").select("job_id,project_id,subject,state,waiting_on_actor,source_system").limit(1000),
     client.from("continuum_relationships").select("from_entity_id,to_entity_id,kind,status").eq("kind", "client-project").eq("status", "active").limit(1000),
     client.from("continuum_gmail_connections").select("connected_at").eq("mailbox_slot", "founder-v1").limit(1).maybeSingle(),
     client.from(PROJECT_EVIDENCE_TABLE).select("id,project_id,source_identity,status,updated_at").eq("source_type", "gmail").in("status", ["trusted", "rejected"]).limit(1000),
   ]);
-  for (const result of [peopleResult, projectsResult, jobsResult, relationshipsResult, connectionResult]) {
+  for (const result of [peopleResult, projectsResult, lifecycleResult, jobsResult, relationshipsResult, connectionResult]) {
     if (result.error) throw result.error;
   }
   const associationPersistence = associationResult.error
@@ -105,10 +106,14 @@ export async function loadRealClientAssociationBatch(
     emailHash: hashEmail(row.email == null ? null : String(row.email)),
     sourceSystem: String(row.source_system ?? ""),
   }));
+  const lifecycleByProject = new Map(
+    (lifecycleResult.data ?? []).map((row) => [String(row.project_id), row.stage == null ? null : String(row.stage)]),
+  );
   const projects: AssociationProject[] = (projectsResult.data ?? []).map((row) => ({
     projectId: String(row.project_id),
     label: String(row.display_title ?? "Project"),
     sourceSystem: String(row.source_system ?? ""),
+    lifecycleStage: lifecycleByProject.get(String(row.project_id)) ?? null,
   }));
   const jobs: AssociationJob[] = (jobsResult.data ?? []).map((row) => ({
     jobId: String(row.job_id),

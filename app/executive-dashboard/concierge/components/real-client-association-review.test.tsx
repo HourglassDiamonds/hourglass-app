@@ -47,7 +47,7 @@ describe("real-client association review presentation", () => {
     assert.match(html, /Or leave unresolved — no write/);
   });
 
-  it("renders Morgan's verified response state and an unselected founder decision worksheet", () => {
+  it("renders Morgan's verified response state without obsolete creation worksheet controls", () => {
     const batch = buildRealClientAssociationBatch({
       messages: [{
         messageId: "m1", threadId: "1a15fb0c9b520621", subject: "Justin x Morgan - Marquise",
@@ -63,22 +63,12 @@ describe("real-client association review presentation", () => {
     assert.match(html, /Founder-supplied evidence · November 5/);
     assert.match(html, /Morgan approved his marquise center stone/);
     assert.match(html, /Current lifecycle: Design \/ pre-production/);
-    assert.match(html, /Planned — not sent/);
-    assert.match(html, /Planned — not shipped/);
-    assert.match(html, /November 6 review-only actions/);
-    assert.doesNotMatch(html, /Tomorrow’s review-only actions/);
-    assert.match(html, /Propose In Production only after founder-confirmed shipment or handoff evidence/);
+    assert.match(html, /In Production stays blocked until founder-confirmed shipment or handoff evidence/);
     assert.match(html, /Open bounded Gmail refresh/);
-    assert.match(html, /Create Morgan Jines as a real Person/);
-    assert.match(html, /Create the Marquise\/custom engagement Project/);
-    assert.match(html, /Approve lifecycle — none saved/);
-    assert.match(html, /Confirm as the CAD job number/);
-    assert.match(html, /Unsaved worksheet/);
     assert.match(html, /Saved association decision: <strong[^>]*>None/);
-    assert.doesNotMatch(html, /name="morgan-person-decision"[^>]*checked/);
-    assert.doesNotMatch(html, /name="morgan-project-decision"[^>]*checked/);
-    assert.doesNotMatch(html, /name="morgan-cad-number-decision"[^>]*checked/);
-    assert.doesNotMatch(html, /value="design" selected/);
+    assert.doesNotMatch(html, /Create Morgan Jines as a real Person/);
+    assert.doesNotMatch(html, /Create the Marquise\/custom engagement Project/);
+    assert.doesNotMatch(html, /name="morgan-/);
   });
 
   it("shows Morgan's exact project-level association write set without assigning either open Job", () => {
@@ -92,7 +82,7 @@ describe("real-client association review presentation", () => {
       }],
       attachments: [{ messageId: "m1", threadId: "1a15fb0c9b520621", filename: "NL-H017-Morgan-C026937-Mod1.jpg" }],
       people: [{ personId, label: "Morgan Jines", emailHash: "exact-hash", sourceSystem: "concierge-manual" }],
-      projects: [{ projectId, label: "Morgan Jines — Marquise", sourceSystem: "concierge-manual" }],
+      projects: [{ projectId, label: "Morgan Jines — Marquise", sourceSystem: "concierge-manual", lifecycleStage: "design" }],
       jobs: [
         { jobId: "f37af8a7-1659-4a83-bdaa-45ae5983604d", projectId, label: "Send Morgan's invoice", state: "open", waitingOn: "founder", sourceSystem: "concierge-manual" },
         { jobId: "94e2373e-3257-4ada-8592-1c574349e11f", projectId, label: "Ship Morgan's approved marquise", state: "open", waitingOn: "founder", sourceSystem: "concierge-manual" },
@@ -102,11 +92,19 @@ describe("real-client association review presentation", () => {
     });
     const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch, reviewAction: async () => {} }));
     assert.match(html, /Exact association write set/);
+    assert.match(html, /Persisted canonical records · read only/);
     assert.match(html, new RegExp(personId));
     assert.match(html, new RegExp(projectId));
+    assert.match(html, /Design \/ pre-production/);
+    assert.match(html, /f37af8a7-1659-4a83-bdaa-45ae5983604d/);
+    assert.match(html, /94e2373e-3257-4ada-8592-1c574349e11f/);
+    assert.match(html, /Incomplete · waiting on founder/);
     assert.match(html, /Project-level association; target Job remains null/);
     assert.match(html, /C026937[\s\S]*remains an unresolved attachment identifier/);
     assert.match(html, /name="decision" value="confirm"/);
+    assert.doesNotMatch(html, /name="morgan-/);
+    assert.doesNotMatch(html, /<button[^>]*disabled[^>]*>confirm<\/button>/);
+    assert.doesNotMatch(html, /Add Morgan as client|Open Project intake/);
     assert.match(html, /name="jobId" value=""/);
     assert.doesNotMatch(html, /more than one open Job/);
   });
