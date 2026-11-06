@@ -139,7 +139,29 @@ describe("real-client association review presentation", () => {
     assert.match(html, /Founder decision packet/);
     assert.match(html, /Only unresolved founder decisions/);
     assert.match(html, /no email-reply obligation is supported/);
-    assert.match(html, /only existing matching canonical record is an excluded Sterling acceptance fixture/);
+    assert.match(html, /this exact real Zane Kennedy wedding-band workflow is In Production/);
+    assert.match(html, /zanemkennedy88@gmail\.com/);
+    assert.match(html, /Jobs: none/);
+    assert.match(html, /not confirmed that the call occurred/);
+    assert.doesNotMatch(html, /name="decision"/);
+  });
+
+  it("renders Pennock as delivered and closed without reviving shipping or mixing the Tim/Jenn thread", () => {
+    const batch = buildRealClientAssociationBatch({
+      messages: [
+        { messageId: "p1", threadId: "1a08d1c1443a8ede", subject: "HGD- J.Pennock-C025519-RN08286", sentAt: "2026-09-24T21:56:22.000Z", indexedAt: "2026-11-05T13:39:15.630Z", direction: "inbound", participantHashes: [] },
+        { messageId: "p2", threadId: "1a10c5b8e4a52db7", subject: "HGD - Tim/Jenn C025964 & J. Pennock C025519 status", sentAt: "2026-10-05T18:47:53.000Z", indexedAt: "2026-11-05T13:39:14.130Z", direction: "inbound", participantHashes: [] },
+      ],
+      people: [], projects: [], jobs: [], relationships: [],
+      authorizationAt: "2026-11-04T15:00:50.223Z", associationPersistence: "available", nowIso: "2026-11-06T18:00:00.000Z",
+    });
+    const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch, selectedKey: "pennock" }));
+    assert.match(html, /John Pennock.*pennock3@gmail\.com/);
+    assert.match(html, /delivered and the Project is closed/);
+    assert.match(html, /lifecycle is completed/);
+    assert.match(html, /Jobs: none/);
+    assert.match(html, /do not exclusively trust mixed thread 1a10c5b8e4a52db7/);
+    assert.doesNotMatch(html, /Create tracking|new shipping action/);
     assert.doesNotMatch(html, /name="decision"/);
   });
 });

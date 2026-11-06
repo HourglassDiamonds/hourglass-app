@@ -105,9 +105,17 @@ describe("real-client association review batch", () => {
     const pennock = result.reviews.find((row) => row.key === "pennock")!;
     assert.equal(zane.founderPacket?.primaryThreadId, "1a1212396a8ac111");
     assert.match(zane.founderPacket?.ownershipAssessment ?? "", /founder-answered/);
+    assert.match(zane.founderPacket?.founderSuppliedContext.join(" ") ?? "", /exact real Zane Kennedy.*In Production/);
+    assert.match(zane.founderPacket?.proposedChangesAfterApproval.join(" ") ?? "", /zanemkennedy88@gmail\.com/);
+    assert.match(zane.founderPacket?.proposedChangesAfterApproval.join(" ") ?? "", /Jobs: none/);
     assert.match(audrey.founderPacket?.safeguards[0] ?? "", /not infer Audrey's identity/);
     assert.deepEqual(pennock.founderPacket?.supportingThreadIds, ["1a10c5b8e4a52db7"]);
     assert.match(pennock.founderPacket?.unresolvedDecisions.join(" ") ?? "", /separate from JP/);
-    assert.match(pennock.founderPacket?.safeguards[0] ?? "", /Do not duplicate shipping work/);
+    assert.match(pennock.founderPacket?.founderSuppliedContext.join(" ") ?? "", /delivered.*closed/);
+    assert.match(pennock.founderPacket?.verifiedEvidence.join(" ") ?? "", /C025519.*CAD\/design identifier/);
+    assert.match(pennock.founderPacket?.verifiedEvidence.join(" ") ?? "", /RN08286.*workshop job identifier/);
+    assert.match(pennock.founderPacket?.proposedChangesAfterApproval.join(" ") ?? "", /pennock3@gmail\.com/);
+    assert.match(pennock.founderPacket?.proposedChangesAfterApproval.join(" ") ?? "", /Jobs: none/);
+    assert.match(pennock.founderPacket?.safeguards[0] ?? "", /keep J\. Pennock separate from JP/);
   });
 });

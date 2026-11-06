@@ -170,23 +170,26 @@ function founderPacketFor(
     supportingThreadIds: [],
     verifiedEvidence: [
       "Six indexed messages in the direct Zane wedding-band thread.",
+      "The provider participant is Zane Kennedy at zanemkennedy88@gmail.com; no non-fixture canonical Person or Project currently uses that identity.",
       "Latest client inbound: October 13 at 16:56:38 UTC; latest founder outbound: October 13 at 17:02:40 UTC.",
       "The founder replied after Zane's latest indexed message, so no email-reply obligation is supported.",
     ],
     founderSuppliedContext: [
-      "Zane was previously reported as In Production. The only existing matching canonical record is an excluded Sterling acceptance fixture, so that lifecycle cannot be reused as proof.",
+      "Founder-confirmed operational fact · November 6: this exact real Zane Kennedy wedding-band workflow is In Production.",
+      "The founder's October 13 message promised a phone call, but the founder has not confirmed that the call occurred.",
     ],
-    ownershipAssessment: "Correspondence is founder-answered. Current production/vendor ownership is not established by the indexed thread chronology.",
+    ownershipAssessment: "Correspondence is founder-answered. The Project is in Production by founder authority; no email-reply or completed-call claim is supported.",
     unresolvedDecisions: [
-      "Confirm the exact real Zane Kennedy Person and wedding-band Project identities.",
-      "Confirm that the founder-supplied In Production status belongs to this exact person/project and remains current.",
-      "Confirm whether any production checkpoint is genuinely outstanding; do not create a reply action.",
+      "Approve or reject the exact canonical write set for Zane Kennedy and his wedding-band Project.",
+      "Approve or reject trusting provider thread 1a1212396a8ac111 exclusively to that Project.",
     ],
     proposedChangesAfterApproval: [
-      "Create or link one non-fixture Person and one wedding-band Project, then record the confirmed lifecycle.",
-      "Trust thread 1a1212396a8ac111 for that Project only.",
+      "Person: Zane Kennedy · client · zanemkennedy88@gmail.com · source concierge-manual.",
+      "Project: Zane Kennedy — Wedding Band · custom_new_jewelry · internal-only · active client-project relationship · lifecycle production.",
+      "Jobs: none. Do not create a reply task or mark the promised call complete.",
+      "Trusted Gmail association: thread 1a1212396a8ac111 → the approved Zane Project only; target Job null.",
     ],
-    safeguards: ["Do not reuse the synthetic Zane fixture or infer a canonical identifier from an attachment or subject."],
+    safeguards: ["Exclude the synthetic Zane fixture. Founder confirmation supplies lifecycle truth; provider chronology supplies response truth, not proof that the call occurred."],
   };
   if (key === "audrey" && available.has("1a0d00fedde6906a")) return {
     primaryThreadId: "1a0d00fedde6906a",
@@ -215,23 +218,28 @@ function founderPacketFor(
     verifiedEvidence: [
       "Four indexed messages in the dedicated vendor thread for J. Pennock / C025519 / RN08286.",
       "The dedicated thread's latest message is vendor inbound on September 24 at 21:56:22 UTC.",
+      "Live provider evidence resolves J. Pennock to John Pennock at pennock3@gmail.com; direct client thread 19fdca18f516310d discusses the sapphire ring, and QuickBooks records show paid invoices 1211 and 1232 for the same client.",
+      "C025519 is evidenced as Vlora's CAD/design identifier. RN08286 is evidenced as Vlora's workshop job identifier. Neither is a canonical Person identity or Continuum Project number.",
       "A separate two-message status thread mixes Tim/Jenn C025964 with J. Pennock C025519; it is not safe as an exclusive Pennock association.",
     ],
     founderSuppliedContext: [
-      "The founder reports a paid sapphire and shipment history. Indexed metadata does not establish whether the item was shipped only or actually received.",
+      "Founder-confirmed operational fact · November 6: John Pennock's sapphire/platinum ring was delivered and the Project is closed.",
+      "Historical production and shipment evidence remains provenance only; it does not create a new shipping, delivery, or production obligation.",
     ],
-    ownershipAssessment: "Shipping ownership remains unresolved. No new shipping action is safe until shipped-versus-received is confirmed.",
+    ownershipAssessment: "No active shipping, delivery, production, or client-reply obligation remains. The supported custom-jewelry lifecycle is completed.",
     unresolvedDecisions: [
-      "Confirm J. Pennock's exact real Person and Project identities, kept separate from JP.",
-      "Confirm whether the shipment was sent, received, or neither.",
-      "Confirm whether the dedicated thread may be trusted; leave the mixed Tim/Jenn thread unresolved unless message-level evidence is explicitly scoped.",
+      "Approve or reject the exact canonical write set for John Pennock and the sapphire/platinum ring Project, kept separate from JP.",
+      "Choose whether to index the verified direct client thread before association approval; the currently indexed dedicated vendor thread does not contain John's canonical email participant.",
     ],
     proposedChangesAfterApproval: [
-      "Create or link the approved non-fixture Person and Project.",
-      "Trust the dedicated thread only; create tracking/receipt work only if the founder confirms it remains incomplete.",
+      "Person: John Pennock · client · pennock3@gmail.com · source concierge-manual. Preserve the provider-stated alias John Harold as provenance, not as a second Person.",
+      "Project: John Pennock — Sapphire / Platinum Ring · custom_new_jewelry · internal-only · active client-project relationship · lifecycle completed.",
+      "Jobs: none. Do not create or revive shipping, delivery, production, or reply work.",
+      "Association after indexed participant validation: direct client thread 19fdca18f516310d → the approved Pennock Project only; target Job null.",
+      "Keep vendor history threads 19fd370bc47c5e1f and 1a08d1c1443a8ede as supporting provenance; do not exclusively trust mixed thread 1a10c5b8e4a52db7.",
     ],
     safeguards: [
-      "Do not duplicate shipping work, merge J. Pennock with JP, or treat C025519/RN08286 as identity proof.",
+      "Exclude the synthetic Pennock fixture, keep J. Pennock separate from JP, and never use C025519 or RN08286 as Person identity proof or a Continuum Project number.",
     ],
   };
   return null;
