@@ -7,7 +7,7 @@ import { loadRealClientAssociationBatch } from "@/lib/continuum/today-sterling/r
 import { ConciergeBackLink } from "../../components/concierge-back-link";
 import { ConciergeShell } from "../../components/concierge-shell";
 import { RealClientAssociationReview } from "../../components/real-client-association-review";
-import { reviewFounderCorrespondenceAssociation } from "./actions";
+import { indexPennockDirectThread, reviewFounderCorrespondenceAssociation } from "./actions";
 
 export const dynamic = "force-dynamic";
 export const metadata = {
@@ -18,7 +18,7 @@ export const metadata = {
 export default async function RealClientAssociationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ client?: string | string[] }>;
+  searchParams: Promise<{ client?: string | string[]; threadIndex?: string | string[] }>;
 }) {
   const [params, jar] = await Promise.all([searchParams, cookies()]);
   const requestedClient = params.client;
@@ -36,7 +36,8 @@ export default async function RealClientAssociationsPage({
         <p className="mt-3 max-w-3xl text-[14px] leading-relaxed text-[#a99c90]">
           Review one client at a time. Nothing is created or changed until the founder uses an authenticated action.
         </p>
-        {batch ? <RealClientAssociationReview batch={batch} reviewAction={reviewFounderCorrespondenceAssociation} selectedKey={selectedKey} /> : (
+        {typeof params.threadIndex === "string" ? <p role="status" className="mt-4 text-[11px] text-[#8fb59d]">Pennock direct-thread indexing: {params.threadIndex}.</p> : null}
+        {batch ? <RealClientAssociationReview batch={batch} reviewAction={reviewFounderCorrespondenceAssociation} indexPennockThreadAction={indexPennockDirectThread} selectedKey={selectedKey} /> : (
           <p role="alert" className="mt-6 rounded-xl border border-[#d39a8a]/30 p-4 text-[13px] text-[#d39a8a]">This protected Preview review batch is unavailable.</p>
         )}
       </section>

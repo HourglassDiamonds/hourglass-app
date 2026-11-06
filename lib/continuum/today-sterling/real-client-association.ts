@@ -170,7 +170,9 @@ function founderPacketFor(
     supportingThreadIds: [],
     verifiedEvidence: [
       "Six indexed messages in the direct Zane wedding-band thread.",
-      "The provider participant is Zane Kennedy at zanemkennedy88@gmail.com; no non-fixture canonical Person or Project currently uses that identity.",
+      threads.find((thread) => thread.threadId === "1a1212396a8ac111")?.target
+        ? "The provider participant is Zane Kennedy at zanemkennedy88@gmail.com; the exact non-fixture canonical Person and Project are linked."
+        : "The provider participant is Zane Kennedy at zanemkennedy88@gmail.com; no non-fixture canonical Person or Project currently uses that identity.",
       "Latest client inbound: October 13 at 16:56:38 UTC; latest founder outbound: October 13 at 17:02:40 UTC.",
       "The founder replied after Zane's latest indexed message, so no email-reply obligation is supported.",
     ],
@@ -213,8 +215,11 @@ function founderPacketFor(
     safeguards: ["Do not infer Audrey's identity or Project solely from vendor identifier C026401."],
   };
   if (key === "pennock" && available.has("1a08d1c1443a8ede")) return {
-    primaryThreadId: "1a08d1c1443a8ede",
-    supportingThreadIds: available.has("1a10c5b8e4a52db7") ? ["1a10c5b8e4a52db7"] : [],
+    primaryThreadId: available.has("19fdca18f516310d") ? "19fdca18f516310d" : "1a08d1c1443a8ede",
+    supportingThreadIds: [
+      ...(available.has("19fdca18f516310d") ? ["1a08d1c1443a8ede"] : []),
+      ...(available.has("1a10c5b8e4a52db7") ? ["1a10c5b8e4a52db7"] : []),
+    ],
     verifiedEvidence: [
       "Four indexed messages in the dedicated vendor thread for J. Pennock / C025519 / RN08286.",
       "The dedicated thread's latest message is vendor inbound on September 24 at 21:56:22 UTC.",

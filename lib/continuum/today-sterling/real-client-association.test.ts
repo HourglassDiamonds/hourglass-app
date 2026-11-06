@@ -118,4 +118,20 @@ describe("real-client association review batch", () => {
     assert.match(pennock.founderPacket?.proposedChangesAfterApproval.join(" ") ?? "", /Jobs: none/);
     assert.match(pennock.founderPacket?.safeguards[0] ?? "", /keep J\. Pennock separate from JP/);
   });
+
+  it("promotes the indexed direct Pennock client thread for exact canonical review", () => {
+    const result = batch({
+      messages: [
+        message({ messageId: "vendor", threadId: "1a08d1c1443a8ede", subject: "HGD- J.Pennock-C025519-RN08286", participantHashes: [] }),
+        message({ messageId: "client", threadId: "19fdca18f516310d", subject: "Sapphire / Platinum Ring - John Pennock", participantHashes: ["pennock-hash"] }),
+      ],
+      people: [{ personId: "person-pennock", label: "John Pennock", emailHash: "pennock-hash", sourceSystem: "concierge-manual" }],
+      projects: [{ projectId: "project-pennock", label: "John Pennock — Sapphire / Platinum Ring", sourceSystem: "concierge-manual", lifecycleStage: "completed" }],
+      jobs: [], relationships: [{ personId: "person-pennock", projectId: "project-pennock" }], associationPersistence: "available",
+    });
+    const pennock = result.reviews.find((row) => row.key === "pennock")!;
+    assert.equal(pennock.founderPacket?.primaryThreadId, "19fdca18f516310d");
+    assert.equal(pennock.currentProviderThreads.find((row) => row.threadId === "19fdca18f516310d")?.target?.projectId, "project-pennock");
+    assert.ok(pennock.founderPacket?.supportingThreadIds.includes("1a08d1c1443a8ede"));
+  });
 });

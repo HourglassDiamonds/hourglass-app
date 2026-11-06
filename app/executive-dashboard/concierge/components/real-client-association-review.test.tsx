@@ -146,6 +146,24 @@ describe("real-client association review presentation", () => {
     assert.doesNotMatch(html, /name="decision"/);
   });
 
+  it("exposes the authenticated association controls once Zane's canonical target exists", () => {
+    const personId = "80c1f967-72b8-4de3-9b9c-ba43aa4d4f05";
+    const projectId = "6224731b-1c13-4eb1-8907-feb3e904b57f";
+    const batch = buildRealClientAssociationBatch({
+      messages: [{ messageId: "z1", threadId: "1a1212396a8ac111", subject: "Hourglass Diamonds x Zane - Wedding Band", sentAt: "2026-10-13T17:02:40.000Z", indexedAt: "2026-11-05T13:39:14.130Z", direction: "outbound", participantHashes: ["zane-hash"] }],
+      people: [{ personId, label: "Zane Kennedy", emailHash: "zane-hash", sourceSystem: "concierge-manual" }],
+      projects: [{ projectId, label: "Zane Kennedy — Wedding Band", sourceSystem: "concierge-manual", lifecycleStage: "production" }],
+      jobs: [], relationships: [{ personId, projectId }], authorizationAt: "2026-11-04T15:00:50.223Z",
+      associationPersistence: "available", nowIso: "2026-11-06T18:00:00.000Z",
+    });
+    const html = renderToStaticMarkup(createElement(RealClientAssociationReview, { batch, selectedKey: "zane", reviewAction: async () => {} }));
+    assert.match(html, /Exact association write set/);
+    assert.match(html, /name="decision" value="confirm"/);
+    assert.match(html, /Target Job remains null/);
+    assert.match(html, /exact non-fixture canonical Person and Project are linked/);
+    assert.match(html, /name="jobId" value=""/);
+  });
+
   it("renders Pennock as delivered and closed without reviving shipping or mixing the Tim/Jenn thread", () => {
     const batch = buildRealClientAssociationBatch({
       messages: [

@@ -311,8 +311,8 @@ async function dropFromIndex(
   return result;
 }
 
-async function persistFetchedMessage(
-  deps: IncrementalSyncDeps,
+export async function persistFetchedMessage(
+  deps: Pick<IncrementalSyncDeps, "index" | "attachments" | "founderMailboxHash">,
   message: GmailApiMessage,
   nowIso: string,
 ): Promise<"inserted" | "updated" | "already-present" | "dropped"> {

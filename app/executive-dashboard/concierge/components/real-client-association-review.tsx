@@ -137,7 +137,19 @@ function MorganFounderWorksheet({
   );
 }
 
-function ClientFounderPacket({ packet }: { packet: FounderReviewPacket }) {
+function ClientFounderPacket({
+  batch,
+  packet,
+  thread,
+  reviewAction,
+  indexPennockThreadAction,
+}: {
+  batch: RealClientAssociationBatch;
+  packet: FounderReviewPacket;
+  thread: RealClientThreadReview;
+  reviewAction?: (formData: FormData) => Promise<void>;
+  indexPennockThreadAction?: (formData: FormData) => Promise<void>;
+}) {
   return (
     <section className="mt-5 rounded-2xl border border-[#ad9164]/30 bg-[#ad9164]/5 p-4 md:p-5" aria-label="Founder decision packet">
       <h3 className="text-[11px] uppercase tracking-[0.16em] text-[#ad9164]">Founder decision packet</h3>
@@ -173,6 +185,25 @@ function ClientFounderPacket({ packet }: { packet: FounderReviewPacket }) {
         {packet.safeguards.map((item) => <p key={item} className="mt-3 text-[10px] leading-relaxed text-[#d6a66f]">{item}</p>)}
       </details>
       <p className="mt-4 text-[10px] text-[#81766c]">This packet is read only. It does not create a Person, Project, action, lifecycle change, or trusted association.</p>
+      {thread.target ? (
+        <section className="mt-4 rounded-xl border border-[#8fb59d]/30 p-4">
+          <h4 className="text-[10px] uppercase tracking-[0.14em] text-[#8fb59d]">Exact association write set</h4>
+          <p className="mt-2 text-[11px] text-[#a99c90]">
+            {thread.target.personLabel} → {thread.target.projectLabel} → Gmail thread <span className="font-mono">{thread.threadId}</span>. Target Job remains null.
+          </p>
+          <AssociationDecisionControls batch={batch} thread={thread} reviewAction={reviewAction} />
+        </section>
+      ) : null}
+      {!thread.target && packet.proposedChangesAfterApproval.some((item) => item.includes("19fdca18f516310d")) && indexPennockThreadAction ? (
+        <form action={indexPennockThreadAction} className="mt-4">
+          <button type="submit" className="rounded-full border border-[#ad9164]/50 px-4 py-2 text-[10px] uppercase tracking-[0.12em] text-[#efe8de]">
+            Index verified direct-client thread
+          </button>
+          <p className="mt-2 text-[10px] text-[#81766c]">
+            One founder-authenticated Preview-only read. No checkpoint, Project, lifecycle, Job, or association write.
+          </p>
+        </form>
+      ) : null}
     </section>
   );
 }
@@ -180,10 +211,12 @@ function ClientFounderPacket({ packet }: { packet: FounderReviewPacket }) {
 export function RealClientAssociationReview({
   batch,
   reviewAction,
+  indexPennockThreadAction,
   selectedKey = "morgan",
 }: {
   batch: RealClientAssociationBatch;
   reviewAction?: (formData: FormData) => Promise<void>;
+  indexPennockThreadAction?: (formData: FormData) => Promise<void>;
   selectedKey?: string;
 }) {
   const selected = batch.reviews.find((review) => review.key === selectedKey) ?? batch.reviews.find((review) => review.key === "morgan") ?? batch.reviews[0];
@@ -215,7 +248,7 @@ export function RealClientAssociationReview({
             <div><dt className="text-[#81766c]">Verified Project evidence</dt><dd className="mt-1 text-[#efe8de]">{projectEvidence(focus, isMorgan)}</dd></div>
           </dl>
           {isMorgan ? <p className="mt-4 text-[11px] leading-relaxed text-[#a99c90]">The latest client communication has a founder response. The confirmed appointment is not presented as outstanding work.</p> : null}
-          {isMorgan && focus.threadId === MORGAN_THREAD_ID ? <MorganFounderWorksheet batch={batch} thread={focus} reviewAction={reviewAction} /> : selected.founderPacket ? <ClientFounderPacket packet={selected.founderPacket} /> : <section className="mt-5 rounded-xl border border-white/10 p-4"><h3 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Association decision</h3><p className="mt-2 text-[11px] text-[#a99c90]">Saved decision: <strong className="text-[#efe8de]">{focus.target?.currentDecision ?? "None"}</strong></p><AssociationDecisionControls batch={batch} thread={focus} reviewAction={reviewAction} /></section>}
+          {isMorgan && focus.threadId === MORGAN_THREAD_ID ? <MorganFounderWorksheet batch={batch} thread={focus} reviewAction={reviewAction} /> : selected.founderPacket ? <ClientFounderPacket batch={batch} packet={selected.founderPacket} thread={focus} reviewAction={reviewAction} indexPennockThreadAction={indexPennockThreadAction} /> : <section className="mt-5 rounded-xl border border-white/10 p-4"><h3 className="text-[10px] uppercase tracking-[0.14em] text-[#81766c]">Association decision</h3><p className="mt-2 text-[11px] text-[#a99c90]">Saved decision: <strong className="text-[#efe8de]">{focus.target?.currentDecision ?? "None"}</strong></p><AssociationDecisionControls batch={batch} thread={focus} reviewAction={reviewAction} /></section>}
         </> : <p className="mt-5 text-[13px] leading-relaxed text-[#a99c90]">No post-authorization provider thread was discovered. This is missing discoverability, not evidence of no correspondence or no reply.</p>}
 
         <details className="mt-5 rounded-xl border border-white/10 p-4">
