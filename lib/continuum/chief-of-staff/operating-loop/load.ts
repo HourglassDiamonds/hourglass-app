@@ -30,6 +30,8 @@ import {
   loadIndexedTodayThreadContext,
   loadLiveTodayOperationalFacts,
 } from "@/lib/continuum/gmail/today-thread-context";
+import { createSupabaseGmailConnectionStore } from "@/lib/continuum/gmail/server";
+import { loadTrustedProjectThreadAssociations } from "@/lib/continuum/project-evidence/today-associations";
 import {
   partitionIndexedTodayLiveThreadIds,
   planTodayLiveThreads,
@@ -65,11 +67,18 @@ import {
   shouldScheduleTodayRecompute,
   storeCachedTodayLoop,
   todayRecomputeInFlight,
+  todayRecomputeUnavailable,
   waitForTodayRecompute,
 } from "./today-read-model";
 import { parseGmailWebHref } from "./evidence";
 import { parseGmailCandidateSourceRef } from "@/lib/continuum/gmail/candidates/source-ref";
 import { selectMasterSprintCapacityItems } from "./master-sprint";
+import {
+  isOperationalCandidate,
+  isOperationalConditionalHold,
+  isOperationalProjectJob,
+  isOperationalProjectSummary,
+} from "./operational-fixtures";
 import {
   COS_DISCONNECTED_DETAIL,
   COS_DISCONNECTED_HEADING,
@@ -78,6 +87,7 @@ import {
   COS_OPERATING_LOOP_CONTRACT_VERSION,
   type CosMasterSprintItem,
   type CosOperatingLoopView,
+  type TodayCorrespondenceStatus,
 } from "./types";
 
 function unassignedLiveIdentityThreadIds(
@@ -136,6 +146,7 @@ function liveThreadPlan(
   loop: CosOperatingLoopView,
   candidates: readonly ContinuumCandidate[],
   nowIso: string,
+  currentProviderThreadIds?: ReadonlySet<string>,
 ): ReturnType<typeof planTodayLiveThreads> {
   const docket = finalizeTodayDocket(loop);
   const recentAnsweredIdentityThreads = recentAnsweredUnresolvedIdentityThreadIds({
@@ -147,11 +158,28 @@ function liveThreadPlan(
     ...docket,
     candidates,
     associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
+    currentProviderThreadIds,
     unresolvedIdentityThreadIds: [
       ...unassignedLiveIdentityThreadIds(docket, loop),
       ...recentAnsweredIdentityThreads,
     ],
   });
+}
+
+function currentProviderThreads(
+  context: ReadonlyMap<string, import("@/lib/continuum/candidates/founder-attention").TodayGmailThreadContext>,
+  authorizationAt: string | null | undefined,
+): ReadonlySet<string> | undefined {
+  const authorizationMs = Date.parse(authorizationAt ?? "");
+  if (!Number.isFinite(authorizationMs)) return undefined;
+  return new Set(
+    [...context.entries()]
+      .filter(([, thread]) => (thread.messages ?? []).some((message) => {
+        const indexedMs = Date.parse(message.indexedAt ?? "");
+        return Number.isFinite(indexedMs) && indexedMs > authorizationMs;
+      }))
+      .map(([threadId]) => threadId),
+  );
 }
 
 function disconnectedLoop(): CosOperatingLoopView {
@@ -217,13 +245,14 @@ async function rebuildTodayLoop(
         getAuthenticatedProjectDeskReader(),
         getAuthenticatedCandidateStore(),
       ]);
-  const [jobs, summaries, listed, masterSprint, knownPeople, activeHolds] = await Promise.all([
+  const [jobs, summaries, listed, masterSprint, knownPeople, activeHolds, gmailConnection] = await Promise.all([
     client ? loadProjectJobs(client) : Promise.resolve(null),
     desk.ok ? desk.reader.listProjects() : Promise.resolve([]),
     store.ok ? store.store.list() : Promise.resolve([] as ContinuumCandidate[]),
     loadMasterSprintCapacity(),
     loadTodayKnownEmailPeople(),
     client ? loadActiveConditionalHolds(client) : Promise.resolve([]),
+    client ? createSupabaseGmailConnectionStore(client).getFounderConnection() : Promise.resolve(null),
   ]);
   emitTodayCanonicalInputCounts({
     jobsConnected: jobs !== null,
@@ -235,29 +264,54 @@ async function rebuildTodayLoop(
     client,
     listed,
   );
-  const indexedContext = await loadIndexedTodayThreadContext(candidates);
+  const operationalSummaries = summaries.filter(isOperationalProjectSummary);
+  const trustedProjectThreads = client
+    ? await loadTrustedProjectThreadAssociations(
+        client,
+        new Set(operationalSummaries.map((summary) => summary.projectId)),
+      )
+    : new Map<string, string>();
+  const indexedContext = await loadIndexedTodayThreadContext(candidates, {
+    ...(client ? { client } : {}),
+    additionalThreadIds: [...trustedProjectThreads.keys()],
+  });
+  const currentProviderThreadIds = currentProviderThreads(
+    indexedContext,
+    gmailConnection?.connectedAt,
+  );
+  const currentOrTrustedThreadIds = new Set([
+    ...(currentProviderThreadIds ?? []),
+    ...trustedProjectThreads.keys(),
+  ]);
+  const operationalCandidates = candidates.filter((candidate) =>
+    isOperationalCandidate(candidate, currentOrTrustedThreadIds),
+  );
+  const operationalProjectIds = new Set(operationalSummaries.map((summary) => summary.projectId));
+  const operationalJobs = jobs?.filter((job) => isOperationalProjectJob(job, operationalProjectIds)) ?? jobs;
+  const operationalHolds = activeHolds.filter(isOperationalConditionalHold);
   const founderCorrections = [
     ...(client ? await loadFounderCorrectionEvents(client) : []),
-    ...candidateDispositionCorrectionEvents(candidates),
+    ...candidateDispositionCorrectionEvents(operationalCandidates),
   ];
   const composeInput = {
     founderCorrections,
-    jobs,
-    summaries,
-    candidates,
+    jobs: operationalJobs,
+    summaries: operationalSummaries,
+    candidates: operationalCandidates,
     nowIso: now.toISOString(),
     masterSprint,
     threadContext: indexedContext,
+    trustedProjectThreads,
     knownPeople,
-    heldJobIds: new Set(activeHolds.map((row) => row.entityId)),
+    heldJobIds: new Set(operationalHolds.map((row) => row.entityId)),
   };
   let threadContext = indexedContext;
   let loop = composeCosOperatingLoop(composeInput);
   const attemptedThreadIds = new Set<string>();
-  const enrichedThreadIds = new Set<string>();
   const unavailableIndexedThreadIds = new Set<string>();
+  const criticalOutcomes = new Map<string, "complete_live" | "indexed_excerpt_only" | "unavailable">();
   for (let pass = 0; pass < 2; pass += 1) {
-    const plan = liveThreadPlan(loop, candidates, now.toISOString());
+    const plan = liveThreadPlan(loop, operationalCandidates, now.toISOString(), currentProviderThreadIds);
     const critical = partitionIndexedTodayLiveThreadIds({
       requiredThreadIds: plan.criticalThreadIds,
       threadContext,
@@ -267,12 +321,13 @@ async function rebuildTodayLoop(
     if (critical.eligible.length > 0) {
       threadContext = await loadLiveTodayOperationalFacts(threadContext, {
         threadIds: critical.eligible,
-        requireComplete: true,
+        // Gmail completeness gates Sterling, but cannot make canonical work disappear.
+        requireComplete: false,
         onDiagnostics: emitTodayLiveEnrichmentDiagnostics,
+        onThreadOutcome: (outcome) => criticalOutcomes.set(outcome.threadId, outcome.status),
       });
       for (const threadId of critical.eligible) {
         attemptedThreadIds.add(threadId);
-        enrichedThreadIds.add(threadId);
       }
     }
     const identity = partitionIndexedTodayLiveThreadIds({
@@ -289,17 +344,14 @@ async function rebuildTodayLoop(
       });
       for (const threadId of identity.eligible) {
         attemptedThreadIds.add(threadId);
-        if (threadContext.get(threadId)?.liveIdentityLoaded === true) {
-          enrichedThreadIds.add(threadId);
-        }
       }
     }
     if (critical.eligible.length === 0 && identity.eligible.length === 0) break;
     loop = composeCosOperatingLoop({ ...composeInput, threadContext });
   }
-  const unresolvedRequired = liveThreadPlan(loop, candidates, now.toISOString()).criticalThreadIds.filter(
+  const unresolvedRequired = liveThreadPlan(loop, operationalCandidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds.filter(
     (threadId) =>
-      !enrichedThreadIds.has(threadId) &&
+      !attemptedThreadIds.has(threadId) &&
       !unavailableIndexedThreadIds.has(threadId) &&
       Boolean(threadContext.get(threadId)?.messages?.length),
   );
@@ -309,15 +361,26 @@ async function rebuildTodayLoop(
   if (unavailableIndexedThreadIds.size > 0) {
     emitTodayUnindexedSourceRefCount(unavailableIndexedThreadIds.size);
   }
-  if (client && jobs) {
+  if (client && operationalJobs) {
     await reconcileConditionalHolds({
       repository: new SupabaseConditionalHoldRepository(client),
-      jobs,
+      jobs: operationalJobs,
       events: sourceEventsIn(loop),
       now,
     }).catch(() => []);
   }
-  return loop;
+  const finalRequired = liveThreadPlan(loop, operationalCandidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds;
+  const completedRequired = finalRequired.filter(
+    (threadId) => criticalOutcomes.get(threadId) === "complete_live",
+  ).length;
+  const correspondenceStatus: TodayCorrespondenceStatus = finalRequired.length === 0
+    ? "not-required"
+    : completedRequired === finalRequired.length
+      ? "complete"
+      : completedRequired > 0
+        ? "partial"
+        : "unavailable";
+  return { ...loop, todayCorrespondenceStatus: correspondenceStatus };
 }
 
 async function loadActiveConditionalHolds(client: SupabaseClient) {
@@ -379,6 +442,7 @@ async function commitComposedLoop(
       payload: projectTodaySnapshot(
         composeTodayDocket(loop),
         loop.attentionValidUntil ?? null,
+        loop.todayCorrespondenceStatus,
       ),
       composedAt,
       evaluationTime: evaluationTime.toISOString(),
@@ -442,7 +506,10 @@ async function scheduleTodayRebuild(now: Date, watermark: string): Promise<boole
 export type TodayPageModel = {
   docket: CosTodayDocketView;
   freshness: "current" | "refreshing";
+  readModelStatus: "ready" | "refreshing" | "unavailable";
   readModelWatermark: string | null;
+  snapshotComposedAt: string | null;
+  correspondenceStatus?: TodayCorrespondenceStatus;
 };
 
 function pageFromLoop(
@@ -454,7 +521,10 @@ function pageFromLoop(
   return {
     docket: composeTodayDocket(presented),
     freshness,
+    readModelStatus: freshness === "refreshing" ? "refreshing" : "ready",
     readModelWatermark: watermark,
+    snapshotComposedAt: loop.asOfIso ?? null,
+    correspondenceStatus: loop.todayCorrespondenceStatus,
   };
 }
 
@@ -463,11 +533,14 @@ function disconnectedPage(): TodayPageModel {
 }
 
 function reconstructionUnavailablePage(): TodayPageModel {
-  return pageFromLoop({
-    ...disconnectedLoop(),
-    heading: "Today couldn't refresh.",
-    quietDetail: "Canonical Open Jobs remain connected. Try again shortly.",
-  }, "current", null);
+  return {
+    ...pageFromLoop({
+      ...disconnectedLoop(),
+      heading: "Today couldn't refresh.",
+      quietDetail: "Canonical Open Jobs remain connected. Try again shortly.",
+    }, "current", null),
+    readModelStatus: "unavailable",
+  };
 }
 
 export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel> {
@@ -494,11 +567,18 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
     }
     if (choice === "refreshing" && lastKnown) {
       const scheduled = watermark ? await scheduleTodayRebuild(now, watermark) : false;
-      return pageFromLoop(
+      const pending = scheduled || todayRecomputeInFlight();
+      const page = pageFromLoop(
         lastKnown.loop,
-        scheduled || todayRecomputeInFlight() ? "refreshing" : "current",
+        pending ? "refreshing" : "current",
         lastKnown.watermark,
       );
+      return {
+        ...page,
+        readModelStatus: !pending && watermark && todayRecomputeUnavailable(watermark, now.getTime())
+          ? "unavailable"
+          : page.readModelStatus,
+      };
     }
     const snapshotUse = decideSnapshotUse({
       record: snapshot,
@@ -509,15 +589,24 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
       return {
         docket: snapshot.payload.docket,
         freshness: "current",
+        readModelStatus: "ready",
         readModelWatermark: snapshot.sourceWatermark,
+        snapshotComposedAt: snapshot.composedAt,
+        correspondenceStatus: snapshot.payload.correspondenceStatus,
       };
     }
     if (snapshot && snapshotUse === "refreshing") {
       const scheduled = watermark ? await scheduleTodayRebuild(now, watermark) : false;
+      const pending = scheduled || todayRecomputeInFlight();
       return {
         docket: snapshot.payload.docket,
-        freshness: scheduled || todayRecomputeInFlight() ? "refreshing" : "current",
+        freshness: pending ? "refreshing" : "current",
+        readModelStatus: !pending && watermark && todayRecomputeUnavailable(watermark, now.getTime())
+          ? "unavailable"
+          : pending ? "refreshing" : "ready",
         readModelWatermark: snapshot.sourceWatermark,
+        snapshotComposedAt: snapshot.composedAt,
+        correspondenceStatus: snapshot.payload.correspondenceStatus,
       };
     }
     const loop = await rebuildTodayLoop(now, watermark);

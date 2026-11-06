@@ -47,6 +47,13 @@ export function todayRecomputeInFlight(): boolean {
   return recomputeInFlight !== null;
 }
 
+/** True only during the bounded retry-suppression window after a failed rebuild. */
+export function todayRecomputeUnavailable(watermark?: string | null, nowMs = Date.now()): boolean {
+  return suppressedWatermark !== null &&
+    (!watermark || suppressedWatermark === watermark) &&
+    nowMs < suppressedUntilMs;
+}
+
 export function waitForTodayRecompute(): Promise<void> {
   return recomputeInFlight ?? Promise.resolve();
 }

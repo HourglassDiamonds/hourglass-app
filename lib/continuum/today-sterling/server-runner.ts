@@ -11,6 +11,8 @@ import { SupabaseProjectDeskReader } from "@/lib/continuum/client-memory/project
 import { loadProjectJobs } from "@/lib/continuum/client-memory/project-jobs/load";
 import { loadTodayKnownEmailPeople } from "@/lib/continuum/client-memory/today-known-people";
 import { loadFounderCorrectionEvents } from "@/lib/continuum/chief-of-staff/operating-loop/founder-corrections-load";
+import { loadSterlingFounderDirectives } from "./founder-directive-load";
+import { mergeSterlingFounderCorrections } from "./founder-candidate-corrections";
 import {
   loadIndexedTodayThreadContext,
   loadIndexedTodayThreadContextByEmailHashes,
@@ -31,6 +33,7 @@ import { conciergeForegroundModel } from "@/lib/continuum/concierge-sol/models";
 import { buildSterlingTodayWorkingSet } from "./working-set";
 import { requestSterlingTodayProposal } from "./request";
 import { validateSterlingTodayProposal } from "./validate";
+import { applySterlingFounderAuthority } from "./founder-authority";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
 import { evaluateOctober21Acceptance } from "./october-19-acceptance";
 import { expandSterlingIndexedThreadContext, loadSterlingProjectThreadIds } from "./evidence-load";
@@ -240,6 +243,7 @@ export type SterlingSafeSemanticProposal = {
     canonicalLifecycleStage: string | null;
     operationalSubstage: string | null;
     nextStepOwner: string;
+    attentionPriority: string;
     confidence: string;
     explanation: string;
     citations: readonly string[];
@@ -255,6 +259,7 @@ export type SterlingSafeSemanticProposal = {
   recommendations: readonly {
     title: string;
     summary: string;
+    attentionPriority: string;
     confidence: string;
     explanation: string;
     citations: readonly string[];
@@ -262,6 +267,20 @@ export type SterlingSafeSemanticProposal = {
   }[];
   portfolioAmbiguities: readonly string[];
   mutationProposalCount: number;
+  canonicalMutationProposals: readonly {
+    proposalRef: string;
+    kind: string;
+    projectRef: string | null;
+    jobRef: string | null;
+    targetLifecycleStage: string | null;
+    targetJobState: string | null;
+    targetResponsibleParty: string | null;
+    reason: string;
+    citations: readonly string[];
+    validationStatus: "approved_for_founder_review" | "rejected";
+    validationReasons: readonly string[];
+    rollback: string;
+  }[];
 };
 
 export type SterlingSafeWorkUnitCoverage = {
@@ -431,17 +450,19 @@ function scopeCoverage(
 export async function assembleSterlingTodayShadow(input: AssembleInput): Promise<SterlingTodayAssembly> {
   const startedAt = Date.now();
   const now = input.now ?? new Date();
-  const [candidates, projects, jobs, people, corrections, calendar, watermark, previousToday, calendarStatus] = await Promise.all([
+  const [candidates, projects, jobs, people, canonicalCorrections, founderDirectives, calendar, watermark, previousToday, calendarStatus] = await Promise.all([
     loadCandidates(input.client),
     new SupabaseProjectDeskReader(input.client as never).listProjects(),
     loadProjectJobs(input.client as never),
     loadTodayKnownEmailPeople(),
     loadFounderCorrectionEvents(input.client as never),
+    loadSterlingFounderDirectives(input.client as never),
     loadTodayUpcoming(now),
     readTodaySourceWatermark(input.client as never, now),
     loadPreviousToday(input.client),
     calendarDiagnostic(input.client),
   ]);
+  const corrections = mergeSterlingFounderCorrections(canonicalCorrections, candidates);
 
   const portfolio = selectSterlingPortfolio(
     { projects, jobs: jobs ?? [], candidates, corrections, calendar, previousToday },
@@ -499,6 +520,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     threadContext: indexed,
     knownPeople: people.filter((person) => preliminaryPersonIds.has(person.personId)),
     founderCorrections: portfolio.corrections,
+    founderDirectives,
     calendar: portfolio.calendar,
     calendarAvailability: {
       status: calendarStatus.diagnosis === "live_read_eligible" ? "available"
@@ -682,6 +704,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     threadContext,
     knownPeople: portfolioPeople,
     founderCorrections: portfolio.corrections,
+    founderDirectives,
     calendar: portfolio.calendar,
     calendarAvailability: {
       status: calendarStatus.diagnosis === "live_read_eligible" ? "available"
@@ -865,9 +888,10 @@ export async function executeSterlingTodaySemantic(input: {
   if (!gated.called || !gated.workingSet || !gated.result) {
     return blockedCompletion(input.assembly, "EVIDENCE_BLOCKED", startedAt);
   }
-  const validation = validateSterlingTodayProposal(gated.workingSet, gated.result.proposal);
-  const acceptance = input.assembly.target ? null : evaluateSterlingTodayAcceptance(gated.workingSet, gated.result.proposal);
-  const operationalAcceptance = input.assembly.target ? null : evaluateOctober21Acceptance(gated.workingSet, gated.result.proposal);
+  const proposal = applySterlingFounderAuthority(gated.workingSet, gated.result.proposal);
+  const validation = validateSterlingTodayProposal(gated.workingSet, proposal);
+  const acceptance = input.assembly.target ? null : evaluateSterlingTodayAcceptance(gated.workingSet, proposal);
+  const operationalAcceptance = input.assembly.target ? null : evaluateOctober21Acceptance(gated.workingSet, proposal);
   const verdict = input.assembly.target
     ? validation.accepted ? "TARGET_VALID" : "BLOCK"
     : validation.accepted && acceptance?.passed && operationalAcceptance?.passed && gated.blockedWorkUnitIds.length === 0
@@ -876,7 +900,7 @@ export async function executeSterlingTodaySemantic(input: {
     assembly: input.assembly,
     called: true,
     blockedWorkUnitIds: gated.blockedWorkUnitIds,
-    proposal: gated.result.proposal,
+    proposal,
     validation,
     acceptance,
     operationalAcceptance,
@@ -1044,12 +1068,16 @@ function safeSemanticProposal(completion: SterlingTodaySemanticCompletion): Ster
     const handle = handles.get(ref);
     return handle ? [handle] : [];
   });
+  const validationByKey = new Map(
+    completion.validation.mutationValidations.map((row) => [row.proposalKey, row] as const),
+  );
   return {
     assessments: completion.proposal.portfolioAssessments.map((assessment) => ({
       workUnitRef: opaqueWorkUnitRef(assessment.workUnitId),
       canonicalLifecycleStage: assessment.currentStage.canonicalLifecycleStage,
       operationalSubstage: assessment.currentStage.operationalSubstage,
       nextStepOwner: assessment.nextStepOwner,
+      attentionPriority: assessment.attentionPriority,
       confidence: assessment.confidence,
       explanation: assessment.explanation,
       citations: citations(assessment.evidenceRefs),
@@ -1065,6 +1093,7 @@ function safeSemanticProposal(completion: SterlingTodaySemanticCompletion): Ster
     recommendations: completion.proposal.recommendations.map((recommendation) => ({
       title: recommendation.title,
       summary: recommendation.summary,
+      attentionPriority: recommendation.attentionPriority,
       confidence: recommendation.confidence,
       explanation: recommendation.explanation,
       citations: citations(recommendation.evidenceRefs),
@@ -1072,6 +1101,24 @@ function safeSemanticProposal(completion: SterlingTodaySemanticCompletion): Ster
     })),
     portfolioAmbiguities: completion.proposal.portfolioAmbiguities,
     mutationProposalCount: completion.proposal.proposedCanonicalMutations.length,
+    canonicalMutationProposals: completion.proposal.proposedCanonicalMutations.flatMap((mutation) => {
+      const validation = validationByKey.get(mutation.proposalKey);
+      if (!validation) return [];
+      return [{
+        proposalRef: opaqueWorkUnitRef(`mutation:${mutation.proposalKey}`),
+        kind: mutation.kind,
+        projectRef: mutation.projectId ? opaqueWorkUnitRef(`project:${mutation.projectId}`) : null,
+        jobRef: mutation.jobId ? opaqueWorkUnitRef(`job:${mutation.jobId}`) : null,
+        targetLifecycleStage: mutation.targetLifecycleStage,
+        targetJobState: mutation.targetJobState,
+        targetResponsibleParty: mutation.targetResponsibleParty,
+        reason: mutation.reason,
+        citations: citations(mutation.evidenceRefs),
+        validationStatus: validation.status,
+        validationReasons: validation.reasons,
+        rollback: validation.rollback,
+      }];
+    }),
   };
 }
 

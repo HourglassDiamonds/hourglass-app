@@ -22,6 +22,7 @@ import {
   gmailIncrementalChunkResultKeys,
   runGmailIncrementalChunk,
   sanitizeGmailIncrementalChunkResult,
+  snapshotFromIncrementalCheckpoint,
 } from "./incremental";
 import type { GmailAccessTokenRefresh } from "./oauth";
 import { encryptRefreshToken } from "./token-crypto";
@@ -93,6 +94,27 @@ function assertSafeOutput(result: ReturnType<typeof sanitizeGmailIncrementalChun
 }
 
 describe("Gmail incremental current-state runner", () => {
+  it("shows a preserved continuation token on a failed recovery checkpoint", () => {
+    const result = snapshotFromIncrementalCheckpoint({
+      jobKey: GMAIL_INCREMENTAL_JOB_KEY,
+      status: "failed",
+      windowStart: "2026-08-01T00:00:00.000Z",
+      windowEnd: NOW.toISOString(),
+      pageToken: "private-page-token",
+      historyId: "100",
+      cursorMessageId: "pending-history:200",
+      indexedCount: 324,
+      updatedAt: NOW.toISOString(),
+      errorCode: "gmail-provider-temporary",
+    });
+
+    assert.equal(result.checkpointStatus, "failed");
+    assert.equal(result.morePagesRemain, true);
+    assert.equal(result.recovery, true);
+    assert.equal(result.safeErrorCode, "gmail-provider-temporary");
+    assert.equal(JSON.stringify(result).includes("private-page-token"), false);
+  });
+
   it("requires founder or secret auth and does not call Gmail", async () => {
     const api = initApi();
     const result = await runGmailIncrementalChunk({

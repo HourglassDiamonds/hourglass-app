@@ -6,7 +6,6 @@
 
 import { bindFounderMailbox } from "./mailbox";
 import {
-  applyInvalidGrant,
   connectFounderMailbox,
   type GmailConnectionStore,
 } from "./connection";
@@ -135,14 +134,6 @@ export async function handleGmailOAuthCallback(input: {
     });
   } catch (error) {
     const message = safeGmailOAuthTokenError(error);
-    if (message === "invalid_grant") {
-      await applyInvalidGrant(input.connections, new Date(nowMs).toISOString());
-      return {
-        status: "redirect",
-        url: withGmailQuery(input.founderRedirect, "invalid_grant"),
-        clearCookies: true,
-      };
-    }
     return {
       status: "redirect",
       url: withGmailQuery(input.founderRedirect, message),
@@ -201,20 +192,20 @@ export async function handleGmailOAuthCallback(input: {
     };
   }
 
-  if (tokens.scope && tokens.scope !== GMAIL_READONLY_SCOPE) {
-    // Granted scope must remain gmail.readonly; extra scopes are not stored as success.
-    if (!tokens.scope.split(/\s+/).includes(GMAIL_READONLY_SCOPE)) {
-      try {
-        await input.exchanger.revokeToken(tokens.refreshToken);
-      } catch {
-        /* best-effort */
-      }
-      return {
-        status: "redirect",
-        url: withGmailQuery(input.founderRedirect, "oauth-denied"),
-        clearCookies: true,
-      };
+  const grantedScopes = tokens.scope?.trim().split(/\s+/).filter(Boolean) ?? [];
+  if (grantedScopes.length !== 1 || grantedScopes[0] !== GMAIL_READONLY_SCOPE) {
+    // Missing, additional, or unexpected scopes are unverifiable. Never replace
+    // the stored connection with a broader or ambiguously scoped credential.
+    try {
+      await input.exchanger.revokeToken(tokens.refreshToken);
+    } catch {
+      /* best-effort */
     }
+    return {
+      status: "redirect",
+      url: withGmailQuery(input.founderRedirect, "oauth-denied"),
+      clearCookies: true,
+    };
   }
 
   const wrapped = encryptRefreshToken(tokens.refreshToken, kek.key);

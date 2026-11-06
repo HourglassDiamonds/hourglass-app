@@ -410,7 +410,7 @@ export const liveGmailOAuthTokenExchanger: GmailOAuthTokenExchanger = {
         refreshToken: tokens.refresh_token,
         accessToken: tokens.access_token ?? null,
         tokenType: tokens.token_type ?? "Bearer",
-        scope: tokens.scope ?? GMAIL_READONLY_SCOPE,
+        scope: tokens.scope ?? null,
       };
     } catch (error) {
       throw new Error(safeGmailOAuthTokenError(error));

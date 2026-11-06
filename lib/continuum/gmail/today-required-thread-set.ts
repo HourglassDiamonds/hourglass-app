@@ -34,6 +34,8 @@ type RequiredTodayThreadInput = {
   watching: readonly CosWatchingItem[];
   candidates: readonly ContinuumCandidate[];
   associatedGmailThreadsByProject?: ReadonlyMap<string, readonly string[]>;
+  /** When supplied, fixture-era indexed threads cannot enter the live-provider frontier. */
+  currentProviderThreadIds?: ReadonlySet<string>;
   unresolvedIdentityThreadIds?: readonly string[];
   /** Diagnostic-only baseline from the superseded unfinalized identity scan. */
   priorBroadIdentityThreadIds?: readonly string[];
@@ -391,14 +393,16 @@ export function requiredTodayLiveThreadIds(
 export function planTodayLiveThreads(
   input: RequiredTodayThreadInput,
 ): TodayLiveThreadPlan {
+  const isCurrentProviderThread = (threadId: string) =>
+    !input.currentProviderThreadIds || input.currentProviderThreadIds.has(threadId);
   const critical = new Set([
     ...directActionableThreads(input),
     ...directWatchingThreads(input),
-  ]);
+  ].filter(isCurrentProviderThread));
   const identity = new Set(
     (input.unresolvedIdentityThreadIds ?? [])
       .map((threadId) => threadId.trim())
-      .filter((threadId) => Boolean(threadId) && !critical.has(threadId)),
+      .filter((threadId) => Boolean(threadId) && !critical.has(threadId) && isCurrentProviderThread(threadId)),
   );
   return {
     criticalThreadIds: [...critical].sort(),

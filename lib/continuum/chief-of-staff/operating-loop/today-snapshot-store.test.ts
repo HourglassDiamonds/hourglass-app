@@ -33,6 +33,7 @@ const LIVE = [
   1, ISO, ISO, 1, ISO, 1, ISO, ISO, ISO,
   1, ISO, 1, ISO,
   ISO, 1, ISO, `1:${ISO}:${ISO}:${ISO}`,
+  `1:${ISO}`,
 ].join("|");
 
 function emptyDocket(overrides: Partial<CosTodayDocketView> = {}): CosTodayDocketView {

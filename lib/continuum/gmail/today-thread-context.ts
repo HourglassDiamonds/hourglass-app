@@ -25,9 +25,10 @@ import {
 } from "./env";
 import { parseGmailFromHeader } from "./payload";
 import {
-  createLiveSourceViewerBatch,
+  createLiveSourceViewerBatchResult,
   executeLiveSourceViewerFetch,
   type LiveSourceViewerBatch,
+  type LiveSourceViewerBatchResult,
 } from "./source-viewer-run";
 import { extractCurrentMessageOperationalFacts } from "@/lib/continuum/source-events/operational-facts";
 import { classifyLiveMessageExtraction } from "./live-extraction-diagnostics";
@@ -38,7 +39,7 @@ const MESSAGES_PER_THREAD = 80;
 const LIVE_FACT_CONCURRENCY = 4;
 export const TODAY_LIVE_THREAD_REQUEST_BUDGET = 48;
 const INDEX_SELECT =
-  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
+  "thread_id, message_id, sent_at, indexed_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
 
 export type TodayLiveEnrichmentDiagnostics = {
   requestedThreadCount: number;
@@ -206,6 +207,7 @@ function ingestIndexedRows(
         messages.push({
           messageId,
           sentAt,
+          indexedAt: row.indexed_at == null ? null : String(row.indexed_at),
           direction: indexedDirection(row.direction, fromEmailHash, founderHashes),
           labelIds: asLabelIds(row.label_ids),
           fromEmailHash,
@@ -234,11 +236,18 @@ export async function loadIndexedTodayThreadContext(
   candidates: readonly ContinuumCandidate[],
   options: {
     client?: NonNullable<ReturnType<typeof getSupabaseAdmin>>;
+    additionalThreadIds?: readonly string[];
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const ids = collectExactGmailIds(candidates);
+  const exactAdditionalThreadIds = [...new Set(
+    (options.additionalThreadIds ?? [])
+      .map((value) => value.trim())
+      .filter((value) => /^[0-9a-fA-F]{10,64}$/.test(value)),
+  )];
+  const requestedThreadIds = [...new Set([...ids.threadIds, ...exactAdditionalThreadIds])];
   const out = new Map<string, TodayGmailThreadContext>();
-  if (ids.threadIds.length === 0 && ids.messageIds.length === 0) return out;
+  if (requestedThreadIds.length === 0 && ids.messageIds.length === 0) return out;
   const client = options.client ?? getSupabaseAdmin();
   if (!client) return out;
 
@@ -265,7 +274,7 @@ export async function loadIndexedTodayThreadContext(
     }
   };
 
-  await loadThreads(ids.threadIds);
+  await loadThreads(requestedThreadIds);
 
   const seenMessageIds = new Set(
     [...out.values()].flatMap((thread) =>
@@ -463,6 +472,7 @@ export async function loadLiveTodayOperationalFacts(
   base: ReadonlyMap<string, TodayGmailThreadContext>,
   options: {
     createBatch?: () => Promise<LiveSourceViewerBatch | null>;
+    createBatchResult?: () => Promise<LiveSourceViewerBatchResult>;
     requireComplete?: boolean;
     threadIds?: readonly string[];
     onDiagnostics?: (diagnostics: TodayLiveEnrichmentDiagnostics) => void;
@@ -563,17 +573,25 @@ export async function loadLiveTodayOperationalFacts(
       latestLiveMessageAt: null,
     });
   }
-  const batch = await (options.createBatch ?? createLiveSourceViewerBatch)();
+  let batch: LiveSourceViewerBatch | null;
+  let batchFailureCategory = "batch-unavailable";
+  if (options.createBatch) {
+    batch = await options.createBatch();
+  } else {
+    const result = await (options.createBatchResult ?? createLiveSourceViewerBatchResult)();
+    batch = result.ok ? result.batch : null;
+    if (!result.ok) batchFailureCategory = result.safeErrorCategory;
+  }
   if (!batch) {
     for (const threadId of attemptedThreadIds) {
       const current = out.get(threadId);
-      recordOutcome(current, false, "batch-unavailable");
+      recordOutcome(current, false, batchFailureCategory);
       emitThreadOutcome({
         threadId,
         status: "unavailable",
         indexedMessageCount: current?.messages?.length ?? 0,
         liveMessageCount: 0,
-        safeErrorCategory: "batch-unavailable",
+        safeErrorCategory: batchFailureCategory,
         latestIndexedMessageAt: latestTimestamp(current?.messages?.map((message) => message.sentAt) ?? []),
         latestLiveMessageAt: null,
       });

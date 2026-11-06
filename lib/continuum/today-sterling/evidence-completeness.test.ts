@@ -350,6 +350,7 @@ describe("Sterling permanent evidence completeness gate", () => {
           confidence: "low", explanation: "No definitive stage change.", evidenceRefs: [evidenceId] },
         obligations: [],
         nextStepOwner: "unknown",
+        attentionPriority: "no_attention",
         confidence: "low",
         evidenceRefs: [evidenceId],
         ambiguities: [],

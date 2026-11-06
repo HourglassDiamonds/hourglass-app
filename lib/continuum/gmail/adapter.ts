@@ -282,10 +282,18 @@ export function isHistoryTooOldError(error: unknown): boolean {
 }
 
 export function isRetryableGmailError(error: unknown): boolean {
+  if (error instanceof Error) {
+    if (error.name === "AbortError" || error.name === "TimeoutError") return true;
+    // WHATWG fetch reports transport failures as TypeError without exposing a
+    // provider response. Retrying remains bounded by the caller.
+    if (error instanceof TypeError) return true;
+  }
   if (!(error instanceof GmailHttpError)) return false;
   if (error.status === 429) return true;
+  if (error.status >= 500 && error.status <= 599) return true;
   if (error.status !== 403) return false;
   return (
+    error.forbiddenCategory === "rate_limited" ||
     error.reason === "rateLimitExceeded" ||
     error.reason === "userRateLimitExceeded" ||
     error.reason === "backendError"
@@ -296,14 +304,20 @@ export function retryDelayMs(
   error: unknown,
   attempt: number,
   baseMs = 500,
+  nowMs = Date.now(),
 ): number {
+  const exponential = baseMs * 2 ** Math.max(0, attempt);
   if (error instanceof GmailHttpError && error.retryAfter) {
     const seconds = Number(error.retryAfter);
     if (Number.isFinite(seconds) && seconds >= 0) {
-      return Math.ceil(seconds * 1000);
+      return Math.max(exponential, Math.ceil(seconds * 1000));
+    }
+    const retryAt = Date.parse(error.retryAfter);
+    if (Number.isFinite(retryAt)) {
+      return Math.max(exponential, retryAt - nowMs);
     }
   }
-  return baseMs * 2 ** Math.max(0, attempt);
+  return exponential;
 }
 
 const GMAIL_API_ROOT = "https://gmail.googleapis.com/gmail/v1/users/me";

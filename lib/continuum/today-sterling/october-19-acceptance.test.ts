@@ -62,7 +62,8 @@ function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTod
       recommendationItemId: disposition === "presented" ? `recommendation:${id}` : null,
       currentStage: { canonicalLifecycleStage: null, operationalSubstage: null, responsibleParty: owner,
         confidence: "high", explanation, evidenceRefs: [`evidence:${id}`] },
-      obligations, nextStepOwner: owner, confidence: "high", evidenceRefs: [`evidence:${id}`], ambiguities,
+      obligations, nextStepOwner: owner, attentionPriority: disposition === "presented" ? "monitor" : "no_attention",
+      confidence: "high", evidenceRefs: [`evidence:${id}`], ambiguities,
       explanation, omissionReason: disposition === "presented" ? null : "Not actionable operational evidence.",
     });
   const obligation = (id: string, description: string, responsibleParty: "founder" | "vendor_shop" | "client",
@@ -84,7 +85,7 @@ function fixture(): { workingSet: SterlingTodayWorkingSet; proposal: SterlingTod
     itemId: row.recommendationItemId, workUnitId: row.workUnitId,
     category: row.workUnitId.endsWith("audrey") ? "waiting_on_client" as const
       : row.workUnitId.endsWith("nivoda") ? "waiting_on_shop" as const : "founder_actions" as const,
-    projectId: null, personId: null, relationshipRole: "unknown" as const,
+    projectId: null, personId: null, relationshipRole: "unknown" as const, attentionPriority: "monitor" as const,
     title: row.explanation, summary: row.obligations.map((item) => item.description).join("; "),
     confidence: "high" as const, explanation: row.explanation, evidenceRefs: row.evidenceRefs,
     ambiguities: row.ambiguities, obligations: row.obligations,
@@ -133,7 +134,7 @@ describe("October 21 Sterling acceptance diagnostics", () => {
     newsletter.recommendationItemId = "recommendation:newsletter";
     newsletter.omissionReason = null;
     proposal.recommendations = [...proposal.recommendations, { itemId: "recommendation:newsletter", workUnitId: newsletter.workUnitId,
-      category: "founder_actions", projectId: null, personId: null, relationshipRole: "unknown", title: "Newsletter",
+      category: "founder_actions", projectId: null, personId: null, relationshipRole: "unknown", attentionPriority: "action_now", title: "Newsletter",
       summary: "Forward this email", confidence: "low", explanation: "Noise", evidenceRefs: ["evidence:newsletter"],
       ambiguities: [], obligations: [] }];
     const report = evaluateOctober21Acceptance(workingSet, proposal);

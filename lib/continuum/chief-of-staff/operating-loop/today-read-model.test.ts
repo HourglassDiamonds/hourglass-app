@@ -16,6 +16,7 @@ import {
   shouldScheduleTodayRecompute,
   storeCachedTodayLoop,
   todayRecomputeInFlight,
+  todayRecomputeUnavailable,
   waitForTodayRecompute,
 } from "./today-read-model";
 import type { CosOperatingLoopView } from "./types";
@@ -143,6 +144,9 @@ describe("Today navigation read model", () => {
     assert.equal(todayRecomputeInFlight(), false);
     assert.equal(readLastKnownTodayLoop()?.loop.heading, "last known");
     assert.equal(shouldScheduleTodayRecompute("v2", Date.now()), false);
+    assert.equal(todayRecomputeUnavailable("v2"), true);
+    assert.equal(todayRecomputeUnavailable(), true);
+    assert.equal(todayRecomputeUnavailable("v3"), false);
     assert.equal(shouldScheduleTodayRecompute("v3", Date.now()), true);
   });
 
@@ -203,6 +207,8 @@ describe("Today navigation read model", () => {
     );
     assert.match(ui, /Checking for updates/);
     assert.match(ui, /probeTodayRecompute/);
+    assert.match(ui, /Today refresh unavailable/);
+    assert.match(ui, /showing the last verified view/);
     assert.match(ui, /shouldSwapTodayAfterRecompute/);
     assert.doesNotMatch(ui, /location\.reload/);
   });

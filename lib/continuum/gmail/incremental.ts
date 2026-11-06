@@ -17,6 +17,14 @@ import { isSyncEligible } from "./connection";
 import {
   HISTORICAL_INCOMPLETE,
   HISTORY_TOO_OLD,
+  GMAIL_DATABASE_FAILED,
+  GMAIL_INVALID_PAGE_TOKEN,
+  GMAIL_PROVIDER_FORBIDDEN,
+  GMAIL_PROVIDER_TEMPORARY,
+  GMAIL_PROVIDER_TIMEOUT,
+  GMAIL_PROVIDER_UNAUTHORIZED,
+  GMAIL_RATE_LIMITED,
+  parsePendingHistoryCursor,
   runIncrementalSync,
 } from "./incremental-sync";
 import type { GmailAccessTokenRefresh } from "./oauth";
@@ -39,6 +47,13 @@ export const GMAIL_INCREMENTAL_CHUNK_ERROR_CODES = [
   "invalid_grant",
   "gmail-sync-already-running",
   "gmail-sync-failed",
+  GMAIL_RATE_LIMITED,
+  GMAIL_PROVIDER_TEMPORARY,
+  GMAIL_INVALID_PAGE_TOKEN,
+  GMAIL_DATABASE_FAILED,
+  GMAIL_PROVIDER_TIMEOUT,
+  GMAIL_PROVIDER_FORBIDDEN,
+  GMAIL_PROVIDER_UNAUTHORIZED,
   "connection-inactive",
   "sync-disabled",
   HISTORICAL_INCOMPLETE,
@@ -92,6 +107,11 @@ export type GmailIncrementalChunkInput = {
   refreshAccessToken: (refreshToken: string) => Promise<GmailAccessTokenRefresh>;
   createApi: (accessToken: string) => GmailApi;
   clock?: SyncClock;
+  maxGetsPerSec?: number;
+  maxRetries?: number;
+  retryJitterRatio?: number;
+  maxRetryDelayMs?: number;
+  retryRandom?: () => number;
 };
 
 function isIncrementalErrorCode(
@@ -191,8 +211,10 @@ export function snapshotFromIncrementalCheckpoint(
     });
   }
   const completed = row.status === "completed" && row.pageToken == null && Boolean(row.historyId);
-  const morePagesRemain = row.status === "running" && Boolean(row.pageToken);
-  const recovery = row.errorCode === HISTORY_TOO_OLD;
+  const morePagesRemain = Boolean(row.pageToken);
+  const recovery =
+    row.errorCode === HISTORY_TOO_OLD ||
+    Boolean(parsePendingHistoryCursor(row.cursorMessageId));
   return sanitizeGmailIncrementalChunkResult({
     chunkSucceeded: row.status !== "failed",
     checkpointStatus: row.status,
@@ -321,6 +343,11 @@ export async function runGmailIncrementalChunk(
       connections: input.connections,
       founderMailboxHash: connection.mailboxEmailHash,
       clock: input.clock,
+      maxGetsPerSec: input.maxGetsPerSec,
+      maxRetries: input.maxRetries,
+      retryJitterRatio: input.retryJitterRatio,
+      maxRetryDelayMs: input.maxRetryDelayMs,
+      retryRandom: input.retryRandom,
     });
 
     const after = await input.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);

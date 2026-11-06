@@ -344,6 +344,12 @@ export type CosMasterSprintItem = {
 
 export type CosOperatingLoopStatus = "caught-up" | "active" | "disconnected";
 
+export type TodayCorrespondenceStatus =
+  | "complete"
+  | "partial"
+  | "unavailable"
+  | "not-required";
+
 export type CosOperatingLoopView = {
   contractVersion: typeof COS_OPERATING_LOOP_CONTRACT_VERSION;
   status: CosOperatingLoopStatus;
@@ -384,6 +390,8 @@ export type CosOperatingLoopView = {
   todayFreshness?: "current" | "refreshing";
   /** Watermark this loop was composed for. Not mailbox content. */
   todayReadModelWatermark?: string | null;
+  /** Live correspondence coverage for the required Today evidence set. */
+  todayCorrespondenceStatus?: TodayCorrespondenceStatus;
   /** Shared all-Job time boundary; includes work outside visible Top N. */
   attentionValidUntil?: string | null;
   /** Canonical Reminder/Watching state, including quiet and terminal rows. */

@@ -9,10 +9,12 @@ import {
   shouldSwapTodayAfterRecompute,
   todaySourceHealthAfterCycle,
   todaySourceFreshnessLabel,
+  todaySnapshotFreshnessLabel,
   type TodaySourceHealth,
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-refresh";
 import { refreshGmailOperatingFreshness } from "../gmail-freshness-actions";
 import { probeTodayRecompute, probeTodayCanonicalWatermark } from "../today-read-model-actions";
+import type { TodayCorrespondenceStatus } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 
 const TODAY_RECOMPUTE_POLL_MS = 1_000;
 
@@ -26,14 +28,21 @@ const TODAY_RECOMPUTE_POLL_MS = 1_000;
  */
 export function GmailOperatingFreshness({
   refreshing = false,
+  rebuildUnavailable = false,
   baselineWatermark = null,
+  snapshotComposedAt = null,
+  correspondenceStatus,
 }: {
   refreshing?: boolean;
+  rebuildUnavailable?: boolean;
   baselineWatermark?: string | null;
+  snapshotComposedAt?: string | null;
+  correspondenceStatus?: TodayCorrespondenceStatus;
 }) {
   const router = useRouter();
   const inFlight = useRef(false);
   const [checking, setChecking] = useState(refreshing);
+  const [refreshUnavailable, setRefreshUnavailable] = useState(rebuildUnavailable);
   const [sourceHealth, setSourceHealth] = useState<TodaySourceHealth>("checking");
   const [lastCheckedAt, setLastCheckedAt] = useState<number | null>(null);
   const [clock, setClock] = useState(() => Date.now());
@@ -112,6 +121,11 @@ export function GmailOperatingFreshness({
       try {
         const probe = await probeTodayRecompute();
         if (cancelled) return;
+        if (probe.unavailable) {
+          setRefreshUnavailable(true);
+          setChecking(false);
+          return;
+        }
         if (probe.pending) observedPending.current = true;
         const decision = shouldSwapTodayAfterRecompute({
           baselineWatermark,
@@ -147,19 +161,40 @@ export function GmailOperatingFreshness({
     };
   }, [baselineWatermark, refreshing, router]);
 
-  const activelyChecking = refreshing || checking;
+  // `refreshing` is the server snapshot that starts the probe. Once the probe
+  // settles, local state owns the label; otherwise a true initial prop pins
+  // the UI to "Checking for updates…" even after the durable check completes.
+  const activelyChecking = !refreshUnavailable && checking;
   const health = activelyChecking ? "checking" : sourceHealth;
-  const label = health === "checking"
+  const snapshotLabel = todaySnapshotFreshnessLabel({ composedAt: snapshotComposedAt, nowMs: clock });
+  const label = snapshotLabel ?? (health === "checking"
     ? "Checking for updates…"
-    : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock });
+    : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock }));
   return (
-    <p
-      data-today-freshness={health}
-      data-today-refreshing={activelyChecking ? "" : undefined}
-      className={`mb-3 text-[0.72rem] uppercase tracking-[0.16em] ${health === "delayed" ? "text-[#d6a66f]" : "text-[#81776d]"}`}
-      role="status"
-    >
-      {label}
-    </p>
+    <div className="mb-3 space-y-1" role="status">
+      <p
+        data-today-freshness={health}
+        data-today-refreshing={activelyChecking ? "" : undefined}
+        className={`text-[0.72rem] uppercase tracking-[0.16em] ${health === "delayed" ? "text-[#d6a66f]" : "text-[#81776d]"}`}
+      >
+        {label}
+      </p>
+      {refreshUnavailable ? (
+        <p
+          data-today-read-model="unavailable"
+          className="text-[0.72rem] uppercase tracking-[0.16em] text-[#d6a66f]"
+        >
+          Today refresh unavailable · showing the last verified view
+        </p>
+      ) : null}
+      {correspondenceStatus === "partial" || correspondenceStatus === "unavailable" ? (
+        <p
+          data-today-correspondence={correspondenceStatus}
+          className="text-[0.72rem] uppercase tracking-[0.16em] text-[#d6a66f]"
+        >
+          Correspondence incomplete · canonical Projects and Jobs remain available
+        </p>
+      ) : null}
+    </div>
   );
 }

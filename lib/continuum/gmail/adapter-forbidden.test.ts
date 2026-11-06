@@ -5,6 +5,7 @@ import {
   classifyGmailForbiddenErrorBody,
   createLiveGmailApi,
   isRetryableGmailError,
+  retryDelayMs,
 } from "./adapter";
 
 describe("Gmail forbidden diagnostics", () => {
@@ -49,7 +50,7 @@ describe("Gmail forbidden diagnostics", () => {
       isRetryableGmailError(
         new GmailHttpError(403, "http", undefined, "rate_limited"),
       ),
-      false,
+      true,
     );
   });
 
@@ -83,5 +84,22 @@ describe("Gmail forbidden diagnostics", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it("honors numeric and HTTP-date Retry-After values", () => {
+    const now = Date.parse("2026-11-04T22:00:00.000Z");
+    assert.equal(
+      retryDelayMs(new GmailHttpError(429, "http", "3"), 0, 500, now),
+      3_000,
+    );
+    assert.equal(
+      retryDelayMs(
+        new GmailHttpError(429, "http", "Wed, 04 Nov 2026 22:00:05 GMT"),
+        0,
+        500,
+        now,
+      ),
+      5_000,
+    );
   });
 });

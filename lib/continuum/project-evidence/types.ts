@@ -25,6 +25,8 @@ export const PROJECT_EVIDENCE_BASIS_FLAGS = [
   "exact_stored_gmail_thread",
   "founder_approval",
   "founder_rejection",
+  "exact_canonical_email",
+  "founder_explicit_linkage",
   "exact_attachment_project_number",
   "known_person_commercial",
   "conflicting_project_numbers",
@@ -39,6 +41,8 @@ export type ProjectEvidenceBasis = {
   projectNumbers: readonly string[];
   conflictingProjectNumbers: readonly string[];
   attachmentNames: readonly string[];
+  targetPersonId?: string | null;
+  targetJobId?: string | null;
 };
 
 export type ProjectEvidenceCatalogProject = {

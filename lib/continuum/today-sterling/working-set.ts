@@ -8,6 +8,7 @@ import type {
 } from "@/lib/continuum/candidates/founder-attention";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
 import type { ProjectJob } from "@/lib/continuum/client-memory/project-jobs/types";
+import type { LifecycleKind, ProjectLifecycleStage } from "@/lib/continuum/client-memory/project-lifecycle";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import type { TodayUpcomingItem } from "@/lib/continuum/calendar/today-upcoming";
 import { strictProjectNumbers } from "@/lib/continuum/project-evidence/discover";
@@ -16,6 +17,7 @@ import {
   type SterlingEvidence,
   type SterlingRelationshipRole,
   type SterlingResponsibleParty,
+  type SterlingFounderDirectiveRecord,
   type SterlingTodayWorkingSet,
   type SterlingPreviousTodayItem,
 } from "./types";
@@ -31,6 +33,7 @@ export type BuildSterlingTodayWorkingSetInput = {
   projectThreadIds?: ReadonlyMap<string, readonly string[]>;
   knownPeople: readonly TodayKnownPerson[];
   founderCorrections?: readonly SourceCommunicationEvent[];
+  founderDirectives?: readonly SterlingFounderDirectiveRecord[];
   calendar?: readonly TodayUpcomingItem[];
   calendarAvailability?: SterlingTodayWorkingSet["calendarAvailability"];
   previousToday?: readonly SterlingPreviousTodayItem[];
@@ -58,6 +61,33 @@ function responsibleParty(actor: ProjectJob["waitingOnActor"]): SterlingResponsi
   if (actor === "client") return "client";
   if (actor === "vendor") return "vendor_shop";
   return "unknown";
+}
+
+function founderWaitingOn(
+  actor: NonNullable<SourceCommunicationEvent["correction"]>["ballHolder"],
+): SterlingResponsibleParty {
+  if (actor === "founder") return "founder";
+  if (actor === "client") return "client";
+  if (actor === "vendor_shop") return "vendor_shop";
+  return "unknown";
+}
+
+function founderLifecycleStage(
+  stage: NonNullable<SourceCommunicationEvent["correction"]>["stage"],
+  kind: string | null | undefined,
+): ProjectLifecycleStage | undefined {
+  if (!stage || (kind !== "custom_new_jewelry" && kind !== "repair_service")) return undefined;
+  const lifecycleKind = kind as LifecycleKind;
+  if (stage === "complete") return "completed";
+  if (stage === "ready") return lifecycleKind === "repair_service" ? "ready_for_return" : "ready_for_delivery";
+  if (stage === "in_production" || stage === "order_confirmed") {
+    return lifecycleKind === "repair_service" ? "bench" : "production";
+  }
+  if (stage === "approved") return "client_approval";
+  if (lifecycleKind === "custom_new_jewelry" && ["design_requested", "cad_review", "revision_requested"].includes(stage)) {
+    return stage === "design_requested" ? "design" : "cad";
+  }
+  return undefined;
 }
 
 function targetProjectId(candidate: ContinuumCandidate): string | null {
@@ -224,11 +254,51 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
       projectIds: unique([targetProjectId(candidate)]), personIds: [], provenance: `candidate:${candidate.parserVersion}` });
   }
   for (const correction of input.founderCorrections ?? []) {
+    const project = correction.projectId
+      ? input.projects.find((row) => row.projectId === correction.projectId)
+      : null;
+    const truth = correction.correction;
     evidence.push({ evidenceId: `founder:${digest([correction.sourceRef, correction.timestamp]).slice(0, 20)}`,
       sourceType: "founder_directive", sourceRef: correction.sourceRef, timestamp: correction.timestamp,
       direction: correction.direction, subject: correction.subject, excerpt: cleanExcerpt(correction.authorOwnedText || correction.evidenceExcerpt),
       attachmentFilenames: [...correction.attachmentFilenames], messageId: correction.messageId, threadId: correction.threadId,
-      projectIds: unique([correction.projectId]), personIds: [], provenance: "founder_correction" });
+      projectIds: unique([correction.projectId]), personIds: [], provenance: "founder_correction",
+      founderDirective: truth ? {
+        directiveId: correction.sourceRef,
+        workUnitId: correction.projectId ? `project:${correction.projectId}` : undefined,
+        lifecycleStage: founderLifecycleStage(truth.stage, project?.projectKind),
+        waitingOn: founderWaitingOn(truth.ballHolder),
+        attentionPriority: truth.stage === "complete" ? "no_attention"
+          : truth.ballHolder === "founder" ? "action_now" : "monitor",
+        disposition: truth.sourceDisposition === "spam" ? "rejected_junk"
+          : truth.stage === "complete" ? "completed" : "active",
+      } : null });
+  }
+  for (const directive of input.founderDirectives ?? []) {
+    evidence.push({
+      evidenceId: `founder-directive:${directive.directiveId}`,
+      sourceType: "founder_directive",
+      sourceRef: `founder-directive:${directive.directiveId}`,
+      timestamp: directive.recordedAt,
+      direction: "outbound",
+      subject: null,
+      excerpt: directive.reason,
+      attachmentFilenames: [],
+      messageId: directive.directiveId,
+      threadId: null,
+      projectIds: unique([directive.projectId]),
+      personIds: unique([directive.personId]),
+      provenance: "sterling_founder_directive",
+      founderDirective: {
+        directiveId: directive.directiveId,
+        workUnitId: directive.workUnitId,
+        lifecycleStage: directive.lifecycleStage,
+        waitingOn: directive.waitingOn,
+        attentionPriority: directive.attentionPriority,
+        relationshipRole: directive.relationshipRole,
+        disposition: directive.disposition,
+      },
+    });
   }
   for (const item of input.calendar ?? []) {
     evidence.push({ evidenceId: `calendar:${item.sourceRef}`, sourceType: "calendar", sourceRef: item.sourceRef,

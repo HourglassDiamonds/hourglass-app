@@ -428,6 +428,7 @@ export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoo
   const lifecycle = (item.projectId ? loop.lifecycleByProject?.get(item.projectId) : null) ?? null;
   const waitingState =
     /SHOP/i.test(item.ownership) ? "shop" : /CLIENT/i.test(item.ownership) ? "client" : null;
+  const indexedEvidence = indexedProjectCorrespondence(item.projectId, loop);
   return composeTodayBriefingPacket({
     itemId: item.id,
     displayNameHint: item.clientLabel || item.projectTitle,
@@ -436,7 +437,7 @@ export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoo
     projectName: item.projectTitle,
     projectId: item.projectId,
     personId: null,
-    threadSubject: null,
+    threadSubject: indexedEvidence.threadSubject,
     lifecycle,
     remainingFounderCommitment:
       /YOUR TURN|founder/i.test(item.ownership) && isCurrentFounderOwnedObligationText(item.action)
@@ -449,11 +450,63 @@ export function equivalentPacketFromJob(item: CosTop5Item, loop: CosOperatingLoo
         : null,
     waitingState,
     noFounderAction: !/YOUR TURN|founder/i.test(item.ownership),
-    staleInboundSatisfied: false,
+    staleInboundSatisfied: indexedEvidence.staleInboundSatisfied,
     openJobProven: true,
-    sourceRefs: item.sourceRef ? [item.sourceRef] : [],
-    evidence: [],
+    sourceRefs: [
+      ...(item.sourceRef ? [item.sourceRef] : []),
+      ...indexedEvidence.evidence.map((beat) => beat.sourceHref).filter((ref): ref is string => Boolean(ref)),
+    ],
+    evidence: indexedEvidence.evidence,
   });
+}
+
+function indexedProjectCorrespondence(
+  projectId: string | null,
+  loop: CosOperatingLoopView,
+): {
+  evidence: CosEvidenceBeat[];
+  staleInboundSatisfied: boolean;
+  threadSubject: string | null;
+} {
+  if (!projectId) return { evidence: [], staleInboundSatisfied: false, threadSubject: null };
+  const evidence: CosEvidenceBeat[] = [];
+  let latestInbound = 0;
+  let latestOutbound = 0;
+  for (const threadId of loop.associatedGmailThreadsByProject?.get(projectId) ?? []) {
+    const thread = loop.threadContext?.get(threadId);
+    if (!thread?.messages?.length) continue;
+    const latestByDirection = new Map<"inbound" | "outbound", typeof thread.messages[number]>();
+    for (const message of thread.messages) {
+      if (message.direction !== "inbound" && message.direction !== "outbound") continue;
+      const current = latestByDirection.get(message.direction);
+      if (!current || Date.parse(message.sentAt) > Date.parse(current.sentAt)) {
+        latestByDirection.set(message.direction, message);
+      }
+    }
+    for (const [direction, message] of latestByDirection) {
+      const sourceHref = `https://mail.google.com/mail/u/0/#all/${threadId}/${message.messageId}`;
+      const timestamp = Date.parse(message.sentAt);
+      if (direction === "inbound") latestInbound = Math.max(latestInbound, timestamp);
+      if (direction === "outbound") latestOutbound = Math.max(latestOutbound, timestamp);
+      evidence.push({
+        at: message.sentAt,
+        label: direction === "outbound" ? "Founder email" : "Client email",
+        // Direction, timestamp, and provider ids are indexed facts. Do not use
+        // a subject or attachment token here as canonical Project identity.
+        summary: direction === "outbound" ? "Indexed founder email" : "Indexed client email",
+        speaker: direction === "outbound" ? "founder" : "client",
+        sourceHref,
+        candidateId: `indexed:${message.messageId}`,
+        timestamp: message.sentAt,
+      });
+    }
+  }
+  evidence.sort((left, right) => Date.parse(left.at) - Date.parse(right.at));
+  return {
+    evidence,
+    staleInboundSatisfied: latestInbound > 0 && latestOutbound > latestInbound,
+    threadSubject: null,
+  };
 }
 
 export function equivalentPacketFromWatching(item: CosWatchingItem): TodayBriefingPacket | null {

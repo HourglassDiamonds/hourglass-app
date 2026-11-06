@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import { loadTodaySurface } from "@/lib/continuum/chief-of-staff/operating-loop/load";
+import { loadPreviewIntegratedTodaySurface as loadTodaySurface } from "@/lib/continuum/today-sterling/publisher";
 import { loadTodayUpcoming } from "@/lib/continuum/calendar/today-upcoming-load";
 import { loadContinuumHomeModel } from "@/lib/continuum/dashboard/server";
 import { completeTop5OpenJobAction, disposeTodayDocketItemAction } from "./cos-operating-loop-actions";
@@ -14,6 +14,8 @@ import {
 } from "./components/conditional-hold-panel";
 import { loadActiveClientWebsiteIntakes } from "@/lib/continuum/client-memory/read/website-intake-load";
 import { composeBusinessTodayContext } from "@/lib/continuum/chief-of-staff/operating-loop/business-today-context";
+import { TodayIntelligenceStatus } from "./components/today-intelligence-status";
+import { isOperationalWebsiteIntake } from "@/lib/continuum/chief-of-staff/operating-loop/operational-fixtures";
 
 export const fetchCache = "force-no-store";
 // Today can perform a one-time synchronous read-model rebuild after a version
@@ -29,17 +31,22 @@ export default async function ConciergeHomePage() {
     loadTodayUpcoming(),
     loadActiveClientWebsiteIntakes(),
   ]);
+  const operationalIntakes = intakes.filter(isOperationalWebsiteIntake);
   const businessTodayContext = composeBusinessTodayContext({
     docket: today.docket,
-    intakes,
+    intakes: operationalIntakes,
     nowIso: new Date().toISOString(),
   });
   return (
     <ConciergeShell variant="home">
       <GmailOperatingFreshness
         refreshing={today.freshness === "refreshing"}
+        rebuildUnavailable={today.readModelStatus === "unavailable"}
         baselineWatermark={today.readModelWatermark}
+        snapshotComposedAt={today.snapshotComposedAt}
+        correspondenceStatus={today.correspondenceStatus}
       />
+      <TodayIntelligenceStatus status={today.intelligence} />
       <Suspense fallback={<ConditionalHoldPanelFallback />}>
         <ConditionalHoldPanel />
       </Suspense>
@@ -51,7 +58,7 @@ export default async function ConciergeHomePage() {
         disposeAction={disposeTodayDocketItemAction}
         askAction={askConcierge}
         upcoming={upcoming}
-        intakes={intakes}
+        intakes={operationalIntakes}
         businessTodayContext={businessTodayContext}
       />
     </ConciergeShell>

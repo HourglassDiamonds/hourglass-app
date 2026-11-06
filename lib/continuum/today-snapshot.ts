@@ -5,11 +5,12 @@
  */
 
 import type { CosTodayDocketView } from "@/lib/continuum/chief-of-staff/operating-loop/docket";
+import type { TodayCorrespondenceStatus } from "@/lib/continuum/chief-of-staff/operating-loop/types";
 
 // Bump whenever reducer/presentation semantics change without a canonical-source
 // write. The version is part of snapshot compatibility; a bump forces one
 // synchronous reconstruction instead of serving a semantically stale payload.
-export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v9" as const;
+export const CONTINUUM_TODAY_READ_MODEL_VERSION = "continuum-today-read-model-v11" as const;
 export const TODAY_SNAPSHOT_KEY = "founder_today_v1" as const;
 
 const DISPLAY_COMPATIBLE_READ_MODEL_VERSIONS = new Set<string>([
@@ -42,6 +43,7 @@ export type TodaySnapshotPayload = {
   readModelVersion: string;
   validUntil: string | null;
   docket: CosTodayDocketView;
+  correspondenceStatus?: TodayCorrespondenceStatus;
 };
 
 export type TodaySnapshotRecord = {
@@ -77,12 +79,14 @@ function sanitize(value: unknown): unknown {
 export function projectTodaySnapshot(
   docket: CosTodayDocketView,
   validUntil: string | null = null,
+  correspondenceStatus?: TodayCorrespondenceStatus,
 ): TodaySnapshotPayload {
   const sanitized = sanitize(docket) as CosTodayDocketView;
   return {
     readModelVersion: CONTINUUM_TODAY_READ_MODEL_VERSION,
     validUntil,
     docket: sanitized,
+    correspondenceStatus,
   };
 }
 
@@ -92,7 +96,7 @@ export function serializedTodaySnapshotBytes(payload: TodaySnapshotPayload): num
 
 export function readTodaySnapshotPayload(value: unknown): TodaySnapshotPayload | null {
   if (!value || typeof value !== "object") return null;
-  const row = value as { readModelVersion?: unknown; validUntil?: unknown; docket?: unknown };
+  const row = value as { readModelVersion?: unknown; validUntil?: unknown; docket?: unknown; correspondenceStatus?: unknown };
   if (!isTodaySnapshotDisplayCompatibleVersion(row.readModelVersion)) return null;
   if (
     row.validUntil !== undefined &&
@@ -102,6 +106,10 @@ export function readTodaySnapshotPayload(value: unknown): TodaySnapshotPayload |
     return null;
   if (typeof row.validUntil === "string" && !Number.isFinite(Date.parse(row.validUntil))) return null;
   if (!row.docket || typeof row.docket !== "object") return null;
+  if (
+    row.correspondenceStatus !== undefined &&
+    !["complete", "partial", "unavailable", "not-required"].includes(String(row.correspondenceStatus))
+  ) return null;
   const docket = row.docket as { items?: unknown; watching?: unknown };
   if (!Array.isArray(docket.items) || !Array.isArray(docket.watching)) return null;
   return { ...row, validUntil: row.validUntil ?? null } as TodaySnapshotPayload;

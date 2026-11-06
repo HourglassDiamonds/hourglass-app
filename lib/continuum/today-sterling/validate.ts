@@ -45,9 +45,13 @@ export function validateSterlingTodayProposal(
     if (assessment.todayDisposition === "presented") {
       if (!assessment.recommendationItemId) errors.push(`presented-without-recommendation:${assessment.workUnitId}`);
       if (assessment.omissionReason !== null) errors.push(`presented-with-omission-reason:${assessment.workUnitId}`);
+      if (assessment.attentionPriority === "no_attention") errors.push(`presented-without-attention:${assessment.workUnitId}`);
     } else {
       if (assessment.recommendationItemId !== null) errors.push(`omitted-with-recommendation:${assessment.workUnitId}`);
       if (!assessment.omissionReason?.trim()) errors.push(`missing-omission-reason:${assessment.workUnitId}`);
+      if (assessment.todayDisposition === "suppressed" && assessment.attentionPriority !== "no_attention") {
+        errors.push(`suppressed-with-attention:${assessment.workUnitId}`);
+      }
     }
     const refs = [...assessment.evidenceRefs, ...assessment.currentStage.evidenceRefs,
       ...assessment.obligations.flatMap(row => row.evidenceRefs)];
@@ -85,6 +89,25 @@ export function validateSterlingTodayProposal(
     if (!assessment || assessment.recommendationItemId !== item.itemId || assessment.todayDisposition !== "presented") {
       errors.push(`recommendation-assessment-mismatch:${item.itemId}`);
     } else {
+      if (item.attentionPriority !== assessment.attentionPriority) {
+        errors.push(`attention-priority-mismatch:${item.itemId}`);
+      }
+      if ((item.category === "up_next" || item.category === "founder_actions") &&
+          item.attentionPriority !== "action_now") {
+        errors.push(`action-category-without-action-priority:${item.itemId}`);
+      }
+      if (item.category === "founder_actions" && assessment.nextStepOwner !== "founder") {
+        errors.push(`founder-category-owner-mismatch:${item.itemId}`);
+      }
+      if (item.category === "waiting_on_client" && assessment.nextStepOwner !== "client") {
+        errors.push(`client-wait-owner-mismatch:${item.itemId}`);
+      }
+      if (item.category === "waiting_on_shop" && assessment.nextStepOwner !== "vendor_shop") {
+        errors.push(`shop-wait-owner-mismatch:${item.itemId}`);
+      }
+      if (item.category === "closed_or_superseded") {
+        errors.push(`closed-item-must-be-suppressed:${item.itemId}`);
+      }
       const assessedObligations = new Map(assessment.obligations.map(row => [row.obligationId, row]));
       const recommendationObligationIds = new Set<string>();
       for (const obligation of item.obligations) {

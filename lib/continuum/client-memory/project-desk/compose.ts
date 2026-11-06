@@ -154,6 +154,7 @@ function composeSummary(
   return {
     projectId: profile.projectId,
     title: profile.displayTitle,
+    sourceSystem: profile.sourceSystem,
     projectKind,
     people,
     specs,

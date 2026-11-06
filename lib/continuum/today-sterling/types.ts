@@ -2,7 +2,7 @@
 import type { ProjectLifecycleStage } from "@/lib/continuum/client-memory/project-lifecycle";
 
 export const STERLING_TODAY_WORKING_SET_VERSION = "sterling-today-working-set-v3" as const;
-export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v5" as const;
+export const STERLING_TODAY_PROPOSAL_VERSION = "sterling-today-proposal-v6" as const;
 
 export const STERLING_TODAY_CATEGORIES = [
   "up_next", "founder_actions", "waiting_on_client", "waiting_on_shop",
@@ -21,6 +21,32 @@ export const STERLING_RELATIONSHIP_ROLES = [
 ] as const;
 export type SterlingRelationshipRole = (typeof STERLING_RELATIONSHIP_ROLES)[number];
 export type SterlingConfidence = "high" | "medium" | "low";
+
+export const STERLING_ATTENTION_PRIORITIES = [
+  "action_now", "monitor", "no_attention",
+] as const;
+export type SterlingAttentionPriority = (typeof STERLING_ATTENTION_PRIORITIES)[number];
+
+export const STERLING_FOUNDER_DISPOSITIONS = [
+  "active", "completed", "declined", "dormant", "rejected_junk", "solicitation", "operational_non_client",
+] as const;
+export type SterlingFounderDisposition = (typeof STERLING_FOUNDER_DISPOSITIONS)[number];
+
+export type SterlingFounderDirectiveRecord = {
+  directiveId: string;
+  workUnitId: string;
+  projectId: string | null;
+  personId: string | null;
+  sourceRefs: readonly string[];
+  recordedAt: string;
+  recordedBy: string;
+  lifecycleStage?: ProjectLifecycleStage | null;
+  waitingOn?: SterlingResponsibleParty;
+  attentionPriority?: SterlingAttentionPriority;
+  relationshipRole?: SterlingRelationshipRole;
+  disposition?: SterlingFounderDisposition;
+  reason: string;
+};
 
 export type SterlingWorkingPerson = {
   personId: string; displayName: string; roles: readonly string[];
@@ -63,6 +89,16 @@ export type SterlingEvidence = {
     | null;
   /** Attachment metadata proves presence only, never attachment contents. */
   attachmentEvidence?: "none" | "verified_metadata_presence" | null;
+  /** Structured founder authority. It is identity-bound evidence, not model inference. */
+  founderDirective?: {
+    directiveId: string;
+    workUnitId?: string;
+    lifecycleStage?: ProjectLifecycleStage | null;
+    waitingOn?: SterlingResponsibleParty;
+    attentionPriority?: SterlingAttentionPriority;
+    relationshipRole?: SterlingRelationshipRole;
+    disposition?: SterlingFounderDisposition;
+  } | null;
 };
 
 export type SterlingPreviousTodayItem = {
@@ -137,6 +173,7 @@ export type SterlingPortfolioAssessment = {
     explanation: string; evidenceRefs: readonly string[] };
   obligations: readonly SterlingObligationAssessment[];
   nextStepOwner: SterlingResponsibleParty;
+  attentionPriority: SterlingAttentionPriority;
   confidence: SterlingConfidence;
   evidenceRefs: readonly string[];
   ambiguities: readonly string[];
@@ -147,6 +184,7 @@ export type SterlingPortfolioAssessment = {
 export type SterlingTodayRecommendation = {
   itemId: string; workUnitId: string; category: SterlingTodayCategory; projectId: string | null; personId: string | null;
   relationshipRole: SterlingRelationshipRole; title: string; summary: string;
+  attentionPriority: SterlingAttentionPriority;
   confidence: SterlingConfidence; explanation: string;
   evidenceRefs: readonly string[]; ambiguities: readonly string[];
   obligations: readonly SterlingObligationAssessment[];

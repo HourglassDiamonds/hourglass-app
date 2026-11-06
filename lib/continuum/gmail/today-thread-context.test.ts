@@ -200,6 +200,36 @@ describe("Today live Gmail rebuild batch", () => {
     assert.deepEqual(result.get(timThread)?.attachmentFilenames, ["Tim-Jenn-C025964-order.pdf"]);
   });
 
+  it("loads an exact founder-trusted Project thread without a Candidate and preserves provider ids", async () => {
+    const threadId = "1a15fb0c9b520621";
+    const messageId = "1a15fb0c9b520622";
+    const result = await loadIndexedTodayThreadContext([], {
+      client: pagedClient([{
+        thread_id: threadId,
+        message_id: messageId,
+        sent_at: "2026-11-05T14:58:46.000Z",
+        direction: "outbound",
+        subject: "Morgan marquise",
+        label_ids: ["SENT"],
+        from_email_hash: "f".repeat(64),
+        to_email_hashes: ["a".repeat(64)],
+        has_attachments: false,
+      }], []) as never,
+      additionalThreadIds: [threadId],
+    });
+    assert.deepEqual([...result.keys()], [threadId]);
+    assert.equal(result.get(threadId)?.messages?.[0]?.messageId, messageId);
+    assert.equal(result.get(threadId)?.messages?.[0]?.direction, "outbound");
+  });
+
+  it("does not manufacture context for a trusted association whose indexed source is stale or missing", async () => {
+    const result = await loadIndexedTodayThreadContext([], {
+      client: pagedClient([], []) as never,
+      additionalThreadIds: ["1a15fb0c9b520621"],
+    });
+    assert.equal(result.size, 0);
+  });
+
   it("loads one credential context and reads each stable thread once", async () => {
     const base = new Map<string, TodayGmailThreadContext>([
       [
@@ -305,6 +335,19 @@ describe("Today live Gmail rebuild batch", () => {
       latestIndexedMessageAt: null,
       latestLiveMessageAt: null,
     }]);
+  });
+
+  it("reports the batch initialization blocker instead of attributing it to every provider read", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      ["thread-a", { subject: "Indexed subject", messages: [] }],
+    ]);
+    const outcomes: TodayLiveThreadOutcome[] = [];
+    const result = await loadLiveTodayOperationalFacts(base, {
+      createBatchResult: async () => ({ ok: false, safeErrorCategory: "token-kek-missing" }),
+      onThreadOutcome: (outcome) => outcomes.push(outcome),
+    });
+    assert.equal(result.get("thread-a")?.subject, "Indexed subject");
+    assert.equal(outcomes[0]?.safeErrorCategory, "token-kek-missing");
   });
 
   it("retains decoded non-operational current text without promoting provider fallback", async () => {
@@ -427,6 +470,52 @@ describe("Today live Gmail rebuild batch", () => {
         }),
       /today-live-enrichment-incomplete/,
     );
+  });
+
+  it("keeps a useful partial canonical view and recovers when Gmail returns", async () => {
+    const base = new Map<string, TodayGmailThreadContext>([
+      ["thread-a", { messages: [{ messageId: "message-a", sentAt: "2026-10-30T12:00:00.000Z", direction: "inbound" }] }],
+      ["thread-b", { messages: [{ messageId: "message-b", sentAt: "2026-10-30T13:00:00.000Z", direction: "inbound" }] }],
+    ]);
+    const partialOutcomes: TodayLiveThreadOutcome[] = [];
+    const partial = await loadLiveTodayOperationalFacts(base, {
+      requireComplete: false,
+      onThreadOutcome: (outcome) => partialOutcomes.push(outcome),
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 2 },
+        async fetchThread({ threadId, indexed }) {
+          if (threadId === "thread-b") return { ok: false, safeErrorCode: "unavailable" } as const;
+          return {
+            ok: true as const, safeErrorCode: null, threadId, indexedSubject: null,
+            messages: indexed.map((message) => ({ ...message, fromRaw: null, fromEmail: null,
+              to: [], cc: [], plainText: "Production is complete.", snippet: "", attachments: [] })),
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+          };
+        },
+      }),
+    });
+    assert.match(partial.get("thread-a")?.messages?.[0]?.operationalText ?? "", /Production is complete/);
+    assert.equal(partial.get("thread-b")?.messages?.[0]?.operationalText, undefined);
+    assert.deepEqual(partialOutcomes.map((row) => row.status).sort(), ["complete_live", "unavailable"]);
+
+    const recovered = await loadLiveTodayOperationalFacts(partial, {
+      requireComplete: false,
+      threadIds: ["thread-b"],
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 1 },
+        async fetchThread({ threadId, indexed }) {
+          return {
+            ok: true as const, safeErrorCode: null, threadId, indexedSubject: null,
+            messages: indexed.map((message) => ({ ...message, fromRaw: null, fromEmail: null,
+              to: [], cc: [], plainText: "CAD is ready.", snippet: "", attachments: [] })),
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+          };
+        },
+      }),
+    });
+    assert.match(recovered.get("thread-b")?.messages?.[0]?.operationalText ?? "", /CAD is ready/);
   });
 
   it("does not let an unrelated historical timeout veto a required subset", async () => {

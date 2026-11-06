@@ -213,7 +213,7 @@ describe("Continuum Gmail OAuth", () => {
     assert.equal(await store.getFounderConnection(), null);
   });
 
-  it("marks the connection revoked on invalid_grant", async () => {
+  it("preserves the stored connection when a new code exchange returns invalid_grant", async () => {
     oauthEnv();
     const pending = createGmailOAuthPending(SECRET);
     const store = new InMemoryGmailConnectionStore();
@@ -259,10 +259,70 @@ describe("Continuum Gmail OAuth", () => {
       assert.match(result.url, /gmail=invalid_grant/);
     }
     const connection = await store.getFounderConnection();
-    assert.equal(connection?.status, "revoked");
-    assert.equal(connection?.refreshToken, null);
-    assert.equal(connection?.statusErrorCode, "invalid_grant");
+    assert.equal(connection?.status, "connected");
+    assert.equal(connection?.refreshToken?.ciphertext, "c");
+    assert.equal(connection?.statusErrorCode, null);
+    assert.equal(connection?.updatedAt, "2026-08-01T00:00:00.000Z");
   });
+
+  for (const [label, scope] of [
+    ["missing", null],
+    ["additional", `${GMAIL_READONLY_SCOPE} https://www.googleapis.com/auth/gmail.send`],
+  ] as const) {
+    it(`rejects ${label === "additional" ? "an" : "a"} ${label} returned scope without replacing the stored connection`, async () => {
+      oauthEnv();
+      const pending = createGmailOAuthPending(SECRET);
+      const store = new InMemoryGmailConnectionStore();
+      await store.putConnection({
+        connectionId: "conn-existing",
+        mailboxSlot: "founder-v1",
+        mailboxEmailHash: "existing-hash",
+        status: "connected",
+        refreshToken: {
+          alg: "aes-256-gcm",
+          version: 1,
+          iv: "old-iv",
+          tag: "old-tag",
+          ciphertext: "old-ciphertext",
+        },
+        grantedScope: GMAIL_READONLY_SCOPE,
+        providerTokenType: "Bearer",
+        connectedAt: "2026-08-01T00:00:00.000Z",
+        updatedAt: "2026-08-01T00:00:00.000Z",
+        lastSyncAt: null,
+        statusErrorCode: null,
+      });
+      const exchanger = mockExchanger({
+        async exchangeCode() {
+          return {
+            refreshToken: "candidate-refresh",
+            accessToken: "candidate-access",
+            tokenType: "Bearer",
+            scope,
+          };
+        },
+      });
+      const result = await handleGmailOAuthCallback({
+        url: new URL(
+          `http://localhost:3000/api/continuum/gmail/oauth/callback?code=auth-code&state=${pending.pending.state}`,
+        ),
+        pendingCookie: pending.token,
+        signingSecret: SECRET,
+        exchanger,
+        fetchProfile: async () => ({ emailAddress: FOUNDER }),
+        connections: store,
+        founderRedirect: "/executive-dashboard/concierge",
+        tokenKek: KEK,
+        founderEmail: FOUNDER,
+      });
+      assert.equal(result.status, "redirect");
+      if (result.status === "redirect") assert.match(result.url, /gmail=oauth-denied/);
+      assert.deepEqual(exchanger.revoked, ["candidate-refresh"]);
+      const connection = await store.getFounderConnection();
+      assert.equal(connection?.refreshToken?.ciphertext, "old-ciphertext");
+      assert.equal(connection?.updatedAt, "2026-08-01T00:00:00.000Z");
+    });
+  }
 
   it("maps Google token errors to safe codes without leaking descriptions", () => {
     assert.equal(

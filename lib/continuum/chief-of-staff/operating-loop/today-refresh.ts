@@ -62,6 +62,19 @@ export function todaySourceFreshnessLabel(input: {
   return `Updated ${Math.floor(seconds / 60)}m ago`;
 }
 
+/** A usable persisted docket reports its own age even while sources are rechecked. */
+export function todaySnapshotFreshnessLabel(input: {
+  composedAt: string | null | undefined;
+  nowMs: number;
+}): string | null {
+  const composedMs = Date.parse(input.composedAt ?? "");
+  if (!Number.isFinite(composedMs)) return null;
+  const seconds = Math.max(0, Math.floor((input.nowMs - composedMs) / 1000));
+  if (seconds < 60) return "Today snapshot updated just now";
+  if (seconds < 3_600) return `Today snapshot updated ${Math.floor(seconds / 60)}m ago`;
+  return `Today snapshot updated ${Math.floor(seconds / 3_600)}h ago`;
+}
+
 export type TodayRecomputePollDecision = "wait" | "swap" | "keep";
 
 /**

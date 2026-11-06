@@ -163,6 +163,8 @@ export function vendorOrganizationFromIdentityText(
 export type TodayGmailIndexedMessage = {
   messageId: string;
   sentAt: string;
+  /** Index persistence time, used to distinguish current-provider evidence from fixture-era rows. */
+  indexedAt?: string | null;
   direction: "inbound" | "outbound" | "unknown";
   labelIds?: readonly string[];
   fromEmailHash?: string | null;

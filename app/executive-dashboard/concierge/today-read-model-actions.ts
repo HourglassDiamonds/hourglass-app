@@ -6,10 +6,12 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
 import {
   readLastKnownTodayLoop,
   todayRecomputeInFlight,
+  todayRecomputeUnavailable,
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-read-model";
 
 export type TodayRecomputeProbe = {
   pending: boolean;
+  unavailable: boolean;
   cacheWatermark: string | null;
 };
 
@@ -18,10 +20,11 @@ export async function probeTodayRecompute(): Promise<TodayRecomputeProbe> {
   const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
-  if (!session.ok) return { pending: false, cacheWatermark: null };
+  if (!session.ok) return { pending: false, unavailable: false, cacheWatermark: null };
   const last = readLastKnownTodayLoop();
   return {
     pending: todayRecomputeInFlight(),
+    unavailable: todayRecomputeUnavailable(),
     cacheWatermark: last?.watermark ?? null,
   };
 }

@@ -55,6 +55,7 @@ export async function readTodaySourceWatermark(
     noteCount,
     elapsedAttentionBoundary,
     conditionalHoldState,
+    projectEvidenceAssociationState,
   ] = await Promise.all([
     exactCount(client, "continuum_candidates"),
     latestIso(client, "continuum_candidates", "created_at"),
@@ -73,6 +74,7 @@ export async function readTodaySourceWatermark(
     exactCount(client, "continuum_source_notes"),
     elapsedAttentionBoundaryToken(client, now),
     conditionalHoldWatermark(client),
+    projectEvidenceAssociationWatermark(client),
   ]);
   return [
     candidateCount,
@@ -92,7 +94,28 @@ export async function readTodaySourceWatermark(
     noteCount,
     elapsedAttentionBoundary,
     conditionalHoldState,
+    projectEvidenceAssociationState,
   ].join("|");
+}
+
+export function projectEvidenceAssociationWatermarkToken(
+  count: string,
+  updatedAt: string,
+): string {
+  return `${count}:${updatedAt}`;
+}
+
+async function projectEvidenceAssociationWatermark(client: SupabaseClient): Promise<string> {
+  try {
+    const [count, updated] = await Promise.all([
+      exactCount(client, "continuum_project_evidence_associations"),
+      latestIso(client, "continuum_project_evidence_associations", "updated_at"),
+    ]);
+    return projectEvidenceAssociationWatermarkToken(count, updated);
+  } catch {
+    // Backward compatible where the additive association table is not installed.
+    return "project-evidence-associations-unavailable";
+  }
 }
 
 async function conditionalHoldWatermark(client: SupabaseClient): Promise<string> {

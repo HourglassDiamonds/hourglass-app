@@ -15,6 +15,10 @@ describe("project evidence association schema", () => {
     assert.match(sql, /create table if not exists public\.continuum_project_evidence_associations/);
     assert.match(sql, /status in \('candidate', 'trusted', 'rejected', 'ambiguous'\)/);
     assert.match(sql, /project_id, source_type, source_identity/);
+    assert.match(
+      sql,
+      /continuum_project_evidence_associations_trusted_source_uq[\s\S]*source_type, source_identity[\s\S]*where status = 'trusted'/,
+    );
     assert.match(sql, /enable row level security/);
     assert.match(sql, /revoke all on table public\.continuum_project_evidence_associations from public;/);
     assert.match(sql, /revoke all on table public\.continuum_project_evidence_associations from anon;/);
