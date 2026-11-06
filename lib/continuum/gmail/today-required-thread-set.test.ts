@@ -261,6 +261,21 @@ describe("Today required live Gmail thread frontier", () => {
     });
   });
 
+  it("excludes fixture-era indexed threads from live provider enrichment", () => {
+    const plan = planTodayLiveThreads({
+      upNext: [actionable("project-fixture", ["fixture-action"]), actionable("project-real", ["real-action"])],
+      watching: [],
+      candidates: [],
+      unresolvedIdentityThreadIds: ["fixture-identity", "real-identity"],
+      currentProviderThreadIds: new Set(["real-action", "real-identity"]),
+    });
+
+    assert.deepEqual(plan, {
+      criticalThreadIds: ["real-action"],
+      identityThreadIds: ["real-identity"],
+    });
+  });
+
   it("admits a bounded recent answered thread for sender-label enrichment without linking a Person", () => {
     const unresolved = {
       ...candidate("inbound", "answered-thread"),

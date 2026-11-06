@@ -115,6 +115,7 @@ export function projectSterlingTodaySurface(
     // Preserve the canonical source watermark so the existing freshness poll
     // does not confuse a Sterling evidence snapshot id with a source change.
     readModelWatermark: legacy.readModelWatermark,
+    snapshotComposedAt: legacy.snapshotComposedAt,
     docket: {
       ...legacy.docket,
       items: upNext,

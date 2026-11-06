@@ -38,6 +38,7 @@ function legacy(): TodayPageModel {
     freshness: "current",
     readModelStatus: "ready",
     readModelWatermark: "legacy-watermark",
+    snapshotComposedAt: "2026-11-06T15:00:00.000Z",
     docket: {
       todayDocketVersion: TODAY_DOCKET_VERSION,
       title: "Up next",

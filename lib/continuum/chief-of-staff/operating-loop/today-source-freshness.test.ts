@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { durableTodayGmailSourceHealth, todaySourceHealthAfterCycle, todaySourceFreshnessLabel } from "./today-refresh";
+import { durableTodayGmailSourceHealth, todaySnapshotFreshnessLabel, todaySourceHealthAfterCycle, todaySourceFreshnessLabel } from "./today-refresh";
 
 describe("Today source freshness presentation", () => {
   it("uses the durable checkpoint instead of a transient foreground request failure", () => {
     assert.equal(durableTodayGmailSourceHealth({ lastSuccessfulSyncAt: "2026-10-05T12:00:00.000Z", nowIso: "2026-10-05T12:02:59.000Z" }), "current");
     assert.equal(durableTodayGmailSourceHealth({ lastSuccessfulSyncAt: "2026-10-05T12:00:00.000Z", nowIso: "2026-10-05T12:03:00.000Z" }), "delayed");
+  });
+
+  it("reports persisted snapshot age while source checks continue", () => {
+    assert.equal(todaySnapshotFreshnessLabel({ composedAt: "2026-11-06T15:00:00.000Z", nowMs: Date.parse("2026-11-06T15:12:00.000Z") }), "Today snapshot updated 12m ago");
+    assert.equal(todaySnapshotFreshnessLabel({ composedAt: null, nowMs: 0 }), null);
   });
 
   it("quietly reports checking, current age, and degraded email freshness", () => {

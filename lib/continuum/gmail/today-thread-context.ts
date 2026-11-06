@@ -39,7 +39,7 @@ const MESSAGES_PER_THREAD = 80;
 const LIVE_FACT_CONCURRENCY = 4;
 export const TODAY_LIVE_THREAD_REQUEST_BUDGET = 48;
 const INDEX_SELECT =
-  "thread_id, message_id, sent_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
+  "thread_id, message_id, sent_at, indexed_at, direction, subject, label_ids, from_email_hash, to_email_hashes, has_attachments";
 
 export type TodayLiveEnrichmentDiagnostics = {
   requestedThreadCount: number;
@@ -207,6 +207,7 @@ function ingestIndexedRows(
         messages.push({
           messageId,
           sentAt,
+          indexedAt: row.indexed_at == null ? null : String(row.indexed_at),
           direction: indexedDirection(row.direction, fromEmailHash, founderHashes),
           labelIds: asLabelIds(row.label_ids),
           fromEmailHash,

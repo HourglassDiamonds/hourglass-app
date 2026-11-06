@@ -9,6 +9,7 @@ import {
   shouldSwapTodayAfterRecompute,
   todaySourceHealthAfterCycle,
   todaySourceFreshnessLabel,
+  todaySnapshotFreshnessLabel,
   type TodaySourceHealth,
 } from "@/lib/continuum/chief-of-staff/operating-loop/today-refresh";
 import { refreshGmailOperatingFreshness } from "../gmail-freshness-actions";
@@ -29,11 +30,13 @@ export function GmailOperatingFreshness({
   refreshing = false,
   rebuildUnavailable = false,
   baselineWatermark = null,
+  snapshotComposedAt = null,
   correspondenceStatus,
 }: {
   refreshing?: boolean;
   rebuildUnavailable?: boolean;
   baselineWatermark?: string | null;
+  snapshotComposedAt?: string | null;
   correspondenceStatus?: TodayCorrespondenceStatus;
 }) {
   const router = useRouter();
@@ -163,9 +166,10 @@ export function GmailOperatingFreshness({
   // the UI to "Checking for updates…" even after the durable check completes.
   const activelyChecking = !refreshUnavailable && checking;
   const health = activelyChecking ? "checking" : sourceHealth;
-  const label = health === "checking"
+  const snapshotLabel = todaySnapshotFreshnessLabel({ composedAt: snapshotComposedAt, nowMs: clock });
+  const label = snapshotLabel ?? (health === "checking"
     ? "Checking for updates…"
-    : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock });
+    : todaySourceFreshnessLabel({ health, lastCheckedAt, nowMs: clock }));
   return (
     <div className="mb-3 space-y-1" role="status">
       <p

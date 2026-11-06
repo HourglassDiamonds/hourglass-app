@@ -30,6 +30,7 @@ import {
   loadIndexedTodayThreadContext,
   loadLiveTodayOperationalFacts,
 } from "@/lib/continuum/gmail/today-thread-context";
+import { createSupabaseGmailConnectionStore } from "@/lib/continuum/gmail/server";
 import { loadTrustedProjectThreadAssociations } from "@/lib/continuum/project-evidence/today-associations";
 import {
   partitionIndexedTodayLiveThreadIds,
@@ -139,6 +140,7 @@ function liveThreadPlan(
   loop: CosOperatingLoopView,
   candidates: readonly ContinuumCandidate[],
   nowIso: string,
+  currentProviderThreadIds?: ReadonlySet<string>,
 ): ReturnType<typeof planTodayLiveThreads> {
   const docket = finalizeTodayDocket(loop);
   const recentAnsweredIdentityThreads = recentAnsweredUnresolvedIdentityThreadIds({
@@ -150,11 +152,28 @@ function liveThreadPlan(
     ...docket,
     candidates,
     associatedGmailThreadsByProject: loop.associatedGmailThreadsByProject,
+    currentProviderThreadIds,
     unresolvedIdentityThreadIds: [
       ...unassignedLiveIdentityThreadIds(docket, loop),
       ...recentAnsweredIdentityThreads,
     ],
   });
+}
+
+function currentProviderThreads(
+  context: ReadonlyMap<string, import("@/lib/continuum/candidates/founder-attention").TodayGmailThreadContext>,
+  authorizationAt: string | null | undefined,
+): ReadonlySet<string> | undefined {
+  const authorizationMs = Date.parse(authorizationAt ?? "");
+  if (!Number.isFinite(authorizationMs)) return undefined;
+  return new Set(
+    [...context.entries()]
+      .filter(([, thread]) => (thread.messages ?? []).some((message) => {
+        const indexedMs = Date.parse(message.indexedAt ?? "");
+        return Number.isFinite(indexedMs) && indexedMs > authorizationMs;
+      }))
+      .map(([threadId]) => threadId),
+  );
 }
 
 function disconnectedLoop(): CosOperatingLoopView {
@@ -220,13 +239,14 @@ async function rebuildTodayLoop(
         getAuthenticatedProjectDeskReader(),
         getAuthenticatedCandidateStore(),
       ]);
-  const [jobs, summaries, listed, masterSprint, knownPeople, activeHolds] = await Promise.all([
+  const [jobs, summaries, listed, masterSprint, knownPeople, activeHolds, gmailConnection] = await Promise.all([
     client ? loadProjectJobs(client) : Promise.resolve(null),
     desk.ok ? desk.reader.listProjects() : Promise.resolve([]),
     store.ok ? store.store.list() : Promise.resolve([] as ContinuumCandidate[]),
     loadMasterSprintCapacity(),
     loadTodayKnownEmailPeople(),
     client ? loadActiveConditionalHolds(client) : Promise.resolve([]),
+    client ? createSupabaseGmailConnectionStore(client).getFounderConnection() : Promise.resolve(null),
   ]);
   emitTodayCanonicalInputCounts({
     jobsConnected: jobs !== null,
@@ -248,6 +268,10 @@ async function rebuildTodayLoop(
     ...(client ? { client } : {}),
     additionalThreadIds: [...trustedProjectThreads.keys()],
   });
+  const currentProviderThreadIds = currentProviderThreads(
+    indexedContext,
+    gmailConnection?.connectedAt,
+  );
   const founderCorrections = [
     ...(client ? await loadFounderCorrectionEvents(client) : []),
     ...candidateDispositionCorrectionEvents(candidates),
@@ -270,7 +294,7 @@ async function rebuildTodayLoop(
   const unavailableIndexedThreadIds = new Set<string>();
   const criticalOutcomes = new Map<string, "complete_live" | "indexed_excerpt_only" | "unavailable">();
   for (let pass = 0; pass < 2; pass += 1) {
-    const plan = liveThreadPlan(loop, candidates, now.toISOString());
+    const plan = liveThreadPlan(loop, candidates, now.toISOString(), currentProviderThreadIds);
     const critical = partitionIndexedTodayLiveThreadIds({
       requiredThreadIds: plan.criticalThreadIds,
       threadContext,
@@ -308,7 +332,7 @@ async function rebuildTodayLoop(
     if (critical.eligible.length === 0 && identity.eligible.length === 0) break;
     loop = composeCosOperatingLoop({ ...composeInput, threadContext });
   }
-  const unresolvedRequired = liveThreadPlan(loop, candidates, now.toISOString()).criticalThreadIds.filter(
+  const unresolvedRequired = liveThreadPlan(loop, candidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds.filter(
     (threadId) =>
       !attemptedThreadIds.has(threadId) &&
       !unavailableIndexedThreadIds.has(threadId) &&
@@ -328,7 +352,7 @@ async function rebuildTodayLoop(
       now,
     }).catch(() => []);
   }
-  const finalRequired = liveThreadPlan(loop, candidates, now.toISOString()).criticalThreadIds;
+  const finalRequired = liveThreadPlan(loop, candidates, now.toISOString(), currentProviderThreadIds).criticalThreadIds;
   const completedRequired = finalRequired.filter(
     (threadId) => criticalOutcomes.get(threadId) === "complete_live",
   ).length;
@@ -467,6 +491,7 @@ export type TodayPageModel = {
   freshness: "current" | "refreshing";
   readModelStatus: "ready" | "refreshing" | "unavailable";
   readModelWatermark: string | null;
+  snapshotComposedAt: string | null;
   correspondenceStatus?: TodayCorrespondenceStatus;
 };
 
@@ -481,6 +506,7 @@ function pageFromLoop(
     freshness,
     readModelStatus: freshness === "refreshing" ? "refreshing" : "ready",
     readModelWatermark: watermark,
+    snapshotComposedAt: loop.asOfIso ?? null,
     correspondenceStatus: loop.todayCorrespondenceStatus,
   };
 }
@@ -548,6 +574,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
         freshness: "current",
         readModelStatus: "ready",
         readModelWatermark: snapshot.sourceWatermark,
+        snapshotComposedAt: snapshot.composedAt,
         correspondenceStatus: snapshot.payload.correspondenceStatus,
       };
     }
@@ -561,6 +588,7 @@ export async function loadTodaySurface(now = new Date()): Promise<TodayPageModel
           ? "unavailable"
           : pending ? "refreshing" : "ready",
         readModelWatermark: snapshot.sourceWatermark,
+        snapshotComposedAt: snapshot.composedAt,
         correspondenceStatus: snapshot.payload.correspondenceStatus,
       };
     }
