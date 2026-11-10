@@ -6,7 +6,7 @@ Preflight date: 2026-11-04. Target inspected read-only: Supabase project `hrmpzp
 
 **GO for one controlled schema-only Preview migration after the authorization gate below. NO-GO for application activation in the same change.** The additive schema is compatible with current Preview and existing records. Website-to-persistence wiring remains a separately reviewed application change, and live delivery remains prohibited.
 
-Migration: `supabase/migrations/20261104145814_continuum_concierge_funnel_persistence.sql`
+Migration: `supabase/migrations/20261104201449_continuum_concierge_funnel_persistence.sql`
 
 SHA-256: `16921151ff3e412e4059b7a8fa57cdff57bedac00d9ea3c4b4266e126fb2da9a`
 

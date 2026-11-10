@@ -84,8 +84,9 @@ from service_role;
 
 grant select, insert, update on table public.continuum_project_evidence_associations to service_role;
 
--- Rollback, in order:
---   drop table public.continuum_project_evidence_associations;
+-- Production rollback: this table predates the tracked migration and must be
+-- preserved. A failed transaction rolls back automatically. After commit, use
+-- a separately reviewed forward correction; never drop this table or its rows.
 -- Rejected status is the durable removal. DELETE is not granted.
 -- Current Production does not read or write this table.
 -- Applying it before the Project Book deploy does not change Gmail, Calendar, SMS, or Today.

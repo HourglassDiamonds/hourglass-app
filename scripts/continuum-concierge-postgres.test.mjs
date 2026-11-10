@@ -18,9 +18,9 @@ const { default: EmbeddedPostgres } = await import(
   process.env.EMBEDDED_POSTGRES_MODULE || 'embedded-postgres'
 );
 
-const [candidateSchema, conciergeMigration] = await Promise.all([
+const [candidateSchema, conciergeFreshInstall] = await Promise.all([
   readFile(new URL('../lib/supabase/continuum-candidates-schema.sql', import.meta.url), 'utf8'),
-  readFile(new URL('../supabase/migrations/20261104145814_continuum_concierge_funnel_persistence.sql', import.meta.url), 'utf8'),
+  readFile(new URL('../supabase/release/20261110_continuum_concierge_fresh_install.sql', import.meta.url), 'utf8'),
 ]);
 
 const fixture = `
@@ -165,7 +165,7 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
         '{"kind":"none"}'::jsonb,'{"kind":"note","text":"Local fixture","contextLayer":null}'::jsonb,
         'high','{"ruleIds":["fixture"],"matchedText":null}'::jsonb,'active','pending',$2,false,false,'fixture-v1')`,
         [hex('e'), stamp]);
-      await observer.query(conciergeMigration);
+      await observer.query(conciergeFreshInstall);
 
       const legacyAfterMigration = (await observer.query(`select
         (select idempotency_key_hash from public.continuum_website_intakes where intake_id=$1) intake_hash,
@@ -204,6 +204,14 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
         c.relrowsecurity, c.relforcerowsecurity,
         has_table_privilege('anon','public.continuum_concierge_ack_outbox','select') as anon_select,
         has_table_privilege('authenticated','public.continuum_concierge_ack_outbox','select') as authenticated_select,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','select') as service_select,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','insert') as service_insert,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','update') as service_update,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','delete') as service_delete,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','truncate') as service_truncate,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','references') as service_references,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','trigger') as service_trigger,
+        has_table_privilege('service_role','public.continuum_concierge_ack_outbox','maintain') as service_maintain,
         has_function_privilege('public','public.continuum_accept_concierge_funnel_v1(uuid,text,text,jsonb,jsonb,jsonb)','execute') as public_execute,
         has_function_privilege('public','public.continuum_transition_concierge_ack_v1(text,text,text,integer,text,timestamptz,boolean)','execute') as public_transition_execute,
         has_function_privilege('anon','public.continuum_accept_concierge_funnel_v1(uuid,text,text,jsonb,jsonb,jsonb)','execute') as anon_execute,
@@ -217,6 +225,14 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       assert.equal(security.relforcerowsecurity, true);
       assert.equal(security.anon_select, false);
       assert.equal(security.authenticated_select, false);
+      assert.equal(security.service_select, true);
+      assert.equal(security.service_insert, true);
+      assert.equal(security.service_update, true);
+      assert.equal(security.service_delete, false);
+      assert.equal(security.service_truncate, false);
+      assert.equal(security.service_references, false);
+      assert.equal(security.service_trigger, false);
+      assert.equal(security.service_maintain, false);
       assert.equal(security.public_execute, false);
       assert.equal(security.public_transition_execute, false);
       assert.equal(security.anon_execute, false);
@@ -227,6 +243,11 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       assert.equal(Number((await observer.query(
         "select count(*) as n from pg_policies where schemaname='public' and tablename='continuum_concierge_ack_outbox'"
       )).rows[0].n), 0);
+      assert.equal(Number((await observer.query(`select count(*) as n
+        from pg_indexes
+        where schemaname='public'
+          and tablename='continuum_concierge_ack_outbox'`)).rows[0].n), 3,
+        'one primary-key index plus two secondary partial indexes');
       assert.equal(Number((await observer.query(`select count(*) as n
         from pg_constraint con
         join unnest(con.conkey) key(attnum) on true

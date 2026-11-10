@@ -20,6 +20,20 @@ describe("founder sessions schema (Preview-applied)", () => {
     resolve(process.cwd(), "lib/supabase/continuum-founder-passkeys-schema.sql"),
     "utf8",
   );
+  const historicalMigration = readFileSync(
+    resolve(
+      process.cwd(),
+      "supabase/migrations/20260916094016_add_continuum_founder_sessions.sql",
+    ),
+    "utf8",
+  );
+  const aclMigration = readFileSync(
+    resolve(
+      process.cwd(),
+      "supabase/migrations/20261110203600_continuum_founder_sessions_acl_hardening.sql",
+    ),
+    "utf8",
+  );
 
   it("creates a narrowly scoped session table with opaque ids", () => {
     assert.match(sql, /Applied to Continuum Preview/);
@@ -49,7 +63,7 @@ describe("founder sessions schema (Preview-applied)", () => {
     assert.doesNotMatch(createBody, /\bip\b|user_agent|header/i);
   });
 
-  it("enables RLS and grants only service_role", () => {
+  it("preserves the recorded base while the additive migration enforces least privilege", () => {
     assert.match(
       sql,
       /alter table public\.continuum_founder_sessions enable row level security/,
@@ -70,8 +84,43 @@ describe("founder sessions schema (Preview-applied)", () => {
       sql,
       /grant all on table public\.continuum_founder_sessions to service_role;/,
     );
+    assert.match(
+      historicalMigration,
+      /grant all on table public\.continuum_founder_sessions to service_role;/,
+    );
+    assert.match(
+      aclMigration,
+      /revoke all on table public\.continuum_founder_sessions from service_role;/,
+    );
+    assert.match(
+      aclMigration,
+      /grant select, insert, update, delete\s+on table public\.continuum_founder_sessions\s+to service_role;/,
+    );
+    assert.match(
+      aclMigration,
+      /DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN/,
+    );
+    assert.doesNotMatch(
+      aclMigration,
+      /grant\s+(all|truncate|references|trigger|maintain)[\s\S]*service_role/i,
+    );
     assert.doesNotMatch(sql, /^\s*grant\b[^;]*\bto\s+anon\b/im);
     assert.doesNotMatch(sql, /^\s*grant\b[^;]*\bto\s+authenticated\b/im);
+    assert.doesNotMatch(aclMigration, /^\s*grant\b[^;]*\bto\s+(anon|authenticated|public)\b/im);
+  });
+
+  it("grants exactly the operations exercised by the durable store", () => {
+    const store = readFileSync(
+      resolve(process.cwd(), "lib/executive-dashboard/founder-sessions.ts"),
+      "utf8",
+    );
+    assert.match(store, /\.insert\(/);
+    assert.match(store, /\.select\(/);
+    assert.match(store, /\.update\(/);
+    assert.match(store, /\.delete\(/);
+    for (const privilege of ["select", "insert", "update", "delete"]) {
+      assert.match(aclMigration, new RegExp(`grant[\\s\\S]*\\b${privilege}\\b`, "i"));
+    }
   });
 
   it("is not mixed into Client Memory, kernel, or passkey schema", () => {

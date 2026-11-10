@@ -15,6 +15,20 @@ staging deployment, alias change, Gmail send, recurring runner, or publisher.
 - Sterling publisher, recurring Gmail sync, outbound acknowledgement transport,
   automatic booking, marketing, and lifecycle automation remain off.
 
+## Maintained-environment migration mapping
+
+Read-only history inspection on November 10, 2026 found two maintained
+Supabase projects. Continuum Preview records `20260916094016` founder sessions,
+`20261104201449` Concierge persistence, and `20261106151236` project evidence
+associations. Production records none of those versions. Neither environment
+records the former repository-only Concierge version `20261104145814`.
+
+The checked-in migration set therefore uses the Preview versions as the
+canonical identities. The former `20261104145814` file is not retained as an
+executable migration, preventing future tooling from trying to replay the
+Concierge base against Preview. Production history must not be repaired until
+the corresponding schema transaction has committed and been verified.
+
 ## Rehearsal 1 — trusted-thread uniqueness and migration history
 
 ### Current Production baseline
@@ -27,12 +41,15 @@ staging deployment, alias change, Gmail send, recurring runner, or publisher.
 - No corresponding migration is present in
   `supabase_migrations.schema_migrations`.
 
-The full source schema is
-`lib/supabase/continuum-project-evidence-associations-schema.sql`.
-Windows checkout SHA-256:
-`A02DD4B332F8C34144894B67FC4F452A24FCFFF610C3F060EE3F2763FE66FDBA`.
-Git-blob SHA-256:
-`37FE9F4EE31E47DB20F6F45227AC7471BAE42A838F8F39A24A47FBCD7623AA43`.
+The tracked historical migration is
+`supabase/migrations/20261106151236_continuum_project_evidence_associations_schema.sql`.
+Its LF-normalized SHA-256 is
+`A1F6E9380A6F0305F2337940A181CBE57907D6570F27F22E55349398D8BEEDAA`.
+Its comment-free, whitespace-normalized executable SQL SHA-256 is
+`8FC849F3AEDA42C8F0C03D5C2DF0C89DAC75246CC2C7E25D333334F661A6F766`.
+Its executable statements match
+`lib/supabase/continuum-project-evidence-associations-schema.sql`; only
+release-state and rollback comments differ.
 
 ### Preconditions
 
@@ -51,14 +68,16 @@ Use one session and one explicit transaction with local
 `idle_in_transaction_session_timeout = '10s'`, and
 `transaction_timeout = '20s'`.
 
-The reconciliation migration must only:
+The exact historical migration is idempotent against the verified Production
+shape. On the existing table it must only have these effective changes:
 
 1. Create the missing partial unique index on
    `(source_type, source_identity) where status = 'trusted'`.
 2. Revoke all table privileges from PUBLIC, `anon`, `authenticated`, and
    `service_role`.
 3. Grant only SELECT, INSERT, UPDATE to `service_role`.
-4. Preserve existing rows and constraints; do not recreate the table.
+4. Preserve the existing table identity, rows, constraints, comments, and RLS;
+   `CREATE TABLE IF NOT EXISTS` must not recreate it.
 
 Validate with `pg_indexes`, `pg_constraint`, `pg_class.relrowsecurity`,
 `pg_policies`, `information_schema.role_table_grants`, and `has_table_privilege`.
@@ -67,15 +86,17 @@ Validate with `pg_indexes`, `pg_constraint`, `pg_class.relrowsecurity`,
 unconditionally and recheck that the new index and migration-history row are
 absent.
 
-For persistent application, use one new tracked reconciliation migration.
-Do not manually forge the old Preview migration identifier. The new migration
-must be recorded exactly once by the approved migration runner.
+For persistent application, use the checked-in historical Preview migration
+`20261106151236`. It is a real tracked migration, not a manual history insert.
+The approved migration runner records it only after successful execution.
 
 ### Rollback behavior
 
-Before association writes, rollback is `drop index` plus application rollback.
-After trusted rows exist, retain the table and decisions; disable the consuming
-application path and roll forward rather than deleting evidence.
+The pre-existing table must never be dropped. A failed transaction rolls back
+automatically. Before association writes, a separately reviewed forward
+correction may remove only the new trusted-source index and restore the prior
+ACL. After trusted rows exist, retain the table and decisions; disable the
+consuming application path and roll forward rather than deleting evidence.
 
 ## Rehearsal 2 — durable founder sessions
 
@@ -86,6 +107,24 @@ Windows checkout SHA-256:
 Git-blob SHA-256:
 `3218B01757044489F2E9CD44855DC9E28B3853961ED4911DA2AC76F2DE2FE595`.
 
+Tracked migrations:
+
+- `20260916094016_add_continuum_founder_sessions.sql` preserves the already
+  recorded Preview base migration, including its historical `GRANT ALL`.
+- `20261110203600_continuum_founder_sessions_acl_hardening.sql` immediately
+  revokes inherited/direct grants and grants only SELECT, INSERT, UPDATE, and
+  DELETE to `service_role`.
+
+The historical migration's LF-normalized SHA-256 is
+`CBA50BFB5AF35562E1C3A8D75B0200BBB30F3A0739CD27C694AA0E2D86E1663B`;
+its comment-free executable SQL matches the library source at SHA-256
+`6329FFCF4067F42548D41000F4D185ADC5A05D93CE8CDC4FC08FC178048F282D`.
+The ACL migration's LF-normalized SHA-256 is
+`66CF80D6A33FA80FEE1AACFE1146130DAD29B8EAFF8A0059A32DF13B356C0C0B`.
+
+Fresh installs execute both in order. Preview and any other environment that
+already records `20260916094016` execute only the additive ACL hardening.
+
 ### Preconditions and schema change
 
 1. Confirm `public.continuum_founder_sessions` and both named indexes are
@@ -94,15 +133,20 @@ Git-blob SHA-256:
    session baselines without recording cookie values.
 3. In one rollback-only transaction, create the five-column table, primary
    key, expiration index, and partial active-founder index.
-4. Enable RLS with zero policies. Revoke PUBLIC/anon/authenticated. Grant the
-   service role the table operations required for persist, lookup, revoke, and
-   expiry cleanup.
+4. Enable RLS with zero policies. Revoke PUBLIC/anon/authenticated. Grant
+   `service_role` SELECT for lookup, INSERT for creation, UPDATE for revocation,
+   and DELETE for expired-session cleanup. Deny TRUNCATE, REFERENCES, TRIGGER,
+   and MAINTAIN.
 5. Verify no password, passkey secret, OAuth token, raw IP, or raw browser
    header column exists.
 
 Verification queries use `information_schema.columns`, `pg_indexes`,
 `pg_policies`, `pg_class.relrowsecurity`, direct/effective privilege checks,
 and a transaction-local insert/read/revoke/delete fixture that is rolled back.
+The executable rollback-only contract is
+`supabase/tests/continuum_founder_sessions_acl_hardening.sql`, LF-normalized
+SHA-256
+`0EDEB12E30B9D91BE7B026B5BC35F84E86EE537C9742F8CEB5BDD1AAA2ED8BF7`.
 
 ### Rollback behavior
 
@@ -113,9 +157,21 @@ the revocation ledger; use an additive corrective migration if needed.
 ## Rehearsal 3 — Concierge persistence
 
 Source:
-`supabase/migrations/20261104145814_continuum_concierge_funnel_persistence.sql`.
+`supabase/migrations/20261104201449_continuum_concierge_funnel_persistence.sql`.
 Git-blob SHA-256:
 `16921151FF3E412E4059B7A8FA57CDFF57BEDAC00D9EA3C4B4266E126FB2DA9A`.
+
+ACL follow-up:
+`supabase/migrations/20261110194159_continuum_concierge_ack_outbox_acl.sql`,
+SHA-256
+`4F499F20817822163D6478AD896C4B8F0859F014FA96997E036F31182EE1A479`.
+
+Fresh-install release artifact:
+`supabase/release/20261110_continuum_concierge_fresh_install.sql`, SHA-256
+`2B21179EB227C9B4540AA40BAEA1BF495C281D72BDBB3BC1DF0FB2272141CCF2`.
+It strips only the two tracked files' outer transaction envelopes and executes
+their exact bodies under one BEGIN/COMMIT. It is outside the automatic
+migrations directory and must not be auto-replayed.
 
 ### Preconditions and exact schema change
 
@@ -124,8 +180,9 @@ Git-blob SHA-256:
    Candidate columns referenced by the RPC.
 3. Confirm zero live sending integration is wired and the Preview synthetic
    flags are not present in Production.
-4. Rehearse the exact migration in one transaction. It creates the 27-column
-   private acknowledgement outbox, two partial indexes, forced RLS with zero
+4. Rehearse the exact fresh-install artifact in one transaction. It creates the
+   27-column private acknowledgement outbox, two secondary partial indexes,
+   forced RLS with zero
    policies, and two SECURITY INVOKER functions with empty search paths:
    `continuum_accept_concierge_funnel_v1` and
    `continuum_transition_concierge_ack_v1`.
@@ -135,6 +192,34 @@ Git-blob SHA-256:
 6. Exercise only transaction-local non-synthetic fixtures. Prove replay
    idempotency, conflict failure, ambiguous identity retention, no canonical
    Project creation, and no transport invocation. Roll back unconditionally.
+
+Index verification must expect three `pg_indexes` rows for the outbox: one
+primary-key backing index plus the two explicitly created partial secondary
+indexes. A check expecting only two total indexes is incorrect.
+
+### Concierge schema/history coordination
+
+After the single schema transaction commits and its definitions, ACLs, zero
+row count, and lack of outbound activity are verified, record migration
+versions `20261104201449` and `20261110194159` as applied using separately
+approved supported migration-history tooling. Never record or replay
+`20261104145814`.
+
+If schema commit succeeds but either history operation fails or only one
+version is recorded:
+
+1. Stop; do not rerun the schema artifact or promote application code.
+2. Verify the table, all three indexes, forced RLS, both RPC definitions,
+   function ownership/search paths, exact ACLs, and zero outbox rows.
+3. Compare those definitions to the pinned artifact and capture the current
+   migration-history list.
+4. Obtain repair-only approval, then mark only the missing canonical version or
+   versions applied with supported `supabase migration repair --status applied`
+   tooling.
+5. Re-list history and repeat schema/ACL verification before promotion.
+
+Do not edit `supabase_migrations.schema_migrations` directly and do not repair
+history before schema verification.
 
 ### Rollback behavior
 

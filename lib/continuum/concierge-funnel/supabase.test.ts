@@ -201,7 +201,7 @@ describe("Supabase Concierge persistence adapter", () => {
   it("keeps the adapter server-only and the migration deny-by-default", () => {
     const server = readFileSync(new URL("./server.ts", import.meta.url), "utf8");
     const migration = readFileSync(new URL(
-      "../../../supabase/migrations/20261104145814_continuum_concierge_funnel_persistence.sql",
+      "../../../supabase/migrations/20261104201449_continuum_concierge_funnel_persistence.sql",
       import.meta.url,
     ), "utf8");
     assert.match(server, /import "server-only"/);
