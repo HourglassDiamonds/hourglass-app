@@ -8,6 +8,11 @@ import {
   runOneControlledGmailRefreshChunk,
   runZeroWriteGmailReadinessCheck,
 } from "./actions";
+import {
+  isManualPreviewCorrelationId,
+  logManualPreviewDiagnostic,
+  sanitizeManualPreviewDiagnosticStage,
+} from "@/lib/continuum/gmail/manual-preview-diagnostics";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
@@ -25,11 +30,47 @@ export default async function SterlingTodayReadinessPage({
     indexed?: string;
     remaining?: string;
     code?: string;
+    stage?: string;
+    correlation?: string;
     recompute?: string;
   }>;
 }) {
-  const access = await getAuthenticatedSterlingReadiness();
-  const { readiness, gmail, indexed, remaining, code, recompute } = await searchParams;
+  const {
+    readiness,
+    gmail,
+    indexed,
+    remaining,
+    code,
+    stage: rawStage,
+    correlation,
+    recompute,
+  } = await searchParams;
+  const stage = sanitizeManualPreviewDiagnosticStage(rawStage);
+  const validCorrelation = Boolean(
+    correlation && isManualPreviewCorrelationId(correlation),
+  );
+  let access: Awaited<ReturnType<typeof getAuthenticatedSterlingReadiness>>;
+  try {
+    access = await getAuthenticatedSterlingReadiness();
+  } catch (error) {
+    if (validCorrelation) {
+      logManualPreviewDiagnostic({
+        correlationId: correlation!,
+        stage: "readiness-render",
+        outcome: "failed",
+        code: "readiness-unavailable",
+      });
+    }
+    throw error;
+  }
+  if (validCorrelation) {
+    logManualPreviewDiagnostic({
+      correlationId: correlation!,
+      stage: "readiness-render",
+      outcome: "succeeded",
+      code: "ok",
+    });
+  }
   return (
     <ConciergeShell>
       <ConciergeBackLink />
@@ -65,6 +106,9 @@ export default async function SterlingTodayReadinessPage({
               </p>
               {gmail ? <p role="status" className={`mt-3 text-[12px] ${gmail === "completed" || gmail === "progressed" || gmail === "recovering" ? "text-[#a9bd8e]" : "text-[#d39a8a]"}`}>
                 Gmail chunk · {gmail} · {indexed ?? "0"} indexed · pages remaining {remaining ?? "unknown"}{code ? ` · ${code}` : ""}
+              </p> : null}
+              {validCorrelation ? <p className="mt-2 break-all text-[11px] text-[#81766c]">
+                Diagnostic · {stage ?? "unknown"} · {correlation}
               </p> : null}
               <button type="submit" className="mt-4 rounded-full border border-[#ad9164]/50 px-4 py-2 text-[11px] uppercase tracking-[0.14em] text-[#d8c6aa] hover:border-[#ad9164]">
                 Run one Gmail refresh chunk

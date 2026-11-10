@@ -21,6 +21,10 @@ import {
   type ManualPreviewChunkResult,
 } from "@/lib/continuum/gmail/manual-preview-chunk";
 import { resolveContinuumIsolationState } from "@/lib/continuum/runtime-env";
+import {
+  isManualPreviewCorrelationId,
+  logManualPreviewDiagnostic,
+} from "@/lib/continuum/gmail/manual-preview-diagnostics";
 
 async function executeGmailIncrementalChunk(): Promise<GmailIncrementalChunkResult> {
   const auth = await getAuthenticatedGmailHistoryStores();
@@ -62,11 +66,40 @@ export async function runNextGmailIncrementalChunk(): Promise<GmailIncrementalCh
 export async function runOnePreviewGmailIngestionChunk(
   _previous: ManualPreviewChunkResult,
   _formData: FormData,
+  correlationId?: string,
 ): Promise<ManualPreviewChunkResult> {
   void _previous;
   void _formData;
-  const auth = await getAuthenticatedGmailHistoryStores();
+  const diagnostic =
+    correlationId && isManualPreviewCorrelationId(correlationId)
+      ? (record: Parameters<typeof logManualPreviewDiagnostic>[0]) =>
+          logManualPreviewDiagnostic({ ...record, correlationId })
+      : undefined;
+  diagnostic?.({
+    correlationId: correlationId ?? "invalid",
+    stage: "preflight",
+    outcome: "started",
+    code: null,
+  });
+  let auth: Awaited<ReturnType<typeof getAuthenticatedGmailHistoryStores>>;
+  try {
+    auth = await getAuthenticatedGmailHistoryStores();
+  } catch {
+    diagnostic?.({
+      correlationId: correlationId ?? "invalid",
+      stage: "preflight",
+      outcome: "failed",
+      code: "unavailable",
+    });
+    return blockedManualPreviewChunk("unavailable");
+  }
   if (!auth.ok) {
+    diagnostic?.({
+      correlationId: correlationId ?? "invalid",
+      stage: "preflight",
+      outcome: "blocked",
+      code: auth.reason === "unauthorized" ? "unauthorized" : "unavailable",
+    });
     return blockedManualPreviewChunk(
       auth.reason === "unauthorized" ? "unauthorized" : "unavailable",
     );
@@ -98,6 +131,15 @@ export async function runOnePreviewGmailIngestionChunk(
         maxRetries: MANUAL_PREVIEW_GMAIL_MAX_RETRIES,
         retryJitterRatio: MANUAL_PREVIEW_GMAIL_RETRY_JITTER_RATIO,
         maxRetryDelayMs: MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS,
+        diagnostic: diagnostic
+          ? ({ stage, outcome, code }) =>
+              diagnostic({
+                correlationId: correlationId ?? "invalid",
+                stage,
+                outcome,
+                code,
+              })
+          : undefined,
       });
     },
   });

@@ -29,6 +29,10 @@ import {
 } from "./incremental-sync";
 import type { GmailAccessTokenRefresh } from "./oauth";
 import type { SyncClock } from "./sync";
+import type {
+  ManualPreviewDiagnosticOutcome,
+  ManualPreviewDiagnosticStage,
+} from "./manual-preview-diagnostics";
 import {
   GMAIL_INCREMENTAL_JOB_KEY,
   type GmailConnection,
@@ -112,7 +116,25 @@ export type GmailIncrementalChunkInput = {
   retryJitterRatio?: number;
   maxRetryDelayMs?: number;
   retryRandom?: () => number;
+  diagnostic?: (record: {
+    stage: ManualPreviewDiagnosticStage;
+    outcome: ManualPreviewDiagnosticOutcome;
+    code: string | null;
+  }) => void;
 };
+
+function reportIncrementalDiagnostic(
+  input: GmailIncrementalChunkInput,
+  stage: ManualPreviewDiagnosticStage,
+  outcome: ManualPreviewDiagnosticOutcome,
+  code: string | null = null,
+): void {
+  try {
+    input.diagnostic?.({ stage, outcome, code });
+  } catch {
+    // Diagnostics must never change ingestion behavior.
+  }
+}
 
 function isIncrementalErrorCode(
   value: string | null,
@@ -256,10 +278,13 @@ function isConnectedCredential(
 export async function runGmailIncrementalChunk(
   input: GmailIncrementalChunkInput,
 ): Promise<GmailIncrementalChunkResult> {
+  reportIncrementalDiagnostic(input, "preflight", "started");
   if (!input.founderSessionOk && !input.secretProtectedOk) {
+    reportIncrementalDiagnostic(input, "preflight", "blocked", "unauthorized");
     return failedGmailIncrementalChunk("unauthorized", { checkpointStatus: "idle" });
   }
   if (!input.enabled) {
+    reportIncrementalDiagnostic(input, "preflight", "blocked", "sync-disabled");
     return failedGmailIncrementalChunk("sync-disabled", { checkpointStatus: "idle" });
   }
 
@@ -267,21 +292,53 @@ export async function runGmailIncrementalChunk(
   try {
     connection = await input.connections.getFounderConnection();
   } catch {
+    reportIncrementalDiagnostic(input, "preflight", "failed", "unavailable");
     return failedGmailIncrementalChunk("unavailable", { checkpointStatus: "idle" });
   }
   if (!isConnectedCredential(connection) || !isSyncEligible(connection)) {
+    reportIncrementalDiagnostic(input, "preflight", "blocked", "gmail-not-connected");
     return failedGmailIncrementalChunk("gmail-not-connected", {
       checkpointStatus: "idle",
     });
   }
+  reportIncrementalDiagnostic(input, "preflight", "succeeded", "ok");
 
-  const before = await input.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+  let before: GmailCheckpoint | null;
+  try {
+    before = await input.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+  } catch (error) {
+    reportIncrementalDiagnostic(
+      input,
+      "checkpoint-persistence",
+      "failed",
+      GMAIL_DATABASE_FAILED,
+    );
+    throw error;
+  }
   const nowIso = (input.clock?.now() ?? new Date()).toISOString();
-  const claimed = await input.index.tryClaimIncrementalChunk(
-    nowIso,
-    GMAIL_INCREMENTAL_CHUNK_LEASE_MS,
-  );
+  reportIncrementalDiagnostic(input, "lease-acquisition", "started");
+  let claimed: boolean;
+  try {
+    claimed = await input.index.tryClaimIncrementalChunk(
+      nowIso,
+      GMAIL_INCREMENTAL_CHUNK_LEASE_MS,
+    );
+  } catch (error) {
+    reportIncrementalDiagnostic(
+      input,
+      "checkpoint-persistence",
+      "failed",
+      GMAIL_DATABASE_FAILED,
+    );
+    throw error;
+  }
   if (!claimed) {
+    reportIncrementalDiagnostic(
+      input,
+      "lease-acquisition",
+      "blocked",
+      "gmail-sync-already-running",
+    );
     return failedGmailIncrementalChunk("gmail-sync-already-running", {
       checkpointStatus: before?.status ?? "running",
       indexedCount: before?.indexedCount ?? 0,
@@ -290,6 +347,7 @@ export async function runGmailIncrementalChunk(
       recovery: before?.errorCode === HISTORY_TOO_OLD,
     });
   }
+  reportIncrementalDiagnostic(input, "lease-acquisition", "succeeded", "ok");
 
   let attachmentsThisChunk = 0;
   const attachments: GmailAttachmentStore = {
@@ -310,19 +368,33 @@ export async function runGmailIncrementalChunk(
     try {
       refreshToken = input.decryptRefreshToken(connection.refreshToken);
     } catch {
+      reportIncrementalDiagnostic(input, "preflight", "failed", "decrypt-failed");
       return failedGmailIncrementalChunk(
         "decrypt-failed",
         snapshotFromIncrementalCheckpoint(before),
       );
     }
     if (!refreshToken) {
+      reportIncrementalDiagnostic(input, "preflight", "failed", "decrypt-failed");
       return failedGmailIncrementalChunk(
         "decrypt-failed",
         snapshotFromIncrementalCheckpoint(before),
       );
     }
 
-    const refreshed = await input.refreshAccessToken(refreshToken);
+    reportIncrementalDiagnostic(input, "provider-fetch", "started");
+    let refreshed: GmailAccessTokenRefresh;
+    try {
+      refreshed = await input.refreshAccessToken(refreshToken);
+    } catch (error) {
+      reportIncrementalDiagnostic(
+        input,
+        "provider-fetch",
+        "failed",
+        GMAIL_PROVIDER_TEMPORARY,
+      );
+      throw error;
+    }
     if (!refreshed.ok) {
       const code =
         refreshed.error === "refresh-token-rotated"
@@ -330,27 +402,63 @@ export async function runGmailIncrementalChunk(
           : refreshed.error === "oauth-not-configured"
             ? "unavailable"
             : "token-refresh-failed";
+      reportIncrementalDiagnostic(input, "provider-fetch", "failed", code);
       return failedGmailIncrementalChunk(
         code,
         snapshotFromIncrementalCheckpoint(before),
       );
     }
 
-    const sync = await runIncrementalSync({
-      api: boundIncrementalApi(input.createApi(refreshed.accessToken)),
-      index: input.index,
-      attachments,
-      connections: input.connections,
-      founderMailboxHash: connection.mailboxEmailHash,
-      clock: input.clock,
-      maxGetsPerSec: input.maxGetsPerSec,
-      maxRetries: input.maxRetries,
-      retryJitterRatio: input.retryJitterRatio,
-      maxRetryDelayMs: input.maxRetryDelayMs,
-      retryRandom: input.retryRandom,
-    });
+    let sync: Awaited<ReturnType<typeof runIncrementalSync>>;
+    try {
+      sync = await runIncrementalSync({
+        api: boundIncrementalApi(input.createApi(refreshed.accessToken)),
+        index: input.index,
+        attachments,
+        connections: input.connections,
+        founderMailboxHash: connection.mailboxEmailHash,
+        clock: input.clock,
+        maxGetsPerSec: input.maxGetsPerSec,
+        maxRetries: input.maxRetries,
+        retryJitterRatio: input.retryJitterRatio,
+        maxRetryDelayMs: input.maxRetryDelayMs,
+        retryRandom: input.retryRandom,
+      });
+    } catch (error) {
+      reportIncrementalDiagnostic(input, "provider-fetch", "failed", "unexpected");
+      throw error;
+    }
 
-    const after = await input.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+    let after: GmailCheckpoint | null;
+    try {
+      after = await input.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
+    } catch (error) {
+      reportIncrementalDiagnostic(
+        input,
+        "checkpoint-persistence",
+        "failed",
+        GMAIL_DATABASE_FAILED,
+      );
+      throw error;
+    }
+    if (sync.errorCode === GMAIL_DATABASE_FAILED) {
+      reportIncrementalDiagnostic(
+        input,
+        "checkpoint-persistence",
+        "failed",
+        GMAIL_DATABASE_FAILED,
+      );
+    } else if (sync.errorCode) {
+      reportIncrementalDiagnostic(input, "provider-fetch", "failed", sync.errorCode);
+    } else {
+      reportIncrementalDiagnostic(input, "provider-fetch", "succeeded", "ok");
+      reportIncrementalDiagnostic(
+        input,
+        "checkpoint-persistence",
+        "succeeded",
+        "ok",
+      );
+    }
     if (sync.errorCode === "invalid_grant" || sync.status === "revoked") {
       return failedGmailIncrementalChunk("invalid_grant", {
         ...snapshotFromIncrementalCheckpoint(after),
@@ -404,8 +512,18 @@ export async function runGmailIncrementalChunk(
       completed: sync.status === "completed" && snapshot.completed,
     });
   } finally {
-    await input.index.releaseIncrementalChunk(
-      (input.clock?.now() ?? new Date()).toISOString(),
-    );
+    try {
+      await input.index.releaseIncrementalChunk(
+        (input.clock?.now() ?? new Date()).toISOString(),
+      );
+    } catch (error) {
+      reportIncrementalDiagnostic(
+        input,
+        "checkpoint-persistence",
+        "failed",
+        GMAIL_DATABASE_FAILED,
+      );
+      throw error;
+    }
   }
 }

@@ -117,6 +117,7 @@ describe("Gmail incremental current-state runner", () => {
 
   it("requires founder or secret auth and does not call Gmail", async () => {
     const api = initApi();
+    const diagnostics: Array<{ stage: string; outcome: string; code: string | null }> = [];
     const result = await runGmailIncrementalChunk({
       founderSessionOk: false,
       enabled: true,
@@ -126,13 +127,51 @@ describe("Gmail incremental current-state runner", () => {
       decryptRefreshToken: () => "refresh-incremental",
       refreshAccessToken: refreshOk(),
       createApi: () => api,
+      diagnostic: (record) => diagnostics.push(record),
     });
     assert.deepEqual(
       result,
       failedGmailIncrementalChunk("unauthorized", { checkpointStatus: "idle" }),
     );
     assert.equal(api.calls.length, 0);
+    assert.deepEqual(diagnostics, [
+      { stage: "preflight", outcome: "started", code: null },
+      { stage: "preflight", outcome: "blocked", code: "unauthorized" },
+    ]);
     assertSafeOutput(result);
+  });
+
+  it("identifies checkpoint reads that fail before lease acquisition", async () => {
+    const api = initApi();
+    const index = new InMemoryGmailIndexStore();
+    const connections = await connected();
+    index.getCheckpoint = async () => {
+      throw new Error("private database detail");
+    };
+    const diagnostics: Array<{ stage: string; outcome: string; code: string | null }> = [];
+    await assert.rejects(() =>
+      runGmailIncrementalChunk({
+        founderSessionOk: true,
+        enabled: true,
+        connections,
+        index,
+        attachments: new InMemoryGmailAttachmentStore(),
+        decryptRefreshToken: () => "refresh-incremental",
+        refreshAccessToken: refreshOk(),
+        createApi: () => api,
+        diagnostic: (record) => diagnostics.push(record),
+      }),
+    );
+    assert.equal(
+      diagnostics.some(
+        (record) =>
+          record.stage === "checkpoint-persistence" &&
+          record.outcome === "failed" &&
+          record.code === "gmail-database-failed",
+      ),
+      true,
+    );
+    assert.doesNotMatch(JSON.stringify(diagnostics), /private database detail/);
   });
 
   it("honors the kill switch before token use", async () => {
@@ -200,6 +239,7 @@ describe("Gmail incremental current-state runner", () => {
     await completeHistorical(index);
     const attachments = new InMemoryGmailAttachmentStore();
     const connections = await connected();
+    const diagnostics: Array<{ stage: string; outcome: string; code: string | null }> = [];
     const deps = {
       founderSessionOk: true,
       enabled: true,
@@ -210,6 +250,8 @@ describe("Gmail incremental current-state runner", () => {
       refreshAccessToken: refreshOk(),
       createApi: () => api,
       clock: { now: () => NOW, sleep: async () => {} },
+      diagnostic: (record: { stage: string; outcome: string; code: string | null }) =>
+        diagnostics.push(record),
     };
     const first = runGmailIncrementalChunk(deps);
     const started = Date.now();
@@ -223,6 +265,15 @@ describe("Gmail incremental current-state runner", () => {
     assert.equal(second.safeErrorCode, "gmail-sync-already-running");
     assert.equal(second.chunkSucceeded, false);
     assert.equal(done.chunkSucceeded, true);
+    assert.equal(
+      diagnostics.some(
+        (record) =>
+          record.stage === "lease-acquisition" &&
+          record.outcome === "blocked" &&
+          record.code === "gmail-sync-already-running",
+      ),
+      true,
+    );
     assertSafeOutput(second);
     assertSafeOutput(done);
   });
@@ -231,6 +282,7 @@ describe("Gmail incremental current-state runner", () => {
     const api = initApi();
     const index = new InMemoryGmailIndexStore();
     await completeHistorical(index);
+    const diagnostics: Array<{ stage: string; outcome: string; code: string | null }> = [];
     const result = await runGmailIncrementalChunk({
       founderSessionOk: true,
       enabled: true,
@@ -241,9 +293,19 @@ describe("Gmail incremental current-state runner", () => {
       refreshAccessToken: async () => ({ ok: false, error: "token-refresh-failed" }),
       createApi: () => api,
       clock: { now: () => NOW, sleep: async () => {} },
+      diagnostic: (record) => diagnostics.push(record),
     });
     assert.equal(result.safeErrorCode, "token-refresh-failed");
     assert.equal(api.calls.length, 0);
+    assert.equal(
+      diagnostics.some(
+        (record) =>
+          record.stage === "provider-fetch" &&
+          record.outcome === "failed" &&
+          record.code === "token-refresh-failed",
+      ),
+      true,
+    );
     assertSafeOutput(result);
   });
 
