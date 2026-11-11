@@ -1,0 +1,2 @@
+scripts/build-continuum-concierge-production-install.mjs text eol=lf
+supabase/release/20261111_continuum_concierge_production_install.sql text eol=lf
