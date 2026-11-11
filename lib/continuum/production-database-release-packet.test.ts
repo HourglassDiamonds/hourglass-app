@@ -119,13 +119,36 @@ describe("Production database release packet", () => {
     assert.match(conciergeArtifact, new RegExp(stripEnvelope(conciergeAcl).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   });
 
-  it("counts one primary-key index plus exactly two secondary partial indexes", () => {
+  it("accounts for all eleven outbox indexes and the two explicit partial indexes", () => {
     assert.match(conciergeBase, /outbox_id text primary key/);
+    assert.deepEqual(
+      Array.from(
+        conciergeBase.matchAll(/^\s{2}([a-z_]+)\s+[^\n]+\bunique\b/gm),
+        (match) => match[1],
+      ),
+      [
+        "intake_id",
+        "candidate_id",
+        "event_id",
+        "lead_id",
+        "action_id",
+        "submission_id_hash",
+        "concierge_idempotency_key",
+        "acknowledgement_idempotency_key",
+      ],
+    );
     assert.equal(
       (conciergeBase.match(/^create index continuum_concierge_ack_outbox_/gm) ?? [])
         .length,
       2,
     );
-    assert.equal((conciergeBase.match(/\swhere\s/gi) ?? []).length >= 2, true);
+    assert.match(
+      conciergeBase,
+      /create index continuum_concierge_ack_outbox_founder_idx[\s\S]*?on public\.continuum_concierge_ack_outbox \(created_at, intake_id\)[\s\S]*?where state in \('pending_approval','ready','delivery_unknown','failed'\);/,
+    );
+    assert.match(
+      conciergeBase,
+      /create index continuum_concierge_ack_outbox_reconciliation_idx[\s\S]*?on public\.continuum_concierge_ack_outbox \(updated_at, outbox_id\)[\s\S]*?where reconciliation_required = true;/,
+    );
   });
 });

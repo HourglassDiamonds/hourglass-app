@@ -193,9 +193,17 @@ migrations directory and must not be auto-replayed.
    idempotency, conflict failure, ambiguous identity retention, no canonical
    Project creation, and no transport invocation. Roll back unconditionally.
 
-Index verification must expect three `pg_indexes` rows for the outbox: one
-primary-key backing index plus the two explicitly created partial secondary
-indexes. A check expecting only two total indexes is incorrect.
+Index verification must expect eleven `pg_indexes` rows for the outbox: one
+primary-key backing index, eight indexes backing the declared UNIQUE
+constraints, and exactly two explicitly created partial secondary indexes.
+The explicit indexes must be named
+`continuum_concierge_ack_outbox_founder_idx` on `(created_at, intake_id)` with
+the four-state founder-review predicate and
+`continuum_concierge_ack_outbox_reconciliation_idx` on
+`(updated_at, outbox_id)` with the `reconciliation_required = true`
+predicate. The other nine indexes must each be owned by their corresponding
+primary-key or UNIQUE constraint. A check expecting three total indexes is
+incorrect because PostgreSQL creates backing indexes for UNIQUE constraints.
 
 ### Concierge schema/history coordination
 
@@ -209,7 +217,8 @@ If schema commit succeeds but either history operation fails or only one
 version is recorded:
 
 1. Stop; do not rerun the schema artifact or promote application code.
-2. Verify the table, all three indexes, forced RLS, both RPC definitions,
+2. Verify the table, all eleven indexes (including exactly two non-constraint
+   partial indexes), forced RLS, both RPC definitions,
    function ownership/search paths, exact ACLs, and zero outbox rows.
 3. Compare those definitions to the pinned artifact and capture the current
    migration-history list.

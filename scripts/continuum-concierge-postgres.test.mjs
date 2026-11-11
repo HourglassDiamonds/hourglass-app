@@ -243,11 +243,45 @@ test('Concierge SQL is atomic, private, replay-safe, durable, and delivery-quara
       assert.equal(Number((await observer.query(
         "select count(*) as n from pg_policies where schemaname='public' and tablename='continuum_concierge_ack_outbox'"
       )).rows[0].n), 0);
-      assert.equal(Number((await observer.query(`select count(*) as n
-        from pg_indexes
-        where schemaname='public'
-          and tablename='continuum_concierge_ack_outbox'`)).rows[0].n), 3,
-        'one primary-key index plus two secondary partial indexes');
+      const outboxIndexes = (await observer.query(`select
+          index_class.relname as index_name,
+          constraint_row.conname as constraint_name,
+          constraint_row.contype as constraint_type,
+          pg_get_indexdef(index_row.indexrelid) as definition,
+          pg_get_expr(index_row.indpred, index_row.indrelid) as predicate
+        from pg_index index_row
+        join pg_class table_class on table_class.oid=index_row.indrelid
+        join pg_namespace table_namespace on table_namespace.oid=table_class.relnamespace
+        join pg_class index_class on index_class.oid=index_row.indexrelid
+        left join pg_constraint constraint_row on constraint_row.conindid=index_row.indexrelid
+        where table_namespace.nspname='public'
+          and table_class.relname='continuum_concierge_ack_outbox'
+        order by index_class.relname`)).rows;
+      assert.equal(outboxIndexes.length, 11,
+        'one primary key, eight UNIQUE constraints, and two explicit partial indexes');
+      assert.deepEqual(
+        outboxIndexes.filter((index) => index.constraint_type === 'p').map((index) => index.constraint_name),
+        ['continuum_concierge_ack_outbox_pkey'],
+      );
+      assert.equal(outboxIndexes.filter((index) => index.constraint_type === 'u').length, 8);
+      assert.equal(outboxIndexes.filter((index) => index.constraint_name !== null).length, 9);
+      const founderIndex = outboxIndexes.find(
+        (index) => index.index_name === 'continuum_concierge_ack_outbox_founder_idx',
+      );
+      assert.ok(founderIndex);
+      assert.equal(founderIndex.constraint_name, null);
+      assert.match(founderIndex.definition, /\(created_at, intake_id\)/);
+      for (const state of ['pending_approval', 'ready', 'delivery_unknown', 'failed']) {
+        assert.match(founderIndex.predicate, new RegExp(`'${state}'::text`));
+      }
+      const reconciliationIndex = outboxIndexes.find(
+        (index) => index.index_name === 'continuum_concierge_ack_outbox_reconciliation_idx',
+      );
+      assert.ok(reconciliationIndex);
+      assert.equal(reconciliationIndex.constraint_name, null);
+      assert.match(reconciliationIndex.definition, /\(updated_at, outbox_id\)/);
+      assert.match(reconciliationIndex.predicate, /reconciliation_required/);
+      assert.equal(outboxIndexes.filter((index) => index.predicate !== null).length, 2);
       assert.equal(Number((await observer.query(`select count(*) as n
         from pg_constraint con
         join unnest(con.conkey) key(attnum) on true
