@@ -1,6 +1,10 @@
 import "server-only";
 
-import { resolveContinuumIsolationState, vercelEnvName } from "@/lib/continuum/runtime-env";
+import {
+  isVerifiedContinuumOperationalRuntime,
+  resolveContinuumIsolationState,
+  vercelEnvName,
+} from "@/lib/continuum/runtime-env";
 
 export const STERLING_TODAY_SEMANTIC_FLAG = "CONTINUUM_STERLING_TODAY_SEMANTIC_ENABLED" as const;
 export const STERLING_TODAY_SARAH_SEMANTIC_FLAG =
@@ -8,6 +12,8 @@ export const STERLING_TODAY_SARAH_SEMANTIC_FLAG =
 export const STERLING_TODAY_DURABLE_LEASE_FLAG = "CONTINUUM_STERLING_TODAY_DURABLE_LEASE_ENABLED" as const;
 export const STERLING_TODAY_CONTINUITY_HMAC_ENV = "CONTINUUM_STERLING_TODAY_CONTINUITY_HMAC_KEY" as const;
 export const STERLING_TODAY_PUBLISHER_FLAG = "CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED" as const;
+export const CONTINUUM_TODAY_MANUAL_RECOMPUTE_FLAG =
+  "CONTINUUM_TODAY_MANUAL_RECOMPUTE_ENABLED" as const;
 
 export function isSterlingTodaySemanticFeatureEnabled(): boolean {
   return process.env[STERLING_TODAY_SEMANTIC_FLAG]?.trim().toLowerCase() === "true";
@@ -28,6 +34,11 @@ export function isSterlingTodayDurableLeaseAvailable(): boolean {
 export function isSterlingTodayPreviewPublisherEnabled(): boolean {
   return isVerifiedSterlingTodayPreviewRuntime() &&
     process.env[STERLING_TODAY_PUBLISHER_FLAG]?.trim().toLowerCase() === "true";
+}
+
+export function isFounderManualTodayRecomputeEnabled(): boolean {
+  return isVerifiedContinuumOperationalRuntime() &&
+    process.env[CONTINUUM_TODAY_MANUAL_RECOMPUTE_FLAG]?.trim().toLowerCase() === "true";
 }
 
 export function isVerifiedSterlingTodayPreviewRuntime(): boolean {

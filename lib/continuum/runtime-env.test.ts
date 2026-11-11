@@ -11,6 +11,8 @@ import {
   continuumEnvBadge,
   continuumEnvLogLabel,
   isGmailIncrementalAllowedInCurrentEnv,
+  isVerifiedContinuumOperationalRuntime,
+  isVerifiedContinuumProductionStagingRuntime,
   isPreviewLikeRuntime,
   isPrivilegedSupabaseServerCredential,
   isProductionSupabaseUrl,
@@ -254,9 +256,14 @@ describe("Continuum runtime isolation", () => {
       "CONTINUUM_ENV",
       "CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF",
       "CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF",
+      "CONTINUUM_PRODUCTION_STAGING_ENABLED",
+      "CONTINUUM_PRODUCTION_STAGING_PROJECT_ID",
+      "CONTINUUM_PRODUCTION_STAGING_COMMIT_SHA",
     ]);
     assert.match(source, /CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF/);
-    assert.match(env, /isGmailIncrementalAllowedInCurrentEnv/);
+    assert.match(env, /isVerifiedContinuumOperationalRuntime/);
+    assert.match(env, /isGmailRecurringSyncEnabled/);
+    assert.match(env, /isGmailManualRefreshEnabled/);
     assert.match(client, /assertContinuumPreviewIsolation/);
     assert.match(instrumentation, /validateContinuumRuntimeEnvOnStartup/);
     assert.match(cron, /continuumEnvLogLabel/);
@@ -295,9 +302,10 @@ describe("Continuum runtime isolation", () => {
     assert.match(pinAuth, /EXECUTIVE_DASHBOARD_PASSWORD_HASH/);
     assert.match(pinAuth, /\.env\.development\.local/);
     assert.doesNotMatch(pinAuth, /console\.(log|info|error|warn)/);
-    assert.match(launcher, /delete process\.env\.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.match(launcher, /delete process\.env\.CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED/);
+    assert.match(launcher, /delete process\.env\.CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED/);
     assert.match(launcher, /for \(const key of PREVIEW_OWNED_AUTH_KEYS\) delete process\.env\[key\]/);
-    assert.match(launcher, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
+    assert.match(launcher, /CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED/);
     assert.doesNotMatch(
       launcher,
       /must stay unset for this local sandbox/,
@@ -324,6 +332,55 @@ describe("Continuum runtime isolation", () => {
     assert.doesNotMatch(
       isolationAssert,
       /console\.(info|error|warn)\([^)]*getSupabaseServiceRoleKey\(\)/,
+    );
+  });
+
+  it("pins operational and Production-staging identity independently", () => {
+    assert.equal(
+      isVerifiedContinuumOperationalRuntime({
+        vercel: "1",
+        continuumEnv: "production",
+        vercelEnv: "production",
+        supabaseUrl: PROD_URL,
+      }),
+      true,
+    );
+    assert.equal(
+      isVerifiedContinuumOperationalRuntime({
+        vercel: "1",
+        continuumEnv: "production",
+        vercelEnv: "preview",
+        supabaseUrl: PROD_URL,
+      }),
+      false,
+    );
+    assert.equal(
+      isVerifiedContinuumProductionStagingRuntime({
+        vercel: "1",
+        continuumEnv: "production",
+        vercelEnv: "preview",
+        supabaseUrl: PROD_URL,
+        enabled: "true",
+        expectedProjectId: "prj_staging",
+        actualProjectId: "prj_staging",
+        expectedCommitSha: "a".repeat(40),
+        actualCommitSha: "a".repeat(40),
+      }),
+      true,
+    );
+    assert.equal(
+      isVerifiedContinuumProductionStagingRuntime({
+        vercel: "1",
+        continuumEnv: "production",
+        vercelEnv: "preview",
+        supabaseUrl: PROD_URL,
+        enabled: "true",
+        expectedProjectId: "prj_staging",
+        actualProjectId: "prj_other",
+        expectedCommitSha: "a".repeat(40),
+        actualCommitSha: "a".repeat(40),
+      }),
+      false,
     );
   });
 });

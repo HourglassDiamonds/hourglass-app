@@ -33,6 +33,9 @@ export const SERVER_ONLY_CONTINUUM_RUNTIME_ENV = [
   "CONTINUUM_ENV",
   "CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF",
   "CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF",
+  "CONTINUUM_PRODUCTION_STAGING_ENABLED",
+  "CONTINUUM_PRODUCTION_STAGING_PROJECT_ID",
+  "CONTINUUM_PRODUCTION_STAGING_COMMIT_SHA",
 ] as const;
 
 export type ContinuumIsolationState =
@@ -212,6 +215,111 @@ export function isGmailIncrementalAllowedInCurrentEnv(input?: {
     );
   }
   return !usesProduction;
+}
+
+/**
+ * Exact server-runtime boundary for founder/manual and scheduled Continuum
+ * operations. Production operations only run on a Vercel Production build
+ * pointed at the canonical Production database. Preview operations retain the
+ * canonical isolated Preview requirement. Local operation is allowed only
+ * when it is not pointed at Production and still requires its own feature
+ * switch at the caller.
+ */
+export function isVerifiedContinuumOperationalRuntime(input?: {
+  vercel?: string;
+  continuumEnv?: string;
+  vercelEnv?: string;
+  supabaseUrl?: string;
+  productionRef?: string;
+  previewRef?: string;
+}): boolean {
+  const continuum = parseContinuumEnv(input?.continuumEnv ?? process.env.CONTINUUM_ENV);
+  const vercelEnv = vercelEnvName(input?.vercelEnv ?? process.env.VERCEL_ENV);
+  const vercel = trimmed(input?.vercel ?? process.env.VERCEL);
+  const supabaseUrl = input?.supabaseUrl ?? getSupabaseUrl();
+  const productionRef = productionSupabaseProjectRef(
+    input?.productionRef ?? process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+  );
+
+  if (continuum === "production") {
+    return vercel === "1" &&
+      vercelEnv === "production" &&
+      resolveContinuumIsolationState({
+        continuumEnv: "production",
+        vercelEnv,
+        supabaseUrl,
+        productionRef,
+        previewRef: input?.previewRef,
+      }) === "production" &&
+      isProductionSupabaseUrl(supabaseUrl, productionRef);
+  }
+
+  if (continuum === "preview") {
+    return vercel === "1" &&
+      vercelEnv === "preview" &&
+      resolveContinuumIsolationState({
+        continuumEnv: "preview",
+        vercelEnv,
+        supabaseUrl,
+        productionRef,
+        previewRef: input?.previewRef,
+      }) === "preview-isolated";
+  }
+
+  return continuum === "local" &&
+    vercelEnv !== "production" &&
+    !isProductionSupabaseUrl(supabaseUrl, productionRef);
+}
+
+/**
+ * Narrow Preview-deployment exception for durable founder authentication only.
+ * It never authorizes Gmail, Today recomputation, publishing, or canonical
+ * client mutation. Vercel owns the observed project/commit identity; the
+ * allowlist values are server-only configuration pinned before deployment.
+ */
+export function isVerifiedContinuumProductionStagingRuntime(input?: {
+  vercel?: string;
+  continuumEnv?: string;
+  vercelEnv?: string;
+  supabaseUrl?: string;
+  productionRef?: string;
+  enabled?: string;
+  expectedProjectId?: string;
+  expectedCommitSha?: string;
+  actualProjectId?: string;
+  actualCommitSha?: string;
+}): boolean {
+  const enabled = trimmed(
+    input?.enabled ?? process.env.CONTINUUM_PRODUCTION_STAGING_ENABLED,
+  )?.toLowerCase() === "true";
+  const expectedProjectId = trimmed(
+    input?.expectedProjectId ?? process.env.CONTINUUM_PRODUCTION_STAGING_PROJECT_ID,
+  );
+  const expectedCommitSha = trimmed(
+    input?.expectedCommitSha ?? process.env.CONTINUUM_PRODUCTION_STAGING_COMMIT_SHA,
+  )?.toLowerCase();
+  const actualProjectId = trimmed(input?.actualProjectId ?? process.env.VERCEL_PROJECT_ID);
+  const actualCommitSha = trimmed(
+    input?.actualCommitSha ?? process.env.VERCEL_GIT_COMMIT_SHA,
+  )?.toLowerCase();
+  const supabaseUrl = input?.supabaseUrl ?? getSupabaseUrl();
+  const productionRef = productionSupabaseProjectRef(
+    input?.productionRef ?? process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+  );
+
+  return enabled &&
+    trimmed(input?.vercel ?? process.env.VERCEL) === "1" &&
+    parseContinuumEnv(input?.continuumEnv ?? process.env.CONTINUUM_ENV) === "production" &&
+    vercelEnvName(input?.vercelEnv ?? process.env.VERCEL_ENV) === "preview" &&
+    isProductionSupabaseUrl(supabaseUrl, productionRef) &&
+    Boolean(expectedProjectId && expectedCommitSha) &&
+    actualProjectId === expectedProjectId &&
+    actualCommitSha === expectedCommitSha;
+}
+
+export function isVerifiedDurableFounderRuntime(): boolean {
+  if (isVerifiedContinuumOperationalRuntime()) return true;
+  return isVerifiedContinuumProductionStagingRuntime();
 }
 
 export function assertContinuumPreviewIsolation(input?: {

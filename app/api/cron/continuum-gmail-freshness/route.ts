@@ -2,7 +2,7 @@
  * Authenticated durable Gmail operating-freshness job.
  *
  * Auth: CRON_SECRET via Authorization Bearer or x-cron-secret only.
- * Kill-switched by CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED.
+ * Kill-switched independently by CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED.
  * Responses: counts and safe error codes only — never mailbox content.
  */
 
@@ -54,6 +54,7 @@ export async function GET(request: Request) {
     const envLabel = continuumEnvLogLabel();
     console.info("[continuum-gmail-freshness]", envLabel);
     const execution = await executeLiveGmailFreshnessCycle({
+      authorization: "recurring-cron",
       founderSessionOk: false,
       secretProtectedOk: true,
     });

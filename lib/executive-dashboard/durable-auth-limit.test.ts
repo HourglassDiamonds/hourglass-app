@@ -221,7 +221,7 @@ describe("Preview durable founder-auth rate limiting", () => {
     });
   });
 
-  it("I: Preview pairing claim still consumes each request; Production stays unlimited", async () => {
+  it("I: Preview and verified Production pairing claims remain durable", async () => {
     const { store, consumes } = createTrackingStore();
     await withEnv({ ...PREVIEW_ISOLATED_ENV }, async () => {
       const ip = "203.0.113.43";
@@ -240,26 +240,32 @@ describe("Preview durable founder-auth rate limiting", () => {
     assert.equal(previewConsumes, PASSKEY_PAIRING_CLAIM_MAX + 1);
 
     await withEnv({ ...PRODUCTION_ENV }, async () => {
-      for (let i = 0; i < PASSKEY_PAIRING_CLAIM_MAX + 5; i += 1) {
+      const productionIp = "203.0.113.44";
+      assert.equal(isDurableFounderAuthRateLimitEnabled(), true);
+      for (let i = 0; i < PASSKEY_PAIRING_CLAIM_MAX; i += 1) {
         assert.equal(
           await checkPasskeyPairingClaimRateLimit(
-            "203.0.113.43",
+            productionIp,
             Date.now(),
             store,
           ),
           true,
         );
       }
-      assert.equal(consumes.length, previewConsumes);
+      assert.equal(
+        await checkPasskeyPairingClaimRateLimit(productionIp, Date.now(), store),
+        false,
+      );
+      assert.ok(consumes.length > previewConsumes);
     });
   });
 
-  it("J: Production never calls durable check/consume/clear", async () => {
+  it("J: verified Production uses durable check/consume/clear", async () => {
     const { store, consumes, checks, cleared } = createTrackingStore();
     const ip = "198.51.100.40";
 
     await withEnv({ ...PRODUCTION_ENV }, async () => {
-      assert.equal(isDurableFounderAuthRateLimitEnabled(), false);
+      assert.equal(isDurableFounderAuthRateLimitEnabled(), true);
       for (let i = 0; i < EXEC_AUTH_RATE_LIMIT_MAX; i += 1) {
         assert.equal(
           (await checkExecutiveDashboardLoginRateLimit(ip, Date.now(), store))
@@ -279,9 +285,9 @@ describe("Preview durable founder-auth rate limiting", () => {
       await recordPasskeyVerifyFailure(ip, Date.now(), store);
       await clearPasskeyVerifyFailures(ip, store);
       assert.equal(await checkPasskeyPairingClaimRateLimit(ip, Date.now(), store), true);
-      assert.equal(consumes.length, 0);
-      assert.equal(checks.length, 0);
-      assert.equal(cleared.length, 0);
+      assert.ok(consumes.length > 0);
+      assert.ok(checks.length > 0);
+      assert.ok(cleared.length > 0);
     });
   });
 

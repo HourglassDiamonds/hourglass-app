@@ -19,7 +19,12 @@ export type ManualPreviewChunkStatus =
 
 export type ManualPreviewChunkResult = {
   status: ManualPreviewChunkStatus;
-  blockedReason: "unauthorized" | "not-beta-recovery-preview" | "unavailable" | null;
+  blockedReason:
+    | "unauthorized"
+    | "not-beta-recovery-preview"
+    | "manual-disabled"
+    | "unavailable"
+    | null;
   checkpointStatus: GmailIncrementalChunkResult["checkpointStatus"] | null;
   indexedThisChunk: number;
   indexedCount: number;

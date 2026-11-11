@@ -31,7 +31,8 @@ const NEVER_INHERIT = new Set([
   "CONTINUUM_ENV",
   "CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF",
   "CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF",
-  "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED",
+  "CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED",
+  "CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED",
   "EXECUTIVE_DASHBOARD_SESSION_SECRET",
   ...PREVIEW_OWNED_AUTH_KEYS,
   "VERCEL",
@@ -54,7 +55,7 @@ const SANDBOX_TEMPLATE_KEYS = new Set([
   "CONTINUUM_GMAIL_OAUTH_CLIENT_ID",
   "CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET",
   "CONTINUUM_GMAIL_OAUTH_REDIRECT_URI",
-  "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED",
+  "CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED",
 ]);
 
 function parseEnvFile(relativePath) {
@@ -134,25 +135,23 @@ function ensureSandboxEnvFile() {
     generated.push("EXECUTIVE_DASHBOARD_SESSION_SECRET");
   }
 
-  const incrementalRaw =
-    existing.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED?.trim() ?? "";
-  const incrementalEnabled =
-    incrementalRaw === "true" || incrementalRaw === "1";
-  if (incrementalEnabled) {
-    next.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED = "true";
+  const manualRaw = existing.CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED?.trim() ?? "";
+  const manualEnabled = manualRaw === "true" || manualRaw === "1";
+  if (manualEnabled) {
+    next.CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED = "true";
   }
 
   const created = !existsSync(path);
-  const incrementalBlock = incrementalEnabled
+  const manualBlock = manualEnabled
     ? `
 # Isolated local Preview only. Never set on Vercel or Production.
-CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED=true
+CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED=true
 `
     : "";
   const body = `# LOCAL Continuum Preview sandbox. Gitignored. Do not commit.
 # Do not copy Production Supabase, Gmail tokens, or Production KEK into this file.
 # Launch with: npm run dev:continuum-preview
-# CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED may be true in this file only after
+# CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED may be true in this file only after
 # isolation is proven. Never set it on Vercel or Production.
 
 CONTINUUM_ENV=preview
@@ -178,7 +177,7 @@ EXECUTIVE_DASHBOARD_PASSWORD_HASH=${next.EXECUTIVE_DASHBOARD_PASSWORD_HASH ?? ""
 CONTINUUM_GMAIL_OAUTH_CLIENT_ID=${next.CONTINUUM_GMAIL_OAUTH_CLIENT_ID ?? ""}
 CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET=${next.CONTINUUM_GMAIL_OAUTH_CLIENT_SECRET ?? ""}
 CONTINUUM_GMAIL_OAUTH_REDIRECT_URI=${LOCAL_GMAIL_REDIRECT}
-${incrementalBlock}`;
+${manualBlock}`;
   const extra = [];
   for (const [key, value] of Object.entries(existing)) {
     if (SANDBOX_TEMPLATE_KEYS.has(key)) continue;
@@ -208,7 +207,8 @@ function applyPreviewOwnedAuthFromSandbox() {
 }
 
 function loadRuntimeEnv() {
-  delete process.env.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED;
+  delete process.env.CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED;
+  delete process.env.CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED;
   for (const key of PREVIEW_OWNED_AUTH_KEYS) delete process.env[key];
   applyMap(parseEnvFile(".env.local"), { inherit: true });
   applyMap(parseEnvFile(".env.development.local"), { inherit: true });

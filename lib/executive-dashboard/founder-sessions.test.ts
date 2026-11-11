@@ -241,37 +241,35 @@ describe("founder durable sessions", () => {
     });
   });
 
-  it("keeps Production stateless and never calls the durable store", async () => {
+  it("requires the durable session row in verified Production", async () => {
     const tracking = createTrackingStore();
     setFounderSessionStoreForTests(tracking.store);
     const now = Date.now();
-    const token = createExecutiveDashboardSessionToken(
-      username,
-      sessionSecret,
-      now,
-    );
+    const sessionId = createFounderSessionId();
+    const token = createExecutiveDashboardSessionToken(username, sessionSecret, now, 60, sessionId);
     const legacy = createLegacySessionToken(username, sessionSecret, now);
     await withEnv({ ...PRODUCTION_ENV, ...AUTH_ENV }, async () => {
-      assert.equal(isDurableFounderSessionStoreEnabled(), false);
+      assert.equal(isDurableFounderSessionStoreEnabled(), true);
       const persisted = await persistDurableFounderSession({
-        sessionId: createFounderSessionId(),
+        sessionId,
         founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
         issuedAtMs: now,
         expiresAtMs: now + 1000,
         revokedAtMs: null,
       });
-      const confirmed = await confirmDurableFounderSession("anything", now);
-      const revoked = await revokeDurableFounderSession("anything", now);
+      const confirmed = await confirmDurableFounderSession(sessionId, now);
       const current = await readExecutiveDashboardSession(token, now);
       const old = await readExecutiveDashboardSession(legacy, now);
       assert.equal(persisted.ok, true);
       assert.equal(confirmed.ok, true);
-      assert.equal(revoked.ok, true);
       assert.equal(current.ok, true);
-      assert.equal(old.ok, true);
-      assert.equal(tracking.persists, 0);
-      assert.equal(tracking.lookups, 0);
-      assert.equal(tracking.revokes, 0);
+      assert.equal(old.ok, false);
+      assert.equal(tracking.persists, 1);
+      assert.ok(tracking.lookups >= 2);
+      const revoked = await revokeDurableFounderSession(sessionId, now + 1);
+      assert.equal(revoked.ok, true);
+      assert.equal(tracking.revokes, 1);
+      assert.equal((await readExecutiveDashboardSession(token, now + 1)).ok, false);
     });
   });
 

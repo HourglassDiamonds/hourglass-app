@@ -7,12 +7,17 @@
 import "server-only";
 
 import { createLiveGmailApi } from "@/lib/continuum/gmail/adapter";
+import { hashEmail } from "@/lib/continuum/client-memory/hashes";
 import { probeCandidateStorage } from "@/lib/continuum/candidates/activation";
 import { createSupabaseCandidateStore } from "@/lib/continuum/candidates/server";
 import { createSupabaseGmailIndexStore } from "@/lib/continuum/client-memory/gmail/server";
 import { loadGmailPersonWorldFromAdmin } from "@/lib/continuum/client-memory/founder-project/gmail-world";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
-import { isGmailIncrementalSyncEnabled } from "./env";
+import {
+  getContinuumGmailFounderEmail,
+  isGmailManualRefreshEnabled,
+  isGmailRecurringSyncEnabled,
+} from "./env";
 import {
   failedGmailFreshnessCycle,
   runGmailFreshnessCycle,
@@ -42,6 +47,8 @@ export type LiveGmailFreshnessExecution = {
   refreshTrace: GmailRefreshTrace;
 };
 
+export type GmailFreshnessAuthorization = "founder-manual" | "recurring-cron";
+
 function emptyRefreshTrace(): GmailRefreshTrace {
   return {
     refreshFailureCategory: null,
@@ -53,14 +60,21 @@ function emptyRefreshTrace(): GmailRefreshTrace {
 }
 
 export async function executeLiveGmailFreshnessCycle(input: {
+  authorization: GmailFreshnessAuthorization;
   founderSessionOk: boolean;
   secretProtectedOk?: boolean;
   force?: boolean;
 }): Promise<LiveGmailFreshnessExecution> {
-  if (!input.founderSessionOk && !input.secretProtectedOk) {
+  const callerAuthenticated = input.authorization === "founder-manual"
+    ? input.founderSessionOk
+    : input.secretProtectedOk === true;
+  if (!callerAuthenticated) {
     return { result: failedGmailFreshnessCycle("unauthorized"), refreshTrace: emptyRefreshTrace() };
   }
-  if (!isGmailIncrementalSyncEnabled()) {
+  const controlEnabled = input.authorization === "founder-manual"
+    ? isGmailManualRefreshEnabled()
+    : isGmailRecurringSyncEnabled();
+  if (!controlEnabled) {
     return { result: failedGmailFreshnessCycle("sync-disabled"), refreshTrace: emptyRefreshTrace() };
   }
   const kek = loadGmailTokenKek();
@@ -82,8 +96,15 @@ export async function executeLiveGmailFreshnessCycle(input: {
   try {
     const connections = createSupabaseGmailConnectionStore();
     const connection = await connections.getFounderConnection();
+    const expectedMailboxHash = hashEmail(getContinuumGmailFounderEmail());
+    if (!connection || !expectedMailboxHash || connection.mailboxEmailHash !== expectedMailboxHash) {
+      return {
+        result: failedGmailFreshnessCycle("gmail-mailbox-identity-mismatch"),
+        refreshTrace,
+      };
+    }
     const loaded = await loadGmailPersonWorldFromAdmin(
-      connection?.mailboxEmailHash ? [connection.mailboxEmailHash] : [],
+      [connection.mailboxEmailHash],
     );
     const result = await runGmailFreshnessCycle({
       founderSessionOk: input.founderSessionOk,

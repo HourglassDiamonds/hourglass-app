@@ -1,9 +1,10 @@
 /**
- * Preview-only durable founder-auth abuse limiting.
+ * Identity-verified durable founder-auth abuse limiting.
  *
  * Reuses consumeRateLimitWindows / checkRateLimitWindows / clearRateLimitWindows
- * and hashed bucket keys. Production and every non-isolated runtime keep the
- * existing in-memory limiter and must never invoke the SQL store in this pass.
+ * and hashed bucket keys. Verified Continuum Production, isolated Preview,
+ * and the exact pinned auth-only staging identity use the SQL store. Every
+ * unverified runtime retains the existing in-memory limiter.
  *
  * Password and passkey verify are failure-only: peek on check, consume on
  * failure, clear on success. Challenge issue and pairing claim remain
@@ -33,6 +34,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/client";
 import {
   CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
   CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+  isVerifiedDurableFounderRuntime,
   parseContinuumEnv,
   previewSupabaseProjectRef,
   productionSupabaseProjectRef,
@@ -53,12 +55,15 @@ export type FounderAuthRateLimitNamespace =
   (typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES)[keyof typeof FOUNDER_AUTH_RATE_LIMIT_NAMESPACES];
 
 /**
- * Durable founder-auth limiting is isolated Preview only:
+ * Durable founder-auth limiting is restricted to verified operational or
+ * explicitly pinned Production-staging runtimes. The legacy checks below keep
+ * compatibility with isolated Preview tests that do not emulate Vercel.
  * CONTINUUM_ENV=preview, isolation preview-isolated, live URL is the
  * canonical Preview ref, and Production ref stays the canonical Production
  * identity so that project cannot ride this path.
  */
 export function isDurableFounderAuthRateLimitEnabled(): boolean {
+  if (isVerifiedDurableFounderRuntime()) return true;
   if (parseContinuumEnv() !== "preview") return false;
   if (resolveContinuumIsolationState() !== "preview-isolated") return false;
 

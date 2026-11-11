@@ -9,7 +9,7 @@ import { loadGmailPersonWorldFromAdmin } from "@/lib/continuum/client-memory/fou
 import { isGmailIndexStale } from "@/lib/continuum/gmail/index-freshness";
 import { snapshotFromIncrementalCheckpoint } from "@/lib/continuum/gmail/incremental";
 import { readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
-import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
+import { isGmailManualRefreshEnabled } from "@/lib/continuum/gmail/env";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { CONCIERGE_GMAIL_PATH, GMAIL_INCREMENTAL_JOB_KEY } from "@/lib/continuum/gmail/types";
 import { CONCIERGE_HOME_PATH } from "@/lib/continuum/client-memory/read/presentation";
@@ -57,7 +57,7 @@ export default async function ConciergeGmailIntakePage({
   } | null = null;
   let freshness = {
     lastSuccessfulSyncAt: null as string | null,
-    activationEnabled: isGmailIncrementalSyncEnabled(),
+    activationEnabled: isGmailManualRefreshEnabled(),
     stale: true,
     incremental: snapshotFromIncrementalCheckpoint(null),
   };
@@ -69,7 +69,7 @@ export default async function ConciergeGmailIntakePage({
       const incrementalRow = await gmail.index.getCheckpoint(GMAIL_INCREMENTAL_JOB_KEY);
       freshness = {
         lastSuccessfulSyncAt: current.lastSuccessfulSyncAt,
-        activationEnabled: isGmailIncrementalSyncEnabled(),
+        activationEnabled: isGmailManualRefreshEnabled(),
         stale: isGmailIndexStale(current.lastSuccessfulSyncAt, nowIso),
         incremental: snapshotFromIncrementalCheckpoint(incrementalRow),
       };

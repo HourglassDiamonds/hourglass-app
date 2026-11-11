@@ -89,6 +89,7 @@ const FRESHNESS_ERROR_CODES = [
   "unauthorized",
   "unavailable",
   "gmail-not-connected",
+  "gmail-mailbox-identity-mismatch",
   "decrypt-failed",
   "token-refresh-failed",
   "refresh-token-rotated",

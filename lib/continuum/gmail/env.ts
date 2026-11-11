@@ -4,7 +4,7 @@
  * Never NEXT_PUBLIC_*.
  */
 
-import { isGmailIncrementalAllowedInCurrentEnv } from "@/lib/continuum/runtime-env";
+import { isVerifiedContinuumOperationalRuntime } from "@/lib/continuum/runtime-env";
 
 function trimmed(value: string | undefined): string | undefined {
   const v = value?.trim();
@@ -22,6 +22,9 @@ export const SERVER_ONLY_CONTINUUM_GMAIL_ENV = [
   "CONTINUUM_GMAIL_CLOUD_PROJECT_ORG_ALIGNED",
   "CONTINUUM_GMAIL_OAUTH_USER_TYPE",
   "CONTINUUM_GMAIL_OAUTH_PUBLISHING_STATUS",
+  "CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED",
+  "CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED",
+  // Retired compatibility name. It no longer authorizes either caller.
   "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED",
 ] as const;
 
@@ -109,13 +112,17 @@ export function isContinuumGmailOAuthConfigured(): boolean {
   );
 }
 
-/**
- * Kill switch. Default off. Durable operating freshness and the founder
- * incremental runner both no-op unless this is true. Auth is still required
- * (founder session or CRON_SECRET). Does not bypass OAuth or weaken scopes.
- */
-export function isGmailIncrementalSyncEnabled(): boolean {
-  const raw = trimmed(process.env.CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED);
-  if (raw !== "true" && raw !== "1") return false;
-  return isGmailIncrementalAllowedInCurrentEnv();
+function enabled(raw: string | undefined): boolean {
+  const value = trimmed(raw)?.toLowerCase();
+  return value === "true" || value === "1";
+}
+
+export function isGmailRecurringSyncEnabled(): boolean {
+  return enabled(process.env.CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED) &&
+    isVerifiedContinuumOperationalRuntime();
+}
+
+export function isGmailManualRefreshEnabled(): boolean {
+  return enabled(process.env.CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED) &&
+    isVerifiedContinuumOperationalRuntime();
 }

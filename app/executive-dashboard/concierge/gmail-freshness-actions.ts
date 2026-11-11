@@ -24,6 +24,7 @@ export async function refreshGmailOperatingFreshness(): Promise<GmailOperatingFr
     );
   }
   const execution = await executeLiveGmailFreshnessCycle({
+    authorization: "founder-manual",
     founderSessionOk: true,
   });
   if (execution.result.docketMayHaveChanged) {

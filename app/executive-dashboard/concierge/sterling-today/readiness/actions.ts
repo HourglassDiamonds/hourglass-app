@@ -10,8 +10,14 @@ import {
   type ManualPreviewChunkResult,
 } from "@/lib/continuum/gmail/manual-preview-chunk";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
-import { getAuthenticatedSterlingReadiness } from "@/lib/continuum/today-sterling/readiness";
-import { isVerifiedSterlingTodayPreviewRuntime } from "@/lib/continuum/today-sterling/server-config";
+import {
+  getAuthenticatedSterlingReadiness,
+  isCorrespondenceReadyForCanonicalRecompute,
+} from "@/lib/continuum/today-sterling/readiness";
+import {
+  isFounderManualTodayRecomputeEnabled,
+  isVerifiedSterlingTodayPreviewRuntime,
+} from "@/lib/continuum/today-sterling/server-config";
 import { runOnePreviewGmailIngestionChunk } from "../../gmail-incremental-actions";
 import {
   createManualPreviewCorrelationId,
@@ -141,6 +147,14 @@ export async function recomputeCanonicalToday(_formData: FormData): Promise<void
   void _formData;
   const access = await requireFounderPreviewAccess();
   if (!access.ok) redirect(`${PATH}?recompute=${access.reason}`);
+  if (!isFounderManualTodayRecomputeEnabled()) {
+    redirect(`${PATH}?recompute=manual-disabled`);
+  }
+
+  const readiness = await getAuthenticatedSterlingReadiness();
+  if (!readiness.ok || !isCorrespondenceReadyForCanonicalRecompute(readiness.report)) {
+    redirect(`${PATH}?recompute=correspondence-not-ready`);
+  }
 
   let result = "completed";
   try {

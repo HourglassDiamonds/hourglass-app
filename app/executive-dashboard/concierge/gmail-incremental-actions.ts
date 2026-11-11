@@ -1,7 +1,7 @@
 "use server";
 
 import { createLiveGmailApi } from "@/lib/continuum/gmail/adapter";
-import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
+import { isGmailManualRefreshEnabled } from "@/lib/continuum/gmail/env";
 import {
   failedGmailIncrementalChunk,
   runGmailIncrementalChunk,
@@ -34,7 +34,7 @@ async function executeGmailIncrementalChunk(): Promise<GmailIncrementalChunkResu
       { checkpointStatus: "idle" },
     );
   }
-  if (!isGmailIncrementalSyncEnabled()) {
+  if (!isGmailManualRefreshEnabled()) {
     return failedGmailIncrementalChunk("sync-disabled", { checkpointStatus: "idle" });
   }
   const kek = loadGmailTokenKek();
@@ -111,6 +111,9 @@ export async function runOnePreviewGmailIngestionChunk(
     gitBranch: process.env.VERCEL_GIT_COMMIT_REF,
     isolationState: resolveContinuumIsolationState(),
   });
+  if (!isGmailManualRefreshEnabled()) {
+    return blockedManualPreviewChunk("manual-disabled");
+  }
   return executeOneManualPreviewChunk({
     founderAuthenticated: true,
     betaRecoveryPreviewVerified,

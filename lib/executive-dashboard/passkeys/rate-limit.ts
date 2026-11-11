@@ -163,8 +163,8 @@ export async function clearPasskeyVerifyFailures(
 }
 
 /**
- * Preview-only durable limiter for public pairing claim. Production and
- * non-isolated runtimes stay unlimited — this path previously had no limiter.
+ * Durable limiter for the public pairing claim in verified founder runtimes.
+ * Unverified runtimes remain fail-closed at the surrounding auth boundary.
  */
 export async function checkPasskeyPairingClaimRateLimit(
   ip: string,

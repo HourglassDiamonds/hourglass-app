@@ -322,7 +322,9 @@ describe("Gmail operating freshness cycle", () => {
     assert.match(cycle, /runGmailNewProjectIntakeScan/);
     assert.doesNotMatch(cycle, /createPersonAtomic|insertSourceNote/);
     assert.doesNotMatch(cycle, /users\.watch\(/);
-    assert.match(run, /isGmailIncrementalSyncEnabled/);
+    assert.match(run, /isGmailManualRefreshEnabled/);
+    assert.match(run, /isGmailRecurringSyncEnabled/);
+    assert.match(run, /gmail-mailbox-identity-mismatch/);
     assert.match(run, /import "server-only"/);
     assert.doesNotMatch(run, /console\.(log|info|debug|warn|error)/);
     assert.match(actions, /"use server"/);

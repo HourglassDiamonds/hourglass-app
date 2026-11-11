@@ -34,8 +34,16 @@ describe("Gmail activation security", () => {
       if (file.endsWith(".test.ts")) continue;
       const source = readFileSync(file, "utf8");
       const freshnessTelemetry = file.endsWith("freshness-telemetry.ts");
+      const manualPreviewDiagnostics = file.endsWith(
+        "manual-preview-diagnostics.ts",
+      );
       if (freshnessTelemetry) {
         assert.match(source, /console\.info\(JSON\.stringify\(line\)\)/);
+        assert.doesNotMatch(source, /console\.(log|debug|warn|error)/);
+        assert.doesNotMatch(source, /subject|snippet|threadId|messageId|mailboxEmail/);
+      } else if (manualPreviewDiagnostics) {
+        assert.match(source, /console\.info/);
+        assert.match(source, /sanitizeManualPreviewDiagnosticCode/);
         assert.doesNotMatch(source, /console\.(log|debug|warn|error)/);
         assert.doesNotMatch(source, /subject|snippet|threadId|messageId|mailboxEmail/);
       } else {
@@ -401,7 +409,7 @@ describe("Gmail activation security", () => {
     const types = readFileSync(join(GMAIL_DIR, "types.ts"), "utf8");
     assert.match(types, /gmail-memory-daily/);
     assert.match(actions, /"use server"/);
-    assert.match(actions, /isGmailIncrementalSyncEnabled/);
+    assert.match(actions, /isGmailManualRefreshEnabled/);
     assert.match(actions, /runGmailIncrementalChunk/);
     assert.doesNotMatch(actions, /formData\.get\(/);
     assert.match(page, /GmailIncrementalForm/);
@@ -417,8 +425,8 @@ describe("Gmail activation security", () => {
       /createPersonAtomic|insertSourceNote|continuum_attention_items/,
     );
     assert.doesNotMatch(continueHelper, /\/api\/cron\/gmail/);
-    assert.match(env, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
-    assert.match(env, /isGmailIncrementalAllowedInCurrentEnv/);
+    assert.match(env, /CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED/);
+    assert.match(env, /isGmailManualRefreshEnabled/);
     assert.doesNotMatch(vercel, /gmail-incremental|gmail-memory-daily|gmail-current-state/);
     assert.doesNotMatch(sync, /createPersonAtomic|insertSourceNote|continuum_open_jobs/);
     assert.doesNotMatch(incremental, /createPersonAtomic|insertSourceNote|continuum_attention_items/);
@@ -447,7 +455,8 @@ describe("Gmail activation security", () => {
     assert.doesNotMatch(route, /subject|snippet|threadId|messageId|ciphertext/);
     assert.doesNotMatch(route, /users\.watch|pubsub/i);
     assert.match(cycle, /secretProtectedOk/);
-    assert.match(run, /isGmailIncrementalSyncEnabled/);
+    assert.match(run, /isGmailManualRefreshEnabled/);
+    assert.match(run, /isGmailRecurringSyncEnabled/);
     assert.match(ui, /refreshGmailOperatingFreshness/);
     assert.doesNotMatch(ui, /Refresh mail index|Scan Gmail/);
   });

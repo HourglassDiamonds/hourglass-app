@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ConciergeBackLink } from "../components/concierge-back-link";
 import { ConciergeShell } from "../components/concierge-shell";
 import { gmailCurrentStatePublicView, readGmailCurrentState } from "@/lib/continuum/gmail/current-state";
-import { isGmailIncrementalSyncEnabled } from "@/lib/continuum/gmail/env";
+import { isGmailManualRefreshEnabled } from "@/lib/continuum/gmail/env";
 import { snapshotFromCheckpoint } from "@/lib/continuum/gmail/history";
 import { snapshotFromIncrementalCheckpoint } from "@/lib/continuum/gmail/incremental";
 import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
@@ -47,7 +47,7 @@ export default async function ConciergeGmailPage() {
       lastSuccessfulSyncAt: null,
       hasNewerIndexedActivity: false,
     }),
-    activationEnabled: isGmailIncrementalSyncEnabled(),
+    activationEnabled: isGmailManualRefreshEnabled(),
   };
   if (auth.ok) {
     const row = await auth.connections.getFounderConnection();
@@ -62,7 +62,7 @@ export default async function ConciergeGmailPage() {
     );
     publicState = {
       ...gmailCurrentStatePublicView(current),
-      activationEnabled: isGmailIncrementalSyncEnabled(),
+      activationEnabled: isGmailManualRefreshEnabled(),
     };
   }
 

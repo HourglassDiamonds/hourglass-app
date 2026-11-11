@@ -1,17 +1,14 @@
 /**
- * Preview-only durable founder session store.
+ * Identity-verified durable founder session store.
  *
- * Pattern A: isolated Continuum Preview persists session_id at login and
- * denies revoked/expired rows on every request. Production and every
- * non-isolated runtime keep today's stateless HMAC cookie and must never
- * invoke this store.
- *
- * The Preview table is live. Production application remains separately
- * founder-approved. Preview code fail-closes when the isolation gate is
- * on and the store is missing/unavailable.
+ * Verified Continuum Production and isolated Preview persist session_id at
+ * login and deny revoked/expired rows on every request. A separately pinned
+ * Production-backed staging deployment may use this store for founder-auth
+ * acceptance only. Every unverified runtime fails closed or retains the
+ * legacy non-durable path.
  * Fail-closed auth must not throw into public site chrome.
  *
- * Logout always clears the browser cookie. If Preview revoke fails, this
+ * Logout always clears the browser cookie. If durable revoke fails, this
  * browser is logged out but a copied cookie may remain valid until expiry.
  * Do not leak store or SQL details.
  */
@@ -21,6 +18,7 @@ import { CONTINUUM_FOUNDER_WEBAUTHN_USER_ID } from "@/lib/executive-dashboard/pa
 import {
   CONTINUUM_PREVIEW_SUPABASE_PROJECT_REF,
   CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+  isVerifiedDurableFounderRuntime,
   parseContinuumEnv,
   previewSupabaseProjectRef,
   productionSupabaseProjectRef,
@@ -46,10 +44,10 @@ export type FounderSessionStore = {
 };
 
 /**
- * Same isolation contract as durable founder-auth rate limiting.
- * Production identity must not ride this path.
+ * Same exact identity contract as durable founder-auth rate limiting.
  */
 export function isDurableFounderSessionStoreEnabled(): boolean {
+  if (isVerifiedDurableFounderRuntime()) return true;
   if (parseContinuumEnv() !== "preview") return false;
   if (resolveContinuumIsolationState() !== "preview-isolated") return false;
 

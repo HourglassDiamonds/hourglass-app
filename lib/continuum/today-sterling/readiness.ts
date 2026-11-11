@@ -73,6 +73,16 @@ export type SterlingReadinessAccess =
   | { ok: true; report: SterlingReadinessReport }
   | { ok: false; reason: "not-preview" | "unauthorized" | "unavailable" };
 
+export function isCorrespondenceReadyForCanonicalRecompute(
+  report: SterlingReadinessReport,
+): boolean {
+  return report.gmail.authorizationStatus === "verified-by-fresh-ingestion" &&
+    report.gmail.checkpointStatus === "completed" &&
+    report.gmail.successfulIngestionAfterAuthorization &&
+    report.gmail.associationPersistence === "available" &&
+    report.gmail.unresolvedRealClientThreadCount === 0;
+}
+
 function digest(parts: readonly unknown[]): string {
   return createHash("sha256").update(JSON.stringify(parts)).digest("hex");
 }

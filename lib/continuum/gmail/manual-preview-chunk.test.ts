@@ -244,8 +244,9 @@ describe("one-time Beta Recovery Gmail chunk", () => {
     assert.match(actions, /maxRetryDelayMs: MANUAL_PREVIEW_GMAIL_MAX_RETRY_DELAY_MS/);
     assert.match(gmailPage, /export const maxDuration = 120/);
     assert.match(actions, /export async function runNextGmailIncrementalChunk/);
-    assert.match(actions, /isGmailIncrementalSyncEnabled/);
-    assert.match(freshness, /isGmailIncrementalSyncEnabled/);
+    assert.match(actions, /isGmailManualRefreshEnabled/);
+    assert.match(freshness, /isGmailManualRefreshEnabled/);
+    assert.match(freshness, /isGmailRecurringSyncEnabled/);
     assert.match(cron, /executeLiveGmailFreshnessCycle/);
     assert.match(actions, /runGmailIncrementalChunk/);
     assert.match(incremental, /tryClaimIncrementalChunk/);
