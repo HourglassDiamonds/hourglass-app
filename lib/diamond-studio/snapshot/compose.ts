@@ -6,7 +6,12 @@
  * Not a DOM screenshot.
  */
 
-import { createCanvas, loadImage, type SKRSContext2D } from "@napi-rs/canvas";
+import {
+  createCanvas,
+  loadImage,
+  type Canvas,
+  type SKRSContext2D,
+} from "@napi-rs/canvas";
 import type { DiamondStudioConfiguration } from "@/lib/diamond-studio/configuration";
 import { formatStudioCardCopy } from "@/lib/diamond-studio/configuration";
 import {
@@ -133,11 +138,7 @@ function drawDiamondLayer(
   ctx.restore();
 }
 
-type SnapshotCanvas = {
-  toBuffer(mime: "image/png" | "image/jpeg", quality?: number): Buffer;
-  width: number;
-  height: number;
-};
+type SnapshotCanvas = Canvas;
 
 async function renderVisualizationCanvas(
   config: DiamondStudioConfiguration,

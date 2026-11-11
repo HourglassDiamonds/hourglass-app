@@ -392,6 +392,10 @@ describe("founder durable sessions", () => {
       join(ROOT, "lib", "executive-dashboard", "issue-session.ts"),
       "utf8",
     );
+    const passwordLogin = readFileSync(
+      join(ROOT, "lib", "executive-dashboard", "password-login.ts"),
+      "utf8",
+    );
     const loginForm = readFileSync(
       join(ROOT, "app", "executive-dashboard", "login-form.tsx"),
       "utf8",
@@ -412,8 +416,8 @@ describe("founder durable sessions", () => {
 
     assert.match(issue, /persistDurableFounderSession/);
     assert.match(issue, /createFounderSessionId/);
-    assert.match(actions, /issueExecutiveDashboardSession/);
-    assert.match(actions, /resolveFounderLoginDestination/);
+    assert.match(passwordLogin, /issueExecutiveDashboardSession/);
+    assert.match(passwordLogin, /resolveFounderLoginDestination/);
     assert.match(actions, /revokeDurableFounderSession/);
     assert.match(actions, /maxAge:\s*0/);
     assert.doesNotMatch(actions, /if \(.*revok/);

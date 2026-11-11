@@ -249,8 +249,12 @@ describe("executive dashboard auth", () => {
       join(ROOT, "app", "executive-dashboard", "actions.ts"),
       "utf8",
     );
+    const passwordLogin = readFileSync(
+      join(ROOT, "lib", "executive-dashboard", "password-login.ts"),
+      "utf8",
+    );
     assert.match(actions, /maxAge:\s*0/);
-    assert.match(actions, /issueExecutiveDashboardSession/);
+    assert.match(passwordLogin, /issueExecutiveDashboardSession/);
     assert.match(actions, /logoutExecutiveDashboard/);
     assert.match(actions, /revokeDurableFounderSession/);
     assert.match(actions, /verifyExecutiveDashboardSessionToken/);
@@ -311,6 +315,10 @@ describe("executive dashboard auth", () => {
       join(ROOT, "app", "executive-dashboard", "actions.ts"),
       "utf8",
     );
+    const passwordLogin = readFileSync(
+      join(ROOT, "lib", "executive-dashboard", "password-login.ts"),
+      "utf8",
+    );
     const access = readFileSync(
       join(ROOT, "lib", "executive-dashboard", "access.ts"),
       "utf8",
@@ -320,7 +328,7 @@ describe("executive dashboard auth", () => {
       "utf8",
     );
     assert.doesNotMatch(actions, /searchParams|URLSearchParams|\?password|\?secret/);
-    assert.match(actions, /EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR/);
+    assert.match(passwordLogin, /EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR/);
     assert.match(access, new RegExp(EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR));
     assert.match(form, /autoComplete="username"/);
     assert.match(form, /autoComplete="current-password"/);
@@ -431,7 +439,7 @@ describe("executive dashboard auth", () => {
     await withEnvAsync(
       {
         NODE_ENV: "development",
-        CONTINUUM_ENV: "local",
+        CONTINUUM_ENV: undefined,
         EXECUTIVE_DASHBOARD_AUTH_RATE_LIMIT_DISABLED: undefined,
       },
       async () => {
@@ -464,15 +472,14 @@ describe("executive dashboard auth", () => {
     assert.doesNotMatch(form, /method="post"/);
   });
 
-  it("leaves public marketing routes outside the proxy matcher", () => {
+  it("passes public marketing reads while staging restrictions cover every dynamic route", () => {
     const proxy = readFileSync(join(ROOT, "proxy.ts"), "utf8");
     const matcher = proxy.slice(proxy.indexOf("matcher:"));
-    assert.match(
-      proxy,
-      /matcher:\s*\[["']\/executive-dashboard["'],\s*["']\/executive-dashboard\/:path\*["']\]/,
-    );
+    assert.match(proxy, /if \(!isExecutiveDashboardPath\(pathname\)\)/);
+    assert.match(proxy, /productionStagingRequestDecision/);
+    assert.match(matcher, /_next\/static/);
+    assert.match(matcher, /_next\/image/);
     assert.doesNotMatch(matcher, /["']\/concierge["']/);
-    assert.doesNotMatch(matcher, /diamond-studio|analyze-sparkle/);
   });
 
   it("keeps the production rewrite target outside all app routes", () => {

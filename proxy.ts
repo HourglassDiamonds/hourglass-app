@@ -23,6 +23,11 @@ import {
   EXECUTIVE_DASHBOARD_PRODUCTION_NOT_FOUND_REWRITE_PATH,
 } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
+import {
+  PRODUCTION_STAGING_LOGIN_PATH,
+  productionStagingRequestDecision,
+} from "@/lib/continuum/production-staging-access";
+import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
 
 /**
  * Next.js 16 Proxy — early network boundary for /executive-dashboard.
@@ -35,6 +40,26 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const productionStaging = isVerifiedContinuumProductionStagingRuntime();
+
+  if (productionStaging) {
+    const stagingDecision = productionStagingRequestDecision({
+      method: request.method,
+      pathname,
+      hasNextServerActionHeader: request.headers.has("next-action"),
+    });
+    if (!stagingDecision.allowed) {
+      return new NextResponse("Not Found", {
+        status: 404,
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    }
+    if (pathname === PRODUCTION_STAGING_LOGIN_PATH) {
+      const response = NextResponse.next();
+      applyExecutiveDashboardHeaders(response);
+      return response;
+    }
+  }
 
   if (!isExecutiveDashboardPath(pathname)) {
     return NextResponse.next();
@@ -101,7 +126,9 @@ export async function proxy(request: NextRequest) {
 
   if (decision.status === "unauthenticated") {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = EXECUTIVE_DASHBOARD_LOGIN_PATH;
+    loginUrl.pathname = productionStaging
+      ? PRODUCTION_STAGING_LOGIN_PATH
+      : EXECUTIVE_DASHBOARD_LOGIN_PATH;
     loginUrl.search = "";
     const redirectResponse = NextResponse.redirect(loginUrl);
     applyExecutiveDashboardHeaders(redirectResponse);
@@ -119,5 +146,7 @@ function applyExecutiveDashboardHeaders(response: NextResponse): void {
 }
 
 export const config = {
-  matcher: ["/executive-dashboard", "/executive-dashboard/:path*"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2)$).*)",
+  ],
 };

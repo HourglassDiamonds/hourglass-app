@@ -2,8 +2,9 @@
  * App Router helper to issue the existing executive-dashboard session cookie.
  * Password login and passkey login must share this path.
  *
- * Isolated Preview persists a random session_id before setting the cookie.
- * Production remains stateless and never calls the durable store.
+ * Identity-verified Production, isolated Preview, and the exact pinned
+ * auth-only staging runtime persist a random session_id before setting the
+ * cookie. Unverified runtimes retain the legacy non-durable behavior.
  */
 
 import { cookies } from "next/headers";

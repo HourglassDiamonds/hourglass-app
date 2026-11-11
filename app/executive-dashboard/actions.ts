@@ -3,25 +3,11 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
-  EXECUTIVE_DASHBOARD_AUTH_UNAVAILABLE_ERROR,
-  EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR,
   EXECUTIVE_DASHBOARD_LOGIN_PATH,
 } from "@/lib/executive-dashboard/access";
-import { resolveFounderLoginDestination } from "@/lib/continuum/operating-shell/login-destination";
 import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
 import { revokeDurableFounderSession } from "@/lib/executive-dashboard/founder-sessions";
-import {
-  checkExecutiveDashboardLoginRateLimit,
-  clearExecutiveDashboardLoginFailures,
-  delayExecutiveDashboardAuthFailure,
-  getExecutiveDashboardAuthClientIp,
-  recordExecutiveDashboardLoginFailure,
-} from "@/lib/executive-dashboard/rate-limit";
-import { issueExecutiveDashboardSession } from "@/lib/executive-dashboard/issue-session";
-import {
-  usernamesMatch,
-  verifyExecutiveDashboardPassword,
-} from "@/lib/executive-dashboard/password";
+import { authenticateExecutiveDashboardPassword } from "@/lib/executive-dashboard/password-login";
 import {
   EXECUTIVE_DASHBOARD_SESSION_COOKIE,
   EXECUTIVE_DASHBOARD_SESSION_PATH,
@@ -38,49 +24,12 @@ export async function loginExecutiveDashboard(
   formData: FormData,
 ): Promise<ExecutiveDashboardLoginState> {
   const headerList = await headers();
-  const ip = getExecutiveDashboardAuthClientIp(headerList);
-
-  const rate = await checkExecutiveDashboardLoginRateLimit(ip);
-  if (!rate.allowed) {
-    await delayExecutiveDashboardAuthFailure();
-    return { error: EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR };
-  }
-
-  const config = getExecutiveDashboardAuthConfig();
-  if (!config.ok) {
-    await delayExecutiveDashboardAuthFailure();
-    return { error: EXECUTIVE_DASHBOARD_AUTH_UNAVAILABLE_ERROR };
-  }
-
-  const username = String(formData.get("username") ?? "");
-  const password = String(formData.get("password") ?? "");
-
-  const userOk = usernamesMatch(username, config.username);
-  const passOk = verifyExecutiveDashboardPassword(password, config.passwordHash);
-
-  if (!userOk || !passOk) {
-    await recordExecutiveDashboardLoginFailure(ip);
-    await delayExecutiveDashboardAuthFailure();
-    return { error: EXECUTIVE_DASHBOARD_GENERIC_AUTH_ERROR };
-  }
-
-  await clearExecutiveDashboardLoginFailures(ip);
-
-  const issued = await issueExecutiveDashboardSession(
-    config.username,
-    config.sessionSecret,
-  );
-  if (!issued.ok) {
-    await delayExecutiveDashboardAuthFailure();
-    return { error: EXECUTIVE_DASHBOARD_AUTH_UNAVAILABLE_ERROR };
-  }
-
-  redirect(
-    resolveFounderLoginDestination({
-      next: String(formData.get("next") ?? ""),
-      viewport: String(formData.get("viewport") ?? ""),
-    }),
-  );
+  const result = await authenticateExecutiveDashboardPassword({
+    headers: headerList,
+    formData,
+  });
+  if (!result.ok) return { error: result.error };
+  redirect(result.destination);
 }
 
 export async function logoutExecutiveDashboard(): Promise<void> {
