@@ -2,6 +2,8 @@ export const PRODUCTION_STAGING_LOGIN_PATH =
   "/executive-dashboard/staging-login" as const;
 export const PRODUCTION_STAGING_AUTH_ROUTE =
   "/api/continuum/production-staging-founder-auth" as const;
+export const PRODUCTION_STAGING_CONTINUUM_PATH =
+  "/executive-dashboard/concierge/staging-read-only" as const;
 
 export type ProductionStagingRequestDecision =
   | { allowed: true }
@@ -39,8 +41,10 @@ export function productionStagingRequestDecision(input: {
   }
 
   if (
-    input.pathname.startsWith("/executive-dashboard/") &&
-    input.pathname !== PRODUCTION_STAGING_LOGIN_PATH
+    (input.pathname === "/executive-dashboard" ||
+      input.pathname.startsWith("/executive-dashboard/")) &&
+    input.pathname !== PRODUCTION_STAGING_LOGIN_PATH &&
+    input.pathname !== PRODUCTION_STAGING_CONTINUUM_PATH
   ) {
     return { allowed: false, reason: "dashboard-denied" };
   }

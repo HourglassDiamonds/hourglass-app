@@ -24,6 +24,7 @@ import {
 } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import {
+  PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
   productionStagingRequestDecision,
 } from "@/lib/continuum/production-staging-access";
@@ -85,6 +86,14 @@ export async function proxy(request: NextRequest) {
   if (isLogin || isConcierge || isSecurity) {
     const session = await readExecutiveDashboardSession(cookieValue);
     if (!session.ok && !isLogin) {
+      if (productionStaging && pathname === PRODUCTION_STAGING_CONTINUUM_PATH) {
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = PRODUCTION_STAGING_LOGIN_PATH;
+        loginUrl.search = "";
+        const redirectResponse = NextResponse.redirect(loginUrl);
+        applyExecutiveDashboardHeaders(redirectResponse);
+        return redirectResponse;
+      }
       const requested = `${pathname}${request.nextUrl.search}`;
       const loginUrl = request.nextUrl.clone();
       assignFounderLoginDestination(

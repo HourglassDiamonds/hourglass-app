@@ -115,7 +115,7 @@ function DocketItem({
 }) {
   const controls = selectFounderControls(item);
   const emailCard = composeEmailCard(item, controls.emailSources);
-  const showCheck =
+  const showCheck = allowMutations &&
     Boolean(item.job) &&
     controls.completableJob &&
     (controls.family === "open_job" || controls.family === "generic");
@@ -205,6 +205,7 @@ export function ChiefOfStaffToday({
   askAction,
   intakes = [],
   businessTodayContext = "",
+  readOnly = false,
 }: {
   loop?: CosOperatingLoopView;
   docket?: CosTodayDocketView;
@@ -215,6 +216,7 @@ export function ChiefOfStaffToday({
   askAction?: TodayAskAction;
   intakes?: readonly ClientWebsiteIntake[];
   businessTodayContext?: string;
+  readOnly?: boolean;
 }) {
   const docket = authoritativeTodayDocket(
     incomingDocket ?? (loop ? composeTodayDocket(loop) : {
@@ -310,6 +312,7 @@ export function ChiefOfStaffToday({
                 reviewAction={reviewAction}
                 disposeAction={disposeAction}
                 askAction={askAction}
+                allowMutations={!readOnly}
               />
             ))}
           </ol>
@@ -328,6 +331,7 @@ export function ChiefOfStaffToday({
         intakes={intakes}
         businessTodayContext={businessTodayContext}
         askAction={askAction}
+        readOnly={readOnly}
       />
       {(docket.cleanup?.length ?? 0) > 0 ? (
         <details data-cos-cleanup className="mt-10 min-w-0">

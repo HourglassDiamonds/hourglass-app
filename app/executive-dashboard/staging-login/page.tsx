@@ -2,7 +2,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { ContinuumMark } from "../concierge/components/continuum-mark";
 import { requireInternalClientMemorySession } from "@/lib/continuum/client-memory/read/access";
-import { PRODUCTION_STAGING_AUTH_ROUTE } from "@/lib/continuum/production-staging-access";
+import {
+  PRODUCTION_STAGING_AUTH_ROUTE,
+  PRODUCTION_STAGING_CONTINUUM_PATH,
+} from "@/lib/continuum/production-staging-access";
 import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
@@ -22,7 +25,7 @@ export default async function ProductionStagingFounderLoginPage({
   const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
-  if (session.ok) redirect("/executive-dashboard");
+  if (session.ok) redirect(PRODUCTION_STAGING_CONTINUUM_PATH);
   const { error } = await searchParams;
 
   return (
@@ -44,7 +47,7 @@ export default async function ProductionStagingFounderLoginPage({
           className="mt-10 space-y-5"
         >
           <input type="hidden" name="intent" value="login" />
-          <input type="hidden" name="next" value="/executive-dashboard" />
+          <input type="hidden" name="next" value={PRODUCTION_STAGING_CONTINUUM_PATH} />
           <input type="hidden" name="viewport" value="desktop" />
           <label className="block text-[10px] uppercase tracking-[0.24em] text-[#8d8073]">
             Username

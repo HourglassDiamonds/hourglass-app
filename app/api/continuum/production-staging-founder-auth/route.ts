@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse, type NextRequest } from "next/server";
 import {
+  PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
 } from "@/lib/continuum/production-staging-access";
 import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
@@ -56,5 +57,5 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       `${PRODUCTION_STAGING_LOGIN_PATH}?error=invalid`,
     );
   }
-  return stagingRedirect(request, "/executive-dashboard");
+  return stagingRedirect(request, PRODUCTION_STAGING_CONTINUUM_PATH);
 }

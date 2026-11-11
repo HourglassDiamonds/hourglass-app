@@ -21,6 +21,7 @@ export function CommandCenterHome({
   upcoming = [],
   intakes = [],
   businessTodayContext = "",
+  readOnly = false,
 }: {
   model: ContinuumHomeModel;
   operatingLoop?: CosOperatingLoopView;
@@ -32,6 +33,7 @@ export function CommandCenterHome({
   upcoming?: readonly TodayUpcomingItem[];
   intakes?: readonly ClientWebsiteIntake[];
   businessTodayContext?: string;
+  readOnly?: boolean;
 }) {
   const resolved = docket ?? (operatingLoop ? composeTodayDocket(operatingLoop) : null);
   if (!resolved) return null;
@@ -49,6 +51,7 @@ export function CommandCenterHome({
         upcoming={upcoming}
         intakes={intakes}
         businessTodayContext={businessTodayContext}
+        readOnly={readOnly}
       />
     </div>
   );

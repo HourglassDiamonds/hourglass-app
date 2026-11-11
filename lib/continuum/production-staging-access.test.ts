@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, it } from "node:test";
 import {
   PRODUCTION_STAGING_AUTH_ROUTE,
+  PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
   productionStagingRequestDecision,
 } from "./production-staging-access";
@@ -48,7 +49,7 @@ describe("Production-backed staging request boundary", () => {
     assert.equal(decide("GET", "/").allowed, true);
     assert.equal(decide("HEAD", "/diamond-studio").allowed, true);
     assert.equal(decide("GET", PRODUCTION_STAGING_LOGIN_PATH).allowed, true);
-    assert.equal(decide("GET", "/executive-dashboard").allowed, true);
+    assert.equal(decide("GET", PRODUCTION_STAGING_CONTINUUM_PATH).allowed, true);
   });
 
   it("denies API GETs, cron/OAuth, Concierge pages, and all other methods", () => {
@@ -66,6 +67,14 @@ describe("Production-backed staging request boundary", () => {
       allowed: false,
       reason: "dashboard-denied",
     });
+    assert.deepEqual(decide("GET", "/executive-dashboard"), {
+      allowed: false,
+      reason: "dashboard-denied",
+    });
+    assert.deepEqual(decide("GET", `${PRODUCTION_STAGING_CONTINUUM_PATH}/nested`), {
+      allowed: false,
+      reason: "dashboard-denied",
+    });
     assert.deepEqual(decide("DELETE", PRODUCTION_STAGING_AUTH_ROUTE), {
       allowed: false,
       reason: "method-denied",
@@ -80,5 +89,13 @@ describe("Production-backed staging request boundary", () => {
     assert.match(proxy, /request\.headers\.has\("next-action"\)/);
     assert.match(proxy, /status:\s*404/);
     assert.match(proxy, /PRODUCTION_STAGING_LOGIN_PATH/);
+    assert.match(proxy, /PRODUCTION_STAGING_CONTINUUM_PATH/);
+  });
+
+  it("pins successful and existing-session redirects to the read-only Continuum route", () => {
+    const authRoute = readFileSync(resolve(process.cwd(), "app/api/continuum/production-staging-founder-auth/route.ts"), "utf8");
+    const loginPage = readFileSync(resolve(process.cwd(), "app/executive-dashboard/staging-login/page.tsx"), "utf8");
+    assert.match(authRoute, /stagingRedirect\(request, PRODUCTION_STAGING_CONTINUUM_PATH\)/);
+    assert.match(loginPage, /session\.ok\) redirect\(PRODUCTION_STAGING_CONTINUUM_PATH\)/);
   });
 });

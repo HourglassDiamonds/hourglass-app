@@ -67,7 +67,7 @@ function applyOptimistic(
   );
 }
 
-function WorkRow({ item, selected, onSelect }: { item: CosTodaySectionItem; selected: boolean; onSelect: () => void }) {
+function WorkRow({ item, selected, onSelect, readOnly }: { item: CosTodaySectionItem; selected: boolean; onSelect: () => void; readOnly: boolean }) {
   return (
     <li className="min-w-0 border-t border-[#2b2926] py-3 first:border-t-0" data-today-work-item={item.id}>
       <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -75,14 +75,14 @@ function WorkRow({ item, selected, onSelect }: { item: CosTodaySectionItem; sele
         <p className="shrink-0 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">{item.stateLabel}</p>
       </div>
       <p className="mt-1 break-words text-[13px] leading-relaxed text-[#9f9489]"><span className="text-[#7f756c]">Next step: </span>{item.summary}</p>
-      <button type="button" onClick={onSelect} className="mt-2 min-h-10 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">
+      {readOnly ? null : <button type="button" onClick={onSelect} className="mt-2 min-h-10 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">
         {selected ? "Selected for Sterling" : "Tell Sterling about this"}
-      </button>
+      </button>}
     </li>
   );
 }
 
-function IntakeCard({ intake, selected, onSelect }: { intake: ClientWebsiteIntake; selected: boolean; onSelect: () => void }) {
+function IntakeCard({ intake, selected, onSelect, readOnly }: { intake: ClientWebsiteIntake; selected: boolean; onSelect: () => void; readOnly: boolean }) {
   const fields = websiteIntakeFields(intake);
   const whatMatters = websiteIntakeWhatMatters(intake);
   const submitted = websiteIntakeSubmittedLabel(intake.submittedAt);
@@ -111,10 +111,10 @@ function IntakeCard({ intake, selected, onSelect }: { intake: ClientWebsiteIntak
             <dd className="mt-0.5 break-words text-[13px] leading-relaxed text-[#c4b7aa]">{submitted}</dd>
           </div>
         </dl>
-        <button type="button" onClick={onSelect} className="mt-3 min-h-10 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">
+        {readOnly ? null : <button type="button" onClick={onSelect} className="mt-3 min-h-10 text-[9px] uppercase tracking-[0.16em] text-[#8d8073]">
           {selected ? "Selected for Sterling" : "Tell Sterling about this"}
-        </button>
-        <WebsiteIntakeControls intake={intake} />
+        </button>}
+        {readOnly ? null : <WebsiteIntakeControls intake={intake} />}
       </div>
     </details>
   );
@@ -125,11 +125,13 @@ export function TodayOperatingSections({
   intakes,
   businessTodayContext,
   askAction,
+  readOnly = false,
 }: {
   initialSections: readonly CosTodaySectionView[];
   intakes: readonly ClientWebsiteIntake[];
   businessTodayContext: string;
   askAction?: SterlingAction;
+  readOnly?: boolean;
 }) {
   const [sections, setSections] = useState(() => initialSections.map((section) => ({ ...section, items: [...section.items] })));
   const [hiddenIntakes, setHiddenIntakes] = useState<Set<string>>(() => new Set());
@@ -202,7 +204,7 @@ export function TodayOperatingSections({
             <span className="text-[11px] uppercase tracking-[0.22em] text-[#ad9164]">Concierge Intake / New Client</span>
             <span className="text-[10px] tabular-nums text-[#6f675f]">{visibleIntakes.length}</span>
           </summary>
-          <div><ul>{visibleIntakes.map((intake) => <li key={intake.intakeId}><IntakeCard intake={intake} selected={selectedTargetId === intake.intakeId} onSelect={() => setSelectedTargetId(intake.intakeId)} /></li>)}</ul></div>
+          <div><ul>{visibleIntakes.map((intake) => <li key={intake.intakeId}><IntakeCard intake={intake} selected={selectedTargetId === intake.intakeId} onSelect={() => setSelectedTargetId(intake.intakeId)} readOnly={readOnly} /></li>)}</ul></div>
         </details>
       ) : null}
       {sections.map((section) => {
@@ -224,12 +226,12 @@ export function TodayOperatingSections({
               <span className="text-[10px] tabular-nums text-[#6f675f]">{section.items.length}</span>
             </summary>
             <div>
-              {section.items.length > 0 ? <ul>{section.items.map((item) => <WorkRow key={item.id} item={item} selected={selectedTargetId === item.id} onSelect={() => setSelectedTargetId(item.id)} />)}</ul> : <p className="pb-3 text-[13px] text-[#6f675f]">Nothing active.</p>}
+              {section.items.length > 0 ? <ul>{section.items.map((item) => <WorkRow key={item.id} item={item} selected={selectedTargetId === item.id} onSelect={() => setSelectedTargetId(item.id)} readOnly={readOnly} />)}</ul> : <p className="pb-3 text-[13px] text-[#6f675f]">Nothing active.</p>}
             </div>
           </details>
         );
       })}
-      <form onSubmit={onSubmit} className="sticky bottom-3 z-20 mt-8 min-w-0 rounded-sm border border-[#4a4136] bg-[#171614]/95 p-3 shadow-2xl backdrop-blur" data-tell-sterling="">
+      {readOnly ? null : <form onSubmit={onSubmit} className="sticky bottom-3 z-20 mt-8 min-w-0 rounded-sm border border-[#4a4136] bg-[#171614]/95 p-3 shadow-2xl backdrop-blur" data-tell-sterling="">
         <label htmlFor="tell-sterling" className="text-[10px] uppercase tracking-[0.18em] text-[#ad9164]">Tell Sterling…{selectedTargetId ? " · focused row" : ""}</label>
         <div className="mt-1 flex min-w-0 items-end gap-3">
           <textarea id="tell-sterling" value={query} onChange={(event) => setQuery(event.target.value)} rows={1} placeholder="What changed, or what should I do next?" className="max-h-32 min-h-11 min-w-0 flex-1 resize-y border-0 bg-transparent py-2 text-[15px] leading-relaxed text-[#efe8de] outline-none placeholder:text-[#6f675f]" />
@@ -237,7 +239,7 @@ export function TodayOperatingSections({
         </div>
         {reply ? <p role="status" className="mt-2 break-words text-[13px] leading-relaxed text-[#b8ada2]">{reply}</p> : null}
         {failedQuery ? <button type="button" onClick={() => submit(failedQuery)} className="mt-1 min-h-10 text-[10px] uppercase tracking-[0.16em] text-[#ad9164]">Retry</button> : null}
-      </form>
+      </form>}
     </div>
   );
 }
