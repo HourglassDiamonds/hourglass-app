@@ -320,6 +320,10 @@ type AssembleInput = {
   targetCase?: string | null;
   liveRetrievalScope?: "portfolio" | "target_only";
   expectedTargetThreadIds?: readonly string[];
+  /** Exact, server-owned threads to add to the indexed evidence frontier. */
+  additionalIndexedThreadIds?: readonly string[];
+  /** Hard provider boundary: no Gmail thread outside this set is fetched. */
+  liveRetrievalThreadAllowlist?: readonly string[];
   createGmailBatch?: () => Promise<LiveSourceViewerBatch | null>;
   continuity?: {
     mode: "assembly_planning_only";
@@ -500,7 +504,11 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   const indexed = await expandSterlingIndexedThreadContext(
     input.client as never,
     candidateContext,
-    [...trustedProjectThreads, ...projectEvidenceThreads.discoveryThreadIds],
+    [
+      ...trustedProjectThreads,
+      ...projectEvidenceThreads.discoveryThreadIds,
+      ...(input.additionalIndexedThreadIds ?? []),
+    ],
   );
   const indexedEmailHashes = new Set([...indexed.values()].flatMap((thread) =>
     (thread.messages ?? []).flatMap((message) => {
@@ -557,6 +565,15 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     ...targetThreadIdsForPlanning,
     ...requiredLiveThreadIds.filter((threadId) => !targetPlanningSet.has(threadId)),
   ];
+  const liveAllowlist = input.liveRetrievalThreadAllowlist
+    ? new Set(input.liveRetrievalThreadAllowlist.map((threadId) => threadId.trim()).filter(Boolean))
+    : null;
+  const scopedRequiredLiveThreadIds = liveAllowlist
+    ? prioritizedRequiredLiveThreadIds.filter((threadId) => liveAllowlist.has(threadId))
+    : prioritizedRequiredLiveThreadIds;
+  const scopeExcludedThreadIds = liveAllowlist
+    ? prioritizedRequiredLiveThreadIds.filter((threadId) => !liveAllowlist.has(threadId))
+    : [];
   const liveThreadOutcomes: TodayLiveThreadOutcome[] = [];
   let continuity: SterlingContinuityDiagnostics = {
     status: input.continuity ? "unavailable" : "disabled",
@@ -571,12 +588,12 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   };
   const retrievalBlocked = Boolean(preliminaryTargetResolution?.blockedReason) || targetOnlyScopeInvalid;
   let selectedLiveThreadIds = retrievalBlocked ? [] : input.liveRetrievalScope === "target_only"
-    ? targetThreadIdsForPlanning : prioritizedRequiredLiveThreadIds.slice(0, STERLING_GMAIL_REQUEST_BUDGET);
+    ? targetThreadIdsForPlanning : scopedRequiredLiveThreadIds.slice(0, STERLING_GMAIL_REQUEST_BUDGET);
   let budgetDeferredThreadIds = retrievalBlocked ? [] : input.liveRetrievalScope === "target_only"
     ? requiredLiveThreadIds.filter((threadId) => !targetPlanningSet.has(threadId))
-    : prioritizedRequiredLiveThreadIds.slice(STERLING_GMAIL_REQUEST_BUDGET);
+    : scopedRequiredLiveThreadIds.slice(STERLING_GMAIL_REQUEST_BUDGET);
   let priorVerifications = new Map<string, SterlingThreadVerificationMetadata>();
-  if (input.continuity && !retrievalBlocked && input.liveRetrievalScope !== "target_only") {
+  if (input.continuity && !retrievalBlocked && input.liveRetrievalScope !== "target_only" && !liveAllowlist) {
     try {
       const digests = requiredLiveThreadIds.map((threadId) =>
         sterlingThreadKeyDigest(threadId, input.continuity!.hmacKey));
@@ -628,6 +645,18 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     targetThreadIds: targetOnlyScopeInvalid ? [] : targetThreadIdsForPlanning,
     requestBudget: STERLING_GMAIL_REQUEST_BUDGET,
   });
+  for (const threadId of scopeExcludedThreadIds) {
+    const current = sterlingIndexedThreadFingerprint(preliminaryWorkingSet, threadId);
+    liveThreadOutcomes.push({
+      threadId,
+      status: "unavailable",
+      indexedMessageCount: current.indexedMessageCount,
+      liveMessageCount: 0,
+      safeErrorCategory: "not-requested-scope-excluded",
+      latestIndexedMessageAt: current.latestIndexedMessageAt,
+      latestLiveMessageAt: null,
+    });
+  }
   for (const threadId of execution.budgetDeferredThreadIds) {
     const current = sterlingIndexedThreadFingerprint(preliminaryWorkingSet, threadId);
     liveThreadOutcomes.push({

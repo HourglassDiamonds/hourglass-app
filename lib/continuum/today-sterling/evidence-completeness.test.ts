@@ -157,6 +157,18 @@ describe("Sterling permanent evidence completeness gate", () => {
     assert.deepEqual(blocked?.safeErrorCategories, ["thread-inaccessible"]);
   });
 
+  it("reports an allowlist exclusion as scoped-out evidence, not a provider failure", () => {
+    const report = evaluateSterlingEvidenceCompleteness({
+      workingSet: baseWorkingSet(),
+      threadOutcomes: [live("thread-1"), unavailable("thread-2", "not-requested-scope-excluded")],
+    });
+
+    const blocked = report.workUnits.find((row) => row.workUnitId === `project:${P2}`);
+    assert.equal(blocked?.blockReason, "required-live-evidence-scope-excluded");
+    assert.equal(blocked?.scopeExcludedThreadCount, 1);
+    assert.equal(blocked?.providerFailedThreadCount, 0);
+  });
+
   it("preserves complete work units in a mixed portfolio and excludes blocked evidence", () => {
     const workingSet = baseWorkingSet();
     const report = evaluateSterlingEvidenceCompleteness({

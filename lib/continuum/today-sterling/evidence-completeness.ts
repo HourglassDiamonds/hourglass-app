@@ -26,6 +26,7 @@ export type SterlingWorkUnitEvidenceCompleteness = {
   providerRateLimitedThreadCount: number;
   otherProviderErrorThreadCount: number;
   budgetDeferredThreadCount: number;
+  scopeExcludedThreadCount: number;
   missingIndexedThreadCount: number;
   latestIndexedEvidenceAt: string | null;
   latestLiveVerifiedEvidenceAt: string | null;
@@ -67,6 +68,7 @@ const EMPTY_THREAD_COUNTS = {
   providerRateLimitedThreadCount: 0,
   otherProviderErrorThreadCount: 0,
   budgetDeferredThreadCount: 0,
+  scopeExcludedThreadCount: 0,
   missingIndexedThreadCount: 0,
   latestIndexedEvidenceAt: null,
   latestLiveVerifiedEvidenceAt: null,
@@ -87,12 +89,17 @@ function isMissingIndexed(code: string | null | undefined): boolean {
   return code === "missing-indexed-context";
 }
 
+function isScopeExcluded(code: string | null | undefined): boolean {
+  return code === "not-requested-scope-excluded";
+}
+
 function isAssemblyReuse(code: string | null | undefined): boolean {
   return code === "recently-verified-assembly-only";
 }
 
 function isProviderFailure(code: string | null | undefined): boolean {
-  return Boolean(code) && !isBudgetDeferred(code) && !isMissingIndexed(code) && !isAssemblyReuse(code);
+  return Boolean(code) && !isBudgetDeferred(code) && !isMissingIndexed(code) &&
+    !isScopeExcluded(code) && !isAssemblyReuse(code);
 }
 
 /**
@@ -202,6 +209,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
     let providerRateLimitedThreadCount = 0;
     let otherProviderErrorThreadCount = 0;
     let budgetDeferredThreadCount = 0;
+    let scopeExcludedThreadCount = 0;
     let missingIndexedThreadCount = 0;
     let reusedVerificationThreadCount = 0;
     const safeErrorCategories = new Set<string>();
@@ -212,6 +220,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
       } else if (outcome?.status === "unavailable") {
         unavailableThreadCount += 1;
         if (isBudgetDeferred(outcome.safeErrorCategory)) budgetDeferredThreadCount += 1;
+        else if (isScopeExcluded(outcome.safeErrorCategory)) scopeExcludedThreadCount += 1;
         else if (isMissingIndexed(outcome.safeErrorCategory)) missingIndexedThreadCount += 1;
         else if (isProviderFailure(outcome.safeErrorCategory)) {
           providerFailedThreadCount += 1;
@@ -238,9 +247,10 @@ export function evaluateSterlingEvidenceCompleteness(input: {
     const blockReason = missingIndexedThreadCount > 0 ? "required-thread-missing-indexed-evidence"
       : providerRateLimitedThreadCount > 0 ? "required-live-evidence-rate-limited"
         : otherProviderErrorThreadCount > 0 ? "required-live-evidence-provider-error"
-          : budgetDeferredThreadCount > 0 ? "required-live-evidence-budget-deferred"
-            : reusedVerificationThreadCount > 0 ? "required-live-evidence-reused-for-planning-only"
-              : indexedOnlyThreadCount > 0 ? "required-live-evidence-incomplete" : null;
+          : scopeExcludedThreadCount > 0 ? "required-live-evidence-scope-excluded"
+            : budgetDeferredThreadCount > 0 ? "required-live-evidence-budget-deferred"
+              : reusedVerificationThreadCount > 0 ? "required-live-evidence-reused-for-planning-only"
+                : indexedOnlyThreadCount > 0 ? "required-live-evidence-incomplete" : null;
     if (unavailableThreadCount > 0) {
       return {
         workUnitId: unit.workUnitId,
@@ -255,6 +265,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         providerRateLimitedThreadCount,
         otherProviderErrorThreadCount,
         budgetDeferredThreadCount,
+        scopeExcludedThreadCount,
         missingIndexedThreadCount,
         latestIndexedEvidenceAt,
         latestLiveVerifiedEvidenceAt,
@@ -279,6 +290,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
         providerRateLimitedThreadCount,
         otherProviderErrorThreadCount,
         budgetDeferredThreadCount,
+        scopeExcludedThreadCount,
         missingIndexedThreadCount,
         latestIndexedEvidenceAt,
         latestLiveVerifiedEvidenceAt,
@@ -302,6 +314,7 @@ export function evaluateSterlingEvidenceCompleteness(input: {
       providerRateLimitedThreadCount: 0,
       otherProviderErrorThreadCount: 0,
       budgetDeferredThreadCount: 0,
+      scopeExcludedThreadCount: 0,
       missingIndexedThreadCount: 0,
       latestIndexedEvidenceAt,
       latestLiveVerifiedEvidenceAt,

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "../lib/continuum/runtime-env";
 import { assembleSterlingTodayShadow, executeSterlingTodaySemantic } from "../lib/continuum/today-sterling/server-runner";
+import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "../lib/continuum/today-sterling/operational-reconciliation-scope";
 
 function loadEnvFile(path: string) {
   try {
@@ -31,6 +32,7 @@ async function main() {
   const withModel = process.argv.includes("--with-model");
   const targetCase = process.argv.find((argument) => argument.startsWith("--target-case="))
     ?.slice("--target-case=".length) ?? null;
+  const november11Reconciliation = process.argv.includes("--november-11-operational-reconciliation");
   const url = required("SUPABASE_URL");
   if (!url.includes(CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF)) {
     throw new Error("shadow-refuses-non-production-supabase");
@@ -38,7 +40,14 @@ async function main() {
   const client = createClient(url, required("SUPABASE_SERVICE_ROLE_KEY"), {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-  const assembly = await assembleSterlingTodayShadow({ client, targetCase });
+  const assembly = await assembleSterlingTodayShadow({
+    client,
+    targetCase,
+    ...(november11Reconciliation ? {
+      additionalIndexedThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+      liveRetrievalThreadAllowlist: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+    } : {}),
+  });
   if (assembly.targetBlockedReason) {
     process.stdout.write(`${JSON.stringify({
       mode: assembly.workingSet.mutationMode,
@@ -143,6 +152,8 @@ async function main() {
         evidenceRefs: item.evidenceRefs,
       };
     }) ?? [],
+    relationshipProposals: proposal?.relationshipProposals ?? [],
+    proposedWriteSet: proposal?.proposedCanonicalMutations ?? [],
     portfolioAmbiguities: proposal?.portfolioAmbiguities ?? [],
   };
   process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);

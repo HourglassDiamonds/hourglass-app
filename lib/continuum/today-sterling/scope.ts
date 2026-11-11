@@ -37,6 +37,8 @@ export const STERLING_TODAY_ACCEPTANCE_SCOPE: readonly SterlingTodayScopeDefinit
     exactThreadIds: ["1a1212396a8ac111", "1a13660ae3fdb7ac", "1a13cc2c1f3d5951"],
     exactPersonIds: ["0a405703-0f30-4b1e-9a7a-4d0e001fb101"],
     exactJobIds: ["9802f822-117d-4340-9334-e6c84834d77a"] },
+  { key: "hyrumLower", publicId: "HYRUM-LOWER/INQUIRY", identifiers: [], exactLabels: ["Hyrum Lower"],
+    exactThreadIds: ["1a1c73c88f29a182"] },
   { key: "jackie", publicId: "JACKIE-PADDY", identifiers: [], exactLabels: ["Jackie Paddy"],
     exactThreadIds: ["1a1474ed83440aa0"] },
   { key: "jamesReturning", publicId: "JAMES-RETURNING", identifiers: [], exactLabels: ["James"],
