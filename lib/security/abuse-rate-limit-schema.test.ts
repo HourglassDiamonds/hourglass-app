@@ -125,3 +125,37 @@ describe("abuse rate limit schema (unapplied)", () => {
     assert.match(sql, /p_bucket_key !~ '\^\[0-9a-f\]\+\$'/);
   });
 });
+
+describe("founder-auth rate-limit helper migration", () => {
+  const reviewedSql = readFileSync(
+    resolve(process.cwd(), "lib/supabase/abuse-rate-limit-schema.sql"),
+    "utf8",
+  );
+  const migrationSql = readFileSync(
+    resolve(
+      process.cwd(),
+      "supabase/migrations/20261111151959_continuum_founder_auth_rate_limit_helpers.sql",
+    ),
+    "utf8",
+  );
+  const marker =
+    "create or replace function public.check_abuse_rate_limit(";
+
+  it("matches the previously reviewed helper bodies and grants exactly", () => {
+    const normalize = (value: string) => value.replaceAll("\r\n", "\n").trim();
+    const reviewedHelpers = reviewedSql.slice(reviewedSql.indexOf(marker));
+    const trackedHelpers = migrationSql.slice(migrationSql.indexOf(marker));
+
+    assert.equal(normalize(trackedHelpers), normalize(reviewedHelpers));
+  });
+
+  it("does not alter the table, counters, consume RPC, or RLS", () => {
+    assert.doesNotMatch(migrationSql, /create\s+table|alter\s+table|drop\s+/i);
+    assert.doesNotMatch(
+      migrationSql,
+      /create\s+or\s+replace\s+function\s+public\.consume_abuse_rate_limit/i,
+    );
+    assert.doesNotMatch(migrationSql, /insert\s+into/i);
+    assert.doesNotMatch(migrationSql, /row\s+level\s+security|create\s+policy/i);
+  });
+});
