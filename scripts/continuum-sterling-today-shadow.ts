@@ -1,6 +1,7 @@
 /** READ-ONLY live Sterling-native Today replay. No canonical or snapshot writes. */
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { createInterface } from "node:readline/promises";
 import { createClient } from "@supabase/supabase-js";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "../lib/continuum/runtime-env";
 import { assembleSterlingTodayShadow, executeSterlingTodaySemantic } from "../lib/continuum/today-sterling/server-runner";
@@ -28,11 +29,86 @@ function required(name: string): string {
   const value = process.env[name]?.trim() ?? ""; if (!value) throw new Error(`missing-${name}`); return value;
 }
 
+type ConnectorMessage = {
+  messageId: string;
+  sentAt: string;
+  fromRaw: string | null;
+  to: string | null;
+  cc: string | null;
+  subject: string | null;
+  plainText: string | null;
+  bodyExtractionStatus: "decoded_plaintext" | "empty";
+  snippet: string | null;
+  attachments: readonly { filename: string | null; mimeType: string | null }[];
+};
+
+function connectorRecipients(value: string | null): string[] {
+  return value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
+}
+
+async function connectorBatchFromStdin() {
+  const input = createInterface({ input: process.stdin, crlfDelay: Infinity });
+  let payload = "";
+  for await (const line of input) {
+    payload = line;
+    break;
+  }
+  input.close();
+  if (!payload) throw new Error("connector-stdin-empty");
+  const parsed = JSON.parse(payload) as Record<string, ConnectorMessage[]>;
+  const allowedThreadIds = new Set<string>(NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS);
+  const unexpectedThreadIds = Object.keys(parsed).filter((threadId) => !allowedThreadIds.has(threadId));
+  if (unexpectedThreadIds.length > 0) {
+    throw new Error("connector-stdin-thread-outside-november-11-allowlist");
+  }
+  const metrics = { threadFetches: 0 };
+  return {
+    credentialLoads: 1 as const,
+    metrics,
+    async fetchThread(input: { threadId: string; indexed: readonly { messageId: string; subject: string | null }[] }) {
+      metrics.threadFetches += 1;
+      const available = new Map((parsed[input.threadId] ?? []).map((message) => [message.messageId, message]));
+      const messages = input.indexed.flatMap((indexed) => {
+        const message = available.get(indexed.messageId);
+        return message ? [{
+          messageId: message.messageId,
+          fromRaw: message.fromRaw,
+          fromEmail: null,
+          to: connectorRecipients(message.to),
+          cc: connectorRecipients(message.cc),
+          subject: message.subject,
+          sentAt: message.sentAt,
+          plainText: message.plainText,
+          bodyExtractionStatus: message.bodyExtractionStatus,
+          snippet: message.snippet,
+          attachments: message.attachments,
+        }] : [];
+      });
+      if (messages.length === 0) return { ok: false as const, safeErrorCode: "not-indexed" as const };
+      return {
+        ok: true as const,
+        safeErrorCode: null,
+        threadId: input.threadId,
+        indexedSubject: input.indexed.at(-1)?.subject ?? null,
+        messages,
+        plaintextPersisted: false as const,
+        gmailMutation: false as const,
+        cursorUnchanged: true as const,
+        readOnly: true as const,
+      };
+    },
+  };
+}
+
 async function main() {
   const withModel = process.argv.includes("--with-model");
   const targetCase = process.argv.find((argument) => argument.startsWith("--target-case="))
     ?.slice("--target-case=".length) ?? null;
   const november11Reconciliation = process.argv.includes("--november-11-operational-reconciliation");
+  const connectorStdin = process.argv.includes("--connector-json-stdin");
+  if (connectorStdin && !november11Reconciliation) {
+    throw new Error("connector-stdin-requires-november-11-operational-reconciliation");
+  }
   const url = required("SUPABASE_URL");
   if (!url.includes(CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF)) {
     throw new Error("shadow-refuses-non-production-supabase");
@@ -47,6 +123,7 @@ async function main() {
       additionalIndexedThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
       liveRetrievalThreadAllowlist: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
     } : {}),
+    ...(connectorStdin ? { createGmailBatch: connectorBatchFromStdin } : {}),
   });
   if (assembly.targetBlockedReason) {
     process.stdout.write(`${JSON.stringify({
