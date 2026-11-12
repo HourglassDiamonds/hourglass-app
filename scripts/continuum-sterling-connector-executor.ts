@@ -17,8 +17,13 @@ async function main() {
     evidenceBytes,
     expectedSha256: process.env.CONTINUUM_STERLING_CONNECTOR_EVIDENCE_SHA256?.trim() || null,
     timeoutMs,
+    runId: process.env.CONTINUUM_STERLING_OPERATIONAL_SHADOW_EXECUTION_ID,
+    sourceSha: process.env.CONTINUUM_SOURCE_COMMIT?.trim() || null,
   });
-  process.stdout.write(`${JSON.stringify(result)}\n`);
+  const compact = result.ok
+    ? { ok: true, evidenceSha256: result.evidenceSha256, receipt: result.receipt }
+    : { ok: false, safeCode: result.safeCode, evidenceSha256: result.evidenceSha256, receipt: result.receipt };
+  process.stdout.write(`${JSON.stringify(compact)}\n`);
   if (!result.ok) process.exitCode = 1;
 }
 
