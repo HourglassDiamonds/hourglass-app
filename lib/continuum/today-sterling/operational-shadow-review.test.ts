@@ -5,7 +5,8 @@ import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "./operational
 
 describe("bounded operational shadow review", () => {
   const runtime = readFileSync("lib/continuum/today-sterling/operational-shadow-review.ts", "utf8");
-  const action = readFileSync("app/executive-dashboard/concierge/sterling-today/operational-review/actions.ts", "utf8");
+  const runRoute = readFileSync("app/api/continuum/operational-shadow/run/route.ts", "utf8");
+  const resultRoute = readFileSync("app/api/continuum/operational-shadow/result/route.ts", "utf8");
   const page = readFileSync("app/executive-dashboard/concierge/sterling-today/operational-review/page.tsx", "utf8");
 
   it("pins exactly the reviewed 23 threads and accepts no caller-owned scope", () => {
@@ -14,8 +15,7 @@ describe("bounded operational shadow review", () => {
     assert.match(runtime, /liveRetrievalThreadAllowlist: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS/);
     assert.match(runtime, /forcedLiveThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS/);
     assert.match(runtime, /includeUnindexedLiveMessages: true/);
-    assert.match(action, /void _formData/);
-    assert.doesNotMatch(action, /formData\.get|threadId|mailbox|model/);
+    assert.doesNotMatch(`${runRoute}${resultRoute}`, /formData\.get|searchParams\.get|threadId|mailbox|model/);
   });
 
   it("fails closed on runtime, founder, mailbox, execution, and lease identity", () => {
@@ -33,6 +33,9 @@ describe("bounded operational shadow review", () => {
     assert.match(runtime, /CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED/);
     assert.match(runtime, /business-persistence-control-enabled/);
     assert.match(page, /export const maxDuration = 300/);
+    assert.match(runRoute, /sameOrigin/);
+    assert.match(resultRoute, /restoreAuthenticatedOperationalShadowResult/);
+    assert.match(resultRoute, /cleanupAuthenticatedOperationalShadowResult/);
   });
 
   it("uses the real assembler, model boundary, and comparator without business writers", () => {
@@ -44,6 +47,9 @@ describe("bounded operational shadow review", () => {
     assert.match(runtime, /gmailIndexWrites: false/);
     assert.match(runtime, /checkpointWrites: false/);
     assert.match(runtime, /tokenRefreshWrites: false/);
+    assert.match(runtime, /persistCompletedOperationalShadowResult/);
+    assert.match(runtime, /sourceWatermark: assembly\.requestWorkingSet\.sourceWatermark/);
+    assert.doesNotMatch(runtime, /leaseStore\.finish\(lease\.runId, "completed"/);
   });
 
   it("reports exact retrieval provenance and excludes correspondence bodies from the result", () => {

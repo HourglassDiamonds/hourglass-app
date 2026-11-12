@@ -13,12 +13,18 @@ import {
   isVerifiedContinuumProductionStagingRuntime,
 } from "@/lib/continuum/runtime-env";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
+import { founderSessionSubjectId } from "@/lib/executive-dashboard/founder-sessions";
 import { compareOperationalBoard, type ManualObligationAuditRow, type OperationalBoardDisposition,
   type OperationalBoardOwner, type ShadowBoardAuditRow } from "./operational-board-comparison";
 import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "./operational-reconciliation-scope";
 import { createSterlingRunLease, createSupabaseSterlingRunLeaseStore, STERLING_TODAY_LEASE_KEY } from "./run-lease";
 import { getSterlingOperationalShadowExecutionId, isSterlingOperationalShadowEnabled } from "./server-config";
 import { assembleSterlingTodayShadow, executeSterlingTodaySemantic } from "./server-runner";
+import {
+  createSupabaseOperationalShadowResultStore,
+  prepareOperationalShadowResultRecord,
+  type OperationalShadowResultStore,
+} from "./operational-shadow-result-store";
 
 const GMAIL_RETRIEVAL_TIMEOUT_MS = 80_000;
 const SCOPE_VERSION = "november-11-operational-v11-23-threads";
@@ -168,6 +174,7 @@ export function buildSanitizedOperationalShadowResult(input: {
     verdict: compared.comparison.passed && input.completion.verdict === "PASS" ? "GENERATED" as const : "GENERATED_WITH_BLOCKS" as const,
     result: {
       contract: "sterling-operational-shadow-v11-sanitized-result-v1",
+      verdict: compared.comparison.passed && input.completion.verdict === "PASS" ? "GENERATED" : "GENERATED_WITH_BLOCKS",
       runId: input.runId,
       executionId: input.executionId,
       sourceCommit: input.sourceCommit,
@@ -211,6 +218,37 @@ export type OperationalShadowResult =
   | { ok: false; verdict: "DISABLED" | "UNAVAILABLE" | "BUSY" | "ALREADY_EXECUTED"; reason: string }
   | { ok: true; verdict: "GENERATED" | "GENERATED_WITH_BLOCKS"; result: Record<string, unknown> };
 
+export type OperationalShadowCleanupResult =
+  | { ok: true; status: "deleted" }
+  | { ok: false; reason: "unauthorized" | "unavailable" | "not-found" };
+
+export async function persistCompletedOperationalShadowResult(input: {
+  store: OperationalShadowResultStore;
+  result: Record<string, unknown>;
+  executionId: string;
+  runId: string;
+  founderUserId: string;
+  sourceSha: string;
+  sourceWatermark: string;
+  now?: Date;
+}) {
+  const record = prepareOperationalShadowResultRecord({ ...input, sanitizedResult: input.result });
+  const persisted = await input.store.persistCompleted(record);
+  if (persisted !== "stored" && persisted !== "already_stored") {
+    throw new Error(persisted === "conflict" ? "shadow-result-conflict" : "shadow-result-unavailable");
+  }
+  const verified = await input.store.retrieve({
+    executionId: record.executionId, founderUserId: record.founderUserId,
+    sourceSha: record.sourceSha, now: new Date(record.createdAt),
+  });
+  if (!verified || verified.resultSha256 !== record.resultSha256 ||
+      verified.sourceWatermark !== record.sourceWatermark ||
+      verified.terminalStatus !== "completed") {
+    throw new Error("shadow-result-readback-failed");
+  }
+  return record;
+}
+
 async function priorLease(client: SupabaseClient, digest: string): Promise<"none" | "running" | "completed" | "failed" | "unavailable"> {
   const { data, error } = await client.from("continuum_sterling_today_run_leases")
     .select("run_digest,run_state,expires_at").eq("lease_key", STERLING_TODAY_LEASE_KEY).maybeSingle();
@@ -229,6 +267,10 @@ export async function runAuthenticatedOperationalShadowReview(): Promise<Operati
   }
   const executionId = getSterlingOperationalShadowExecutionId();
   if (!executionId) return { ok: false, verdict: "DISABLED", reason: "execution-id-missing-or-invalid" };
+  const sourceCommit = process.env.VERCEL_GIT_COMMIT_SHA?.trim().toLowerCase() ?? "";
+  if (!/^[a-f0-9]{40}$/.test(sourceCommit)) {
+    return { ok: false, verdict: "DISABLED", reason: "source-commit-unavailable" };
+  }
   const auth = await getAuthenticatedGmailHistoryStores();
   if (!auth.ok) return { ok: false, verdict: "UNAVAILABLE", reason: "founder-session-unavailable" };
   const client = getSupabaseAdmin();
@@ -261,20 +303,56 @@ export async function runAuthenticatedOperationalShadowReview(): Promise<Operati
     });
     const completion = await executeSterlingTodaySemantic({ assembly, apiKey, model: CONCIERGE_FOREGROUND_MODEL });
     if (!completion.proposal) throw new Error("semantic-proposal-unavailable");
-    const finished = await leaseStore.finish(lease.runId, "completed", new Date().toISOString());
-    if (!finished) return { ok: false, verdict: "UNAVAILABLE", reason: "execution-outcome-unknown" };
     const sanitized = buildSanitizedOperationalShadowResult({
       assembly,
       completion,
       runId: lease.runId,
       executionId,
-      sourceCommit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
+      sourceCommit,
       leaseMetadataWrite: true,
-      browserSessionCache: true,
+      browserSessionCache: false,
+    });
+    await persistCompletedOperationalShadowResult({
+      store: createSupabaseOperationalShadowResultStore(client), result: sanitized.result,
+      executionId, runId: lease.runId, founderUserId: founderSessionSubjectId(),
+      sourceSha: sourceCommit, sourceWatermark: assembly.requestWorkingSet.sourceWatermark,
     });
     return { ok: true, ...sanitized };
   } catch {
     await leaseStore.finish(lease.runId, "failed", new Date().toISOString()).catch(() => false);
     return { ok: false, verdict: "UNAVAILABLE", reason: "operational-shadow-execution-failed" };
   }
+}
+
+async function authenticatedStoredResultContext() {
+  if (!isVerifiedOperationalShadowRuntime()) return null;
+  const executionId = getSterlingOperationalShadowExecutionId();
+  const sourceSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim().toLowerCase() ?? "";
+  if (!executionId || !/^[a-f0-9]{40}$/.test(sourceSha)) return null;
+  const auth = await getAuthenticatedGmailHistoryStores();
+  if (!auth.ok) return null;
+  const client = getSupabaseAdmin();
+  if (!client) return null;
+  return { executionId, sourceSha, founderUserId: founderSessionSubjectId(),
+    store: createSupabaseOperationalShadowResultStore(client) };
+}
+
+export async function restoreAuthenticatedOperationalShadowResult(): Promise<OperationalShadowResult> {
+  const context = await authenticatedStoredResultContext();
+  if (!context) return { ok: false, verdict: "UNAVAILABLE", reason: "founder-session-unavailable" };
+  const record = await context.store.retrieve(context);
+  if (!record) return { ok: false, verdict: "UNAVAILABLE", reason: "stored-result-unavailable" };
+  const verdict = record.sanitizedResult.verdict;
+  if (verdict !== "GENERATED" && verdict !== "GENERATED_WITH_BLOCKS") {
+    return { ok: false, verdict: "UNAVAILABLE", reason: "stored-result-invalid" };
+  }
+  return { ok: true, verdict, result: record.sanitizedResult };
+}
+
+export async function cleanupAuthenticatedOperationalShadowResult(): Promise<OperationalShadowCleanupResult> {
+  const context = await authenticatedStoredResultContext();
+  if (!context) return { ok: false, reason: "unauthorized" };
+  return await context.store.removeExact(context)
+    ? { ok: true, status: "deleted" }
+    : { ok: false, reason: "not-found" };
 }

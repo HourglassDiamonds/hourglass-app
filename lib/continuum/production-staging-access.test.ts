@@ -7,6 +7,8 @@ import {
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
   productionStagingRequestDecision,
 } from "./production-staging-access";
 
@@ -48,15 +50,18 @@ describe("Production-backed staging request boundary", () => {
     });
   });
 
-  it("permits only the fixed operational Server Action when its separate switch is on", () => {
+  it("denies every Server Action and permits only fixed shadow API methods when enabled", () => {
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, false, true).allowed, true);
-    assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, true, true).allowed, true);
-    assert.deepEqual(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, true, false), {
-      allowed: false, reason: "server-action-denied",
-    });
-    assert.deepEqual(decide("POST", `${PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH}/other`, true, true), {
-      allowed: false, reason: "server-action-denied",
-    });
+    assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE, false, true).allowed, true);
+    assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);
+    assert.equal(decide("DELETE", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);
+    for (const path of [PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
+      PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+      PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE]) {
+      assert.equal(decide("POST", path, true, true).allowed, false);
+    }
+    assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE, false, false).allowed, false);
+    assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, false).allowed, false);
   });
 
   it("permits public reads and the single dashboard read surface", () => {
@@ -70,6 +75,7 @@ describe("Production-backed staging request boundary", () => {
     for (const pathname of [
       "/api/cron/continuum-gmail-freshness",
       "/api/continuum/gmail/oauth/callback",
+      "/api/continuum/gmail/oauth/start",
       "/api/concierge",
     ]) {
       assert.deepEqual(decide("GET", pathname), {
@@ -104,6 +110,7 @@ describe("Production-backed staging request boundary", () => {
     assert.match(proxy, /status:\s*404/);
     assert.match(proxy, /PRODUCTION_STAGING_LOGIN_PATH/);
     assert.match(proxy, /PRODUCTION_STAGING_CONTINUUM_PATH/);
+    assert.match(proxy, /isSterlingOperationalShadowEnabled/);
   });
 
   it("pins successful and existing-session redirects to the verified runtime destination", () => {
