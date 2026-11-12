@@ -93,7 +93,7 @@ export function buildSterlingTodayRequestPackage(input: {
 }
 
 type ResponsesError = { code?: unknown; message?: unknown; param?: unknown; type?: unknown };
-type ResponsesBody = { status?: string; error?: ResponsesError | null; output_text?: string;
+type ResponsesBody = { id?: string; status?: string; error?: ResponsesError | null; output_text?: string;
   incomplete_details?: { reason?: unknown } | null;
   usage?: { input_tokens?: number; output_tokens?: number; total_tokens?: number;
     output_tokens_details?: { reasoning_tokens?: number } };
@@ -174,6 +174,8 @@ export function resolveSterlingTodayTimeoutMs(override?: number): number {
 export async function requestSterlingTodayProposal(input: {
   apiKey: string; model: string; workingSet: SterlingTodayWorkingSet; fetchImpl?: typeof fetch; timeoutMs?: number;
   maxOutputTokens?: number; maxRequestBytes?: number; disableTruncation?: boolean;
+  onStage?: (stage: "model_request_dispatched" | "model_response_received", identifiers: {
+    requestId: string | null; responseId: string | null }) => void;
 }): Promise<{ proposal: SterlingTodayProposal; latencyMs: number; inputBytes: number; outputBytes: number;
   usage: { inputTokens: number | null; outputTokens: number | null; reasoningTokens: number | null; totalTokens: number | null } }> {
   const started = Date.now();
@@ -198,19 +200,21 @@ export async function requestSterlingTodayProposal(input: {
     controller.abort();
   }, timeoutMs);
   try {
+    input.onStage?.("model_request_dispatched", { requestId: null, responseId: null });
     const response = await (input.fetchImpl ?? fetch)(CONCIERGE_SOL_RESPONSES_ENDPOINT, {
       method: "POST", signal: controller.signal,
       headers: { authorization: `Bearer ${input.apiKey}`, "content-type": "application/json" },
       body: requestPackage.requestBody,
     });
     const requestId = response.headers.get("x-request-id");
+    const json = await readResponsesBody(response);
+    input.onStage?.("model_response_received", { requestId,
+      responseId: typeof json?.id === "string" ? json.id : null });
     if (!response.ok) {
-      const json = await readResponsesBody(response);
       const details = responsesErrorDetails(json?.error);
       throw new SterlingTodayRequestError({ kind: "api", status: response.status, requestId,
         elapsedMs: Date.now() - started, ...details });
     }
-    const json = await readResponsesBody(response);
     if (!json) throw new SyntaxError("sterling-today-malformed");
     if (json.error || json.status === "failed" || json.status === "incomplete") {
       const details = responsesErrorDetails(json.error);

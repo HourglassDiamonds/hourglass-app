@@ -4,6 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { randomBytes } from "node:crypto";
+import { hashEmail } from "../client-memory/hashes";
+import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "./operational-reconciliation-scope";
 import {
   CONNECTOR_TEMP_PREFIX,
   executeLocalConnectorShadow,
@@ -13,11 +15,25 @@ import {
 const SYNTHETIC = Buffer.from(JSON.stringify({ plainText: "SYNTHETIC-CORRESPONDENCE-BODY",
   fromEmail: "synthetic@example.test" }));
 
+function syntheticEnvelope(large = false) {
+  const now = new Date().toISOString();
+  return Buffer.from(JSON.stringify({ version: "continuum-gmail-connector-evidence-v1",
+    mailbox: { emailHash: hashEmail("synthetic@example.test"), verifiedAt: now,
+      verificationSource: "gmail_connector_profile" }, retrieval: { startedAt: now, completedAt: now },
+    threads: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.map((threadId, index) => ({ threadId,
+      retrievedAt: now, coverage: { status: "complete", basis: "provider_complete", pageCount: 1,
+        returnedMessageCount: 1, nextPageTokenPresent: false }, messages: [{ threadId,
+        messageId: `synthetic-${index}`, sentAt: now, fromRaw: null, fromEmail: null, to: [], cc: [],
+        subject: "Synthetic", plainText: large && index === 0 ? "z".repeat(400_000) : "Synthetic body",
+        bodyExtractionStatus: "decoded_plaintext", snippet: null, attachments: [] }] })) }), "utf8");
+}
+
 async function leftovers() {
   return (await readdir(tmpdir())).filter((name) => name.startsWith(CONNECTOR_TEMP_PREFIX));
 }
 
 describe("bounded local connector executor", () => {
+  const mutableEnv = process.env as Record<string, string | undefined>;
   it("atomically transfers synthetic evidence and deletes its exact directory", async () => {
     const before = new Set(await leftovers());
     const resultsRoot = await mkdtemp(join(tmpdir(), "sterling-results-test-"));
@@ -26,8 +42,9 @@ describe("bounded local connector executor", () => {
       startWatchdog: () => undefined,
       runChild: async ({ evidencePath }) => {
         await access(evidencePath);
-        return { exitCode: 0, stdout: JSON.stringify({ contract: "sterling-operational-shadow-v11-sanitized-result-v1",
-          generatedBoard: [], comparator: { passed: true } }), stderr: "", timedOut: false };
+        return { exitCode: 0, signal: null, stdout: JSON.stringify({
+          contract: "sterling-operational-shadow-v11-sanitized-result-v1",
+          generatedBoard: [], comparator: { passed: true } }), stderr: "", timedOut: false, stdinError: false };
       },
     });
     assert.equal(result.ok, true);
@@ -50,7 +67,8 @@ describe("bounded local connector executor", () => {
       })), evidenceLimitations: [], semantic: { validationAccepted: true }, comparator: { passed: true } };
     const result = await executeLocalConnectorShadow({ evidenceBytes: SYNTHETIC, timeoutMs: 10_000,
       resultsRoot, runId: "oversized" }, { startWatchdog: () => undefined,
-      runChild: async () => ({ exitCode: 0, stdout: JSON.stringify(large), stderr: "", timedOut: false }) });
+      runChild: async () => ({ exitCode: 0, signal: null, stdout: JSON.stringify(large), stderr: "",
+        timedOut: false, stdinError: false }) });
     assert.equal(result.ok, true);
     assert.ok(result.ok && (result.receipt.result.byteCount ?? 0) > 500_000);
     assert.ok(JSON.stringify(result).length < 2_500);
@@ -61,10 +79,11 @@ describe("bounded local connector executor", () => {
 
   it("cleans up after validation/model failure and timeout with sanitized errors", async () => {
     for (const child of [
-      { exitCode: 1, stdout: "", stderr: "connector-mailbox-mismatch", timedOut: false },
-      { exitCode: 1, stdout: "", stderr: "raw provider failure", timedOut: false },
-      { exitCode: 1, stdout: "", stderr: "", timedOut: true },
-      { exitCode: 0, stdout: JSON.stringify({ plainText: "SYNTHETIC-CORRESPONDENCE-BODY" }), stderr: "", timedOut: false },
+      { exitCode: 1, signal: null, stdout: "", stderr: "connector-mailbox-mismatch", timedOut: false, stdinError: false },
+      { exitCode: 1, signal: null, stdout: "", stderr: "raw provider failure", timedOut: false, stdinError: false },
+      { exitCode: 1, signal: "SIGTERM" as const, stdout: "", stderr: "", timedOut: true, stdinError: false },
+      { exitCode: 0, signal: null, stdout: JSON.stringify({ plainText: "SYNTHETIC-CORRESPONDENCE-BODY" }),
+        stderr: "", timedOut: false, stdinError: false },
     ]) {
       const resultsRoot = await mkdtemp(join(tmpdir(), "sterling-results-failure-"));
       const result = await executeLocalConnectorShadow({ evidenceBytes: SYNTHETIC, timeoutMs: 10_000,
@@ -80,6 +99,61 @@ describe("bounded local connector executor", () => {
         "failed");
       assert.doesNotMatch(JSON.stringify(result), /raw provider failure|SYNTHETIC-CORRESPONDENCE-BODY|synthetic@example\.test/);
       await rm(resultsRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("runs the real parent/child launcher with large stdin, fake model transport, comparator, and durable output", async () => {
+    const resultsRoot = await mkdtemp(join(tmpdir(), "sterling-results-e2e-"));
+    const prior = { node: process.env.NODE_ENV, scenario: process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO,
+      founder: process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL };
+    mutableEnv.NODE_ENV = "test"; process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO = "oversized_success";
+    process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL = "synthetic@example.test";
+    try {
+      const result = await executeLocalConnectorShadow({ evidenceBytes: syntheticEnvelope(true), timeoutMs: 30_000,
+        resultsRoot, runId: "real-launcher-success" }, { startWatchdog: () => undefined });
+      assert.equal(result.ok, true, JSON.stringify(result));
+      assert.equal(result.ok && result.receipt.completion.comparator, true);
+      assert.ok(result.ok && (result.receipt.result.byteCount ?? 0) > 500_000);
+      assert.deepEqual(result.ok ? result.receipt.stageHistory.map((row) => row.stage) : [], [
+        "initialized", "evidence_persisted", "child_launched", "input_transferred", "envelope_validated",
+        "assembly_completed", "evidence_gate_evaluated", "model_request_dispatched", "model_response_received",
+        "validation_comparison_completed", "sanitized_result_persisted", "completed",
+      ]);
+    } finally {
+      if (prior.node === undefined) delete mutableEnv.NODE_ENV; else mutableEnv.NODE_ENV = prior.node;
+      if (prior.scenario === undefined) delete process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO;
+      else process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO = prior.scenario;
+      if (prior.founder === undefined) delete process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL;
+      else process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL = prior.founder;
+      await rm(resultsRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("records early rejection, premature exit, broken stdin, and model timeout without false success", async () => {
+    const prior = { node: process.env.NODE_ENV, scenario: process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO,
+      founder: process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL };
+    mutableEnv.NODE_ENV = "test"; process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL = "synthetic@example.test";
+    try {
+      for (const scenario of ["early_rejection", "premature_exit", "broken_stdin", "model_timeout"] as const) {
+        const resultsRoot = await mkdtemp(join(tmpdir(), `sterling-results-${scenario}-`));
+        process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO = scenario;
+        const result = await executeLocalConnectorShadow({ evidenceBytes: syntheticEnvelope(true),
+          timeoutMs: scenario === "model_timeout" ? 750 : 30_000, resultsRoot, runId: scenario },
+        { startWatchdog: () => undefined });
+        assert.equal(result.ok, false, scenario);
+        assert.equal(result.receipt?.stage, "failed", scenario);
+        assert.equal(result.receipt?.result.path, null, scenario);
+        assert.equal(result.receipt?.completion.comparator, false, scenario);
+        if (scenario === "broken_stdin") assert.equal(result.receipt?.process.stdinError, true);
+        if (scenario === "model_timeout") assert.equal(result.receipt?.process.timedOut, true);
+        await rm(resultsRoot, { recursive: true, force: true });
+      }
+    } finally {
+      if (prior.node === undefined) delete mutableEnv.NODE_ENV; else mutableEnv.NODE_ENV = prior.node;
+      if (prior.scenario === undefined) delete process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO;
+      else process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO = prior.scenario;
+      if (prior.founder === undefined) delete process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL;
+      else process.env.CONTINUUM_GMAIL_FOUNDER_EMAIL = prior.founder;
     }
   });
 

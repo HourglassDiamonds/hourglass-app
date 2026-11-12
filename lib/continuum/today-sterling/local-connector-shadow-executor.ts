@@ -9,7 +9,14 @@ const execFileAsync = promisify(execFile);
 export const CONNECTOR_TEMP_PREFIX = "continuum-sterling-shadow-";
 const OWNER_FILE = ".continuum-evidence-owner.json";
 
-type ChildResult = { exitCode: number; stdout: string; stderr: string; timedOut: boolean };
+export type ConnectorExecutionStage = "initialized" | "evidence_persisted" | "child_launched" |
+  "input_transferred" | "envelope_validated" | "assembly_completed" | "evidence_gate_evaluated" |
+  "model_request_dispatched" | "model_response_received" | "validation_comparison_completed" |
+  "sanitized_result_persisted" | "completed" | "failed";
+type ChildStageEvent = { stage: ConnectorExecutionStage; at: string; requestId?: string | null;
+  responseId?: string | null };
+type ChildResult = { exitCode: number; signal: NodeJS.Signals | null; stdout: string; stderr: string;
+  timedOut: boolean; stdinError: boolean };
 
 export type ConnectorExecutionReceipt = {
   contract: "sterling-connector-shadow-execution-receipt-v1";
@@ -17,8 +24,10 @@ export type ConnectorExecutionReceipt = {
   sourceSha: string | null;
   startedAt: string;
   completedAt: string | null;
-  stage: "initialized" | "evidence_persisted" | "model_execution_started" | "result_persisted" | "completed" | "failed";
-  process: { exitCode: number | null; timedOut: boolean | null };
+  stage: ConnectorExecutionStage;
+  stageHistory: readonly { stage: ConnectorExecutionStage; at: string }[];
+  process: { exitCode: number | null; signal: string | null; timedOut: boolean | null; stdinError: boolean | null;
+    stderrCode: string | null };
   model: { requestId: string | null; responseId: string | null };
   result: { path: string | null; byteCount: number | null; sha256: string | null };
   completion: { assembler: boolean; validator: boolean; comparator: boolean };
@@ -33,7 +42,8 @@ export type LocalConnectorExecutorResult =
       tempDirectoryDeleted: boolean };
 
 type ExecutorDependencies = {
-  runChild?: (input: { evidencePath: string; timeoutMs: number }) => Promise<ChildResult>;
+  runChild?: (input: { evidencePath: string; timeoutMs: number;
+    onStage: (event: ChildStageEvent) => Promise<void> }) => Promise<ChildResult>;
   startWatchdog?: (input: { directory: string; token: string; parentPid: number; deadlineMs: number }) => void;
 };
 
@@ -95,11 +105,22 @@ function sanitizedJson(stdout: string): Record<string, unknown> {
   let parsed: unknown;
   try { parsed = JSON.parse(stdout); } catch { throw new Error("shadow-output-not-json"); }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("shadow-output-invalid");
-  const serialized = JSON.stringify(parsed);
-  if (/"(?:plainText|snippet|fromRaw|fromEmail|to|cc|rawPrompt|rawResponse|apiKey|refreshToken|credential)"\s*:/i.test(serialized) ||
-      /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i.test(serialized)) {
-    throw new Error("shadow-output-sensitive-content");
-  }
+  const forbidden = /^(?:plainText|snippet|fromRaw|fromEmail|to|cc|rawPrompt|rawResponse|apiKey|refreshToken|credential)$/i;
+  const visit = (value: unknown): boolean => {
+    if (typeof value === "string") {
+      for (let index = value.indexOf("@"); index >= 0; index = value.indexOf("@", index + 1)) {
+        const window = value.slice(Math.max(0, index - 64), Math.min(value.length, index + 320));
+        if (/[A-Z0-9._%+-]{1,64}@[A-Z0-9.-]{1,255}\.[A-Z]{2,63}/i.test(window)) return false;
+      }
+      return true;
+    }
+    if (Array.isArray(value)) return value.every(visit);
+    if (value && typeof value === "object") {
+      return Object.entries(value).every(([key, child]) => !forbidden.test(key) && visit(child));
+    }
+    return true;
+  };
+  if (!visit(parsed)) throw new Error("shadow-output-sensitive-content");
   return parsed as Record<string, unknown>;
 }
 
@@ -142,11 +163,13 @@ function defaultResultsRoot(): string {
 export async function runConnectorShadowChild(input: {
   evidencePath: string;
   timeoutMs: number;
+  onStage: (event: ChildStageEvent) => Promise<void>;
 }): Promise<ChildResult> {
   const projectRoot = process.cwd();
   const tsxCli = resolve(projectRoot, "node_modules/tsx/dist/cli.mjs");
   const script = resolve(projectRoot, "scripts/continuum-sterling-today-shadow.ts");
   const evidence = await readFile(input.evidencePath);
+  const nodeOptions = [process.env.NODE_OPTIONS?.trim(), "--conditions=react-server"].filter(Boolean).join(" ");
   return await new Promise<ChildResult>((resolveResult) => {
     const child = spawn(process.execPath, [
       "--conditions=react-server",
@@ -155,26 +178,46 @@ export async function runConnectorShadowChild(input: {
       "--with-model",
       "--november-11-operational-reconciliation",
       "--connector-json-stdin",
-    ], { cwd: projectRoot, env: process.env, stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
+    ], { cwd: projectRoot, env: { ...process.env, NODE_OPTIONS: nodeOptions },
+      stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     const stdout: Buffer[] = [];
     const stderr: Buffer[] = [];
+    let stderrText = "";
+    let stageChain = Promise.resolve();
+    let stdinError = false;
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
       child.kill();
     }, Math.max(1, input.timeoutMs));
     child.stdout.on("data", (chunk: Buffer) => stdout.push(chunk));
-    child.stderr.on("data", (chunk: Buffer) => stderr.push(chunk));
+    child.stderr.on("data", (chunk: Buffer) => {
+      stderr.push(chunk); stderrText += chunk.toString("utf8");
+      const lines = stderrText.split(/\r?\n/); stderrText = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("STERLING_SHADOW_STAGE ")) continue;
+        try {
+          const event = JSON.parse(line.slice("STERLING_SHADOW_STAGE ".length)) as ChildStageEvent;
+          stageChain = stageChain.then(() => input.onStage(event));
+        } catch { /* discard malformed diagnostic lines */ }
+      }
+    });
     child.once("error", () => {
       clearTimeout(timer);
-      resolveResult({ exitCode: 1, stdout: "", stderr: "shadow-process-unavailable", timedOut });
+      resolveResult({ exitCode: 1, signal: null, stdout: "", stderr: "shadow-process-unavailable", timedOut,
+        stdinError });
     });
-    child.once("close", (code) => {
+    child.once("spawn", () => { stageChain = stageChain.then(() => input.onStage({
+      stage: "child_launched", at: new Date().toISOString() })); });
+    child.stdin.on("error", () => { stdinError = true; });
+    child.once("close", (code, signal) => {
       clearTimeout(timer);
-      resolveResult({ exitCode: code ?? 1, stdout: Buffer.concat(stdout).toString("utf8"),
-        stderr: Buffer.concat(stderr).toString("utf8"), timedOut });
+      void stageChain.finally(() => resolveResult({ exitCode: code ?? 1, signal,
+        stdout: Buffer.concat(stdout).toString("utf8"), stderr: Buffer.concat(stderr).toString("utf8"),
+        timedOut, stdinError }));
     });
-    child.stdin.end(evidence);
+    child.stdin.end(evidence, () => { if (!stdinError) stageChain = stageChain.then(() => input.onStage({
+      stage: "input_transferred", at: new Date().toISOString() })); });
   });
 }
 
@@ -219,8 +262,9 @@ export async function executeLocalConnectorShadow(input: {
   let receipt: ConnectorExecutionReceipt = {
     contract: "sterling-connector-shadow-execution-receipt-v1", runId,
     sourceSha: input.sourceSha ?? process.env.CONTINUUM_SOURCE_COMMIT?.trim() ?? null,
-    startedAt, completedAt: null, stage: "initialized",
-    process: { exitCode: null, timedOut: null }, model: { requestId: null, responseId: null },
+    startedAt, completedAt: null, stage: "initialized", stageHistory: [{ stage: "initialized", at: startedAt }],
+    process: { exitCode: null, signal: null, timedOut: null, stdinError: null, stderrCode: null },
+    model: { requestId: null, responseId: null },
     result: { path: null, byteCount: null, sha256: null },
     completion: { assembler: false, validator: false, comparator: false },
     evidence: { ...evidenceCounts, limitationCount: null },
@@ -249,19 +293,30 @@ export async function executeLocalConnectorShadow(input: {
     const evidencePath = await atomicWrite(directory, "evidence.json", input.evidenceBytes);
     const persisted = await readFile(evidencePath);
     if (evidenceDigest(persisted) !== digest) throw new Error("evidence-persisted-hash-mismatch");
-    receipt = { ...receipt, stage: "evidence_persisted" };
-    await persistReceipt();
-    receipt = { ...receipt, stage: "model_execution_started" };
-    await persistReceipt();
-    const child = await (dependencies.runChild ?? runConnectorShadowChild)({ evidencePath, timeoutMs: input.timeoutMs });
-    receipt = { ...receipt, process: { exitCode: child.exitCode, timedOut: child.timedOut } };
+    const advance = async (event: ChildStageEvent) => {
+      receipt = { ...receipt, stage: event.stage,
+        stageHistory: [...receipt.stageHistory, { stage: event.stage, at: event.at }],
+        model: { requestId: event.requestId ?? receipt.model.requestId,
+          responseId: event.responseId ?? receipt.model.responseId } };
+      await persistReceipt();
+    };
+    await advance({ stage: "evidence_persisted", at: new Date().toISOString() });
+    const child = await (dependencies.runChild ?? runConnectorShadowChild)({ evidencePath, timeoutMs: input.timeoutMs,
+      onStage: advance });
+    const stderrCode = child.stderr.split(/\r?\n/)
+      .find((line) => line && !line.startsWith("STERLING_SHADOW_STAGE "))
+      ?.replace(/[^A-Za-z0-9_.:-]/g, "-").slice(0, 120) ?? null;
+    receipt = { ...receipt, process: { exitCode: child.exitCode, signal: child.signal,
+      timedOut: child.timedOut, stdinError: child.stdinError, stderrCode } };
     await persistReceipt();
     if (child.timedOut) throw new Error("shadow-execution-timeout");
     if (child.exitCode !== 0 && child.exitCode !== 2) throw new Error("shadow-execution-failed");
     const result = sanitizedJson(child.stdout);
     const saved = await atomicJson(resultsDirectory, "sanitized-result.json", result);
     const metrics = resultMetrics(result);
-    receipt = { ...receipt, stage: "result_persisted",
+    const persistedAt = new Date().toISOString();
+    receipt = { ...receipt, stage: "sanitized_result_persisted",
+      stageHistory: [...receipt.stageHistory, { stage: "sanitized_result_persisted", at: persistedAt }],
       result: { path: saved.path, byteCount: saved.bytes.length, sha256: evidenceDigest(saved.bytes) },
       completion: { assembler: metrics.assembler, validator: metrics.validator, comparator: metrics.comparator },
       evidence: { threadCount: metrics.threadCount, messageCount: receipt.evidence.messageCount,
@@ -269,7 +324,9 @@ export async function executeLocalConnectorShadow(input: {
     await persistReceipt();
     cleanupComplete = await removeOwnedDirectory(directory, token);
     if (!cleanupComplete) throw new Error("temporary-evidence-cleanup-unconfirmed");
-    receipt = { ...receipt, stage: "completed", completedAt: new Date().toISOString(),
+    const completedAt = new Date().toISOString();
+    receipt = { ...receipt, stage: "completed", completedAt,
+      stageHistory: [...receipt.stageHistory, { stage: "completed", at: completedAt }],
       cleanup: { rawEvidenceDirectoryDeleted: true } };
     await persistReceipt();
     return { ok: true, evidenceSha256: digest, receipt, tempDirectoryDeleted: true };
@@ -285,7 +342,9 @@ export async function executeLocalConnectorShadow(input: {
       "shadow-output-invalid",
       "shadow-output-sensitive-content", "temporary-evidence-cleanup-unconfirmed",
     ].includes(error.message) ? error.message : "local-shadow-execution-unavailable";
-    receipt = { ...receipt, stage: "failed", completedAt: new Date().toISOString(), safeCode,
+    const failedAt = new Date().toISOString();
+    receipt = { ...receipt, stage: "failed", completedAt: failedAt, safeCode,
+      stageHistory: [...receipt.stageHistory, { stage: "failed", at: failedAt }],
       cleanup: { rawEvidenceDirectoryDeleted: cleanupComplete } };
     await persistReceipt().catch(() => undefined);
     return { ok: false, safeCode, evidenceSha256: digest, receipt, tempDirectoryDeleted: cleanupComplete };

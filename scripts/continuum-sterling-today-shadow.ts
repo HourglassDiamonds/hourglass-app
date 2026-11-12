@@ -13,6 +13,11 @@ import {
   validateConnectorEvidenceEnvelope,
 } from "../lib/continuum/today-sterling/connector-evidence-envelope";
 import { buildSanitizedOperationalShadowResult } from "../lib/continuum/today-sterling/operational-shadow-review";
+import { compareOperationalBoard } from "../lib/continuum/today-sterling/operational-board-comparison";
+
+function reportStage(stage: string, identifiers: { requestId?: string | null; responseId?: string | null } = {}) {
+  process.stderr.write(`STERLING_SHADOW_STAGE ${JSON.stringify({ stage, at: new Date().toISOString(), ...identifiers })}\n`);
+}
 
 function loadEnvFile(path: string) {
   try {
@@ -49,10 +54,41 @@ async function connectorBatchFromStdin() {
     expectedMailboxHash,
     allowedThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
   });
+  reportStage("envelope_validated");
   return createConnectorEvidenceBatch(envelope);
 }
 
+async function runSyntheticTransportScenario(scenario: string) {
+  if (process.env.NODE_ENV !== "test") throw new Error("synthetic-shadow-scenario-refused");
+  await connectorBatchFromStdin();
+  if (scenario === "early_rejection") throw new Error("synthetic-early-child-rejection");
+  reportStage("assembly_completed");
+  reportStage("evidence_gate_evaluated");
+  if (scenario === "premature_exit") { process.stderr.write("synthetic-premature-child-exit\n"); process.exitCode = 9; return; }
+  reportStage("model_request_dispatched", { requestId: "req_synthetic" });
+  if (scenario === "model_timeout") await new Promise(() => undefined);
+  reportStage("model_response_received", { requestId: "req_synthetic", responseId: "resp_synthetic" });
+  const expected = [{ workUnitId: "synthetic:one", label: "Synthetic one", personId: null, projectId: null,
+    jobId: null, exactSourceRefs: ["synthetic:source"], material: true, disposition: "founder_action" as const,
+    owner: "founder" as const, lifecycleStage: null, jobsExpectedClosed: [] }];
+  const generatedBoard = [{ workUnitId: "synthetic:one", label: "Synthetic one", personId: null,
+    projectId: null, jobId: null, exactSourceRefs: ["synthetic:source"], disposition: "founder_action" as const,
+    owner: "founder" as const, lifecycleStage: null, openJobIds: [] }];
+  const comparator = compareOperationalBoard({ expected, actual: generatedBoard });
+  reportStage("validation_comparison_completed");
+  process.stdout.write(`${JSON.stringify({ contract: "sterling-operational-shadow-v11-sanitized-result-v1",
+    scope: { threadCount: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.length },
+    evidenceLimitations: [], generatedBoard, comparator,
+    semantic: { verdict: "PASS", validationAccepted: true, blockedWorkUnitIds: [] },
+    syntheticPadding: scenario === "oversized_success" ? "x".repeat(600_000) : undefined })}\n`);
+}
+
 async function main() {
+  const syntheticScenario = process.env.CONTINUUM_STERLING_TEST_CHILD_SCENARIO?.trim();
+  if (syntheticScenario === "broken_stdin" && process.env.NODE_ENV === "test") {
+    process.stderr.write("synthetic-broken-stdin\n"); process.exitCode = 10; return;
+  }
+  if (syntheticScenario) { await runSyntheticTransportScenario(syntheticScenario); return; }
   const withModel = process.argv.includes("--with-model");
   const targetCase = process.argv.find((argument) => argument.startsWith("--target-case="))
     ?.slice("--target-case=".length) ?? null;
@@ -79,6 +115,7 @@ async function main() {
     } : {}),
     ...(connectorStdin ? { createGmailBatch: connectorBatchFromStdin } : {}),
   });
+  reportStage("assembly_completed");
   if (assembly.targetBlockedReason) {
     process.stdout.write(`${JSON.stringify({
       mode: assembly.workingSet.mutationMode,
@@ -123,7 +160,8 @@ async function main() {
     process.exitCode = 3;
     return;
   }
-  const completion = await executeSterlingTodaySemantic({ assembly, apiKey });
+  const completion = await executeSterlingTodaySemantic({ assembly, apiKey,
+    onStage: (stage, identifiers) => reportStage(stage, identifiers) });
   if (november11Reconciliation) {
     if (!completion.proposal) {
       process.stdout.write(`${JSON.stringify({
@@ -145,6 +183,7 @@ async function main() {
       leaseMetadataWrite: false,
       browserSessionCache: false,
     });
+    reportStage("validation_comparison_completed");
     process.stdout.write(`${JSON.stringify(sanitized.result, null, 2)}\n`);
     if (sanitized.verdict !== "GENERATED") process.exitCode = 2;
     return;

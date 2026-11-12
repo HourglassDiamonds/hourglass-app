@@ -907,6 +907,8 @@ export async function executeSterlingTodaySemantic(input: {
     maxRequestBytes: number;
     disableTruncation: true;
   };
+  onStage?: (stage: "evidence_gate_evaluated" | "model_request_dispatched" | "model_response_received",
+    identifiers?: { requestId: string | null; responseId: string | null }) => void;
 }): Promise<SterlingTodaySemanticCompletion> {
   const startedAt = Date.now();
   if (input.assembly.targetBlockedReason) {
@@ -916,6 +918,7 @@ export async function executeSterlingTodaySemantic(input: {
     workingSet: input.assembly.requestWorkingSet,
     completeness: input.assembly.completeness,
   });
+  input.onStage?.("evidence_gate_evaluated");
   if (!preview.workingSet) return blockedCompletion(input.assembly, "EVIDENCE_BLOCKED", startedAt);
   const gated = await executeSterlingEvidenceGatedRequest({
     workingSet: input.assembly.requestWorkingSet,
@@ -924,6 +927,7 @@ export async function executeSterlingTodaySemantic(input: {
       apiKey: input.apiKey,
       model: input.model ?? conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL),
       workingSet,
+      onStage: (stage, identifiers) => input.onStage?.(stage, identifiers),
       ...input.requestPolicy,
     }),
   });
