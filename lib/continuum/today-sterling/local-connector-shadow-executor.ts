@@ -136,9 +136,7 @@ function safeRunId(value: string | undefined): string {
 }
 
 function defaultResultsRoot(): string {
-  const local = process.env.LOCALAPPDATA?.trim();
-  if (!local) throw new Error("local-results-root-unavailable");
-  return join(local, "Continuum", "sterling-shadow-results");
+  return join(tmpdir(), "continuum-sterling-shadow-results");
 }
 
 export async function runConnectorShadowChild(input: {
