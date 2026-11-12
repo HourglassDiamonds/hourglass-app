@@ -148,6 +148,8 @@ export type SterlingTodayAssembly = {
   scopeCoverage: readonly SterlingScopeCoverage[];
   calendar: SterlingCalendarDiagnostic & { todayItemsBeforeAcceptanceScope: number; scopedTodayItems: number };
   gmail: SterlingGmailDiagnostics | null;
+  /** Ephemeral exact-thread retrieval evidence; never persisted by the assembler. */
+  liveThreadOutcomes?: readonly TodayLiveThreadOutcome[];
   continuity: SterlingContinuityDiagnostics;
   counts: { people: number; projects: number; jobs: number; evidence: number; workUnits: number; gmailThreads: number; calendar: number };
   candidateCoverage: ReturnType<typeof selectSterlingPortfolio>["candidateCoverage"];
@@ -324,7 +326,11 @@ type AssembleInput = {
   additionalIndexedThreadIds?: readonly string[];
   /** Hard provider boundary: no Gmail thread outside this set is fetched. */
   liveRetrievalThreadAllowlist?: readonly string[];
+  /** Exact server-owned threads that must be retrieved even without indexed context. */
+  forcedLiveThreadIds?: readonly string[];
   createGmailBatch?: () => Promise<LiveSourceViewerBatch | null>;
+  /** Fixed-scope review only; includes newer messages from already allowlisted threads. */
+  includeUnindexedLiveMessages?: boolean;
   continuity?: {
     mode: "assembly_planning_only";
     hmacKey: string;
@@ -510,6 +516,9 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       ...(input.additionalIndexedThreadIds ?? []),
     ],
   );
+  for (const threadId of input.additionalIndexedThreadIds ?? []) {
+    if (!indexed.has(threadId)) indexed.set(threadId, { messages: [] });
+  }
   const indexedEmailHashes = new Set([...indexed.values()].flatMap((thread) =>
     (thread.messages ?? []).flatMap((message) => {
       const hash = message.fromEmailHash?.trim().toLowerCase();
@@ -561,10 +570,12 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     expectedTargetThreadIds.some((threadId, index) => threadId !== actualTargetThreadIds[index])
   );
   const targetPlanningSet = new Set(targetThreadIdsForPlanning);
+  const forcedLiveThreadIds = [...new Set(input.forcedLiveThreadIds ?? [])];
   const prioritizedRequiredLiveThreadIds = [
+    ...forcedLiveThreadIds,
     ...targetThreadIdsForPlanning,
     ...requiredLiveThreadIds.filter((threadId) => !targetPlanningSet.has(threadId)),
-  ];
+  ].filter((threadId, index, all) => all.indexOf(threadId) === index);
   const liveAllowlist = input.liveRetrievalThreadAllowlist
     ? new Set(input.liveRetrievalThreadAllowlist.map((threadId) => threadId.trim()).filter(Boolean))
     : null;
@@ -677,6 +688,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
       maxThreadFetches: input.liveRetrievalScope === "target_only"
         ? execution.scheduledThreadIds.length : STERLING_GMAIL_REQUEST_BUDGET,
       ...(input.createGmailBatch ? { createBatch: input.createGmailBatch } : {}),
+      includeUnindexedLiveMessages: input.includeUnindexedLiveMessages === true,
       onThreadOutcome: (outcome) => liveThreadOutcomes.push(outcome),
       onDiagnostics: (diagnostics) => { loaderDiagnostics.value = diagnostics; },
     });
@@ -865,6 +877,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     scopeCoverage: coverage,
     calendar: { ...calendarStatus, todayItemsBeforeAcceptanceScope: calendar.length, scopedTodayItems: workingSet.calendar.length },
     gmail: gmailDiagnostics,
+    liveThreadOutcomes,
     continuity,
     candidateCoverage: portfolio.candidateCoverage,
     suppressionByWorkUnitId,

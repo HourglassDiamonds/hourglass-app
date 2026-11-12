@@ -26,9 +26,11 @@ import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/se
 import {
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
   productionStagingRequestDecision,
 } from "@/lib/continuum/production-staging-access";
 import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
+import { isSterlingOperationalShadowEnabled } from "@/lib/continuum/today-sterling/server-config";
 
 /**
  * Next.js 16 Proxy — early network boundary for /executive-dashboard.
@@ -48,6 +50,7 @@ export async function proxy(request: NextRequest) {
       method: request.method,
       pathname,
       hasNextServerActionHeader: request.headers.has("next-action"),
+      allowOperationalShadowAction: isSterlingOperationalShadowEnabled(),
     });
     if (!stagingDecision.allowed) {
       return new NextResponse("Not Found", {
@@ -86,7 +89,8 @@ export async function proxy(request: NextRequest) {
   if (isLogin || isConcierge || isSecurity) {
     const session = await readExecutiveDashboardSession(cookieValue);
     if (!session.ok && !isLogin) {
-      if (productionStaging && pathname === PRODUCTION_STAGING_CONTINUUM_PATH) {
+      if (productionStaging && (pathname === PRODUCTION_STAGING_CONTINUUM_PATH ||
+        pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH)) {
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = PRODUCTION_STAGING_LOGIN_PATH;
         loginUrl.search = "";

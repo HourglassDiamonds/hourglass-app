@@ -67,6 +67,11 @@ export type TodayLiveThreadOutcome = {
   latestIndexedMessageAt?: string | null;
   latestLiveMessageAt?: string | null;
   verifiedAt?: string | null;
+  retrievedAt?: string | null;
+  observedMessageIds?: readonly string[];
+  unindexedMessageIds?: readonly string[];
+  newerUnindexedMessageIds?: readonly string[];
+  bodyIncompleteMessageIds?: readonly string[];
 };
 
 function latestTimestamp(values: readonly (string | null | undefined)[]): string | null {
@@ -479,6 +484,8 @@ export async function loadLiveTodayOperationalFacts(
     onThreadOutcome?: (outcome: TodayLiveThreadOutcome) => void;
     maxThreadFetches?: number;
     preserveThreadOrder?: boolean;
+    /** Fixed-scope operational review only. Generic Today retains indexed-only behavior. */
+    includeUnindexedLiveMessages?: boolean;
   } = {},
 ): Promise<Map<string, TodayGmailThreadContext>> {
   const out = new Map(base);
@@ -607,7 +614,7 @@ export async function loadLiveTodayOperationalFacts(
     while (cursor < attemptedThreadIds.length) {
       const threadId = attemptedThreadIds[cursor++]!;
       const current = out.get(threadId);
-      if (!current?.messages?.length) {
+      if (!current?.messages?.length && !options.includeUnindexedLiveMessages) {
         incomplete = true;
         missingIndexedThreadCount += 1;
         recordOutcome(current, false, "missing-indexed-context");
@@ -622,39 +629,48 @@ export async function loadLiveTodayOperationalFacts(
         });
         continue;
       }
-      out.set(threadId, { ...current, liveEnrichmentAttempted: true });
-      const fetched = await batch.fetchThread({
+      const currentContext: TodayGmailThreadContext = current ?? { messages: [] };
+      out.set(threadId, { ...currentContext, liveEnrichmentAttempted: true });
+      const fetchThread = options.includeUnindexedLiveMessages && batch.fetchCompleteThread
+        ? batch.fetchCompleteThread.bind(batch) : batch.fetchThread.bind(batch);
+      const fetched = await fetchThread({
         threadId,
-        indexed: current.messages.map((message) => ({
+        indexed: (currentContext.messages ?? []).map((message) => ({
           messageId: message.messageId,
           threadId,
           sentAt: message.sentAt,
-          subject: message.subject ?? current.subject ?? null,
+          subject: message.subject ?? currentContext.subject ?? null,
         })),
       });
       if (!fetched.ok) {
         incomplete = true;
-        recordOutcome(current, false, fetched.safeErrorCode);
+        recordOutcome(currentContext, false, fetched.safeErrorCode);
         emitThreadOutcome({
           threadId,
           status: "unavailable",
-          indexedMessageCount: current.messages.length,
+          indexedMessageCount: currentContext.messages?.length ?? 0,
           liveMessageCount: 0,
           safeErrorCategory: fetched.safeErrorCode,
-          latestIndexedMessageAt: latestTimestamp(current.messages.map((message) => message.sentAt)),
+          latestIndexedMessageAt: latestTimestamp(currentContext.messages?.map((message) => message.sentAt) ?? []),
           latestLiveMessageAt: null,
         });
         continue;
       }
       const liveById = new Map(fetched.messages.map((message) => [message.messageId, message]));
-      const missingLiveMessage = current.messages.some((message) => !liveById.has(message.messageId));
+      const indexedMessages = currentContext.messages ?? [];
+      const indexedIds = new Set(indexedMessages.map((message) => message.messageId));
+      const latestIndexedAt = latestTimestamp(indexedMessages.map((message) => message.sentAt));
+      const unindexedLive = fetched.messages.filter((message) => !indexedIds.has(message.messageId));
+      const newerUnindexed = unindexedLive.filter((message) =>
+        !latestIndexedAt || Date.parse(message.sentAt ?? "") > Date.parse(latestIndexedAt));
+      const bodyIncomplete = fetched.messages.filter((message) =>
+        message.bodyExtractionStatus !== "decoded_plaintext" || !message.plainText?.trim());
+      const missingLiveMessage = indexedMessages.some((message) => !liveById.has(message.messageId));
       if (missingLiveMessage) {
         incomplete = true;
         missingLiveMessageThreadCount += 1;
       }
-      const messages = current.messages.map((message) => {
-        const live = liveById.get(message.messageId);
-        if (!live) return message;
+      const enrich = (message: TodayGmailIndexedMessage, live: typeof fetched.messages[number]) => {
         const extractionKey = `${threadId}|${message.messageId}|${message.sentAt}`;
         let operationalText = extracted.get(extractionKey);
         if (operationalText === undefined) {
@@ -692,9 +708,35 @@ export async function loadLiveTodayOperationalFacts(
           hasAttachments: message.hasAttachments === true || attachmentFilenames.length > 0,
           attachmentFilenames,
         };
+      };
+      const messages = indexedMessages.map((message) => {
+        const live = liveById.get(message.messageId);
+        return live ? enrich(message, live) : message;
       });
-      let fromDisplayName = current.fromDisplayName ?? null;
-      let fromEmail = current.fromEmail ?? null;
+      if (options.includeUnindexedLiveMessages) {
+        for (const live of unindexedLive) {
+          if (!live.sentAt) continue;
+          const parsed = parseGmailFromHeader(live.fromRaw ?? null);
+          const fromEmail = (parsed.email ?? live.fromEmail)?.trim() || null;
+          const fromEmailHash = fromEmail ? hashEmail(fromEmail) : null;
+          const direction = isInternalAddress(parsed.displayName?.trim() || null, fromEmail)
+            ? "outbound" as const : fromEmail ? "inbound" as const : "unknown" as const;
+          const baseMessage: TodayGmailIndexedMessage = {
+            messageId: live.messageId,
+            sentAt: live.sentAt,
+            indexedAt: null,
+            direction,
+            fromEmailHash,
+            toEmailHashes: live.to.map((email) => hashEmail(email)).filter((value): value is string => Boolean(value)),
+            subject: live.subject,
+            hasAttachments: live.attachments.length > 0,
+          };
+          messages.push(enrich(baseMessage, live));
+        }
+        messages.sort((left, right) => left.sentAt.localeCompare(right.sentAt) || left.messageId.localeCompare(right.messageId));
+      }
+      let fromDisplayName = currentContext.fromDisplayName ?? null;
+      let fromEmail = currentContext.fromEmail ?? null;
       for (const live of [...fetched.messages].reverse()) {
         const parsed = parseGmailFromHeader(live.fromRaw ?? null);
         const display = parsed.displayName?.trim() || null;
@@ -706,8 +748,8 @@ export async function loadLiveTodayOperationalFacts(
         break;
       }
       out.set(threadId, {
-        ...current,
-        subject: fetched.indexedSubject ?? current.subject ?? null,
+        ...currentContext,
+        subject: fetched.indexedSubject ?? currentContext.subject ?? null,
         fromDisplayName,
         fromEmail,
         liveIdentityLoaded: true,
@@ -715,20 +757,25 @@ export async function loadLiveTodayOperationalFacts(
         messages,
         attachmentFilenames: [
           ...new Set([
-            ...(current.attachmentFilenames ?? []),
+            ...(currentContext.attachmentFilenames ?? []),
             ...messages.flatMap((message) => message.attachmentFilenames ?? []),
           ]),
         ],
       });
-      recordOutcome(current, !missingLiveMessage, missingLiveMessage ? "missing-live-message" : undefined);
+      recordOutcome(currentContext, !missingLiveMessage, missingLiveMessage ? "missing-live-message" : undefined);
       emitThreadOutcome({
         threadId,
         status: missingLiveMessage ? "indexed_excerpt_only" : "complete_live",
-        indexedMessageCount: current.messages.length,
+        indexedMessageCount: indexedMessages.length,
         liveMessageCount: fetched.messages.length,
         safeErrorCategory: missingLiveMessage ? "missing-live-message" : null,
-        latestIndexedMessageAt: latestTimestamp(current.messages.map((message) => message.sentAt)),
+        latestIndexedMessageAt: latestTimestamp(indexedMessages.map((message) => message.sentAt)),
         latestLiveMessageAt: latestTimestamp(fetched.messages.map((message) => message.sentAt)),
+        retrievedAt: new Date().toISOString(),
+        observedMessageIds: fetched.messages.map((message) => message.messageId),
+        unindexedMessageIds: unindexedLive.map((message) => message.messageId),
+        newerUnindexedMessageIds: newerUnindexed.map((message) => message.messageId),
+        bodyIncompleteMessageIds: bodyIncomplete.map((message) => message.messageId),
       });
     }
   };

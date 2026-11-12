@@ -28,6 +28,10 @@ export type LiveSourceViewerBatch = {
     threadId: string;
     indexed: readonly PreparedIndexedMessage[];
   }): Promise<SourceViewerFetchResult>;
+  fetchCompleteThread?(input: {
+    threadId: string;
+    indexed: readonly PreparedIndexedMessage[];
+  }): Promise<SourceViewerFetchResult>;
 };
 
 export type LiveSourceViewerBatchUnavailableReason =
@@ -107,6 +111,7 @@ export async function createLiveSourceViewerBatchResult(
       credentialLoads: 1,
       metrics: prepared.metrics,
       fetchThread: prepared.fetchThread,
+      fetchCompleteThread: prepared.fetchCompleteThread,
     } };
   } catch {
     return { ok: false, safeErrorCategory: "batch-initialization-failed" };

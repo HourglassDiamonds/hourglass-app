@@ -46,6 +46,9 @@ export default async function SterlingTodayShadowPage({ searchParams }: {
         <Link href="/executive-dashboard/concierge/sterling-today/readiness" className="mt-4 inline-block text-[11px] uppercase tracking-[0.14em] text-[#ad9164] underline underline-offset-4">
           Open read-only publication readiness
         </Link>
+        <Link href="/executive-dashboard/concierge/sterling-today/operational-review" className="ml-5 mt-4 inline-block text-[11px] uppercase tracking-[0.14em] text-[#ad9164] underline underline-offset-4">
+          Open bounded operational shadow
+        </Link>
         {!reviewAccess.ok ? (
           <p role="alert" className="mt-6 rounded-xl border border-[#d39a8a]/30 p-4 text-[13px] text-[#d39a8a]">
             {reviewAccess.reason === "not-preview"

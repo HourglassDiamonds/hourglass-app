@@ -14,6 +14,10 @@ export const STERLING_TODAY_CONTINUITY_HMAC_ENV = "CONTINUUM_STERLING_TODAY_CONT
 export const STERLING_TODAY_PUBLISHER_FLAG = "CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED" as const;
 export const CONTINUUM_TODAY_MANUAL_RECOMPUTE_FLAG =
   "CONTINUUM_TODAY_MANUAL_RECOMPUTE_ENABLED" as const;
+export const STERLING_OPERATIONAL_SHADOW_FLAG =
+  "CONTINUUM_STERLING_OPERATIONAL_SHADOW_ENABLED" as const;
+export const STERLING_OPERATIONAL_SHADOW_EXECUTION_ID_ENV =
+  "CONTINUUM_STERLING_OPERATIONAL_SHADOW_EXECUTION_ID" as const;
 
 export function isSterlingTodaySemanticFeatureEnabled(): boolean {
   return process.env[STERLING_TODAY_SEMANTIC_FLAG]?.trim().toLowerCase() === "true";
@@ -39,6 +43,15 @@ export function isSterlingTodayPreviewPublisherEnabled(): boolean {
 export function isFounderManualTodayRecomputeEnabled(): boolean {
   return isVerifiedContinuumOperationalRuntime() &&
     process.env[CONTINUUM_TODAY_MANUAL_RECOMPUTE_FLAG]?.trim().toLowerCase() === "true";
+}
+
+export function isSterlingOperationalShadowEnabled(): boolean {
+  return process.env[STERLING_OPERATIONAL_SHADOW_FLAG]?.trim().toLowerCase() === "true";
+}
+
+export function getSterlingOperationalShadowExecutionId(): string | null {
+  const value = process.env[STERLING_OPERATIONAL_SHADOW_EXECUTION_ID_ENV]?.trim() ?? "";
+  return /^[a-z0-9][a-z0-9_-]{15,95}$/i.test(value) ? value : null;
 }
 
 export function isVerifiedSterlingTodayPreviewRuntime(): boolean {

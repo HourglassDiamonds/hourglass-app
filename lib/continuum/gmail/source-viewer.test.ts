@@ -99,6 +99,24 @@ async function connectedIndex() {
 }
 
 describe("read-only source viewer fetch", () => {
+  it("keeps the generic viewer indexed-only and exposes newer messages only through the explicit complete-thread method", async () => {
+    const api = new MockGmailApi();
+    api.setThread(thread());
+    const indexed = [{ messageId: MESSAGE, threadId: THREAD,
+      sentAt: "2026-09-07T15:00:00.000Z", subject: "Another piece" }];
+    const batch = createPreparedSourceViewerBatch(api, 1_000);
+    const ordinary = await batch.fetchThread({ threadId: THREAD, indexed });
+    assert.equal(ordinary.ok, true);
+    if (ordinary.ok) assert.deepEqual(ordinary.messages.map((row) => row.messageId), [MESSAGE]);
+    const complete = await batch.fetchCompleteThread!({ threadId: THREAD, indexed });
+    assert.equal(complete.ok, true);
+    if (complete.ok) assert.deepEqual(complete.messages.map((row) => row.messageId), [MESSAGE, OTHER_MSG]);
+    assert.equal(batch.metrics.threadFetches, 2);
+    const unindexedExact = await batch.fetchCompleteThread!({ threadId: THREAD, indexed: [] });
+    assert.equal(unindexedExact.ok, true);
+    if (unindexedExact.ok) assert.equal(unindexedExact.messages.length, 2);
+  });
+
   it("coalesces duplicate thread reads and bounds a stalled live batch", async () => {
     const api = new MockGmailApi();
     api.setThread(thread());

@@ -234,7 +234,9 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
           ...(message.toEmailHashes ?? []).map(knownPersonId),
         ]),
         provenance: trustedLive
-          ? "indexed_gmail+live_quote_stripped_current_message"
+          ? message.indexedAt == null
+            ? "live_gmail_unindexed+quote_stripped_current_message"
+            : "indexed_gmail+live_quote_stripped_current_message"
           : "indexed_gmail+candidate_excerpt",
         contentClassification: message.liveExtractionDiagnostic?.outcome ??
           (message.operationalText?.trim() ? "operational_current_text" : null),

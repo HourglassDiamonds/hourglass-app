@@ -188,11 +188,13 @@ export async function runPreparedSourceViewerFetch(input: {
   messageId?: string | null;
   indexed: readonly PreparedIndexedMessage[];
   api: GmailApi;
+  /** Operational shadow only: return every message in the exact fetched thread. */
+  includeUnindexedMessages?: boolean;
 }): Promise<SourceViewerFetchResult> {
   const threadId = input.threadId.trim();
   const messageId = input.messageId?.trim() || null;
   if (!threadId) return failed("blank-pointer");
-  if (input.indexed.length === 0) return failed("not-indexed");
+  if (input.indexed.length === 0 && !input.includeUnindexedMessages) return failed("not-indexed");
   const indexed = [...input.indexed];
   try {
     const raw = await input.api.getThread(threadId);
@@ -204,7 +206,7 @@ export async function runPreparedSourceViewerFetch(input: {
     const indexedIds = new Set(indexed.map((row) => row.messageId));
     const messages: SourceViewerMessageInput[] = [];
     for (const row of protectedThread.messages) {
-      if (!indexedIds.has(row.messageId)) continue;
+      if (!input.includeUnindexedMessages && !indexedIds.has(row.messageId)) continue;
       const live = byRaw.get(row.messageId);
       const parsedFrom = live ? parseGmailFrom(live) : { email: row.from, displayName: null };
       messages.push({
@@ -227,14 +229,13 @@ export async function runPreparedSourceViewerFetch(input: {
     if (messages.length === 0) return failed("not-indexed");
     const focus =
       indexed.find((row) => row.messageId === messageId) ??
-      indexed.reduce((latest, row) =>
-        row.sentAt > latest.sentAt ? row : latest,
-      );
+      (indexed.length > 0 ? indexed.reduce((latest, row) =>
+        row.sentAt > latest.sentAt ? row : latest) : null);
     return {
       ok: true,
       safeErrorCode: null,
       threadId,
-      indexedSubject: focus?.subject ?? null,
+      indexedSubject: focus?.subject ?? messages.at(-1)?.subject ?? null,
       messages,
       plaintextPersisted: false,
       gmailMutation: false,
@@ -255,6 +256,10 @@ export type PreparedSourceViewerBatch = {
     threadId: string;
     indexed: readonly PreparedIndexedMessage[];
   }): Promise<SourceViewerFetchResult>;
+  fetchCompleteThread?(input: {
+    threadId: string;
+    indexed: readonly PreparedIndexedMessage[];
+  }): Promise<SourceViewerFetchResult>;
 };
 
 /** Coalesces duplicate exact-thread reads and bounds the entire live batch. */
@@ -269,16 +274,25 @@ export function createPreparedSourceViewerBatch(
   return {
     metrics,
     fetchThread({ threadId, indexed }) {
-      const key = `${threadId}|${indexed.map((row) => row.messageId).sort().join(",")}`;
+      return fetchPrepared(threadId, indexed, false);
+    },
+    fetchCompleteThread({ threadId, indexed }) {
+      return fetchPrepared(threadId, indexed, true);
+    },
+  };
+
+  function fetchPrepared(threadId: string, indexed: readonly PreparedIndexedMessage[],
+    includeUnindexedMessages: boolean): Promise<SourceViewerFetchResult> {
+      const key = `${threadId}|${includeUnindexedMessages ? "all" : "indexed"}|${indexed.map((row) => row.messageId).sort().join(",")}`;
       const prior = pending.get(key);
       if (prior) return prior;
       const remaining = deadline - now();
       if (remaining <= 0)
-        return Promise.resolve({ ok: false, safeErrorCode: "unavailable" });
+        return Promise.resolve({ ok: false, safeErrorCode: "unavailable" } as SourceViewerFetchResult);
       metrics.threadFetches += 1;
       let timer: ReturnType<typeof setTimeout> | null = null;
       const work = Promise.race([
-        runPreparedSourceViewerFetch({ threadId, indexed, api }),
+        runPreparedSourceViewerFetch({ threadId, indexed, api, includeUnindexedMessages }),
         new Promise<SourceViewerFetchResult>((resolve) => {
           timer = setTimeout(
             () => resolve({ ok: false, safeErrorCode: "unavailable" }),
@@ -290,6 +304,5 @@ export function createPreparedSourceViewerBatch(
       });
       pending.set(key, work);
       return work;
-    },
-  };
+  }
 }

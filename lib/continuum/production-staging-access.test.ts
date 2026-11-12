@@ -6,6 +6,7 @@ import {
   PRODUCTION_STAGING_AUTH_ROUTE,
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
   productionStagingRequestDecision,
 } from "./production-staging-access";
 
@@ -13,11 +14,13 @@ function decide(
   method: string,
   pathname: string,
   hasNextServerActionHeader = false,
+  allowOperationalShadowAction = false,
 ) {
   return productionStagingRequestDecision({
     method,
     pathname,
     hasNextServerActionHeader,
+    allowOperationalShadowAction,
   });
 }
 
@@ -42,6 +45,17 @@ describe("Production-backed staging request boundary", () => {
     assert.deepEqual(decide("POST", PRODUCTION_STAGING_LOGIN_PATH, true), {
       allowed: false,
       reason: "server-action-denied",
+    });
+  });
+
+  it("permits only the fixed operational Server Action when its separate switch is on", () => {
+    assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, false, true).allowed, true);
+    assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, true, true).allowed, true);
+    assert.deepEqual(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, true, false), {
+      allowed: false, reason: "server-action-denied",
+    });
+    assert.deepEqual(decide("POST", `${PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH}/other`, true, true), {
+      allowed: false, reason: "server-action-denied",
     });
   });
 
