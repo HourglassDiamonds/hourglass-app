@@ -664,11 +664,16 @@ export async function loadLiveTodayOperationalFacts(
       const newerUnindexed = unindexedLive.filter((message) =>
         !latestIndexedAt || Date.parse(message.sentAt ?? "") > Date.parse(latestIndexedAt));
       const bodyIncomplete = fetched.messages.filter((message) =>
-        message.bodyExtractionStatus !== "decoded_plaintext" || !message.plainText?.trim());
+        (message.bodyExtractionStatus !== "decoded_plaintext" &&
+          message.bodyExtractionStatus !== "decoded_html") ||
+        !message.plainText?.trim());
       const missingLiveMessage = indexedMessages.some((message) => !liveById.has(message.messageId));
-      if (missingLiveMessage) {
+      const nativeBodyIncomplete = fetched.nativeThreadMembershipComplete === true &&
+        bodyIncomplete.length > 0;
+      const incompleteLiveEvidence = missingLiveMessage || nativeBodyIncomplete;
+      if (incompleteLiveEvidence) {
         incomplete = true;
-        missingLiveMessageThreadCount += 1;
+        if (missingLiveMessage) missingLiveMessageThreadCount += 1;
       }
       const enrich = (message: TodayGmailIndexedMessage, live: typeof fetched.messages[number]) => {
         const extractionKey = `${threadId}|${message.messageId}|${message.sentAt}`;
@@ -762,13 +767,18 @@ export async function loadLiveTodayOperationalFacts(
           ]),
         ],
       });
-      recordOutcome(currentContext, !missingLiveMessage, missingLiveMessage ? "missing-live-message" : undefined);
+      const incompleteCategory = missingLiveMessage
+        ? "missing-live-message"
+        : nativeBodyIncomplete
+          ? "incomplete-message-body"
+          : undefined;
+      recordOutcome(currentContext, !incompleteLiveEvidence, incompleteCategory);
       emitThreadOutcome({
         threadId,
-        status: missingLiveMessage ? "indexed_excerpt_only" : "complete_live",
+        status: incompleteLiveEvidence ? "indexed_excerpt_only" : "complete_live",
         indexedMessageCount: indexedMessages.length,
         liveMessageCount: fetched.messages.length,
-        safeErrorCategory: missingLiveMessage ? "missing-live-message" : null,
+        safeErrorCategory: incompleteCategory ?? null,
         latestIndexedMessageAt: latestTimestamp(indexedMessages.map((message) => message.sentAt)),
         latestLiveMessageAt: latestTimestamp(fetched.messages.map((message) => message.sentAt)),
         retrievedAt: fetched.retrievedAt ?? new Date().toISOString(),

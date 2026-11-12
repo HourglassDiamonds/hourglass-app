@@ -3,8 +3,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
 } from "@/lib/continuum/production-staging-access";
-import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
+import {
+  isVerifiedContinuumProductionShadowRuntime,
+  isVerifiedContinuumProductionStagingRuntime,
+} from "@/lib/continuum/runtime-env";
 import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
 import { revokeDurableFounderSession } from "@/lib/executive-dashboard/founder-sessions";
 import { authenticateExecutiveDashboardPassword } from "@/lib/executive-dashboard/password-login";
@@ -20,7 +24,8 @@ function stagingRedirect(request: NextRequest, pathname: string): NextResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  if (!isVerifiedContinuumProductionStagingRuntime()) {
+  const productionShadow = isVerifiedContinuumProductionShadowRuntime();
+  if (!productionShadow && !isVerifiedContinuumProductionStagingRuntime()) {
     return new NextResponse("Not Found", { status: 404 });
   }
 
@@ -57,5 +62,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       `${PRODUCTION_STAGING_LOGIN_PATH}?error=invalid`,
     );
   }
-  return stagingRedirect(request, PRODUCTION_STAGING_CONTINUUM_PATH);
+  return stagingRedirect(
+    request,
+    productionShadow
+      ? PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH
+      : PRODUCTION_STAGING_CONTINUUM_PATH,
+  );
 }

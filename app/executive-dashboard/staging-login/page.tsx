@@ -5,8 +5,12 @@ import { requireInternalClientMemorySession } from "@/lib/continuum/client-memor
 import {
   PRODUCTION_STAGING_AUTH_ROUTE,
   PRODUCTION_STAGING_CONTINUUM_PATH,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
 } from "@/lib/continuum/production-staging-access";
-import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
+import {
+  isVerifiedContinuumProductionShadowRuntime,
+  isVerifiedContinuumProductionStagingRuntime,
+} from "@/lib/continuum/runtime-env";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
 export const metadata = {
@@ -19,13 +23,17 @@ export default async function ProductionStagingFounderLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  if (!isVerifiedContinuumProductionStagingRuntime()) redirect("/");
+  const productionShadow = isVerifiedContinuumProductionShadowRuntime();
+  if (!productionShadow && !isVerifiedContinuumProductionStagingRuntime()) redirect("/");
+  const destination = productionShadow
+    ? PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH
+    : PRODUCTION_STAGING_CONTINUUM_PATH;
 
   const jar = await cookies();
   const session = await requireInternalClientMemorySession(
     jar.get(EXECUTIVE_DASHBOARD_SESSION_COOKIE)?.value,
   );
-  if (session.ok) redirect(PRODUCTION_STAGING_CONTINUUM_PATH);
+  if (session.ok) redirect(destination);
   const { error } = await searchParams;
 
   return (
@@ -37,9 +45,9 @@ export default async function ProductionStagingFounderLoginPage({
         </p>
         <h1 className="mt-3 font-serif text-[2.15rem]">Founder sign in</h1>
         <p className="mt-4 text-[14px] leading-relaxed text-[#c4b7aa]">
-          This deployment permits durable founder authentication only. Server
-          Actions, Gmail, Today recomputation, Concierge writes, and outbound
-          activity are blocked.
+          {productionShadow
+            ? "This staged Production-target deployment permits one fixed-scope native Gmail shadow review. Business writes, Today publication, OAuth reconnect, and outbound activity remain blocked."
+            : "This deployment permits durable founder authentication only. Server Actions, Gmail, Today recomputation, Concierge writes, and outbound activity are blocked."}
         </p>
         <form
           action={PRODUCTION_STAGING_AUTH_ROUTE}
@@ -47,7 +55,7 @@ export default async function ProductionStagingFounderLoginPage({
           className="mt-10 space-y-5"
         >
           <input type="hidden" name="intent" value="login" />
-          <input type="hidden" name="next" value={PRODUCTION_STAGING_CONTINUUM_PATH} />
+          <input type="hidden" name="next" value={destination} />
           <input type="hidden" name="viewport" value="desktop" />
           <label className="block text-[10px] uppercase tracking-[0.24em] text-[#8d8073]">
             Username

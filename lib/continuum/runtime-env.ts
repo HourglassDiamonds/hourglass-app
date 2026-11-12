@@ -36,6 +36,9 @@ export const SERVER_ONLY_CONTINUUM_RUNTIME_ENV = [
   "CONTINUUM_PRODUCTION_STAGING_ENABLED",
   "CONTINUUM_PRODUCTION_STAGING_PROJECT_ID",
   "CONTINUUM_PRODUCTION_STAGING_COMMIT_SHA",
+  "CONTINUUM_PRODUCTION_SHADOW_ENABLED",
+  "CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID",
+  "CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA",
 ] as const;
 
 export type ContinuumIsolationState =
@@ -317,9 +320,60 @@ export function isVerifiedContinuumProductionStagingRuntime(input?: {
     actualCommitSha === expectedCommitSha;
 }
 
+/**
+ * Deployment-local exception for one staged, unpromoted Production-target
+ * Sterling shadow build. The enable switch is supplied only to that build;
+ * Vercel system identity and the canonical Production database must agree.
+ */
+export function isVerifiedContinuumProductionShadowRuntime(input?: {
+  vercel?: string;
+  continuumEnv?: string;
+  vercelEnv?: string;
+  supabaseUrl?: string;
+  productionRef?: string;
+  enabled?: string;
+  expectedProjectId?: string;
+  expectedCommitSha?: string;
+  actualProjectId?: string;
+  actualCommitSha?: string;
+  actualDeploymentId?: string;
+}): boolean {
+  const enabled = trimmed(
+    input?.enabled ?? process.env.CONTINUUM_PRODUCTION_SHADOW_ENABLED,
+  )?.toLowerCase() === "true";
+  const expectedProjectId = trimmed(
+    input?.expectedProjectId ?? process.env.CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID,
+  );
+  const expectedCommitSha = trimmed(
+    input?.expectedCommitSha ?? process.env.CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA,
+  )?.toLowerCase();
+  const actualProjectId = trimmed(input?.actualProjectId ?? process.env.VERCEL_PROJECT_ID);
+  const actualCommitSha = trimmed(
+    input?.actualCommitSha ?? process.env.VERCEL_GIT_COMMIT_SHA,
+  )?.toLowerCase();
+  const actualDeploymentId = trimmed(
+    input?.actualDeploymentId ?? process.env.VERCEL_DEPLOYMENT_ID,
+  );
+  const supabaseUrl = input?.supabaseUrl ?? getSupabaseUrl();
+  const productionRef = productionSupabaseProjectRef(
+    input?.productionRef ?? process.env.CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+  );
+
+  return enabled &&
+    trimmed(input?.vercel ?? process.env.VERCEL) === "1" &&
+    parseContinuumEnv(input?.continuumEnv ?? process.env.CONTINUUM_ENV) === "production" &&
+    vercelEnvName(input?.vercelEnv ?? process.env.VERCEL_ENV) === "production" &&
+    isProductionSupabaseUrl(supabaseUrl, productionRef) &&
+    Boolean(expectedProjectId && expectedCommitSha) &&
+    actualProjectId === expectedProjectId &&
+    actualCommitSha === expectedCommitSha &&
+    Boolean(actualDeploymentId && /^dpl_[A-Za-z0-9]+$/.test(actualDeploymentId));
+}
+
 export function isVerifiedDurableFounderRuntime(): boolean {
   if (isVerifiedContinuumOperationalRuntime()) return true;
-  return isVerifiedContinuumProductionStagingRuntime();
+  return isVerifiedContinuumProductionStagingRuntime() ||
+    isVerifiedContinuumProductionShadowRuntime();
 }
 
 export function assertContinuumPreviewIsolation(input?: {

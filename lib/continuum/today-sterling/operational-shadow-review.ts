@@ -8,7 +8,10 @@ import { getAuthenticatedGmailHistoryStores } from "@/lib/continuum/gmail/load";
 import { getContinuumGmailFounderEmail } from "@/lib/continuum/gmail/env";
 import { createLiveSourceViewerBatch } from "@/lib/continuum/gmail/source-viewer-run";
 import { hashEmail } from "@/lib/continuum/client-memory/hashes";
-import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
+import {
+  isVerifiedContinuumProductionShadowRuntime,
+  isVerifiedContinuumProductionStagingRuntime,
+} from "@/lib/continuum/runtime-env";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { compareOperationalBoard, type ManualObligationAuditRow, type OperationalBoardDisposition,
   type OperationalBoardOwner, type ShadowBoardAuditRow } from "./operational-board-comparison";
@@ -28,9 +31,19 @@ const INCOMPATIBLE_WRITE_CONTROLS = [
 ] as const;
 
 function hasIncompatibleWriteControl(): boolean {
-  return INCOMPATIBLE_WRITE_CONTROLS.some(
+  const controls = isVerifiedContinuumProductionShadowRuntime()
+    ? INCOMPATIBLE_WRITE_CONTROLS.filter((name) =>
+        name !== "CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED" &&
+        name !== "CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED")
+    : INCOMPATIBLE_WRITE_CONTROLS;
+  return controls.some(
     (name) => process.env[name]?.trim().toLowerCase() === "true",
   );
+}
+
+export function isVerifiedOperationalShadowRuntime(): boolean {
+  return isVerifiedContinuumProductionStagingRuntime() ||
+    isVerifiedContinuumProductionShadowRuntime();
 }
 
 type ReviewSpec = Omit<ManualObligationAuditRow, "workUnitId" | "exactSourceRefs"> & {
@@ -209,7 +222,7 @@ async function priorLease(client: SupabaseClient, digest: string): Promise<"none
 }
 
 export async function runAuthenticatedOperationalShadowReview(): Promise<OperationalShadowResult> {
-  if (!isVerifiedContinuumProductionStagingRuntime()) return { ok: false, verdict: "DISABLED", reason: "staging-runtime-not-verified" };
+  if (!isVerifiedOperationalShadowRuntime()) return { ok: false, verdict: "DISABLED", reason: "shadow-runtime-not-verified" };
   if (!isSterlingOperationalShadowEnabled()) return { ok: false, verdict: "DISABLED", reason: "operational-shadow-disabled" };
   if (hasIncompatibleWriteControl()) {
     return { ok: false, verdict: "DISABLED", reason: "business-persistence-control-enabled" };

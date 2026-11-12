@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   GmailHttpError,
+  GmailTransportError,
   classifyGmailForbiddenErrorBody,
   createLiveGmailApi,
   isRetryableGmailError,
@@ -101,5 +102,25 @@ describe("Gmail forbidden diagnostics", () => {
       ),
       5_000,
     );
+  });
+
+  it("detects an unencoded response whose transport length is incomplete", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async () => new Response(
+      JSON.stringify({ id: "thread", messages: [] }),
+      { status: 200, headers: { "content-length": "999" } },
+    );
+    try {
+      await assert.rejects(
+        () => createLiveGmailApi("private-access-token").getThread("thread"),
+        (error: unknown) => {
+          assert.ok(error instanceof GmailTransportError);
+          assert.equal(error.code, "response-body-truncated");
+          return true;
+        },
+      );
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   });
 });

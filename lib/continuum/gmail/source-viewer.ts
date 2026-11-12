@@ -4,7 +4,7 @@
  * Does not persist bodies, list mail, or change Gmail labels.
  */
 
-import { GmailHttpError, type GmailApi } from "./adapter";
+import { GmailHttpError, GmailTransportError, type GmailApi } from "./adapter";
 import type { GmailConnectionStore } from "./connection";
 import { exactThreadOnlyApi } from "./exact-thread";
 import { protectExactThread } from "./exact-thread-payload";
@@ -36,6 +36,8 @@ export const SOURCE_VIEWER_ERROR_CODES = [
   "rate_limited",
   "unknown_forbidden",
   "thread-fetch-failed",
+  "thread-response-truncated",
+  "thread-payload-invalid",
 ] as const;
 
 export type SourceViewerErrorCode = (typeof SOURCE_VIEWER_ERROR_CODES)[number];
@@ -74,6 +76,8 @@ export type SourceViewerFetchSuccess = {
   gmailMutation: false;
   cursorUnchanged: true;
   readOnly: true;
+  /** Exact users.threads.get payload passed native membership validation. */
+  nativeThreadMembershipComplete?: true;
 };
 
 export type SourceViewerFetchResult =
@@ -103,6 +107,11 @@ function failed(
 }
 
 function threadFetchErrorCode(error: unknown): SourceViewerErrorCode {
+  if (error instanceof GmailTransportError) {
+    return error.code === "response-body-truncated"
+      ? "thread-response-truncated"
+      : "thread-fetch-failed";
+  }
   if (error instanceof GmailHttpError) {
     if (error.status === 404) return "thread-not-found";
     if (error.status === 403) {
@@ -113,6 +122,27 @@ function threadFetchErrorCode(error: unknown): SourceViewerErrorCode {
     return "thread-not-found";
   }
   return "thread-fetch-failed";
+}
+
+export function validateNativeGmailThreadPayload(
+  threadId: string,
+  raw: unknown,
+): raw is import("./types").GmailApiThread {
+  if (!raw || typeof raw !== "object") return false;
+  const candidate = raw as Partial<import("./types").GmailApiThread>;
+  if (candidate.id !== threadId || !Array.isArray(candidate.messages) ||
+      candidate.messages.length === 0) return false;
+  const seen = new Set<string>();
+  for (const message of candidate.messages) {
+    if (!message || typeof message !== "object") return false;
+    const id = typeof message.id === "string" ? message.id.trim() : "";
+    if (!id || seen.has(id) || message.threadId !== threadId) return false;
+    seen.add(id);
+    if (!message.internalDate || !/^\d+$/.test(message.internalDate) ||
+        !Number.isFinite(Number(message.internalDate))) return false;
+    if (!message.payload || typeof message.payload !== "object") return false;
+  }
+  return true;
 }
 
 function fromRaw(message: GmailApiMessage): string | null {
@@ -200,10 +230,14 @@ export async function runPreparedSourceViewerFetch(input: {
   const indexed = [...input.indexed];
   try {
     const raw = await input.api.getThread(threadId);
-    if (!raw?.id || raw.id !== threadId || !Array.isArray(raw.messages)) {
-      return failed("thread-fetch-failed");
+    if (!validateNativeGmailThreadPayload(threadId, raw)) {
+      return failed("thread-payload-invalid");
     }
     const protectedThread = protectExactThread(raw);
+    if (protectedThread.messages.length !== raw.messages.length ||
+        protectedThread.messages.some((row) => !raw.messages.some((message) => message.id === row.messageId))) {
+      return failed("thread-payload-invalid");
+    }
     const byRaw = new Map(raw.messages.map((row) => [row.id, row]));
     const indexedIds = new Set(indexed.map((row) => row.messageId));
     const messages: SourceViewerMessageInput[] = [];
@@ -243,6 +277,7 @@ export async function runPreparedSourceViewerFetch(input: {
       gmailMutation: false,
       cursorUnchanged: true,
       readOnly: true,
+      nativeThreadMembershipComplete: true,
     };
   } catch (error) {
     return failed(

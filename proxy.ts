@@ -29,7 +29,10 @@ import {
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
   productionStagingRequestDecision,
 } from "@/lib/continuum/production-staging-access";
-import { isVerifiedContinuumProductionStagingRuntime } from "@/lib/continuum/runtime-env";
+import {
+  isVerifiedContinuumProductionShadowRuntime,
+  isVerifiedContinuumProductionStagingRuntime,
+} from "@/lib/continuum/runtime-env";
 import { isSterlingOperationalShadowEnabled } from "@/lib/continuum/today-sterling/server-config";
 
 /**
@@ -43,7 +46,8 @@ import { isSterlingOperationalShadowEnabled } from "@/lib/continuum/today-sterli
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const productionStaging = isVerifiedContinuumProductionStagingRuntime();
+  const productionStaging = isVerifiedContinuumProductionStagingRuntime() ||
+    isVerifiedContinuumProductionShadowRuntime();
 
   if (productionStaging) {
     const stagingDecision = productionStagingRequestDecision({

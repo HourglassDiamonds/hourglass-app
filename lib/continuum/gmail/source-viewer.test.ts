@@ -13,6 +13,7 @@ import { GMAIL_READONLY_SCOPE, type GmailApiThread } from "./types";
 import {
   createPreparedSourceViewerBatch,
   runSourceViewerFetch,
+  validateNativeGmailThreadPayload,
 } from "./source-viewer";
 import { presentSourceViewer } from "@/lib/continuum/chief-of-staff/operating-loop/email-viewer";
 
@@ -99,6 +100,22 @@ async function connectedIndex() {
 }
 
 describe("read-only source viewer fetch", () => {
+  it("accepts only a complete, exact native threads.get membership payload", () => {
+    assert.equal(validateNativeGmailThreadPayload(THREAD, thread()), true);
+    const duplicate = thread();
+    duplicate.messages = [duplicate.messages[0]!, duplicate.messages[0]!];
+    assert.equal(validateNativeGmailThreadPayload(THREAD, duplicate), false);
+    const wrongThread = thread();
+    wrongThread.messages[0]!.threadId = "other-thread";
+    assert.equal(validateNativeGmailThreadPayload(THREAD, wrongThread), false);
+    const missingBody = thread();
+    missingBody.messages[0]!.payload = null;
+    assert.equal(validateNativeGmailThreadPayload(THREAD, missingBody), false);
+    const malformedTimestamp = thread();
+    malformedTimestamp.messages[0]!.internalDate = "not-a-timestamp";
+    assert.equal(validateNativeGmailThreadPayload(THREAD, malformedTimestamp), false);
+  });
+
   it("keeps the generic viewer indexed-only and exposes newer messages only through the explicit complete-thread method", async () => {
     const api = new MockGmailApi();
     api.setThread(thread());

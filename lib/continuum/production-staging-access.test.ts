@@ -106,10 +106,10 @@ describe("Production-backed staging request boundary", () => {
     assert.match(proxy, /PRODUCTION_STAGING_CONTINUUM_PATH/);
   });
 
-  it("pins successful and existing-session redirects to the read-only Continuum route", () => {
+  it("pins successful and existing-session redirects to the verified runtime destination", () => {
     const authRoute = readFileSync(resolve(process.cwd(), "app/api/continuum/production-staging-founder-auth/route.ts"), "utf8");
     const loginPage = readFileSync(resolve(process.cwd(), "app/executive-dashboard/staging-login/page.tsx"), "utf8");
-    assert.match(authRoute, /stagingRedirect\(request, PRODUCTION_STAGING_CONTINUUM_PATH\)/);
-    assert.match(loginPage, /session\.ok\) redirect\(PRODUCTION_STAGING_CONTINUUM_PATH\)/);
+    assert.match(authRoute, /productionShadow[\s\S]*PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH[\s\S]*PRODUCTION_STAGING_CONTINUUM_PATH/);
+    assert.match(loginPage, /productionShadow[\s\S]*PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH[\s\S]*PRODUCTION_STAGING_CONTINUUM_PATH/);
   });
 });

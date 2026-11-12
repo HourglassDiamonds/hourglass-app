@@ -20,6 +20,7 @@ describe("bounded operational shadow review", () => {
 
   it("fails closed on runtime, founder, mailbox, execution, and lease identity", () => {
     assert.match(runtime, /isVerifiedContinuumProductionStagingRuntime/);
+    assert.match(runtime, /isVerifiedContinuumProductionShadowRuntime/);
     assert.match(runtime, /getAuthenticatedGmailHistoryStores/);
     assert.match(runtime, /connection\.mailboxEmailHash !== expectedMailboxHash/);
     assert.match(runtime, /getSterlingOperationalShadowExecutionId/);
@@ -30,6 +31,7 @@ describe("bounded operational shadow review", () => {
     assert.match(runtime, /CONTINUUM_GMAIL_INCREMENTAL_SYNC_ENABLED/);
     assert.match(runtime, /CONTINUUM_TODAY_MANUAL_RECOMPUTE_ENABLED/);
     assert.match(runtime, /CONTINUUM_STERLING_TODAY_PUBLISHER_ENABLED/);
+    assert.match(runtime, /business-persistence-control-enabled/);
     assert.match(page, /export const maxDuration = 300/);
   });
 

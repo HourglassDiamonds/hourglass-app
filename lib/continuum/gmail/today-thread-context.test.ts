@@ -825,4 +825,41 @@ describe("Today live Gmail rebuild batch", () => {
     assert.equal(diagnostics?.providerRateLimitedThreadCount, 1);
     assert.equal(diagnostics?.otherProviderErrorThreadCount, 0);
   });
+
+  it("does not call a native thread complete when any required message body is incomplete", async () => {
+    const threadId = "native-incomplete";
+    const base = new Map<string, TodayGmailThreadContext>([[
+      threadId,
+      { messages: [{ messageId: "indexed-message", sentAt: "2026-11-11T12:00:00.000Z",
+        direction: "inbound" as const }] },
+    ]]);
+    const outcomes: TodayLiveThreadOutcome[] = [];
+    await loadLiveTodayOperationalFacts(base, {
+      threadIds: [threadId],
+      includeUnindexedLiveMessages: true,
+      onThreadOutcome: (outcome) => outcomes.push(outcome),
+      createBatch: async () => ({
+        credentialLoads: 1,
+        metrics: { threadFetches: 1 },
+        async fetchThread() { return { ok: false, safeErrorCode: "unavailable" } as const; },
+        async fetchCompleteThread() {
+          return {
+            ok: true, safeErrorCode: null, threadId, indexedSubject: "Subject",
+            messages: [{
+              messageId: "indexed-message", fromRaw: "Client <client@example.test>",
+              fromEmail: "client@example.test", to: [], cc: [], subject: "Subject",
+              sentAt: "2026-11-11T12:00:00.000Z", plainText: null,
+              bodyExtractionStatus: "empty" as const, snippet: "provider snippet",
+              attachments: [],
+            }],
+            gmailMutation: false, plaintextPersisted: false, cursorUnchanged: true, readOnly: true,
+            nativeThreadMembershipComplete: true,
+          } as const;
+        },
+      }),
+    });
+    assert.equal(outcomes[0]?.status, "indexed_excerpt_only");
+    assert.equal(outcomes[0]?.safeErrorCategory, "incomplete-message-body");
+    assert.deepEqual(outcomes[0]?.bodyIncompleteMessageIds, ["indexed-message"]);
+  });
 });

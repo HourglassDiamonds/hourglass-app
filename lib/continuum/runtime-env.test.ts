@@ -12,6 +12,7 @@ import {
   continuumEnvLogLabel,
   isGmailIncrementalAllowedInCurrentEnv,
   isVerifiedContinuumOperationalRuntime,
+  isVerifiedContinuumProductionShadowRuntime,
   isVerifiedContinuumProductionStagingRuntime,
   isPreviewLikeRuntime,
   isPrivilegedSupabaseServerCredential,
@@ -259,6 +260,9 @@ describe("Continuum runtime isolation", () => {
       "CONTINUUM_PRODUCTION_STAGING_ENABLED",
       "CONTINUUM_PRODUCTION_STAGING_PROJECT_ID",
       "CONTINUUM_PRODUCTION_STAGING_COMMIT_SHA",
+      "CONTINUUM_PRODUCTION_SHADOW_ENABLED",
+      "CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID",
+      "CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA",
     ]);
     assert.match(source, /CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF/);
     assert.match(env, /isVerifiedContinuumOperationalRuntime/);
@@ -382,6 +386,45 @@ describe("Continuum runtime isolation", () => {
       }),
       false,
     );
+    assert.equal(
+      isVerifiedContinuumProductionShadowRuntime({
+        vercel: "1",
+        continuumEnv: "production",
+        vercelEnv: "production",
+        supabaseUrl: PROD_URL,
+        enabled: "true",
+        expectedProjectId: "prj_shadow",
+        actualProjectId: "prj_shadow",
+        expectedCommitSha: "b".repeat(40),
+        actualCommitSha: "b".repeat(40),
+        actualDeploymentId: "dpl_Shadow123",
+      }),
+      true,
+    );
+    for (const overrides of [
+      { vercelEnv: "preview" },
+      { actualProjectId: "prj_other" },
+      { actualCommitSha: "c".repeat(40) },
+      { actualDeploymentId: "" },
+      { enabled: "false" },
+    ]) {
+      assert.equal(
+        isVerifiedContinuumProductionShadowRuntime({
+          vercel: "1",
+          continuumEnv: "production",
+          vercelEnv: "production",
+          supabaseUrl: PROD_URL,
+          enabled: "true",
+          expectedProjectId: "prj_shadow",
+          actualProjectId: "prj_shadow",
+          expectedCommitSha: "b".repeat(40),
+          actualCommitSha: "b".repeat(40),
+          actualDeploymentId: "dpl_Shadow123",
+          ...overrides,
+        }),
+        false,
+      );
+    }
   });
 });
 

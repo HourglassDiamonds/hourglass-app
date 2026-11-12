@@ -201,6 +201,16 @@ export class GmailHttpError extends Error {
   }
 }
 
+export class GmailTransportError extends Error {
+  readonly code: "response-body-truncated" | "response-body-unreadable";
+
+  constructor(code: GmailTransportError["code"]) {
+    super(code);
+    this.name = "GmailTransportError";
+    this.code = code;
+  }
+}
+
 export const GMAIL_FORBIDDEN_SAFE_CATEGORIES = [
   "insufficient_permissions",
   "domain_policy",
@@ -357,7 +367,21 @@ export function createLiveGmailApi(accessToken: string): GmailApi {
     const response = await fetch(`${GMAIL_API_ROOT}${path}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    const text = await response.text();
+    let text: string;
+    try {
+      text = await response.text();
+    } catch {
+      throw new GmailTransportError("response-body-unreadable");
+    }
+    const contentLength = response.headers.get("content-length");
+    const contentEncoding = response.headers.get("content-encoding");
+    if (!contentEncoding && contentLength && /^\d+$/.test(contentLength)) {
+      const expectedBytes = Number(contentLength);
+      if (Number.isSafeInteger(expectedBytes) &&
+          Buffer.byteLength(text, "utf8") !== expectedBytes) {
+        throw new GmailTransportError("response-body-truncated");
+      }
+    }
     if (!response.ok) {
       const retryAfter = response.headers.get("Retry-After") ?? undefined;
       const reason = response.status === 404 ? "notFound" : "http";
