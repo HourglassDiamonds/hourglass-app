@@ -21,15 +21,19 @@ describe("November 11 operational reconciliation scope", () => {
   it("uses the allowlist for indexed expansion and live retrieval", () => {
     const runner = readFileSync("lib/continuum/today-sterling/server-runner.ts", "utf8");
     const script = readFileSync("scripts/continuum-sterling-today-shadow.ts", "utf8");
+    const envelope = readFileSync("lib/continuum/today-sterling/connector-evidence-envelope.ts", "utf8");
     assert.match(runner, /additionalIndexedThreadIds/);
     assert.match(runner, /liveRetrievalThreadAllowlist/);
     assert.match(runner, /not-requested-scope-excluded/);
     assert.match(script, /--november-11-operational-reconciliation/);
     assert.match(script, /--connector-json-stdin/);
     assert.match(script, /connector-stdin-requires-november-11-operational-reconciliation/);
-    assert.match(script, /connector-stdin-thread-outside-november-11-allowlist/);
     assert.match(script, /NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS/);
-    assert.match(script, /plaintextPersisted: false/);
-    assert.match(script, /gmailMutation: false/);
+    assert.match(script, /forcedLiveThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS/);
+    assert.match(script, /includeUnindexedLiveMessages: true/);
+    assert.match(script, /buildSanitizedOperationalShadowResult/);
+    assert.match(envelope, /connector-thread-scope-mismatch/);
+    assert.match(envelope, /plaintextPersisted: false/);
+    assert.match(envelope, /gmailMutation: false/);
   });
 });

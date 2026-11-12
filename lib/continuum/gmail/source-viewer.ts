@@ -68,6 +68,8 @@ export type SourceViewerFetchSuccess = {
   threadId: string;
   indexedSubject: string | null;
   messages: SourceViewerMessageInput[];
+  /** Provider/connector retrieval time when supplied by a bounded evidence adapter. */
+  retrievedAt?: string | null;
   plaintextPersisted: false;
   gmailMutation: false;
   cursorUnchanged: true;

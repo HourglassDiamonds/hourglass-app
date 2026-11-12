@@ -3,9 +3,16 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { createClient } from "@supabase/supabase-js";
+import { hashEmail } from "../lib/continuum/client-memory/hashes";
+import { getContinuumGmailFounderEmail } from "../lib/continuum/gmail/env";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "../lib/continuum/runtime-env";
 import { assembleSterlingTodayShadow, executeSterlingTodaySemantic } from "../lib/continuum/today-sterling/server-runner";
 import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "../lib/continuum/today-sterling/operational-reconciliation-scope";
+import {
+  createConnectorEvidenceBatch,
+  validateConnectorEvidenceEnvelope,
+} from "../lib/continuum/today-sterling/connector-evidence-envelope";
+import { buildSanitizedOperationalShadowResult } from "../lib/continuum/today-sterling/operational-shadow-review";
 
 function loadEnvFile(path: string) {
   try {
@@ -29,75 +36,20 @@ function required(name: string): string {
   const value = process.env[name]?.trim() ?? ""; if (!value) throw new Error(`missing-${name}`); return value;
 }
 
-type ConnectorMessage = {
-  messageId: string;
-  sentAt: string;
-  fromRaw: string | null;
-  to: string | null;
-  cc: string | null;
-  subject: string | null;
-  plainText: string | null;
-  bodyExtractionStatus: "decoded_plaintext" | "empty";
-  snippet: string | null;
-  attachments: readonly { filename: string | null; mimeType: string | null }[];
-};
-
-function connectorRecipients(value: string | null): string[] {
-  return value?.split(",").map((part) => part.trim()).filter(Boolean) ?? [];
-}
-
 async function connectorBatchFromStdin() {
   const input = createInterface({ input: process.stdin, crlfDelay: Infinity });
   let payload = "";
-  for await (const line of input) {
-    payload = line;
-    break;
-  }
+  for await (const line of input) payload += `${line}\n`;
   input.close();
   if (!payload) throw new Error("connector-stdin-empty");
-  const parsed = JSON.parse(payload) as Record<string, ConnectorMessage[]>;
-  const allowedThreadIds = new Set<string>(NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS);
-  const unexpectedThreadIds = Object.keys(parsed).filter((threadId) => !allowedThreadIds.has(threadId));
-  if (unexpectedThreadIds.length > 0) {
-    throw new Error("connector-stdin-thread-outside-november-11-allowlist");
-  }
-  const metrics = { threadFetches: 0 };
-  return {
-    credentialLoads: 1 as const,
-    metrics,
-    async fetchThread(input: { threadId: string; indexed: readonly { messageId: string; subject: string | null }[] }) {
-      metrics.threadFetches += 1;
-      const available = new Map((parsed[input.threadId] ?? []).map((message) => [message.messageId, message]));
-      const messages = input.indexed.flatMap((indexed) => {
-        const message = available.get(indexed.messageId);
-        return message ? [{
-          messageId: message.messageId,
-          fromRaw: message.fromRaw,
-          fromEmail: null,
-          to: connectorRecipients(message.to),
-          cc: connectorRecipients(message.cc),
-          subject: message.subject,
-          sentAt: message.sentAt,
-          plainText: message.plainText,
-          bodyExtractionStatus: message.bodyExtractionStatus,
-          snippet: message.snippet,
-          attachments: message.attachments,
-        }] : [];
-      });
-      if (messages.length === 0) return { ok: false as const, safeErrorCode: "not-indexed" as const };
-      return {
-        ok: true as const,
-        safeErrorCode: null,
-        threadId: input.threadId,
-        indexedSubject: input.indexed.at(-1)?.subject ?? null,
-        messages,
-        plaintextPersisted: false as const,
-        gmailMutation: false as const,
-        cursorUnchanged: true as const,
-        readOnly: true as const,
-      };
-    },
-  };
+  const expectedMailboxHash = hashEmail(getContinuumGmailFounderEmail());
+  if (!expectedMailboxHash) throw new Error("connector-mailbox-identity-unavailable");
+  const envelope = validateConnectorEvidenceEnvelope({
+    value: JSON.parse(payload) as unknown,
+    expectedMailboxHash,
+    allowedThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+  });
+  return createConnectorEvidenceBatch(envelope);
 }
 
 async function main() {
@@ -122,6 +74,8 @@ async function main() {
     ...(november11Reconciliation ? {
       additionalIndexedThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
       liveRetrievalThreadAllowlist: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+      forcedLiveThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+      includeUnindexedLiveMessages: true,
     } : {}),
     ...(connectorStdin ? { createGmailBatch: connectorBatchFromStdin } : {}),
   });
@@ -170,6 +124,31 @@ async function main() {
     return;
   }
   const completion = await executeSterlingTodaySemantic({ assembly, apiKey });
+  if (november11Reconciliation) {
+    if (!completion.proposal) {
+      process.stdout.write(`${JSON.stringify({
+        contract: "sterling-operational-shadow-v11-sanitized-result-v1",
+        verdict: "EVIDENCE_BLOCKED",
+        evidenceCompleteness: assembly.completeness,
+        blockedWorkUnitIds: completion.blockedWorkUnitIds,
+      }, null, 2)}\n`);
+      process.exitCode = 2;
+      return;
+    }
+    const executionId = process.env.CONTINUUM_STERLING_OPERATIONAL_SHADOW_EXECUTION_ID?.trim() || "local-connector-shadow";
+    const sanitized = buildSanitizedOperationalShadowResult({
+      assembly,
+      completion,
+      runId: assembly.workingSet.runId,
+      executionId,
+      sourceCommit: process.env.CONTINUUM_SOURCE_COMMIT?.trim() || null,
+      leaseMetadataWrite: false,
+      browserSessionCache: false,
+    });
+    process.stdout.write(`${JSON.stringify(sanitized.result, null, 2)}\n`);
+    if (sanitized.verdict !== "GENERATED") process.exitCode = 2;
+    return;
+  }
   const proposal = completion.proposal;
   const result = {
     mode: assembly.requestWorkingSet.mutationMode,

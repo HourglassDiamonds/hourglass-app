@@ -111,6 +111,89 @@ export function buildOperationalComparisonInput(
   return { expected, actual, unresolvedExpected, comparison: compareOperationalBoard({ expected, actual }) };
 }
 
+export function buildSanitizedOperationalShadowResult(input: {
+  assembly: Awaited<ReturnType<typeof assembleSterlingTodayShadow>>;
+  completion: Awaited<ReturnType<typeof executeSterlingTodaySemantic>>;
+  runId: string;
+  executionId: string;
+  sourceCommit: string | null;
+  generatedAt?: string;
+  leaseMetadataWrite: boolean;
+  browserSessionCache: boolean;
+}) {
+  if (!input.completion.proposal) throw new Error("semantic-proposal-unavailable");
+  const compared = buildOperationalComparisonInput(input.assembly, input.completion.proposal);
+  const threadEvidence = NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.map((threadId) => {
+    const outcome = input.assembly.liveThreadOutcomes?.find((row) => row.threadId === threadId);
+    return {
+      threadId,
+      status: outcome?.status ?? "unavailable",
+      retrievedAt: outcome?.retrievedAt ?? null,
+      indexedMessageCount: outcome?.indexedMessageCount ?? 0,
+      observedMessageIds: outcome?.observedMessageIds ?? [],
+      unindexedMessageIds: outcome?.unindexedMessageIds ?? [],
+      newerUnindexedMessageIds: outcome?.newerUnindexedMessageIds ?? [],
+      bodyIncompleteMessageIds: outcome?.bodyIncompleteMessageIds ?? [],
+      latestIndexedMessageAt: outcome?.latestIndexedMessageAt ?? null,
+      latestLiveMessageAt: outcome?.latestLiveMessageAt ?? null,
+      safeErrorCategory: outcome?.safeErrorCategory ?? "missing-outcome",
+    };
+  });
+  const evidenceByThread = new Map<string, typeof threadEvidence[number]>(
+    threadEvidence.map((row) => [row.threadId, row]),
+  );
+  const evidenceLimitations = REVIEW.map((spec) => {
+    const rows = spec.threadIds.map((threadId) => evidenceByThread.get(threadId)).filter(Boolean);
+    const incompleteThreadIds = rows.filter((row) => row!.status !== "complete_live" || row!.bodyIncompleteMessageIds.length > 0)
+      .map((row) => row!.threadId);
+    return { key: spec.key, label: spec.label, threadIds: spec.threadIds, incompleteThreadIds,
+      bodyIncompletenessPreventsConclusion: incompleteThreadIds.length > 0,
+      newerEvidenceIncluded: rows.some((row) => row!.newerUnindexedMessageIds.length > 0),
+      freshnessBlocked: rows.length !== spec.threadIds.length || rows.some((row) => row!.status !== "complete_live") };
+  });
+  return {
+    verdict: compared.comparison.passed && input.completion.verdict === "PASS" ? "GENERATED" as const : "GENERATED_WITH_BLOCKS" as const,
+    result: {
+      contract: "sterling-operational-shadow-v11-sanitized-result-v1",
+      runId: input.runId,
+      executionId: input.executionId,
+      sourceCommit: input.sourceCommit,
+      generatedAt: input.generatedAt ?? new Date().toISOString(),
+      provider: { name: "OpenAI Responses API", model: CONCIERGE_FOREGROUND_MODEL, store: false },
+      scope: { threadCount: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.length,
+        threadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS },
+      evidence: threadEvidence,
+      evidenceLimitations,
+      generatedBoard: compared.actual,
+      manualReview: compared.expected,
+      unresolvedIdentityMappings: compared.unresolvedExpected,
+      comparator: compared.comparison,
+      semantic: { verdict: input.completion.verdict,
+        validationAccepted: input.completion.validation?.accepted ?? false,
+        blockedWorkUnitIds: input.completion.blockedWorkUnitIds },
+      proposedFounderReviewChanges: input.completion.proposal.proposedCanonicalMutations.map((row) => ({
+        proposalKey: row.proposalKey, kind: row.kind, projectId: row.projectId, personId: row.personId,
+        jobId: row.jobId, expectedRecordVersion: row.expectedRecordVersion,
+        targetLifecycleStage: row.targetLifecycleStage, targetJobState: row.targetJobState,
+        targetResponsibleParty: row.targetResponsibleParty,
+        newJob: row.newJob ? { kind: row.newJob.kind, responsibleParty: row.newJob.responsibleParty,
+          dueAt: row.newJob.dueAt, detailPresent: Boolean(row.newJob.detail) } : null,
+        evidenceRefs: row.evidenceRefs,
+        requiresFounderApproval: true,
+      })),
+      relationshipProposals: input.completion.proposal.relationshipProposals.map((row) => ({
+        proposalKey: row.proposalKey, kind: row.kind, workUnitId: row.workUnitId,
+        personId: row.personId, projectId: row.projectId, threadIds: row.threadIds,
+        basis: row.basis, confidence: row.confidence, evidenceRefs: row.evidenceRefs,
+        requiresFounderApproval: true,
+      })),
+      persistence: { businessWrites: false, gmailIndexWrites: false, checkpointWrites: false,
+        tokenRefreshWrites: false, leaseMetadataWrite: input.leaseMetadataWrite,
+        browserSessionCache: input.browserSessionCache },
+    },
+  };
+}
+
 export type OperationalShadowResult =
   | { ok: false; verdict: "DISABLED" | "UNAVAILABLE" | "BUSY" | "ALREADY_EXECUTED"; reason: string }
   | { ok: true; verdict: "GENERATED" | "GENERATED_WITH_BLOCKS"; result: Record<string, unknown> };
@@ -165,72 +248,18 @@ export async function runAuthenticatedOperationalShadowReview(): Promise<Operati
     });
     const completion = await executeSterlingTodaySemantic({ assembly, apiKey, model: CONCIERGE_FOREGROUND_MODEL });
     if (!completion.proposal) throw new Error("semantic-proposal-unavailable");
-    const compared = buildOperationalComparisonInput(assembly, completion.proposal);
     const finished = await leaseStore.finish(lease.runId, "completed", new Date().toISOString());
     if (!finished) return { ok: false, verdict: "UNAVAILABLE", reason: "execution-outcome-unknown" };
-    const threadEvidence = NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.map((threadId) => {
-      const outcome = assembly.liveThreadOutcomes?.find((row) => row.threadId === threadId);
-      return {
-        threadId,
-        status: outcome?.status ?? "unavailable",
-        retrievedAt: outcome?.retrievedAt ?? null,
-        indexedMessageCount: outcome?.indexedMessageCount ?? 0,
-        observedMessageIds: outcome?.observedMessageIds ?? [],
-        unindexedMessageIds: outcome?.unindexedMessageIds ?? [],
-        newerUnindexedMessageIds: outcome?.newerUnindexedMessageIds ?? [],
-        bodyIncompleteMessageIds: outcome?.bodyIncompleteMessageIds ?? [],
-        latestIndexedMessageAt: outcome?.latestIndexedMessageAt ?? null,
-        latestLiveMessageAt: outcome?.latestLiveMessageAt ?? null,
-        safeErrorCategory: outcome?.safeErrorCategory ?? "missing-outcome",
-      };
-    });
-    const evidenceByThread = new Map<string, typeof threadEvidence[number]>(
-      threadEvidence.map((row) => [row.threadId, row]),
-    );
-    const evidenceLimitations = REVIEW.map((spec) => {
-      const rows = spec.threadIds.map((threadId) => evidenceByThread.get(threadId)).filter(Boolean);
-      const incompleteThreadIds = rows.filter((row) => row!.status !== "complete_live" || row!.bodyIncompleteMessageIds.length > 0)
-        .map((row) => row!.threadId);
-      return { key: spec.key, label: spec.label, threadIds: spec.threadIds, incompleteThreadIds,
-        bodyIncompletenessPreventsConclusion: incompleteThreadIds.length > 0,
-        newerEvidenceIncluded: rows.some((row) => row!.newerUnindexedMessageIds.length > 0),
-        freshnessBlocked: rows.length !== spec.threadIds.length || rows.some((row) => row!.status !== "complete_live") };
-    });
-    return { ok: true, verdict: compared.comparison.passed && completion.verdict === "PASS" ? "GENERATED" : "GENERATED_WITH_BLOCKS", result: {
-      contract: "sterling-operational-shadow-v11-sanitized-result-v1",
+    const sanitized = buildSanitizedOperationalShadowResult({
+      assembly,
+      completion,
       runId: lease.runId,
       executionId,
       sourceCommit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
-      generatedAt: new Date().toISOString(),
-      provider: { name: "OpenAI Responses API", model: CONCIERGE_FOREGROUND_MODEL, store: false },
-      scope: { threadCount: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.length, threadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS },
-      evidence: threadEvidence,
-      evidenceLimitations,
-      generatedBoard: compared.actual,
-      manualReview: compared.expected,
-      unresolvedIdentityMappings: compared.unresolvedExpected,
-      comparator: compared.comparison,
-      semantic: { verdict: completion.verdict, validationAccepted: completion.validation?.accepted ?? false,
-        blockedWorkUnitIds: completion.blockedWorkUnitIds },
-      proposedFounderReviewChanges: completion.proposal.proposedCanonicalMutations.map((row) => ({
-        proposalKey: row.proposalKey, kind: row.kind, projectId: row.projectId, personId: row.personId,
-        jobId: row.jobId, expectedRecordVersion: row.expectedRecordVersion,
-        targetLifecycleStage: row.targetLifecycleStage, targetJobState: row.targetJobState,
-        targetResponsibleParty: row.targetResponsibleParty,
-        newJob: row.newJob ? { kind: row.newJob.kind, responsibleParty: row.newJob.responsibleParty,
-          dueAt: row.newJob.dueAt, detailPresent: Boolean(row.newJob.detail) } : null,
-        evidenceRefs: row.evidenceRefs,
-        requiresFounderApproval: true,
-      })),
-      relationshipProposals: completion.proposal.relationshipProposals.map((row) => ({
-        proposalKey: row.proposalKey, kind: row.kind, workUnitId: row.workUnitId,
-        personId: row.personId, projectId: row.projectId, threadIds: row.threadIds,
-        basis: row.basis, confidence: row.confidence, evidenceRefs: row.evidenceRefs,
-        requiresFounderApproval: true,
-      })),
-      persistence: { businessWrites: false, gmailIndexWrites: false, checkpointWrites: false,
-        tokenRefreshWrites: false, leaseMetadataWrite: true, browserSessionCache: true },
-    } };
+      leaseMetadataWrite: true,
+      browserSessionCache: true,
+    });
+    return { ok: true, ...sanitized };
   } catch {
     await leaseStore.finish(lease.runId, "failed", new Date().toISOString()).catch(() => false);
     return { ok: false, verdict: "UNAVAILABLE", reason: "operational-shadow-execution-failed" };

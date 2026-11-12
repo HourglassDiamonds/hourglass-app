@@ -15,6 +15,7 @@
     "lib/continuum/gmail/evidence-completeness-audit.test.ts",
     "lib/continuum/today-sterling/**/*.ts",
     "scripts/continuum-sterling-today-shadow.ts",
+    "scripts/continuum-sterling-connector-executor.ts",
     "scripts/continuum-october30-production-audit.ts"
   ],
   "exclude": ["node_modules"]

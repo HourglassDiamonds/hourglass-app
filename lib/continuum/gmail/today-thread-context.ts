@@ -771,7 +771,7 @@ export async function loadLiveTodayOperationalFacts(
         safeErrorCategory: missingLiveMessage ? "missing-live-message" : null,
         latestIndexedMessageAt: latestTimestamp(indexedMessages.map((message) => message.sentAt)),
         latestLiveMessageAt: latestTimestamp(fetched.messages.map((message) => message.sentAt)),
-        retrievedAt: new Date().toISOString(),
+        retrievedAt: fetched.retrievedAt ?? new Date().toISOString(),
         observedMessageIds: fetched.messages.map((message) => message.messageId),
         unindexedMessageIds: unindexedLive.map((message) => message.messageId),
         newerUnindexedMessageIds: newerUnindexed.map((message) => message.messageId),
