@@ -11,12 +11,20 @@ describe("shadow founder credential helper", () => {
     "scripts/hash-executive-dashboard-password.mjs",
     "utf8",
   );
+  const transportSource = readFileSync(
+    "scripts/continuum-shadow-founder-credential-transport.ps1",
+    "utf8",
+  );
 
   it("uses hidden password input, the existing scrypt implementation, and stdin-only Vercel writes", () => {
     assert.match(source, /Read-Host[^\n]+-AsSecureString/);
     assert.match(source, /node --no-warnings \$hashScript/);
-    assert.match(source, /--input - --raw/);
+    assert.match(source, /continuum-shadow-founder-credential-transport\.ps1/);
+    assert.match(transportSource, /--input - --raw/);
+    assert.match(transportSource, /ConvertTo-Json -Depth 5 -Compress/);
+    assert.doesNotMatch(transportSource, /@\(\s*\[ordered\]@\{/);
     assert.doesNotMatch(source, /--value/);
+    assert.doesNotMatch(transportSource, /--value/);
     assert.doesNotMatch(source, /Write-Output[^\n]*(password|hash|username)\s*\+/i);
     assert.match(
       hashSource,
@@ -33,11 +41,13 @@ describe("shadow founder credential helper", () => {
       source,
       /CONTINUUM_PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH/,
     );
-    assert.match(source, /target = @\('production'\)/);
+    assert.match(transportSource, /target = @\('production'\)/);
     assert.match(source, /Start-Process[\s\S]+Read-Host/);
     assert.match(source, /createdAt[^\n]+startedAtMs/);
     assert.match(source, /env\/\$\(\$entry\.id\)/);
     assert.match(source, /cleanup\.complete/);
+    assert.match(source, /Write-Manifest \$created[\s\S]+Write-Manifest \$created/);
+    assert.match(source, /catch \{[\s\S]+env\/\$\(\$entry\.id\)/);
     assert.doesNotMatch(source, /--force/);
   });
 });

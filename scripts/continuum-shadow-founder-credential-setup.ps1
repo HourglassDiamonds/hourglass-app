@@ -14,6 +14,7 @@ Set-StrictMode -Version Latest
 $usernameKey = 'CONTINUUM_PRODUCTION_SHADOW_FOUNDER_USERNAME'
 $passwordHashKey = 'CONTINUUM_PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH'
 $repoRoot = Split-Path -Parent $PSScriptRoot
+. (Join-Path $PSScriptRoot 'continuum-shadow-founder-credential-transport.ps1')
 $actualSha = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ($LASTEXITCODE -ne 0 -or $actualSha -ne $ExpectedSourceSha) {
   throw 'The local source SHA does not match the reviewed shadow-auth candidate.'
@@ -175,51 +176,40 @@ try {
   $confirmPlain = $null
 }
 
-$request = @(
-  [ordered]@{
-    key = $usernameKey
-    value = $username
-    type = 'sensitive'
-    target = @('production')
-    comment = 'Temporary exact-runtime Sterling shadow founder username'
-  },
-  [ordered]@{
-    key = $passwordHashKey
-    value = $passwordHash
-    type = 'sensitive'
-    target = @('production')
-    comment = 'Temporary exact-runtime Sterling shadow founder password hash'
-  }
-) | ConvertTo-Json -Depth 5
-
+$created = @()
 try {
-  $responseRaw = $request | & $vercel api (
-    "/v10/projects/$ProjectId/env?teamId=$TeamId"
-  ) -X POST --input - --raw
-  if ($LASTEXITCODE -ne 0) {
-    throw 'Vercel rejected the temporary credential variables.'
-  }
-  $response = $responseRaw | ConvertFrom-Json
-  $createdRows = if ($response.created -is [array]) {
-    @($response.created)
-  } elseif ($response.created) {
-    @($response.created)
-  } elseif ($response -is [array]) {
-    @($response)
-  } else {
-    @($response)
-  }
-  $created = @(
-    $createdRows |
-      Where-Object { $_.id -and $_.key -in @($usernameKey, $passwordHashKey) } |
-      ForEach-Object { [ordered]@{ id = $_.id; key = $_.key } }
-  )
+  $created += Add-ContinuumShadowFounderEnvVariable `
+    -VercelPath $vercel `
+    -ProjectId $ProjectId `
+    -TeamId $TeamId `
+    -Key $usernameKey `
+    -Value $username `
+    -Comment 'Temporary exact-runtime Sterling shadow founder username'
+  Write-Manifest $created
+
+  $created += Add-ContinuumShadowFounderEnvVariable `
+    -VercelPath $vercel `
+    -ProjectId $ProjectId `
+    -TeamId $TeamId `
+    -Key $passwordHashKey `
+    -Value $passwordHash `
+    -Comment 'Temporary exact-runtime Sterling shadow founder password hash'
+  Write-Manifest $created
+
   if ($created.Count -ne 2) {
     throw 'Vercel did not return both temporary credential IDs.'
   }
-  Write-Manifest $created
+} catch {
+  foreach ($entry in $created) {
+    if (-not $entry.id) { continue }
+    $endpoint = "/v9/projects/$ProjectId/env/$($entry.id)?teamId=$TeamId"
+    & $vercel api $endpoint -X DELETE --dangerously-skip-permissions --silent
+  }
+  if ($created.Count -gt 0) {
+    Write-Manifest @()
+  }
+  throw
 } finally {
-  $request = $null
   $passwordHash = $null
   $username = $null
 }
