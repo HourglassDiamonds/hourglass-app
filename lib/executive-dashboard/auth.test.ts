@@ -19,7 +19,10 @@ import {
   getExecutiveDashboardAuthConfig,
   isExecutiveDashboardAuthRateLimitDisabled,
   isExecutiveDashboardPublicProduction,
+  PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
+  PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
 } from "./env";
+import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "@/lib/continuum/runtime-env";
 import {
   hashExecutiveDashboardPassword,
   usernamesMatch,
@@ -166,6 +169,135 @@ describe("executive dashboard auth", () => {
         if (decision.status === "unauthenticated") {
           assert.equal(decision.reason, "missing-config");
         }
+      },
+    );
+  });
+
+  it("uses dedicated credentials only for the exact verified Production shadow runtime", async () => {
+    const productionPasswordHash =
+      hashExecutiveDashboardPassword("production-password-test-only");
+    const shadowPassword = "shadow-password-test-only";
+    const shadowPasswordHash = hashExecutiveDashboardPassword(shadowPassword);
+    const commitSha = "a".repeat(40);
+    const productionUrl =
+      `https://${CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF}.supabase.co`;
+    const shared = {
+      EXECUTIVE_DASHBOARD_USERNAME: "production-founder",
+      EXECUTIVE_DASHBOARD_PASSWORD_HASH: productionPasswordHash,
+      EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
+      [PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]: "shadow-founder",
+      [PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV]: shadowPasswordHash,
+    };
+
+    await withEnvAsync(
+      {
+        ...shared,
+        CONTINUUM_ENV: "production",
+        VERCEL_ENV: "production",
+        VERCEL: "1",
+        SUPABASE_URL: productionUrl,
+        CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+        CONTINUUM_PRODUCTION_SHADOW_ENABLED: "true",
+        CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID: "prj_shadow_test",
+        CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA: commitSha,
+        VERCEL_PROJECT_ID: "prj_shadow_test",
+        VERCEL_GIT_COMMIT_SHA: commitSha,
+        VERCEL_DEPLOYMENT_ID: "dpl_ShadowTest123",
+      },
+      async () => {
+        const config = getExecutiveDashboardAuthConfig();
+        assert.equal(config.ok, true);
+        if (!config.ok) return;
+        assert.equal(config.username, "shadow-founder");
+        assert.equal(config.sessionSecret, sessionSecret);
+        assert.equal(
+          verifyExecutiveDashboardPassword(shadowPassword, config.passwordHash),
+          true,
+        );
+        assert.equal(
+          verifyExecutiveDashboardPassword(
+            "production-password-test-only",
+            config.passwordHash,
+          ),
+          false,
+        );
+      },
+    );
+
+    for (const environment of [
+      {
+        CONTINUUM_ENV: "production",
+        VERCEL_ENV: "production",
+        VERCEL: "1",
+        SUPABASE_URL: productionUrl,
+        CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+      },
+      {
+        CONTINUUM_ENV: "preview",
+        VERCEL_ENV: "preview",
+        VERCEL: "1",
+        SUPABASE_URL: "https://preview-only-test.supabase.co",
+        CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+      },
+    ]) {
+      await withEnvAsync(
+        {
+          ...shared,
+          ...environment,
+          CONTINUUM_PRODUCTION_SHADOW_ENABLED: undefined,
+          CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID: undefined,
+          CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA: undefined,
+          VERCEL_PROJECT_ID: undefined,
+          VERCEL_GIT_COMMIT_SHA: undefined,
+          VERCEL_DEPLOYMENT_ID: undefined,
+        },
+        async () => {
+          const config = getExecutiveDashboardAuthConfig();
+          assert.equal(config.ok, true);
+          if (!config.ok) return;
+          assert.equal(config.username, "production-founder");
+          assert.equal(
+            verifyExecutiveDashboardPassword(
+              shadowPassword,
+              config.passwordHash,
+            ),
+            false,
+          );
+        },
+      );
+    }
+  });
+
+  it("fails closed when the verified shadow runtime lacks dedicated credentials", async () => {
+    const commitSha = "b".repeat(40);
+    await withEnvAsync(
+      {
+        CONTINUUM_ENV: "production",
+        VERCEL_ENV: "production",
+        VERCEL: "1",
+        SUPABASE_URL:
+          `https://${CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF}.supabase.co`,
+        CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF,
+        CONTINUUM_PRODUCTION_SHADOW_ENABLED: "true",
+        CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID: "prj_shadow_test",
+        CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA: commitSha,
+        VERCEL_PROJECT_ID: "prj_shadow_test",
+        VERCEL_GIT_COMMIT_SHA: commitSha,
+        VERCEL_DEPLOYMENT_ID: "dpl_ShadowTest123",
+        EXECUTIVE_DASHBOARD_USERNAME: "production-founder",
+        EXECUTIVE_DASHBOARD_PASSWORD_HASH: passwordHash,
+        EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
+        [PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]: undefined,
+        [PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV]: undefined,
+      },
+      async () => {
+        const config = getExecutiveDashboardAuthConfig();
+        assert.equal(config.ok, false);
+        if (config.ok) return;
+        assert.deepEqual(config.missing, [
+          PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
+          PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
+        ]);
       },
     );
   });

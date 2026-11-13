@@ -20,6 +20,10 @@ import {
 } from "./founder-sessions";
 import { CONTINUUM_FOUNDER_WEBAUTHN_USER_ID } from "./passkeys/config";
 import {
+  PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
+  PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
+} from "./env";
+import {
   createFounderSessionId,
   createExecutiveDashboardSessionToken,
   executiveDashboardSessionCookieOptions,
@@ -271,6 +275,65 @@ describe("founder durable sessions", () => {
       assert.equal(tracking.revokes, 1);
       assert.equal((await readExecutiveDashboardSession(token, now + 1)).ok, false);
     });
+  });
+
+  it("persists and verifies a durable session with the shadow-only username", async () => {
+    const store = createMemoryFounderSessionStore();
+    setFounderSessionStoreForTests(store);
+    const now = Date.now();
+    const sessionId = createFounderSessionId();
+    const shadowUsername = "shadow-founder";
+    const commitSha = "c".repeat(40);
+    await withEnv(
+      {
+        ...PRODUCTION_ENV,
+        ...AUTH_ENV,
+        CONTINUUM_PRODUCTION_SHADOW_ENABLED: "true",
+        CONTINUUM_PRODUCTION_SHADOW_PROJECT_ID: "prj_shadow_test",
+        CONTINUUM_PRODUCTION_SHADOW_COMMIT_SHA: commitSha,
+        VERCEL_PROJECT_ID: "prj_shadow_test",
+        VERCEL_GIT_COMMIT_SHA: commitSha,
+        VERCEL_DEPLOYMENT_ID: "dpl_ShadowTest123",
+        [PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]: shadowUsername,
+        [PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV]:
+          "unused-shadow-password-hash",
+      },
+      async () => {
+        assert.equal(isDurableFounderSessionStoreEnabled(), true);
+        assert.deepEqual(
+          await persistDurableFounderSession({
+            sessionId,
+            founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+            issuedAtMs: now,
+            expiresAtMs: now + 60_000,
+            revokedAtMs: null,
+          }),
+          { ok: true },
+        );
+        const shadowToken = createExecutiveDashboardSessionToken(
+          shadowUsername,
+          sessionSecret,
+          now,
+          60,
+          sessionId,
+        );
+        assert.equal(
+          (await readExecutiveDashboardSession(shadowToken, now)).ok,
+          true,
+        );
+        const ordinaryProductionToken = createExecutiveDashboardSessionToken(
+          username,
+          sessionSecret,
+          now,
+          60,
+          sessionId,
+        );
+        assert.equal(
+          (await readExecutiveDashboardSession(ordinaryProductionToken, now)).ok,
+          false,
+        );
+      },
+    );
   });
 
   it("fails closed in Preview when the durable store is unavailable", async () => {
