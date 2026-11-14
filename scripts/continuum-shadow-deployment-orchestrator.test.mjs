@@ -92,6 +92,13 @@ describe("Sterling shadow deployment supervisor", () => {
     assert.ok(f.events.indexOf("delete") < f.events.indexOf("restore-auto:true"));
   });
 
+  it("deletes an alias-bearing READY attempt without rolling back an intact public baseline", async () => {
+    const f = fixture(["READY", "READY"], { aliases: [{ alias: "branch.example" }] });
+    await assert.rejects(superviseShadowDeployment(f.input, f.adapter, f.runtime), /deployment-was-promoted/);
+    assert.equal(f.events.includes("rollback"), false);
+    assert.ok(f.events.indexOf("delete") < f.events.indexOf("restore-auto:true"));
+  });
+
   it("starts discovery before create and recovers one server-recorded attempt without resubmission", async () => {
     const f = fixture(["READY", "READY"]);
     let discoveries = 0;

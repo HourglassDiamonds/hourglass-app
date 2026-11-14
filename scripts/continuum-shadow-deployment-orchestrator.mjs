@@ -54,7 +54,11 @@ async function containAttempt(adapter, input, runtime) {
       continue;
     }
     if (state === "READY") {
-      await adapter.rollbackTo(input.baselineDeploymentId);
+      try {
+        await verifyPublicBaseline(adapter, input);
+      } catch {
+        await adapter.rollbackTo(input.baselineDeploymentId);
+      }
     }
     await adapter.deleteDeployment(input.deploymentId);
     break;
