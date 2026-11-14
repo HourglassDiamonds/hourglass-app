@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { superviseShadowDeployment } from "./continuum-shadow-deployment-orchestrator.mjs";
+import {
+  discoverAndSuperviseShadowDeployment,
+  superviseShadowDeployment,
+} from "./continuum-shadow-deployment-orchestrator.mjs";
 
 function fixture(states, options = {}) {
   const events = [];
@@ -80,5 +83,37 @@ describe("Sterling shadow deployment supervisor", () => {
     await assert.rejects(superviseShadowDeployment(f.input, f.adapter, f.runtime), /interrupted/);
     assert.ok(f.events.indexOf("cancel") < f.events.indexOf("delete"));
     assert.ok(f.events.indexOf("delete") < f.events.indexOf("restore-auto:true"));
+  });
+
+  it("starts discovery before create and recovers one server-recorded attempt without resubmission", async () => {
+    const f = fixture(["READY", "READY"]);
+    let discoveries = 0;
+    f.adapter.findAttemptDeployments = async () => {
+      f.events.push("discover");
+      discoveries += 1;
+      return discoveries === 1 ? [] : [{ id: "dpl_attempt" }];
+    };
+    const result = await discoverAndSuperviseShadowDeployment({
+      ...f.input,
+      attemptId: "attempt-1",
+      attemptStartedAtMs: 0,
+      discoveryTimeoutMs: 100,
+    }, f.adapter, f.runtime);
+    assert.equal(result.status, "ready-unpromoted");
+    assert.equal(f.events.filter((event) => event === "discover").length, 2);
+    assert.equal("createDeployment" in f.adapter, false);
+  });
+
+  it("holds automatic assignment disabled when an ambiguous create cannot be reconciled", async () => {
+    const f = fixture(["BUILDING"], { timeoutMs: 10 });
+    f.adapter.findAttemptDeployments = async () => [];
+    await assert.rejects(discoverAndSuperviseShadowDeployment({
+      ...f.input,
+      attemptId: "attempt-ambiguous",
+      attemptStartedAtMs: 0,
+      discoveryTimeoutMs: 0,
+    }, f.adapter, f.runtime), /safe-hold/);
+    assert.equal(f.events.includes("restore-auto:true"), false);
+    assert.equal(f.events.some((event) => event.startsWith("delete-env:")), false);
   });
 });

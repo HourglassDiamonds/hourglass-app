@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process";
+import { renameSync, writeFileSync } from "node:fs";
 
 const LIVE_STATES = new Set(["INITIALIZING", "QUEUED", "BUILDING"]);
 const FAILURE_STATES = new Set(["ERROR", "CANCELED", "BLOCKED"]);
@@ -119,6 +120,34 @@ export async function superviseShadowDeployment(input, adapter, runtime = {
   }
 }
 
+export async function discoverAndSuperviseShadowDeployment(input, adapter, runtime) {
+  const deadline = runtime.now() + input.discoveryTimeoutMs;
+  for (;;) {
+    if (input.signal?.aborted) {
+      throw Object.assign(new Error("attempt-discovery-interrupted-safe-hold"), { safeHold: true });
+    }
+    const matches = await adapter.findAttemptDeployments({
+      attemptId: input.attemptId,
+      expectedCommitSha: input.expectedCommitSha,
+      startedAtMs: input.attemptStartedAtMs,
+    });
+    if (matches.length > 1) {
+      throw Object.assign(new Error("attempt-discovery-multiple-safe-hold"), { safeHold: true });
+    }
+    if (matches.length === 1) {
+      return superviseShadowDeployment(
+        { ...input, deploymentId: matches[0].id },
+        adapter,
+        runtime,
+      );
+    }
+    if (runtime.now() >= deadline) {
+      throw Object.assign(new Error("attempt-discovery-timeout-safe-hold"), { safeHold: true });
+    }
+    await runtime.sleep(input.pollMs);
+  }
+}
+
 function cliAdapter(options) {
   const query = `teamId=${encodeURIComponent(options.teamId)}`;
   function api(path, method = "GET", body) {
@@ -140,6 +169,17 @@ function cliAdapter(options) {
     return text ? JSON.parse(text) : null;
   }
   return {
+    async findAttemptDeployments(input) {
+      const row = api(
+        `/v7/deployments?projectId=${options.projectId}` +
+        `&sha=${input.expectedCommitSha}&since=${input.startedAtMs}&limit=20&${query}`,
+      );
+      return (row.deployments ?? []).filter((deployment) =>
+        deployment.meta?.continuumShadowAttemptId === input.attemptId &&
+        String(deployment.meta?.githubCommitSha ?? deployment.meta?.gitCommitSha ?? "").toLowerCase() ===
+          input.expectedCommitSha,
+      ).map((deployment) => ({ id: deployment.uid ?? deployment.id }));
+    },
     async getDeployment(id) {
       const row = api(`/v13/deployments/${id}?${query}`);
       return {
@@ -192,7 +232,11 @@ function parseArgs(argv) {
   const one = (key) => values.get(key)?.at(-1);
   const required = (key) => one(key) ?? (() => { throw new Error(`missing:${key}`); })();
   return {
-    deploymentId: required("--deployment-id"),
+    deploymentId: one("--deployment-id"),
+    attemptId: one("--attempt-id"),
+    attemptStartedAtMs: Number(one("--attempt-started-at-ms") ?? Date.now()),
+    discoveryTimeoutMs: Number(one("--discovery-timeout-ms") ?? 1_200_000),
+    manifestPath: one("--manifest-path"),
     expectedCommitSha: required("--expected-sha").toLowerCase(),
     baselineDeploymentId: required("--baseline-deployment-id"),
     publicAliases: values.get("--public-alias") ?? [],
@@ -210,17 +254,40 @@ function parseArgs(argv) {
 
 if (import.meta.url === new URL(`file://${process.argv[1].replaceAll("\\", "/")}`).href) {
   const input = parseArgs(process.argv.slice(2));
+  if (!input.deploymentId && !input.attemptId) throw new Error("missing-deployment-or-attempt-id");
   const controller = new AbortController();
   process.once("SIGINT", () => controller.abort());
   process.once("SIGTERM", () => controller.abort());
   try {
-    const result = await superviseShadowDeployment(
-      { ...input, signal: controller.signal },
-      cliAdapter(input),
-    );
+    if (input.attemptId && input.manifestPath) {
+      const manifest = {
+        contract: "continuum-shadow-deployment-attempt-v1",
+        attemptId: input.attemptId,
+        expectedCommitSha: input.expectedCommitSha,
+        baselineDeploymentId: input.baselineDeploymentId,
+        startedAtMs: input.attemptStartedAtMs,
+        stage: "supervisor_started_before_create",
+      };
+      const temporary = `${input.manifestPath}.tmp`;
+      writeFileSync(temporary, `${JSON.stringify(manifest)}\n`, { encoding: "utf8", mode: 0o600 });
+      renameSync(temporary, input.manifestPath);
+    }
+    const supervisedInput = { ...input, signal: controller.signal };
+    const result = input.deploymentId
+      ? await superviseShadowDeployment(supervisedInput, cliAdapter(input))
+      : await discoverAndSuperviseShadowDeployment(supervisedInput, cliAdapter(input), {
+          now: () => Date.now(),
+          sleep: (ms) => new Promise((resolve, reject) => {
+            const timer = setTimeout(resolve, ms);
+            controller.signal.addEventListener("abort", () => {
+              clearTimeout(timer);
+              reject(Object.assign(new Error("attempt-discovery-interrupted-safe-hold"), { safeHold: true }));
+            }, { once: true });
+          }),
+        });
     process.stdout.write(`${JSON.stringify(result)}\n`);
   } catch (error) {
-    process.stderr.write(`${JSON.stringify({ status: "contained", error: error.message })}\n`);
+    process.stderr.write(`${JSON.stringify({ status: error.safeHold ? "safe-hold" : "contained", error: error.message })}\n`);
     process.exitCode = 1;
   }
 }
