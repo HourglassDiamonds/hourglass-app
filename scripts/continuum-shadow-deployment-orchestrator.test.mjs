@@ -4,6 +4,7 @@ import {
   discoverAndSuperviseShadowDeployment,
   superviseShadowDeployment,
 } from "./continuum-shadow-deployment-orchestrator.mjs";
+import { readFileSync } from "node:fs";
 
 function fixture(states, options = {}) {
   const events = [];
@@ -55,6 +56,12 @@ function fixture(states, options = {}) {
 }
 
 describe("Sterling shadow deployment supervisor", () => {
+  it("supports the shell-free Vercel JavaScript entrypoint on Windows", () => {
+    const source = readFileSync("scripts/continuum-shadow-deployment-orchestrator.mjs", "utf8");
+    assert.match(source, /process\.execPath/);
+    assert.match(source, /\[options\.vercelCliJs, \.\.\.args\]/);
+    assert.match(source, /--vercel-cli-js/);
+  });
   it("restores settings only after stable READY, zero aliases, and intact public baseline", async () => {
     const f = fixture(["BUILDING", "READY", "READY"]);
     const result = await superviseShadowDeployment(f.input, f.adapter, f.runtime);

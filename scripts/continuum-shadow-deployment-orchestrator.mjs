@@ -154,7 +154,9 @@ function cliAdapter(options) {
     const args = ["api", path, "-X", method, "--raw"];
     if (body !== undefined) args.push("--input", "-");
     if (method === "DELETE") args.push("--dangerously-skip-permissions");
-    const result = spawnSync(options.vercelPath, args, {
+    const executable = options.vercelCliJs ? process.execPath : options.vercelPath;
+    const executableArgs = options.vercelCliJs ? [options.vercelCliJs, ...args] : args;
+    const result = spawnSync(executable, executableArgs, {
       input: body === undefined ? undefined : JSON.stringify(body),
       encoding: "utf8",
       windowsHide: true,
@@ -248,13 +250,15 @@ function parseArgs(argv) {
     settleMs: Number(one("--settle-ms") ?? 10_000),
     projectId: required("--project-id"),
     teamId: required("--team-id"),
-    vercelPath: required("--vercel-path"),
+    vercelPath: one("--vercel-path"),
+    vercelCliJs: one("--vercel-cli-js"),
   };
 }
 
 if (import.meta.url === new URL(`file://${process.argv[1].replaceAll("\\", "/")}`).href) {
   const input = parseArgs(process.argv.slice(2));
   if (!input.deploymentId && !input.attemptId) throw new Error("missing-deployment-or-attempt-id");
+  if (!input.vercelPath && !input.vercelCliJs) throw new Error("missing-vercel-cli");
   const controller = new AbortController();
   process.once("SIGINT", () => controller.abort());
   process.once("SIGTERM", () => controller.abort());
