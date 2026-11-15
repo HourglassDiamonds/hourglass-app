@@ -7,9 +7,9 @@ export const PRODUCTION_STAGING_CONTINUUM_PATH =
 export const PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH =
   "/executive-dashboard/concierge/sterling-today/operational-review" as const;
 export const PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE =
-  "/api/continuum/operational-shadow/run" as const;
+  "/executive-dashboard/api/continuum/operational-shadow/run" as const;
 export const PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE =
-  "/api/continuum/operational-shadow/result" as const;
+  "/executive-dashboard/api/continuum/operational-shadow/result" as const;
 
 export type ProductionStagingRequestDecision =
   | { allowed: true }
@@ -51,9 +51,10 @@ export function productionStagingRequestDecision(input: {
     return { allowed: false, reason: "method-denied" };
   }
 
-  if (input.pathname.startsWith("/api/") &&
-      !(operationalShadowEnabled && method === "GET" &&
-        input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE)) {
+  if (input.pathname.startsWith("/api/") ||
+      (input.pathname.startsWith("/executive-dashboard/api/") &&
+        !(operationalShadowEnabled && method === "GET" &&
+          input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE))) {
     return { allowed: false, reason: "api-denied" };
   }
 
@@ -62,7 +63,9 @@ export function productionStagingRequestDecision(input: {
       input.pathname.startsWith("/executive-dashboard/")) &&
     input.pathname !== PRODUCTION_STAGING_LOGIN_PATH &&
     input.pathname !== PRODUCTION_STAGING_CONTINUUM_PATH &&
-    !(operationalShadowEnabled && input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH)
+    !(operationalShadowEnabled &&
+      (input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH ||
+        (method === "GET" && input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE)))
   ) {
     return { allowed: false, reason: "dashboard-denied" };
   }

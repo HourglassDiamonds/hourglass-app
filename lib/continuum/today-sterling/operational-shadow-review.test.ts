@@ -5,8 +5,8 @@ import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "./operational
 
 describe("bounded operational shadow review", () => {
   const runtime = readFileSync("lib/continuum/today-sterling/operational-shadow-review.ts", "utf8");
-  const runRoute = readFileSync("app/api/continuum/operational-shadow/run/route.ts", "utf8");
-  const resultRoute = readFileSync("app/api/continuum/operational-shadow/result/route.ts", "utf8");
+  const runRoute = readFileSync("app/executive-dashboard/api/continuum/operational-shadow/run/route.ts", "utf8");
+  const resultRoute = readFileSync("app/executive-dashboard/api/continuum/operational-shadow/result/route.ts", "utf8");
   const page = readFileSync("app/executive-dashboard/concierge/sterling-today/operational-review/page.tsx", "utf8");
 
   it("pins exactly the reviewed 23 threads and accepts no caller-owned scope", () => {

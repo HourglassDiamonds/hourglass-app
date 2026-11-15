@@ -11,6 +11,7 @@ import {
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
   productionStagingRequestDecision,
 } from "./production-staging-access";
+import { EXECUTIVE_DASHBOARD_SESSION_PATH } from "@/lib/executive-dashboard/session";
 
 function decide(
   method: string,
@@ -51,6 +52,8 @@ describe("Production-backed staging request boundary", () => {
   });
 
   it("denies every Server Action and permits only fixed shadow API methods when enabled", () => {
+    assert.equal(PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE.startsWith(`${EXECUTIVE_DASHBOARD_SESSION_PATH}/`), true);
+    assert.equal(PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE.startsWith(`${EXECUTIVE_DASHBOARD_SESSION_PATH}/`), true);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, false, true).allowed, true);
     assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE, false, true).allowed, true);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);
