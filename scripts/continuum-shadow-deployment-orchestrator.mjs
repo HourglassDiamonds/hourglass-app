@@ -78,6 +78,42 @@ async function restoreTemporaryConfiguration(adapter, input) {
   await adapter.setAutoAssignCustomDomains(input.originalAutoAssignCustomDomains);
 }
 
+async function restoreProtectedBranchAlias(adapter, input, aliases, runtime) {
+  if (aliases.length === 0) return;
+  if (
+    aliases.length !== 1 ||
+    aliases[0]?.alias !== input.protectedBranchAlias ||
+    !input.automaticPreviewDeploymentId
+  ) {
+    throw new Error("deployment-was-promoted");
+  }
+
+  const preview = await adapter.getDeployment(input.automaticPreviewDeploymentId);
+  const project = await adapter.getProject();
+  if (
+    stateOf(preview) !== "READY" ||
+    preview.target === "production" ||
+    preview.projectId !== input.projectId ||
+    String(preview.gitCommitSha ?? "").toLowerCase() !== input.expectedCommitSha ||
+    preview.gitCommitRef !== input.expectedBranch ||
+    project.ssoProtection?.enabled !== true ||
+    project.ssoProtection?.deploymentType !== "all_except_custom_domains"
+  ) {
+    throw new Error("automatic-preview-identity-mismatch");
+  }
+
+  await adapter.assignAlias(input.automaticPreviewDeploymentId, input.protectedBranchAlias);
+  const deadline = runtime.now() + input.aliasRestoreTimeoutMs;
+  for (;;) {
+    await verifyPublicBaseline(adapter, input);
+    const owner = await adapter.getAliasDeploymentId(input.protectedBranchAlias);
+    const shadowAliases = await adapter.listDeploymentAliases(input.deploymentId);
+    if (owner === input.automaticPreviewDeploymentId && shadowAliases.length === 0) return;
+    if (runtime.now() >= deadline) throw new Error("branch-alias-restore-timeout");
+    await runtime.sleep(input.pollMs);
+  }
+}
+
 export async function superviseShadowDeployment(input, adapter, runtime = {
   now: () => Date.now(),
   sleep: (ms) => new Promise((resolve, reject) => {
@@ -112,7 +148,7 @@ export async function superviseShadowDeployment(input, adapter, runtime = {
     }
 
     const aliases = await adapter.listDeploymentAliases(input.deploymentId);
-    if (aliases.length !== 0) throw new Error("deployment-was-promoted");
+    await restoreProtectedBranchAlias(adapter, input, aliases, runtime);
     await verifyPublicBaseline(adapter, input);
 
     await restoreTemporaryConfiguration(adapter, input);
@@ -192,6 +228,8 @@ function cliAdapter(options) {
         state: row.state ?? row.readyState,
         target: row.target,
         gitCommitSha: row.meta?.githubCommitSha ?? row.meta?.gitCommitSha,
+        gitCommitRef: row.meta?.githubCommitRef ?? row.meta?.gitCommitRef,
+        projectId: row.projectId ?? row.project?.id,
       };
     },
     async listDeploymentAliases(id) {
@@ -202,6 +240,7 @@ function cliAdapter(options) {
       return {
         currentProductionId: row.targets?.production?.id ?? null,
         autoAssignCustomDomains: row.autoAssignCustomDomains,
+        ssoProtection: row.ssoProtection,
       };
     },
     async getAliasDeploymentId(alias) {
@@ -215,6 +254,9 @@ function cliAdapter(options) {
     },
     async rollbackTo(id) {
       api(`/v1/projects/${options.projectId}/rollback/${id}?${query}`, "POST", {});
+    },
+    async assignAlias(id, alias) {
+      api(`/v2/deployments/${id}/aliases?${query}`, "POST", { alias, redirect: null });
     },
     async deleteEnvironmentVariable(id) {
       api(`/v9/projects/${options.projectId}/env/${id}?${query}`, "DELETE");
@@ -252,8 +294,12 @@ function parseArgs(argv) {
     cleanupTimeoutMs: Number(one("--cleanup-timeout-ms") ?? 180_000),
     pollMs: Number(one("--poll-ms") ?? 5_000),
     settleMs: Number(one("--settle-ms") ?? 10_000),
+    aliasRestoreTimeoutMs: Number(one("--alias-restore-timeout-ms") ?? 60_000),
     projectId: required("--project-id"),
     teamId: required("--team-id"),
+    protectedBranchAlias: one("--protected-branch-alias"),
+    automaticPreviewDeploymentId: one("--automatic-preview-deployment-id"),
+    expectedBranch: one("--expected-branch"),
     vercelPath: one("--vercel-path"),
     vercelCliJs: one("--vercel-cli-js"),
   };

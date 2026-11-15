@@ -12,20 +12,51 @@ function fixture(states, options = {}) {
   let deleted = false;
   let now = 0;
   const adapter = {
-    async getDeployment() {
+    async getDeployment(id) {
       events.push("get-deployment");
       if (deleted) throw Object.assign(new Error("deployment-not-found"), { code: "deployment-not-found" });
-      return { state: states[Math.min(index++, states.length - 1)], target: "production", gitCommitSha: "a".repeat(40) };
+      if (id === "dpl_preview") {
+        return {
+          state: "READY",
+          target: null,
+          gitCommitSha: "a".repeat(40),
+          gitCommitRef: "codex/continuum-controlled-release",
+          projectId: "prj_hourglass",
+        };
+      }
+      return {
+        state: states[Math.min(index++, states.length - 1)],
+        target: "production",
+        gitCommitSha: "a".repeat(40),
+        gitCommitRef: "codex/continuum-controlled-release",
+        projectId: "prj_hourglass",
+      };
     },
-    async listDeploymentAliases() { events.push("list-aliases"); return options.aliases ?? []; },
+    async listDeploymentAliases() {
+      events.push("list-aliases");
+      if (options.aliasRestored) return [];
+      return options.aliases ?? [];
+    },
     async getProject() {
       events.push("get-project");
-      return { currentProductionId: "dpl_baseline", autoAssignCustomDomains: false };
+      return {
+        currentProductionId: "dpl_baseline",
+        autoAssignCustomDomains: false,
+        ssoProtection: { enabled: true, deploymentType: "all_except_custom_domains" },
+      };
     },
-    async getAliasDeploymentId(alias) { events.push(`get-alias:${alias}`); return "dpl_baseline"; },
+    async getAliasDeploymentId(alias) {
+      events.push(`get-alias:${alias}`);
+      if (alias === "branch.example" && options.aliasRestored) return "dpl_preview";
+      return "dpl_baseline";
+    },
     async cancelDeployment() { events.push("cancel"); states.push("CANCELED"); },
     async deleteDeployment() { events.push("delete"); deleted = true; },
     async rollbackTo() { events.push("rollback"); },
+    async assignAlias(id, alias) {
+      events.push(`assign-alias:${id}:${alias}`);
+      options.aliasRestored = true;
+    },
     async deleteEnvironmentVariable(id) { events.push(`delete-env:${id}`); },
     async setAutoAssignCustomDomains(value) { events.push(`restore-auto:${value}`); },
   };
@@ -51,6 +82,11 @@ function fixture(states, options = {}) {
     cleanupTimeoutMs: 100,
     pollMs: 10,
     settleMs: 5,
+    aliasRestoreTimeoutMs: 50,
+    projectId: "prj_hourglass",
+    protectedBranchAlias: "branch.example",
+    automaticPreviewDeploymentId: "dpl_preview",
+    expectedBranch: "codex/continuum-controlled-release",
   };
   return { adapter, runtime, input, events };
 }
@@ -93,10 +129,30 @@ describe("Sterling shadow deployment supervisor", () => {
   });
 
   it("deletes an alias-bearing READY attempt without rolling back an intact public baseline", async () => {
-    const f = fixture(["READY", "READY"], { aliases: [{ alias: "branch.example" }] });
+    const f = fixture(["READY", "READY"], { aliases: [{ alias: "unexpected.example" }] });
     await assert.rejects(superviseShadowDeployment(f.input, f.adapter, f.runtime), /deployment-was-promoted/);
     assert.equal(f.events.includes("rollback"), false);
     assert.ok(f.events.indexOf("delete") < f.events.indexOf("restore-auto:true"));
+  });
+
+  it("returns only the exact protected branch alias to the verified automatic Preview", async () => {
+    const f = fixture(["READY", "READY"], { aliases: [{ alias: "branch.example" }] });
+    const result = await superviseShadowDeployment(f.input, f.adapter, f.runtime);
+    assert.equal(result.status, "ready-unpromoted");
+    assert.ok(f.events.includes("assign-alias:dpl_preview:branch.example"));
+    assert.ok(f.events.indexOf("assign-alias:dpl_preview:branch.example") < f.events.indexOf("restore-auto:true"));
+    assert.equal(f.events.filter((event) => event === "list-aliases").length >= 2, true);
+  });
+
+  it("rejects the known branch alias when the automatic Preview identity is wrong", async () => {
+    const f = fixture(["READY", "READY"], { aliases: [{ alias: "branch.example" }] });
+    const original = f.adapter.getDeployment;
+    f.adapter.getDeployment = async (id) => {
+      const row = await original(id);
+      return id === "dpl_preview" ? { ...row, gitCommitRef: "main" } : row;
+    };
+    await assert.rejects(superviseShadowDeployment(f.input, f.adapter, f.runtime), /automatic-preview-identity-mismatch/);
+    assert.equal(f.events.some((event) => event.startsWith("assign-alias:")), false);
   });
 
   it("starts discovery before create and recovers one server-recorded attempt without resubmission", async () => {
