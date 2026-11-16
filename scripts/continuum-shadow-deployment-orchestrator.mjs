@@ -237,10 +237,17 @@ function cliAdapter(options) {
     },
     async getProject() {
       const row = api(`/v9/projects/${options.projectId}?${query}`);
+      const deploymentType = row.ssoProtection?.deploymentType ?? null;
       return {
         currentProductionId: row.targets?.production?.id ?? null,
         autoAssignCustomDomains: row.autoAssignCustomDomains,
-        ssoProtection: row.ssoProtection,
+        // Current Vercel responses omit the legacy `enabled` boolean when
+        // protection is represented by its deployment policy.
+        ssoProtection: {
+          enabled: row.ssoProtection?.enabled === true ||
+            deploymentType === "all_except_custom_domains",
+          deploymentType,
+        },
       };
     },
     async getAliasDeploymentId(alias) {

@@ -97,6 +97,7 @@ describe("Sterling shadow deployment supervisor", () => {
     assert.match(source, /process\.execPath/);
     assert.match(source, /\[options\.vercelCliJs, \.\.\.args\]/);
     assert.match(source, /--vercel-cli-js/);
+    assert.match(source, /deploymentType === "all_except_custom_domains"/);
   });
   it("restores settings only after stable READY, zero aliases, and intact public baseline", async () => {
     const f = fixture(["BUILDING", "READY", "READY"]);
