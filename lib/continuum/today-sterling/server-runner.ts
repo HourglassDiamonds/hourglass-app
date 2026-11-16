@@ -902,6 +902,7 @@ export async function executeSterlingTodaySemantic(input: {
   assembly: SterlingTodayAssembly;
   apiKey: string;
   model?: string;
+  fetchImpl?: typeof fetch;
   requestPolicy?: {
     maxOutputTokens: number;
     maxRequestBytes: number;
@@ -927,6 +928,7 @@ export async function executeSterlingTodaySemantic(input: {
       apiKey: input.apiKey,
       model: input.model ?? conciergeForegroundModel(process.env.CONTINUUM_STERLING_TODAY_MODEL),
       workingSet,
+      fetchImpl: input.fetchImpl,
       onStage: (stage, identifiers) => input.onStage?.(stage, identifiers),
       ...input.requestPolicy,
     }),

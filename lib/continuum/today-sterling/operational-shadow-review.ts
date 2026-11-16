@@ -25,6 +25,15 @@ import {
   prepareOperationalShadowResultRecord,
   type OperationalShadowResultStore,
 } from "./operational-shadow-result-store";
+import {
+  authenticateOperationalShadowBrowserE2e,
+  browserE2eLeaseStore,
+  browserE2eResultStore,
+  createOperationalShadowBrowserE2eClient,
+  createOperationalShadowBrowserE2eGmailBatch,
+  isOperationalShadowBrowserE2eRuntime,
+  operationalShadowBrowserE2eModelFetch,
+} from "./operational-shadow-browser-e2e";
 
 const GMAIL_RETRIEVAL_TIMEOUT_MS = 80_000;
 const SCOPE_VERSION = "november-11-operational-v11-23-threads";
@@ -49,7 +58,8 @@ function hasIncompatibleWriteControl(): boolean {
 
 export function isVerifiedOperationalShadowRuntime(): boolean {
   return isVerifiedContinuumProductionStagingRuntime() ||
-    isVerifiedContinuumProductionShadowRuntime();
+    isVerifiedContinuumProductionShadowRuntime() ||
+    isOperationalShadowBrowserE2eRuntime();
 }
 
 type ReviewSpec = Omit<ManualObligationAuditRow, "workUnitId" | "exactSourceRefs"> & {
@@ -260,6 +270,9 @@ async function priorLease(client: SupabaseClient, digest: string): Promise<"none
 }
 
 export async function runAuthenticatedOperationalShadowReview(): Promise<OperationalShadowResult> {
+  if (isOperationalShadowBrowserE2eRuntime()) {
+    return runOperationalShadowBrowserE2e();
+  }
   if (!isVerifiedOperationalShadowRuntime()) return { ok: false, verdict: "DISABLED", reason: "shadow-runtime-not-verified" };
   if (!isSterlingOperationalShadowEnabled()) return { ok: false, verdict: "DISABLED", reason: "operational-shadow-disabled" };
   if (hasIncompatibleWriteControl()) {
@@ -324,11 +337,97 @@ export async function runAuthenticatedOperationalShadowReview(): Promise<Operati
   }
 }
 
+let browserE2eCompleted = false;
+
+async function runOperationalShadowBrowserE2e(): Promise<OperationalShadowResult> {
+  if (!await authenticateOperationalShadowBrowserE2e()) {
+    return { ok: false, verdict: "UNAVAILABLE", reason: "founder-session-unavailable" };
+  }
+  if (!isSterlingOperationalShadowEnabled()) {
+    return { ok: false, verdict: "DISABLED", reason: "operational-shadow-disabled" };
+  }
+  const executionId = getSterlingOperationalShadowExecutionId();
+  const sourceCommit = process.env.VERCEL_GIT_COMMIT_SHA?.trim().toLowerCase() ?? "";
+  if (!executionId || !/^[a-f0-9]{40}$/.test(sourceCommit)) {
+    return { ok: false, verdict: "DISABLED", reason: "fixture-identity-unavailable" };
+  }
+  if (browserE2eCompleted) {
+    return { ok: false, verdict: "ALREADY_EXECUTED", reason: "execution-completed" };
+  }
+  const scopeHash = createHash("sha256")
+    .update(NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.join("\n"))
+    .digest("hex");
+  const lease = createSterlingRunLease({
+    mode: "semantic",
+    scopeVersion: `${SCOPE_VERSION}:${scopeHash}:${executionId}`,
+  });
+  const claim = await browserE2eLeaseStore.claim(lease);
+  if (claim !== "claimed") {
+    return { ok: false, verdict: "BUSY", reason: "lease-not-acquired" };
+  }
+  let stage = "client";
+  try {
+    const client = createOperationalShadowBrowserE2eClient();
+    stage = "assembly";
+    const assembly = await assembleSterlingTodayShadow({
+      client,
+      additionalIndexedThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+      liveRetrievalThreadAllowlist: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+      forcedLiveThreadIds: NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS,
+      includeUnindexedLiveMessages: true,
+      createGmailBatch: async () => createOperationalShadowBrowserE2eGmailBatch(),
+    });
+    stage = "semantic";
+    const completion = await executeSterlingTodaySemantic({
+      assembly,
+      apiKey: "synthetic-browser-e2e-key",
+      model: CONCIERGE_FOREGROUND_MODEL,
+      fetchImpl: operationalShadowBrowserE2eModelFetch,
+    });
+    if (!completion.proposal) throw new Error("semantic-proposal-unavailable");
+    stage = "sanitize";
+    const sanitized = buildSanitizedOperationalShadowResult({
+      assembly,
+      completion,
+      runId: lease.runId,
+      executionId,
+      sourceCommit,
+      leaseMetadataWrite: true,
+      browserSessionCache: false,
+    });
+    stage = "persist";
+    await persistCompletedOperationalShadowResult({
+      store: browserE2eResultStore,
+      result: sanitized.result,
+      executionId,
+      runId: lease.runId,
+      founderUserId: founderSessionSubjectId(),
+      sourceSha: sourceCommit,
+      sourceWatermark: assembly.requestWorkingSet.sourceWatermark,
+    });
+    stage = "lease-finish";
+    await browserE2eLeaseStore.finish(lease.runId, "completed", new Date().toISOString());
+    browserE2eCompleted = true;
+    return { ok: true, ...sanitized };
+  } catch (error) {
+    await browserE2eLeaseStore.finish(lease.runId, "failed", new Date().toISOString());
+    const detail = error instanceof Error
+      ? error.message.replace(/[^a-zA-Z0-9_.-]/g, "-").slice(0, 120)
+      : "unknown";
+    return { ok: false, verdict: "UNAVAILABLE", reason: `operational-shadow-e2e-failed-${stage}-${detail}` };
+  }
+}
+
 async function authenticatedStoredResultContext() {
   if (!isVerifiedOperationalShadowRuntime()) return null;
   const executionId = getSterlingOperationalShadowExecutionId();
   const sourceSha = process.env.VERCEL_GIT_COMMIT_SHA?.trim().toLowerCase() ?? "";
   if (!executionId || !/^[a-f0-9]{40}$/.test(sourceSha)) return null;
+  if (isOperationalShadowBrowserE2eRuntime()) {
+    if (!await authenticateOperationalShadowBrowserE2e()) return null;
+    return { executionId, sourceSha, founderUserId: founderSessionSubjectId(),
+      store: browserE2eResultStore };
+  }
   const auth = await getAuthenticatedGmailHistoryStores();
   if (!auth.ok) return null;
   const client = getSupabaseAdmin();

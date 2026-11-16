@@ -33,6 +33,8 @@ import {
   isVerifiedContinuumProductionShadowRuntime,
   isVerifiedContinuumProductionStagingRuntime,
 } from "@/lib/continuum/runtime-env";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e";
 
 /**
  * Next.js 16 Proxy — early network boundary for /executive-dashboard.
@@ -45,7 +47,8 @@ import {
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const productionShadow = isVerifiedContinuumProductionShadowRuntime();
+  const productionShadow = isVerifiedContinuumProductionShadowRuntime() ||
+    isOperationalShadowBrowserE2eRuntime();
   const productionStaging = isVerifiedContinuumProductionStagingRuntime() ||
     productionShadow;
 

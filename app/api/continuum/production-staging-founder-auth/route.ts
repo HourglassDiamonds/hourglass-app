@@ -9,6 +9,8 @@ import {
   isVerifiedContinuumProductionShadowRuntime,
   isVerifiedContinuumProductionStagingRuntime,
 } from "@/lib/continuum/runtime-env";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e";
 import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
 import { revokeDurableFounderSession } from "@/lib/executive-dashboard/founder-sessions";
 import { authenticateExecutiveDashboardPassword } from "@/lib/executive-dashboard/password-login";
@@ -24,7 +26,8 @@ function stagingRedirect(request: NextRequest, pathname: string): NextResponse {
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
-  const productionShadow = isVerifiedContinuumProductionShadowRuntime();
+  const productionShadow = isVerifiedContinuumProductionShadowRuntime() ||
+    isOperationalShadowBrowserE2eRuntime();
   if (!productionShadow && !isVerifiedContinuumProductionStagingRuntime()) {
     return new NextResponse("Not Found", { status: 404 });
   }

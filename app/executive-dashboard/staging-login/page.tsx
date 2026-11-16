@@ -11,6 +11,8 @@ import {
   isVerifiedContinuumProductionShadowRuntime,
   isVerifiedContinuumProductionStagingRuntime,
 } from "@/lib/continuum/runtime-env";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 
 export const metadata = {
@@ -23,7 +25,8 @@ export default async function ProductionStagingFounderLoginPage({
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
-  const productionShadow = isVerifiedContinuumProductionShadowRuntime();
+  const productionShadow = isVerifiedContinuumProductionShadowRuntime() ||
+    isOperationalShadowBrowserE2eRuntime();
   if (!productionShadow && !isVerifiedContinuumProductionStagingRuntime()) redirect("/");
   const destination = productionShadow
     ? PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH
