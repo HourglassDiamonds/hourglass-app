@@ -33,7 +33,6 @@ import {
   isVerifiedContinuumProductionShadowRuntime,
   isVerifiedContinuumProductionStagingRuntime,
 } from "@/lib/continuum/runtime-env";
-import { isSterlingOperationalShadowEnabled } from "@/lib/continuum/today-sterling/server-config";
 
 /**
  * Next.js 16 Proxy — early network boundary for /executive-dashboard.
@@ -46,15 +45,19 @@ import { isSterlingOperationalShadowEnabled } from "@/lib/continuum/today-sterli
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const productionShadow = isVerifiedContinuumProductionShadowRuntime();
   const productionStaging = isVerifiedContinuumProductionStagingRuntime() ||
-    isVerifiedContinuumProductionShadowRuntime();
+    productionShadow;
 
   if (productionStaging) {
     const stagingDecision = productionStagingRequestDecision({
       method: request.method,
       pathname,
       hasNextServerActionHeader: request.headers.has("next-action"),
-      allowOperationalShadowAction: isSterlingOperationalShadowEnabled(),
+      // Proxy only admits the narrow routes for a fully verified shadow
+      // runtime. The route handler independently requires the one-use runner
+      // flag before it can read Gmail, claim a lease, or invoke the model.
+      allowOperationalShadowAction: productionShadow,
     });
     if (!stagingDecision.allowed) {
       return new NextResponse("Not Found", {

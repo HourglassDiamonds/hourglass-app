@@ -106,6 +106,8 @@ describe("Production-backed staging request boundary", () => {
 
   it("places the boundary before authenticated dashboard routing", () => {
     const proxy = readFileSync(resolve(process.cwd(), "proxy.ts"), "utf8");
+    const runner = readFileSync(resolve(process.cwd(),
+      "lib/continuum/today-sterling/operational-shadow-review.ts"), "utf8");
     const boundary = proxy.indexOf("productionStagingRequestDecision");
     const dashboard = proxy.indexOf("isExecutiveDashboardPath(pathname)");
     assert.ok(boundary >= 0 && dashboard > boundary);
@@ -113,7 +115,10 @@ describe("Production-backed staging request boundary", () => {
     assert.match(proxy, /status:\s*404/);
     assert.match(proxy, /PRODUCTION_STAGING_LOGIN_PATH/);
     assert.match(proxy, /PRODUCTION_STAGING_CONTINUUM_PATH/);
-    assert.match(proxy, /isSterlingOperationalShadowEnabled/);
+    assert.match(proxy, /const productionShadow = isVerifiedContinuumProductionShadowRuntime\(\)/);
+    assert.match(proxy, /allowOperationalShadowAction:\s*productionShadow/);
+    assert.match(runner,
+      /if \(!isSterlingOperationalShadowEnabled\(\)\) return \{ ok: false, verdict: "DISABLED", reason: "operational-shadow-disabled" \}/);
   });
 
   it("pins successful and existing-session redirects to the verified runtime destination", () => {
