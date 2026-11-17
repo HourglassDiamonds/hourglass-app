@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, it } from "node:test";
 import {
+  INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE,
+  INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE,
+  isOperationalShadowDispatchProbe,
   PRODUCTION_STAGING_AUTH_ROUTE,
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
@@ -65,6 +68,25 @@ describe("Production-backed staging request boundary", () => {
     }
     assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE, false, false).allowed, false);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, false).allowed, false);
+    assert.equal(decide("POST", INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE, false, true).allowed, false);
+    assert.equal(decide("GET", INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, false);
+  });
+
+  it("admits only the exact non-executing dispatch probe before founder authentication", () => {
+    const probe = (overrides: Partial<Parameters<typeof isOperationalShadowDispatchProbe>[0]> = {}) =>
+      isOperationalShadowDispatchProbe({
+        method: "POST",
+        pathname: PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+        search: "?dispatch-probe=1",
+        hasNextServerActionHeader: false,
+        ...overrides,
+      });
+    assert.equal(probe(), true);
+    assert.equal(probe({ method: "GET" }), false);
+    assert.equal(probe({ pathname: PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE }), false);
+    assert.equal(probe({ search: "" }), false);
+    assert.equal(probe({ search: "?dispatch-probe=1&extra=1" }), false);
+    assert.equal(probe({ hasNextServerActionHeader: true }), false);
   });
 
   it("permits public reads and the single dashboard read surface", () => {

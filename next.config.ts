@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 import { CONVERSATIONS_PUBLIC_DISCOVERY_ENABLED } from "./lib/conversations/public-discovery";
 import { PUBLIC_SECURITY_HEADERS } from "./lib/security/http-headers";
+import {
+  INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE,
+  INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+} from "./lib/continuum/production-staging-access";
 
 const pdfjsWorkerIncludes = [
   "./node_modules/pdfjs-dist/legacy/build/pdf.worker.mjs",
@@ -114,6 +120,22 @@ const nextConfig: NextConfig = {
     }
 
     return redirects;
+  },
+  async rewrites() {
+    return {
+      beforeFiles: [
+        {
+          source: PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+          destination: INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE,
+        },
+        {
+          source: PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
+          destination: INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE,
+        },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
   },
 };
 

@@ -10,6 +10,38 @@ export const PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE =
   "/executive-dashboard/api/continuum/operational-shadow/run" as const;
 export const PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE =
   "/executive-dashboard/api/continuum/operational-shadow/result" as const;
+export const INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE =
+  "/api/continuum/internal/operational-shadow/run" as const;
+export const INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE =
+  "/api/continuum/internal/operational-shadow/result" as const;
+export const OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER =
+  "x-continuum-operational-shadow-source" as const;
+export const OPERATIONAL_SHADOW_DISPATCH_PROBE_SEARCH =
+  "?dispatch-probe=1" as const;
+
+export function isInternalOperationalShadowPath(pathname: string): boolean {
+  return pathname === INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE ||
+    pathname === INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE;
+}
+
+export function isOperationalShadowRewriteRequest(
+  headers: Headers | { get(name: string): string | null },
+  expectedSource: string,
+): boolean {
+  return headers.get(OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER) === expectedSource;
+}
+
+export function isOperationalShadowDispatchProbe(input: {
+  method: string;
+  pathname: string;
+  search: string;
+  hasNextServerActionHeader: boolean;
+}): boolean {
+  return input.method === "POST" &&
+    input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE &&
+    input.search === OPERATIONAL_SHADOW_DISPATCH_PROBE_SEARCH &&
+    !input.hasNextServerActionHeader;
+}
 
 export type ProductionStagingRequestDecision =
   | { allowed: true }

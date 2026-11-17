@@ -24,9 +24,14 @@ import {
 } from "@/lib/executive-dashboard/access";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import {
+  isInternalOperationalShadowPath,
+  isOperationalShadowDispatchProbe,
+  OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER,
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
+  PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
   productionStagingRequestDecision,
 } from "@/lib/continuum/production-staging-access";
 import {
@@ -47,6 +52,12 @@ import { isOperationalShadowBrowserE2eRuntime } from
  */
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (isInternalOperationalShadowPath(pathname)) {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: { "Cache-Control": "private, no-store" },
+    });
+  }
   const productionShadow = isVerifiedContinuumProductionShadowRuntime() ||
     isOperationalShadowBrowserE2eRuntime();
   const productionStaging = isVerifiedContinuumProductionStagingRuntime() ||
@@ -73,6 +84,19 @@ export async function proxy(request: NextRequest) {
       applyExecutiveDashboardHeaders(response);
       return response;
     }
+    if (productionShadow && isOperationalShadowDispatchProbe({
+      method: request.method,
+      pathname,
+      search: request.nextUrl.search,
+      hasNextServerActionHeader: request.headers.has("next-action"),
+    })) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.delete(OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER);
+      requestHeaders.set(OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER, pathname);
+      const response = NextResponse.next({ request: { headers: requestHeaders } });
+      applyExecutiveDashboardHeaders(response);
+      return response;
+    }
   }
 
   if (!isExecutiveDashboardPath(pathname)) {
@@ -87,6 +111,14 @@ export async function proxy(request: NextRequest) {
 
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(EXECUTIVE_DASHBOARD_PATHNAME_HEADER, pathname);
+  const shadowRewriteSource = pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE ||
+      pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE
+    ? pathname
+    : null;
+  requestHeaders.delete(OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER);
+  if (shadowRewriteSource) {
+    requestHeaders.set(OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER, shadowRewriteSource);
+  }
 
   if (isPair) {
     const response = NextResponse.next({
@@ -158,7 +190,9 @@ export async function proxy(request: NextRequest) {
     return redirectResponse;
   }
 
-  const response = NextResponse.next();
+  const response = shadowRewriteSource
+    ? NextResponse.next({ request: { headers: requestHeaders } })
+    : NextResponse.next();
   applyExecutiveDashboardHeaders(response);
   return response;
 }
