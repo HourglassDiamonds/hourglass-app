@@ -128,11 +128,12 @@ export async function proxy(request: NextRequest) {
     return response;
   }
 
-  if (isLogin || isConcierge || isSecurity) {
+  if (isLogin || isConcierge || isSecurity || shadowRewriteSource) {
     const session = await readExecutiveDashboardSession(cookieValue);
     if (!session.ok && !isLogin) {
       if (productionStaging && (pathname === PRODUCTION_STAGING_CONTINUUM_PATH ||
-        pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH)) {
+        pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH ||
+        shadowRewriteSource !== null)) {
         const loginUrl = request.nextUrl.clone();
         loginUrl.pathname = PRODUCTION_STAGING_LOGIN_PATH;
         loginUrl.search = "";

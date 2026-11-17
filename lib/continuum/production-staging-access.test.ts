@@ -139,6 +139,13 @@ describe("Production-backed staging request boundary", () => {
     assert.match(proxy, /PRODUCTION_STAGING_CONTINUUM_PATH/);
     assert.match(proxy, /const productionShadow = isVerifiedContinuumProductionShadowRuntime\(\)/);
     assert.match(proxy, /allowOperationalShadowAction:\s*productionShadow/);
+    assert.match(proxy,
+      /if \(isLogin \|\| isConcierge \|\| isSecurity \|\| shadowRewriteSource\)/);
+    assert.match(proxy,
+      /pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH \|\|[\s\S]*shadowRewriteSource !== null/);
+    assert.ok(proxy.indexOf("isLogin || isConcierge || isSecurity || shadowRewriteSource") <
+      proxy.indexOf("const decision = await getExecutiveDashboardAccessDecision"),
+    "authenticated shadow rewrites must bypass the public-Production hidden-dashboard branch");
     assert.match(runner,
       /if \(!isSterlingOperationalShadowEnabled\(\)\) return \{ ok: false, verdict: "DISABLED", reason: "operational-shadow-disabled" \}/);
   });
