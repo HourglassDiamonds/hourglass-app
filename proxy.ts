@@ -25,6 +25,7 @@ import {
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import {
   isInternalOperationalShadowPath,
+  isAllowedProductionShadowFounderHostPath,
   isOperationalShadowDispatchProbe,
   OPERATIONAL_SHADOW_REWRITE_SOURCE_HEADER,
   PRODUCTION_STAGING_CONTINUUM_PATH,
@@ -32,6 +33,7 @@ import {
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+  PRODUCTION_SHADOW_FOUNDER_HOST,
   productionStagingRequestDecision,
 } from "@/lib/continuum/production-staging-access";
 import {
@@ -60,6 +62,14 @@ export async function proxy(request: NextRequest) {
   }
   const productionShadow = isVerifiedContinuumProductionShadowRuntime() ||
     isOperationalShadowBrowserE2eRuntime();
+  const productionShadowFounderHost =
+    request.nextUrl.hostname.toLowerCase() === PRODUCTION_SHADOW_FOUNDER_HOST;
+  if (productionShadowFounderHost &&
+      (!productionShadow || !isAllowedProductionShadowFounderHostPath(pathname))) {
+    const response = new NextResponse("Not Found", { status: 404 });
+    applyExecutiveDashboardHeaders(response);
+    return response;
+  }
   const productionStaging = isVerifiedContinuumProductionStagingRuntime() ||
     productionShadow;
 

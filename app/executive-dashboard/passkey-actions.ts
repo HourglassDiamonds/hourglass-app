@@ -37,7 +37,7 @@ export type PasskeyAuthBeginState =
   | { ok: false; error: string };
 
 export type PasskeyAuthCompleteState =
-  | { ok: true }
+  | { ok: true; destination?: string }
   | { ok: false; error: string };
 
 async function clientIp(): Promise<string> {
@@ -105,6 +105,7 @@ export async function beginPasskeyAuthentication(): Promise<PasskeyAuthBeginStat
 export async function completePasskeyAuthentication(
   response: unknown,
   routing?: { next?: string | null; viewport?: string | null },
+  behavior?: { returnDestination?: boolean },
 ): Promise<PasskeyAuthCompleteState> {
   const ip = await clientIp();
   if (!(await checkPasskeyVerifyRateLimit(ip))) {
@@ -161,10 +162,10 @@ export async function completePasskeyAuthentication(
     return { ok: false, error: EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR };
   }
   logPasskeyOperation({ op: "auth.verify", ok: true, reason: "ok" });
-  redirect(
-    resolveFounderLoginDestination({
-      next: routing?.next,
-      viewport: routing?.viewport,
-    }),
-  );
+  const destination = resolveFounderLoginDestination({
+    next: routing?.next,
+    viewport: routing?.viewport,
+  });
+  if (behavior?.returnDestination) return { ok: true, destination };
+  redirect(destination);
 }

@@ -36,6 +36,7 @@ import {
   CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
   CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN,
   CONTINUUM_PRODUCTION_WEBAUTHN_RP_ID,
+  CONTINUUM_PRODUCTION_SHADOW_WEBAUTHN_ORIGIN,
   getContinuumWebAuthnRelyingParty,
   isWebAuthnRpIdValidForOrigin,
 } from "./config";
@@ -328,6 +329,20 @@ describe("founder passkeys", () => {
         assert.equal(rp.rpID.includes("vercel.app"), false);
         assert.equal(rp.origin, "https://www.hourglassdiamonds.com");
       }
+    });
+  });
+
+  it("uses the stable hourglassdiamonds.com shadow origin when the shadow switch is on", () => {
+    withEnv({
+      VERCEL_ENV: "production",
+      CONTINUUM_PRODUCTION_SHADOW_ENABLED: "true",
+    }, () => {
+      const rp = getContinuumWebAuthnRelyingParty();
+      assert.deepEqual(rp, {
+        ok: true,
+        origin: CONTINUUM_PRODUCTION_SHADOW_WEBAUTHN_ORIGIN,
+        rpID: CONTINUUM_PRODUCTION_WEBAUTHN_RP_ID,
+      });
     });
   });
 
@@ -712,6 +727,7 @@ describe("founder passkeys", () => {
   it("keeps production wiring on SimpleWebAuthn and the existing session", () => {
     const cryptoSrc = read("lib/executive-dashboard/passkeys/crypto.ts");
     const actions = read("app/executive-dashboard/actions.ts");
+    const passwordLogin = read("lib/executive-dashboard/password-login.ts");
     const passkeyActions = read("app/executive-dashboard/passkey-actions.ts");
     const login = read("app/executive-dashboard/login/page.tsx");
     const button = read("app/executive-dashboard/passkey-login-button.tsx");
@@ -728,7 +744,8 @@ describe("founder passkeys", () => {
     const sql = read("lib/supabase/continuum-founder-passkeys-schema.sql");
     assert.match(sql, /continuum_founder_webauthn_consume_challenge/);
     assert.match(actions, /loginExecutiveDashboard/);
-    assert.match(actions, /issueExecutiveDashboardSession/);
+    assert.match(actions, /authenticateExecutiveDashboardPassword/);
+    assert.match(passwordLogin, /issueExecutiveDashboardSession/);
     assert.match(passkeyActions, /issueExecutiveDashboardSession/);
     assert.match(passkeyActions, /EXECUTIVE_DASHBOARD_PASSKEY_AUTH_ERROR/);
     assert.match(button, /Continue with passkey/);
@@ -773,6 +790,10 @@ describe("founder passkeys", () => {
     const apiFiles = walk(join(ROOT, "app/api"));
     for (const file of apiFiles) {
       const source = readFileSync(file, "utf8");
+      if (file.includes("production-shadow-founder-auth")) {
+        assert.match(source, /isVerifiedContinuumProductionShadowRuntime/);
+        continue;
+      }
       assert.doesNotMatch(source, /founder-passkey|beginPasskeyAuthentication/);
     }
     const server = read("lib/executive-dashboard/passkeys/server.ts");

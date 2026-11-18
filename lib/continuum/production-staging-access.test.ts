@@ -6,12 +6,15 @@ import {
   INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE,
   INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE,
   isOperationalShadowDispatchProbe,
+  isAllowedProductionShadowFounderHostPath,
   PRODUCTION_STAGING_AUTH_ROUTE,
   PRODUCTION_STAGING_CONTINUUM_PATH,
   PRODUCTION_STAGING_LOGIN_PATH,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
   PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+  PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE,
+  PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE,
   productionStagingRequestDecision,
 } from "./production-staging-access";
 import { EXECUTIVE_DASHBOARD_SESSION_PATH } from "@/lib/executive-dashboard/session";
@@ -59,6 +62,8 @@ describe("Production-backed staging request boundary", () => {
     assert.equal(PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE.startsWith(`${EXECUTIVE_DASHBOARD_SESSION_PATH}/`), true);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, false, true).allowed, true);
     assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE, false, true).allowed, true);
+    assert.equal(decide("POST", PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE, false, true).allowed, true);
+    assert.equal(decide("POST", PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE, false, true).allowed, true);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);
     assert.equal(decide("DELETE", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);
     for (const path of [PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
@@ -70,6 +75,20 @@ describe("Production-backed staging request boundary", () => {
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, false).allowed, false);
     assert.equal(decide("POST", INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE, false, true).allowed, false);
     assert.equal(decide("GET", INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, false);
+  });
+
+  it("limits the stable founder shadow hostname to authentication and the fixed review", () => {
+    for (const path of [
+      PRODUCTION_STAGING_LOGIN_PATH,
+      PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE,
+      PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE,
+      PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH,
+      PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE,
+      PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE,
+    ]) assert.equal(isAllowedProductionShadowFounderHostPath(path), true);
+    for (const path of ["/", "/diamond-studio", "/executive-dashboard"]) {
+      assert.equal(isAllowedProductionShadowFounderHostPath(path), false);
+    }
   });
 
   it("admits only the exact non-executing dispatch probe before founder authentication", () => {
@@ -138,6 +157,8 @@ describe("Production-backed staging request boundary", () => {
     assert.match(proxy, /PRODUCTION_STAGING_LOGIN_PATH/);
     assert.match(proxy, /PRODUCTION_STAGING_CONTINUUM_PATH/);
     assert.match(proxy, /const productionShadow = isVerifiedContinuumProductionShadowRuntime\(\)/);
+    assert.match(proxy, /PRODUCTION_SHADOW_FOUNDER_HOST/);
+    assert.match(proxy, /isAllowedProductionShadowFounderHostPath/);
     assert.match(proxy, /allowOperationalShadowAction:\s*productionShadow/);
     assert.match(proxy,
       /if \(isLogin \|\| isConcierge \|\| isSecurity \|\| shadowRewriteSource\)/);

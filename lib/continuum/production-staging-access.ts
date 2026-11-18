@@ -2,6 +2,12 @@ export const PRODUCTION_STAGING_LOGIN_PATH =
   "/executive-dashboard/staging-login" as const;
 export const PRODUCTION_STAGING_AUTH_ROUTE =
   "/api/continuum/production-staging-founder-auth" as const;
+export const PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE =
+  "/api/continuum/production-shadow-founder-auth/passkey/begin" as const;
+export const PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE =
+  "/api/continuum/production-shadow-founder-auth/passkey/complete" as const;
+export const PRODUCTION_SHADOW_FOUNDER_HOST =
+  "sterling-shadow.hourglassdiamonds.com" as const;
 export const PRODUCTION_STAGING_CONTINUUM_PATH =
   "/executive-dashboard/concierge/staging-read-only" as const;
 export const PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH =
@@ -22,6 +28,17 @@ export const OPERATIONAL_SHADOW_DISPATCH_PROBE_SEARCH =
 export function isInternalOperationalShadowPath(pathname: string): boolean {
   return pathname === INTERNAL_OPERATIONAL_SHADOW_RUN_ROUTE ||
     pathname === INTERNAL_OPERATIONAL_SHADOW_RESULT_ROUTE;
+}
+
+export function isAllowedProductionShadowFounderHostPath(
+  pathname: string,
+): boolean {
+  return pathname === PRODUCTION_STAGING_LOGIN_PATH ||
+    pathname === PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE ||
+    pathname === PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE ||
+    pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH ||
+    pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE ||
+    pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE;
 }
 
 export function isOperationalShadowRewriteRequest(
@@ -68,6 +85,9 @@ export function productionStagingRequestDecision(input: {
 
   if (method === "POST") {
     return input.pathname === PRODUCTION_STAGING_AUTH_ROUTE ||
+      (operationalShadowEnabled &&
+        (input.pathname === PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE ||
+          input.pathname === PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE)) ||
       (operationalShadowEnabled && input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE)
       ? { allowed: true }
       : { allowed: false, reason: "method-denied" };

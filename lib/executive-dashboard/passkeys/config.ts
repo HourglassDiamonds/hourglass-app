@@ -21,6 +21,8 @@
 export const CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN =
   "https://www.hourglassdiamonds.com";
 export const CONTINUUM_PRODUCTION_WEBAUTHN_RP_ID = "hourglassdiamonds.com";
+export const CONTINUUM_PRODUCTION_SHADOW_WEBAUTHN_ORIGIN =
+  "https://sterling-shadow.hourglassdiamonds.com";
 
 export const CONTINUUM_WEBAUTHN_RP_NAME = "Continuum";
 export const CONTINUUM_WEBAUTHN_USER_NAME = "continuum-founder";
@@ -88,17 +90,21 @@ function isVercelAppHost(hostname: string): boolean {
  */
 export function getContinuumWebAuthnRelyingParty(): ContinuumWebAuthnRelyingParty {
   if (process.env.VERCEL_ENV === "production") {
+    const productionOrigin = process.env.CONTINUUM_PRODUCTION_SHADOW_ENABLED
+        ?.trim().toLowerCase() === "true"
+      ? CONTINUUM_PRODUCTION_SHADOW_WEBAUTHN_ORIGIN
+      : CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN;
     if (
       !isWebAuthnRpIdValidForOrigin(
         CONTINUUM_PRODUCTION_WEBAUTHN_RP_ID,
-        CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN,
+        productionOrigin,
       )
     ) {
       return { ok: false, reason: "invalid-rp" };
     }
     return {
       ok: true,
-      origin: CONTINUUM_PRODUCTION_WEBAUTHN_ORIGIN,
+      origin: productionOrigin,
       rpID: CONTINUUM_PRODUCTION_WEBAUTHN_RP_ID,
     };
   }

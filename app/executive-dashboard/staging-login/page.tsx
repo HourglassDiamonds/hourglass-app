@@ -14,6 +14,7 @@ import {
 import { isOperationalShadowBrowserE2eRuntime } from
   "@/lib/continuum/today-sterling/operational-shadow-browser-e2e";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
+import { ShadowPasskeyLoginButton } from "./shadow-passkey-login-button";
 
 export const metadata = {
   title: "Founder staging sign in",
@@ -52,7 +53,7 @@ export default async function ProductionStagingFounderLoginPage({
             ? "This staged Production-target deployment permits one fixed-scope native Gmail shadow review. Business writes, Today publication, OAuth reconnect, and outbound activity remain blocked."
             : "This deployment permits durable founder authentication only. Server Actions, Gmail, Today recomputation, Concierge writes, and outbound activity are blocked."}
         </p>
-        <form
+        {productionShadow ? <ShadowPasskeyLoginButton /> : <form
           action={PRODUCTION_STAGING_AUTH_ROUTE}
           method="post"
           className="mt-10 space-y-5"
@@ -91,7 +92,7 @@ export default async function ProductionStagingFounderLoginPage({
           >
             Sign in
           </button>
-        </form>
+        </form>}
       </div>
     </main>
   );
