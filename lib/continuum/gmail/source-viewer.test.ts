@@ -177,6 +177,45 @@ describe("read-only source viewer fetch", () => {
     assert.equal(recovered.metrics.threadFetches, 1);
   });
 
+  it("paces the batch and retries a transient provider rate limit within the same deadline", async () => {
+    let calls = 0;
+    const api = {
+      async getThread() {
+        calls += 1;
+        if (calls === 1) throw new GmailHttpError(429, "rateLimitExceeded", "0");
+        return thread();
+      },
+    } as unknown as GmailApi;
+    const batch = createPreparedSourceViewerBatch(api, 1_000, Date.now, {
+      minIntervalMs: 0,
+      maxRetries: 1,
+      sleep: async () => undefined,
+    });
+    const result = await batch.fetchCompleteThread!({ threadId: THREAD, indexed: [] });
+    assert.equal(result.ok, true);
+    assert.equal(calls, 2);
+    assert.equal(batch.metrics.threadFetches, 2);
+  });
+
+  it("does not outwait the fixed batch deadline when Retry-After cannot fit", async () => {
+    let calls = 0;
+    const api = {
+      async getThread() {
+        calls += 1;
+        throw new GmailHttpError(429, "rateLimitExceeded", "60");
+      },
+    } as unknown as GmailApi;
+    const batch = createPreparedSourceViewerBatch(api, 50, Date.now, {
+      minIntervalMs: 0,
+      maxRetries: 2,
+      sleep: async () => undefined,
+    });
+    const result = await batch.fetchCompleteThread!({ threadId: THREAD, indexed: [] });
+    assert.equal(result.ok, false);
+    if (!result.ok) assert.equal(result.safeErrorCode, "rate_limited");
+    assert.equal(calls, 1);
+  });
+
   it("fails closed without a founder session and does not list mail", async () => {
     const api = new MockGmailApi();
     const result = await runSourceViewerFetch({

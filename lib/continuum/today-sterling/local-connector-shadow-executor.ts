@@ -166,7 +166,10 @@ export async function runConnectorShadowChild(input: {
   onStage: (event: ChildStageEvent) => Promise<void>;
 }): Promise<ChildResult> {
   const projectRoot = process.cwd();
-  const tsxCli = resolve(projectRoot, "node_modules/tsx/dist/cli.mjs");
+  const configuredTsxCli = process.env.CONTINUUM_STERLING_LOCAL_TSX_CLI?.trim();
+  const tsxCli = configuredTsxCli
+    ? resolve(configuredTsxCli)
+    : resolve(projectRoot, "node_modules/tsx/dist/cli.mjs");
   const script = resolve(projectRoot, "scripts/continuum-sterling-today-shadow.ts");
   const evidence = await readFile(input.evidencePath);
   const nodeOptions = [process.env.NODE_OPTIONS?.trim(), "--conditions=react-server"].filter(Boolean).join(" ");

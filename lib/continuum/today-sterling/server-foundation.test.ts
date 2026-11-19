@@ -5,6 +5,8 @@ import { describe, it } from "node:test";
 import type { SourceCommunicationEvent } from "@/lib/continuum/source-events/types";
 import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
+  establishedScopeProjectIdentifiers,
+  establishedScopeProjectThreadIds,
   isDurablyScopedFounderCorrection,
   scopeDefinition,
   scopeMatchesIdentifierText,
@@ -77,8 +79,33 @@ describe("Sterling server-owned acceptance scope", () => {
     assert.equal(scopeMatchesIdentifierText(scopeDefinition("audrey")!, "Audrey"), false);
     assert.equal(scopeMatchesIdentifierText(scopeDefinition("audrey")!, "CAD C026401"), true);
     assert.equal(scopeDefinition("SARAH/C026143")?.key, "sarah");
+    assert.deepEqual(scopeDefinition("sarah")?.exactThreadIds,
+      ["1a0881b53067a9e6", "1a1c7b0f7f034115"]);
     assert.deepEqual(scopeDefinition("zane")?.exactThreadIds,
       ["1a1212396a8ac111", "1a13660ae3fdb7ac", "1a13cc2c1f3d5951"]);
+    assert.deepEqual(scopeDefinition("zane")?.exactProjectIds,
+      ["12359010-1e95-4296-aa44-a7de7e70aa11"]);
+  });
+
+  it("exercises only established exact thread-to-project relationships", () => {
+    const sarahProject = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1";
+    const zaneProject = "12359010-1e95-4296-aa44-a7de7e70aa11";
+    const established = establishedScopeProjectThreadIds(new Set([sarahProject, zaneProject]));
+    assert.deepEqual(established.get(sarahProject), ["1a0881b53067a9e6", "1a1c7b0f7f034115"]);
+    assert.deepEqual(established.get(zaneProject),
+      ["1a1212396a8ac111", "1a13660ae3fdb7ac", "1a13cc2c1f3d5951"]);
+    assert.equal([...established.values()].flat().includes("1a135cb91aa46463"), false);
+    assert.equal([...established.values()].flat().includes("1a17f4a8f371d911"), false);
+    assert.equal([...established.values()].flat().includes("1a1847d9ad49e7a4"), false);
+  });
+
+  it("exposes reviewed aliases only for one available exact Project", () => {
+    const sarahProject = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1";
+    const zaneProject = "12359010-1e95-4296-aa44-a7de7e70aa11";
+    const aliases = establishedScopeProjectIdentifiers(new Set([sarahProject, zaneProject]));
+    assert.deepEqual(aliases.get(sarahProject), ["C026143"]);
+    assert.deepEqual(aliases.get(zaneProject), ["C026732"]);
+    assert.equal(aliases.size, 2);
   });
 
   it("requires durable founder-correction identity rather than a matching name", () => {

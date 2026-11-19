@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   InMemoryOperationalShadowResultStore,
   prepareOperationalShadowResultRecord,
+  verifyOperationalShadowResultRecord,
 } from "./operational-shadow-result-store";
 import { persistCompletedOperationalShadowResult } from "./operational-shadow-review";
 
@@ -47,6 +48,22 @@ describe("durable operational shadow result", () => {
     assert.equal(await store.retrieve({ executionId,
       founderUserId: "82000000-0000-4000-8000-000000000099", sourceSha }), null);
     assert.equal(await store.retrieve({ executionId, founderUserId, sourceSha: "d".repeat(40) }), null);
+  });
+
+  it("treats Z and +00:00 as the same stored instant without weakening integrity", () => {
+    const prepared = prepareOperationalShadowResultRecord({
+      executionId, runId, founderUserId, sourceSha, sourceWatermark: "watermark-1",
+      sanitizedResult: result(), now: new Date("2026-11-12T20:30:00.000Z"),
+    });
+    const databaseShaped = {
+      ...prepared,
+      createdAt: prepared.createdAt.replace(/Z$/, "+00:00"),
+      expiresAt: prepared.expiresAt.replace(/Z$/, "+00:00"),
+    };
+    assert.equal(verifyOperationalShadowResultRecord(databaseShaped), true);
+    assert.equal(verifyOperationalShadowResultRecord({
+      ...databaseShaped, resultSha256: "0".repeat(64),
+    }), false);
   });
 
   it("never labels interrupted persistence successful", async () => {

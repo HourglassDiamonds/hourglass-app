@@ -11,6 +11,8 @@ describe("bounded operational shadow review", () => {
   const proxy = readFileSync("proxy.ts", "utf8");
   const page = readFileSync("app/executive-dashboard/concierge/sterling-today/operational-review/page.tsx", "utf8");
   const browserE2e = readFileSync("lib/continuum/today-sterling/operational-shadow-browser-e2e.ts", "utf8");
+  const browserE2eRuntime = readFileSync(
+    "lib/continuum/today-sterling/operational-shadow-browser-e2e-runtime.ts", "utf8");
 
   it("pins exactly the reviewed 23 threads and accepts no caller-owned scope", () => {
     assert.equal(NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.length, 23);
@@ -73,8 +75,9 @@ describe("bounded operational shadow review", () => {
   });
 
   it("keeps the production-build browser fixture local and below real handlers", () => {
-    assert.match(browserE2e, /process\.env\.NODE_ENV === "production"/);
-    assert.match(browserE2e, /process\.env\.VERCEL !== "1"/);
+    assert.match(browserE2eRuntime, /process\.env\.NODE_ENV === "production"/);
+    assert.match(browserE2eRuntime, /process\.env\.VERCEL !== "1"/);
+    assert.match(browserE2e, /operational-shadow-browser-e2e-runtime/);
     assert.match(runtime, /assembleSterlingTodayShadow/);
     assert.match(runtime, /executeSterlingTodaySemantic/);
     assert.match(runtime, /persistCompletedOperationalShadowResult/);

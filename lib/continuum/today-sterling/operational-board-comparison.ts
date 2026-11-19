@@ -19,6 +19,8 @@ export type OperationalBoardIdentity = {
 };
 
 export type ManualObligationAuditRow = OperationalBoardIdentity & {
+  /** Date-only founder audit snapshot; later updates are not retroactive evidence. */
+  auditAsOf?: string;
   label: string;
   material: boolean;
   disposition: OperationalBoardDisposition;
@@ -33,6 +35,9 @@ export type ShadowBoardAuditRow = OperationalBoardIdentity & {
   owner: OperationalBoardOwner;
   lifecycleStage: string | null;
   openJobIds: readonly string[];
+  evidenceState?: "complete" | "incomplete";
+  incompleteThreadIds?: readonly string[];
+  decisionReason?: "evidence_incomplete" | "unsupported_founder_action" | "model_classification";
 };
 
 export type OperationalBoardMismatch = {

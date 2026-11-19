@@ -78,6 +78,8 @@ import {
 import {
   STERLING_TODAY_ACCEPTANCE_SCOPE,
   acceptanceIdentifiers,
+  establishedScopeProjectIdentifiers,
+  establishedScopeProjectThreadIds,
   isDurablyScopedFounderCorrection,
   scopeDefinition,
   scopeMatchesIdentifierText,
@@ -490,7 +492,14 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
   );
 
   const projectEvidenceThreads = await loadSterlingProjectThreadIds(input.client as never, portfolio.projects);
-  const projectThreadIds = projectEvidenceThreads.trustedByProject;
+  const availableProjectIds = new Set(portfolio.projects.map((project) => project.projectId));
+  const projectThreadIds = new Map(projectEvidenceThreads.trustedByProject);
+  for (const [projectId, threadIds] of establishedScopeProjectThreadIds(
+    availableProjectIds,
+  )) {
+    projectThreadIds.set(projectId, [...new Set([...(projectThreadIds.get(projectId) ?? []), ...threadIds])]);
+  }
+  const reviewedProjectIdentifiers = establishedScopeProjectIdentifiers(availableProjectIds);
   const trustedProjectThreads = [...new Set([...projectThreadIds.values()].flat())];
   const activeProjectlessJobs = portfolio.jobs.filter((job) =>
     job.projectId === null && (job.state === "open" || job.state === "snoozed") && job.associatedPersonId);
@@ -546,6 +555,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     },
     previousToday: portfolio.previousToday,
     projectThreadIds,
+    projectIdentifiers: reviewedProjectIdentifiers,
   });
   const requiredLiveThreadIds = collectSterlingRequiredLiveThreadIds(preliminaryWorkingSet);
   const targetDefinitionForPlanning = input.targetCase ? scopeDefinition(input.targetCase) : null;
@@ -754,6 +764,7 @@ export async function assembleSterlingTodayShadow(input: AssembleInput): Promise
     },
     previousToday: portfolio.previousToday,
     projectThreadIds,
+    projectIdentifiers: reviewedProjectIdentifiers,
   });
   const completeness = evaluateSterlingEvidenceCompleteness({ workingSet, threadOutcomes: liveThreadOutcomes });
   const coverage = scopeCoverage(workingSet, canonicalProjectIdsByKey);

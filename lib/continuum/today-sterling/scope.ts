@@ -22,7 +22,8 @@ export type SterlingTodayScopeDefinition = {
 export const STERLING_TODAY_ACCEPTANCE_SCOPE: readonly SterlingTodayScopeDefinition[] = [
   { key: "abbey", publicId: "ABBEY/C026137", identifiers: ["C026137"], exactLabels: ["Abbey"] },
   { key: "sarah", publicId: "SARAH/C026143", identifiers: ["C026143"], exactLabels: ["Sarah"],
-    exactThreadIds: ["1a0881b53067a9e6"], exactProjectIds: ["18e9ef2b-5b22-453e-8be8-e54dab0d86b1"] },
+    exactThreadIds: ["1a0881b53067a9e6", "1a1c7b0f7f034115"],
+    exactProjectIds: ["18e9ef2b-5b22-453e-8be8-e54dab0d86b1"] },
   { key: "nathan", publicId: "NATHAN/C026176", identifiers: ["C026176"], exactLabels: ["Nathan", "Nate"] },
   { key: "alex", publicId: "ALEX/C026510", identifiers: ["C026510"], exactLabels: ["Alex"] },
   { key: "madi", publicId: "MADI/C026000/C017756", identifiers: ["C026000", "C017756"], exactLabels: ["Madi Rutledge"] },
@@ -35,6 +36,7 @@ export const STERLING_TODAY_ACCEPTANCE_SCOPE: readonly SterlingTodayScopeDefinit
     exactThreadIds: ["1a0d00fedde6906a", "1a0245ca8960e3ea"] },
   { key: "zane", publicId: "ZANE/C026732", identifiers: ["C026732"], exactLabels: ["Zane Kennedy"],
     exactThreadIds: ["1a1212396a8ac111", "1a13660ae3fdb7ac", "1a13cc2c1f3d5951"],
+    exactProjectIds: ["12359010-1e95-4296-aa44-a7de7e70aa11"],
     exactPersonIds: ["0a405703-0f30-4b1e-9a7a-4d0e001fb101"],
     exactJobIds: ["9802f822-117d-4340-9334-e6c84834d77a"] },
   { key: "hyrumLower", publicId: "HYRUM-LOWER/INQUIRY", identifiers: [], exactLabels: ["Hyrum Lower"],
@@ -128,4 +130,39 @@ export function acceptanceIdentifiers(): string[] {
 
 export function acceptanceThreadIds(): string[] {
   return [...new Set(STERLING_TODAY_ACCEPTANCE_SCOPE.flatMap((row) => [...(row.exactThreadIds ?? [])]))];
+}
+
+/**
+ * Returns only server-owned thread→Project pairs that were already reviewed as
+ * exact on both sides. Ambiguous or multi-project scope entries are excluded.
+ */
+export function establishedScopeProjectThreadIds(
+  availableProjectIds: ReadonlySet<string>,
+): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  for (const definition of STERLING_TODAY_ACCEPTANCE_SCOPE) {
+    const projectIds = definition.exactProjectIds ?? [];
+    const threadIds = definition.exactThreadIds ?? [];
+    if (projectIds.length !== 1 || threadIds.length === 0 || !availableProjectIds.has(projectIds[0]!)) continue;
+    result.set(projectIds[0]!, [...new Set(threadIds)]);
+  }
+  return result;
+}
+
+/**
+ * Returns reviewed operational aliases for a single exact canonical Project.
+ * These aliases participate only in per-run exact-identifier resolution; they
+ * do not persist a source-to-Project association.
+ */
+export function establishedScopeProjectIdentifiers(
+  availableProjectIds: ReadonlySet<string>,
+): Map<string, string[]> {
+  const result = new Map<string, string[]>();
+  for (const definition of STERLING_TODAY_ACCEPTANCE_SCOPE) {
+    const projectIds = definition.exactProjectIds ?? [];
+    if (projectIds.length !== 1 || definition.identifiers.length === 0 ||
+      !availableProjectIds.has(projectIds[0]!)) continue;
+    result.set(projectIds[0]!, [...new Set(definition.identifiers)]);
+  }
+  return result;
 }

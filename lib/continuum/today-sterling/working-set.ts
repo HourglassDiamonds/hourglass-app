@@ -31,6 +31,7 @@ export type BuildSterlingTodayWorkingSetInput = {
   candidates: readonly ContinuumCandidate[];
   threadContext: ReadonlyMap<string, TodayGmailThreadContext>;
   projectThreadIds?: ReadonlyMap<string, readonly string[]>;
+  projectIdentifiers?: ReadonlyMap<string, readonly string[]>;
   knownPeople: readonly TodayKnownPerson[];
   founderCorrections?: readonly SourceCommunicationEvent[];
   founderDirectives?: readonly SterlingFounderDirectiveRecord[];
@@ -196,6 +197,11 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
     const values = [project.title, ...(project.specs ?? []).map(spec => spec.value)];
     for (const token of projectIdentifiers(values.join(" "))) {
       const ids = projectsByIdentifier.get(token) ?? new Set<string>(); ids.add(project.projectId); projectsByIdentifier.set(token, ids);
+    }
+  }
+  for (const [projectId, identifiers] of input.projectIdentifiers ?? []) {
+    for (const token of projectIdentifiers(identifiers.join(" "))) {
+      const ids = projectsByIdentifier.get(token) ?? new Set<string>(); ids.add(projectId); projectsByIdentifier.set(token, ids);
     }
   }
   for (const [threadId, thread] of input.threadContext) {

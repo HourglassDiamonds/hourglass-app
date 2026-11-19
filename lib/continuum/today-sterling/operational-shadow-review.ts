@@ -14,8 +14,9 @@ import {
 } from "@/lib/continuum/runtime-env";
 import { getSupabaseAdmin } from "@/lib/supabase/client";
 import { founderSessionSubjectId } from "@/lib/executive-dashboard/founder-sessions";
-import { compareOperationalBoard, type ManualObligationAuditRow, type OperationalBoardDisposition,
-  type OperationalBoardOwner, type ShadowBoardAuditRow } from "./operational-board-comparison";
+import { compareOperationalBoard, type ManualObligationAuditRow,
+  type ShadowBoardAuditRow } from "./operational-board-comparison";
+import { decideOperationalBoardRow } from "./operational-board-decision";
 import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "./operational-reconciliation-scope";
 import { createSterlingRunLease, createSupabaseSterlingRunLeaseStore, STERLING_TODAY_LEASE_KEY } from "./run-lease";
 import { getSterlingOperationalShadowExecutionId, isSterlingOperationalShadowEnabled } from "./server-config";
@@ -37,6 +38,7 @@ import {
 
 const GMAIL_RETRIEVAL_TIMEOUT_MS = 80_000;
 const SCOPE_VERSION = "november-11-operational-v11-23-threads";
+const OPERATIONAL_AUDIT_AS_OF = "2026-11-11";
 const INCOMPATIBLE_WRITE_CONTROLS = [
   "CONTINUUM_GMAIL_RECURRING_SYNC_ENABLED",
   "CONTINUUM_GMAIL_MANUAL_REFRESH_ENABLED",
@@ -82,23 +84,6 @@ const REVIEW: readonly ReviewSpec[] = [
   { key: "nate", label: "Nate P.", personId: null, projectId: "41281e54-0639-4183-82d5-17028b313681", jobId: null, threadIds: ["1a09120d797337d9", "1a121c53e4587a98", "1a1a6cc69999c55b"], material: true, disposition: "waiting_on_shop", owner: "vendor_shop", lifecycleStage: "production", jobsExpectedClosed: [] },
 ] as const;
 
-function disposition(owner: string, todayDisposition: string, lifecycle: string | null,
-  obligations: readonly { status: string }[]): OperationalBoardDisposition {
-  if (todayDisposition === "ambiguous") return "ambiguous";
-  const open = obligations.some((row) => row.status === "open" || row.status === "ambiguous");
-  if (!open && lifecycle === "completed") return "resolved";
-  if (!open && todayDisposition === "suppressed") return "suppressed";
-  if (owner === "founder") return "founder_action";
-  if (owner === "client") return "waiting_on_client";
-  if (owner === "vendor_shop") return "waiting_on_shop";
-  return "ambiguous";
-}
-
-function owner(value: string): OperationalBoardOwner {
-  return value === "founder" || value === "client" || value === "vendor_shop" ? value :
-    value === "none" ? "none" : "unknown";
-}
-
 export function buildOperationalComparisonInput(
   assembly: Awaited<ReturnType<typeof assembleSterlingTodayShadow>>,
   proposal: NonNullable<Awaited<ReturnType<typeof executeSterlingTodaySemantic>>["proposal"]>,
@@ -114,27 +99,45 @@ export function buildOperationalComparisonInput(
       unresolvedExpected.push({ key: spec.key, reason: matches.length === 0 ? "no-exact-work-unit" : "multiple-exact-work-units", threadIds: spec.threadIds });
       continue;
     }
-    expected.push({ ...spec, workUnitId: matches[0]!.workUnitId,
+    expected.push({ ...spec, auditAsOf: OPERATIONAL_AUDIT_AS_OF, workUnitId: matches[0]!.workUnitId,
       exactSourceRefs: spec.threadIds.map((threadId) => `gmail:thread:${threadId}`) });
   }
-  const recommendations = new Map(proposal.recommendations.map((row) => [row.workUnitId, row]));
+  const recommendations = new Map(proposal.recommendations.map((row) => [row.itemId, row]));
   const actual: ShadowBoardAuditRow[] = proposal.portfolioAssessments.map((assessment) => {
     const unit = units.find((row) => row.workUnitId === assessment.workUnitId)!;
     const project = assembly.requestWorkingSet.projects.find((row) => row.projectId === assessment.projectId);
     const personIds = project?.people.map((row) => row.personId) ?? [];
     const jobIds = assembly.requestWorkingSet.jobs.filter((row) => row.projectId === assessment.projectId && row.state === "open").map((row) => row.jobId);
+    const scopedThreadIds = (unit?.threadIds ?? []).filter((threadId) =>
+      NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS.includes(threadId as typeof NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS[number]));
+    const incompleteThreadIds = scopedThreadIds.filter((threadId) => {
+      const outcome = assembly.liveThreadOutcomes?.find((row) => row.threadId === threadId);
+      return !outcome || outcome.status !== "complete_live" || (outcome.bodyIncompleteMessageIds?.length ?? 0) > 0;
+    });
+    const recommendation = assessment.recommendationItemId
+      ? recommendations.get(assessment.recommendationItemId) ?? null : null;
+    const decision = decideOperationalBoardRow({
+      nextStepOwner: assessment.nextStepOwner,
+      todayDisposition: assessment.todayDisposition,
+      lifecycle: assessment.currentStage.canonicalLifecycleStage,
+      obligations: assessment.obligations,
+      recommendation,
+      evidenceComplete: incompleteThreadIds.length === 0,
+    });
     return {
       workUnitId: assessment.workUnitId,
       label: unit?.label ?? assessment.workUnitId,
-      personId: personIds.length === 1 ? personIds[0]! : recommendations.get(assessment.workUnitId)?.personId ?? null,
+      personId: personIds.length === 1 ? personIds[0]! : recommendation?.personId ?? null,
       projectId: assessment.projectId,
       jobId: null,
       exactSourceRefs: [...new Set([...(unit?.sourceRefs ?? []), ...(unit?.threadIds ?? []).map((id) => `gmail:thread:${id}`)])],
-      disposition: disposition(assessment.nextStepOwner, assessment.todayDisposition,
-        assessment.currentStage.canonicalLifecycleStage, assessment.obligations),
-      owner: owner(assessment.nextStepOwner),
+      disposition: decision.disposition,
+      owner: decision.owner,
       lifecycleStage: assessment.currentStage.canonicalLifecycleStage,
       openJobIds: jobIds,
+      evidenceState: incompleteThreadIds.length === 0 ? "complete" : "incomplete",
+      incompleteThreadIds,
+      decisionReason: decision.reason,
     };
   });
   return { expected, actual, unresolvedExpected, comparison: compareOperationalBoard({ expected, actual }) };

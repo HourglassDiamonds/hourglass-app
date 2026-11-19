@@ -99,6 +99,14 @@ export function validateSterlingTodayProposal(
       if (item.category === "founder_actions" && assessment.nextStepOwner !== "founder") {
         errors.push(`founder-category-owner-mismatch:${item.itemId}`);
       }
+      if (item.category === "founder_actions" && !assessment.obligations.some((obligation) =>
+        (obligation.status === "open" || obligation.status === "ambiguous") &&
+        obligation.responsibleParty === "founder" && obligation.evidenceRefs.length > 0 &&
+        item.obligations.some((recommended) => recommended.obligationId === obligation.obligationId &&
+          (recommended.status === "open" || recommended.status === "ambiguous") &&
+          recommended.responsibleParty === "founder" && recommended.evidenceRefs.length > 0))) {
+        errors.push(`founder-action-without-supported-obligation:${item.itemId}`);
+      }
       if (item.category === "waiting_on_client" && assessment.nextStepOwner !== "client") {
         errors.push(`client-wait-owner-mismatch:${item.itemId}`);
       }

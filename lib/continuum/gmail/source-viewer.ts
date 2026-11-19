@@ -4,7 +4,13 @@
  * Does not persist bodies, list mail, or change Gmail labels.
  */
 
-import { GmailHttpError, GmailTransportError, type GmailApi } from "./adapter";
+import {
+  GmailHttpError,
+  GmailTransportError,
+  isRetryableGmailError,
+  retryDelayMs,
+  type GmailApi,
+} from "./adapter";
 import type { GmailConnectionStore } from "./connection";
 import { exactThreadOnlyApi } from "./exact-thread";
 import { protectExactThread } from "./exact-thread-payload";
@@ -114,6 +120,7 @@ function threadFetchErrorCode(error: unknown): SourceViewerErrorCode {
   }
   if (error instanceof GmailHttpError) {
     if (error.status === 404) return "thread-not-found";
+    if (error.status === 429) return "rate_limited";
     if (error.status === 403) {
       return error.forbiddenCategory ?? "unknown_forbidden";
     }
@@ -222,6 +229,8 @@ export async function runPreparedSourceViewerFetch(input: {
   api: GmailApi;
   /** Operational shadow only: return every message in the exact fetched thread. */
   includeUnindexedMessages?: boolean;
+  /** Batch-owned provider call, used for shared pacing and bounded retries. */
+  getThread?: (threadId: string) => ReturnType<GmailApi["getThread"]>;
 }): Promise<SourceViewerFetchResult> {
   const threadId = input.threadId.trim();
   const messageId = input.messageId?.trim() || null;
@@ -229,7 +238,7 @@ export async function runPreparedSourceViewerFetch(input: {
   if (input.indexed.length === 0 && !input.includeUnindexedMessages) return failed("not-indexed");
   const indexed = [...input.indexed];
   try {
-    const raw = await input.api.getThread(threadId);
+    const raw = await (input.getThread ?? input.api.getThread.bind(input.api))(threadId);
     if (!validateNativeGmailThreadPayload(threadId, raw)) {
       return failed("thread-payload-invalid");
     }
@@ -304,10 +313,21 @@ export function createPreparedSourceViewerBatch(
   api: GmailApi,
   timeoutMs: number,
   now: () => number = Date.now,
+  controls: {
+    minIntervalMs?: number;
+    maxRetries?: number;
+    sleep?: (milliseconds: number) => Promise<void>;
+  } = {},
 ): PreparedSourceViewerBatch {
   const deadline = now() + Math.max(1, timeoutMs);
   const pending = new Map<string, Promise<SourceViewerFetchResult>>();
   const metrics = { threadFetches: 0 };
+  const minIntervalMs = Math.max(0, controls.minIntervalMs ?? 125);
+  const maxRetries = Math.max(0, Math.floor(controls.maxRetries ?? 2));
+  const sleep = controls.sleep ?? ((milliseconds: number) =>
+    new Promise<void>((resolve) => setTimeout(resolve, milliseconds)));
+  let nextStartAt = now();
+  let gate = Promise.resolve();
   return {
     metrics,
     fetchThread({ threadId, indexed }) {
@@ -326,10 +346,15 @@ export function createPreparedSourceViewerBatch(
       const remaining = deadline - now();
       if (remaining <= 0)
         return Promise.resolve({ ok: false, safeErrorCode: "unavailable" } as SourceViewerFetchResult);
-      metrics.threadFetches += 1;
       let timer: ReturnType<typeof setTimeout> | null = null;
       const work = Promise.race([
-        runPreparedSourceViewerFetch({ threadId, indexed, api, includeUnindexedMessages }),
+        runPreparedSourceViewerFetch({
+          threadId,
+          indexed,
+          api,
+          includeUnindexedMessages,
+          getThread: fetchThreadWithPolicy,
+        }),
         new Promise<SourceViewerFetchResult>((resolve) => {
           timer = setTimeout(
             () => resolve({ ok: false, safeErrorCode: "unavailable" }),
@@ -341,5 +366,35 @@ export function createPreparedSourceViewerBatch(
       });
       pending.set(key, work);
       return work;
+  }
+
+  async function waitForProviderTurn(): Promise<void> {
+    const turn = gate.then(async () => {
+      const delay = Math.max(0, nextStartAt - now());
+      if (delay > 0) await sleep(delay);
+      nextStartAt = Math.max(nextStartAt, now()) + minIntervalMs;
+    });
+    gate = turn.catch(() => undefined);
+    await turn;
+  }
+
+  async function fetchThreadWithPolicy(threadId: string) {
+    let attempt = 0;
+    for (;;) {
+      await waitForProviderTurn();
+      if (now() >= deadline) throw new Error("gmail-batch-deadline");
+      metrics.threadFetches += 1;
+      try {
+        return await api.getThread(threadId);
+      } catch (error) {
+        if (!isRetryableGmailError(error) || attempt >= maxRetries) throw error;
+        const delay = Math.max(0, retryDelayMs(error, attempt, 500, now()));
+        if (now() + delay >= deadline) throw error;
+        // One provider throttle defers every queued exact-thread read, preventing
+        // the remaining fixed scope from repeating the same burst failure.
+        nextStartAt = Math.max(nextStartAt, now() + delay);
+        attempt += 1;
+      }
+    }
   }
 }

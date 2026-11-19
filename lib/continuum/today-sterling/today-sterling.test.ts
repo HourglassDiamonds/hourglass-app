@@ -9,6 +9,7 @@ import { buildSterlingTodayRequestPackage, requestSterlingTodayProposal, resolve
   SterlingTodayRequestError } from "./request";
 import { evaluateSterlingTodayAcceptance } from "./acceptance";
 import { createSterlingEvidenceHandleMap } from "./evidence-handles";
+import { establishedScopeProjectIdentifiers, establishedScopeProjectThreadIds } from "./scope";
 import { buildSterlingTodayTargetWorkingSet, summarizeSterlingTodayTargetPackage } from "./target";
 import { validateSterlingTodayProposal } from "./validate";
 import { STERLING_TODAY_PROPOSAL_VERSION, type SterlingTodayProposal } from "./types";
@@ -220,6 +221,77 @@ describe("Sterling-native Today", () => {
     assert.equal(set.workUnits.some((row) => row.threadIds.includes("unrelated")), true);
   });
 
+  it("conditionally binds an exact unique reviewed alias while leaving other related work separate", () => {
+    const sarahProject = "18e9ef2b-5b22-453e-8be8-e54dab0d86b1";
+    const zaneProject = "12359010-1e95-4296-aa44-a7de7e70aa11";
+    const sarahPerson = "ec712796-90cf-48ce-bba9-bf943a934109";
+    const zanePerson = "0a405703-0f30-4b1e-9a7a-4d0e001fb101";
+    const projects: ProjectDeskSummary[] = [
+      { ...summary(), projectId: sarahProject, title: "S. Leishman", gmailThreadId: null, specs: [],
+        people: [{ personId: sarahPerson, displayName: "Sarah Leishman", roles: ["client"], organizationName: null }] },
+      { ...summary(), projectId: zaneProject, title: "Zane Kennedy — Wedding Band", gmailThreadId: null, specs: [],
+        people: [{ personId: zanePerson, displayName: "Zane Kennedy", roles: ["client"], organizationName: null }] },
+    ];
+    const established = establishedScopeProjectThreadIds(new Set(projects.map((row) => row.projectId)));
+    const aliases = establishedScopeProjectIdentifiers(new Set(projects.map((row) => row.projectId)));
+    const thread = (messageId: string, text = "Current operational update.") => ({ subject: "Operational update", messages: [{
+      messageId, sentAt: "2026-11-10T12:00:00.000Z", direction: "inbound" as const,
+      fromEmailHash: null, operationalText: text, attachmentFilenames: [],
+    }] });
+    const set = buildSterlingTodayWorkingSet({
+      runId: "run-established-relationships", sourceWatermark: "wm-established",
+      generatedAt: "2026-11-19T14:24:11.188Z", projects, jobs: [], candidates: [], knownPeople: [],
+      projectThreadIds: established,
+      projectIdentifiers: aliases,
+      threadContext: new Map([
+        ...[...(established.get(sarahProject) ?? []), ...(established.get(zaneProject) ?? [])]
+          .map((threadId, index) => [threadId, thread(`established-${index}`)] as const),
+        ["1a135cb91aa46463", thread("unreviewed-name-thread")],
+        ["1a17f4a8f371d911", thread("unreviewed-payment-thread")],
+        ["1a1847d9ad49e7a4", thread("conditional-production-thread",
+          "Supplier confirmation for C026732: wedding band production is scheduled.")],
+      ]),
+    });
+    const sarah = set.workUnits.find((row) => row.workUnitId === `project:${sarahProject}`)!;
+    const zane = set.workUnits.find((row) => row.workUnitId === `project:${zaneProject}`)!;
+    assert.deepEqual(sarah.threadIds, established.get(sarahProject));
+    assert.deepEqual(zane.threadIds, [...(established.get(zaneProject) ?? []), "1a1847d9ad49e7a4"]);
+    for (const threadId of ["1a135cb91aa46463", "1a17f4a8f371d911"]) {
+      assert.equal(zane.threadIds.includes(threadId), false);
+      assert.equal(set.workUnits.some((row) => row.projectId === null && row.threadIds.includes(threadId)), true);
+    }
+    assert.equal(set.workUnits.some((row) => row.projectId === null &&
+      row.threadIds.includes("1a1847d9ad49e7a4")), false);
+  });
+
+  it("does not bind the supplier thread without the exact alias or when the alias is not unique", () => {
+    const zaneProject = "12359010-1e95-4296-aa44-a7de7e70aa11";
+    const otherProject = "66666666-6666-4666-8666-666666666666";
+    const projects: ProjectDeskSummary[] = [
+      { ...summary(), projectId: zaneProject, title: "Zane Kennedy — Wedding Band", gmailThreadId: null, specs: [] },
+      { ...summary(), projectId: otherProject, title: "Other project", gmailThreadId: null, specs: [] },
+    ];
+    const build = (text: string, aliases: ReadonlyMap<string, readonly string[]>) => buildSterlingTodayWorkingSet({
+      runId: "run-conditional-alias", sourceWatermark: "wm-conditional",
+      generatedAt: "2026-11-19T14:24:11.188Z", projects, jobs: [], candidates: [], knownPeople: [],
+      projectIdentifiers: aliases,
+      threadContext: new Map([["1a1847d9ad49e7a4", { subject: "Supplier confirmation", messages: [{
+        messageId: "supplier-confirmation", sentAt: "2026-11-10T12:00:00.000Z", direction: "inbound",
+        fromEmailHash: null, operationalText: text, attachmentFilenames: [],
+      }] }]]),
+    });
+    const missing = build("Wedding band production is scheduled.", new Map([[zaneProject, ["C026732"]]]));
+    assert.equal(missing.workUnits.find((row) => row.workUnitId === `project:${zaneProject}`)?.threadIds
+      .includes("1a1847d9ad49e7a4"), false);
+    const ambiguous = build("C026732 production is scheduled.", new Map([
+      [zaneProject, ["C026732"]], [otherProject, ["C026732"]],
+    ]));
+    assert.equal(ambiguous.workUnits.find((row) => row.workUnitId === `project:${zaneProject}`)?.threadIds
+      .includes("1a1847d9ad49e7a4"), false);
+    assert.equal(ambiguous.workUnits.some((row) => row.projectId === null &&
+      row.threadIds.includes("1a1847d9ad49e7a4")), true);
+  });
+
   it("types Nivoda order and certificate identifiers without treating them as project identity", () => {
     const set = buildSterlingTodayWorkingSet({ runId: "run-nivoda", sourceWatermark: "wm",
       generatedAt: "2026-10-19T12:00:00.000Z", projects: [], jobs: [], candidates: [], knownPeople: [],
@@ -391,6 +463,98 @@ describe("Sterling-native Today", () => {
     missingAction.portfolioAssessments[0]!.obligations[0]!.status = "open";
     const result = validateSterlingTodayProposal(set, missingAction);
     assert.ok(result.errors.includes("missing-actionable-obligation:abbey:send-cad"));
+  });
+
+  it("rejects a founder lane without a specific evidence-backed outstanding founder obligation", () => {
+    const set = workingSet();
+    const unsupported = structuredClone(proposal());
+    unsupported.portfolioAssessments[0]!.nextStepOwner = "founder";
+    unsupported.portfolioAssessments[0]!.attentionPriority = "action_now";
+    unsupported.recommendations[0]!.category = "founder_actions";
+    unsupported.recommendations[0]!.attentionPriority = "action_now";
+    const rejected = validateSterlingTodayProposal(set, unsupported);
+    assert.ok(rejected.errors.includes("founder-action-without-supported-obligation:abbey"));
+
+    const supported = structuredClone(unsupported);
+    supported.portfolioAssessments[0]!.obligations[0]!.status = "open";
+    supported.recommendations[0]!.obligations[0]!.status = "open";
+    assert.equal(validateSterlingTodayProposal(set, supported).accepted, true);
+  });
+
+  it("accepts real new founder work from Gmail without requiring a pre-existing Job", () => {
+    const set = buildSterlingTodayWorkingSet({
+      runId: "run-new-inquiry",
+      sourceWatermark: "wm-new-inquiry",
+      generatedAt: "2026-11-19T14:24:11.188Z",
+      projects: [], jobs: [], candidates: [], knownPeople: [],
+      threadContext: new Map([["new-inquiry-thread", {
+        subject: "New custom jewelry inquiry",
+        messages: [{
+          messageId: "new-inquiry-message",
+          sentAt: "2026-11-19T14:20:00.000Z",
+          direction: "inbound",
+          fromEmailHash: null,
+          operationalText: "Please call me to discuss starting a custom ring.",
+          attachmentFilenames: [],
+        }],
+      }]]),
+    });
+    assert.equal(set.jobs.length, 0);
+    const unit = set.workUnits[0]!;
+    const evidenceRef = unit.evidenceRefs[0]!;
+    const obligation = {
+      obligationId: "respond-to-new-inquiry",
+      description: "Founder responds to the new custom inquiry.",
+      status: "open" as const,
+      responsibleParty: "founder" as const,
+      confidence: "high" as const,
+      evidenceRefs: [evidenceRef],
+    };
+    const raw: SterlingTodayProposal = {
+      contractVersion: STERLING_TODAY_PROPOSAL_VERSION,
+      runId: set.runId,
+      evidenceSnapshotId: set.evidenceSnapshotId,
+      generatedAt: set.generatedAt,
+      portfolioAmbiguities: [],
+      portfolioAssessments: [{
+        workUnitId: unit.workUnitId,
+        projectId: null,
+        identityStatus: "provisional_evidence",
+        todayDisposition: "presented",
+        recommendationItemId: "new-inquiry",
+        currentStage: { canonicalLifecycleStage: null, operationalSubstage: "new_inquiry",
+          responsibleParty: "founder", confidence: "high",
+          explanation: "The newest inbound message requests founder contact.", evidenceRefs: [evidenceRef] },
+        obligations: [obligation],
+        nextStepOwner: "founder",
+        attentionPriority: "action_now",
+        confidence: "high",
+        evidenceRefs: [evidenceRef],
+        ambiguities: [],
+        explanation: "A specific reply is outstanding even though no Job exists yet.",
+        omissionReason: null,
+      }],
+      recommendations: [{
+        itemId: "new-inquiry",
+        workUnitId: unit.workUnitId,
+        category: "founder_actions",
+        projectId: null,
+        personId: null,
+        relationshipRole: "unknown",
+        title: "Respond to new custom inquiry",
+        summary: "A new inbound inquiry asks for a call about custom work.",
+        attentionPriority: "action_now",
+        confidence: "high",
+        explanation: "The current inbound message supplies the outstanding founder obligation.",
+        evidenceRefs: [evidenceRef],
+        ambiguities: [],
+        obligations: [obligation],
+      }],
+      relationshipProposals: [],
+      proposedCanonicalMutations: [],
+    };
+    const validation = validateSterlingTodayProposal(set, raw);
+    assert.equal(validation.accepted, true);
   });
 
   it("separates canonical lifecycle stage from descriptive operational substage", () => {

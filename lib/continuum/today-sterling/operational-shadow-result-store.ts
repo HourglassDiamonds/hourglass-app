@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { stableJson } from "@/lib/continuum/sterling/fingerprint";
 import { STERLING_TODAY_LEASE_KEY } from "./run-lease";
+import { sameInstant } from "./instant";
 
 export const OPERATIONAL_SHADOW_RESULT_CONTRACT =
   "sterling-operational-shadow-v11-sanitized-result-v1" as const;
@@ -91,7 +92,7 @@ export function verifyOperationalShadowResultRecord(record: OperationalShadowRes
       now: new Date(record.createdAt),
     });
     return record.terminalStatus === "completed" && prepared.resultSha256 === record.resultSha256 &&
-      prepared.resultByteCount === record.resultByteCount && prepared.expiresAt === record.expiresAt;
+      prepared.resultByteCount === record.resultByteCount && sameInstant(prepared.expiresAt, record.expiresAt);
   } catch {
     return false;
   }
