@@ -5,7 +5,6 @@ import {
   PASSKEY_CHALLENGE_TTL_SEC,
 } from "./config";
 import type { PasskeyChallengeKind, PasskeyChallengePayload } from "./types";
-import { EXECUTIVE_DASHBOARD_SESSION_PATH } from "../session";
 
 function hmacSign(body: string, secret: string): string {
   return createHmac("sha256", secret).update(body).digest("base64url");
@@ -37,7 +36,10 @@ export function passkeyChallengeCookieOptions(secure: boolean): {
     httpOnly: true,
     secure,
     sameSite: "lax",
-    path: EXECUTIVE_DASHBOARD_SESSION_PATH,
+    // Authentication begins under /executive-dashboard but the fixed shadow
+    // completion handler lives under /api/continuum. No narrower common path
+    // exists; the cookie is short-lived, signed, Secure, and HttpOnly.
+    path: "/",
     maxAge: PASSKEY_CHALLENGE_TTL_SEC,
   };
 }

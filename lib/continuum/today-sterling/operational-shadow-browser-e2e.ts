@@ -11,17 +11,17 @@ import { NOVEMBER_11_OPERATIONAL_RECONCILIATION_THREAD_IDS } from "./operational
 import { STERLING_TODAY_PROPOSAL_VERSION } from "./types";
 import { InMemoryOperationalShadowResultStore } from "./operational-shadow-result-store";
 import { InMemorySterlingRunLeaseStore } from "./run-lease";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "./operational-shadow-browser-e2e-runtime";
+
+export { isOperationalShadowBrowserE2eRuntime } from
+  "./operational-shadow-browser-e2e-runtime";
 
 /**
  * Production-build browser fixture. It is deliberately impossible on Vercel
  * and exists only to exercise the shipped proxy/routes/assembler in a local
  * `next start` process with synthetic external dependencies.
  */
-export function isOperationalShadowBrowserE2eRuntime(): boolean {
-  return process.env.CONTINUUM_OPERATIONAL_SHADOW_BROWSER_E2E === "1" &&
-    process.env.NODE_ENV === "production" && process.env.VERCEL !== "1";
-}
-
 export const browserE2eResultStore = new InMemoryOperationalShadowResultStore();
 export const browserE2eLeaseStore = new InMemorySterlingRunLeaseStore();
 

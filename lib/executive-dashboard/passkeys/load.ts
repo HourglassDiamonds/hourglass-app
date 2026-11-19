@@ -6,9 +6,14 @@
 
 import { cookies } from "next/headers";
 import { readExecutiveDashboardSession } from "@/lib/executive-dashboard/access";
-import { getExecutiveDashboardAuthConfig } from "@/lib/executive-dashboard/env";
+import { getExecutiveDashboardSessionConfig } from "@/lib/executive-dashboard/env";
 import { EXECUTIVE_DASHBOARD_SESSION_COOKIE } from "@/lib/executive-dashboard/session";
 import { simpleWebAuthnCrypto } from "./crypto";
+import { InMemoryPasskeyChallengeLedger } from "./challenge-ledger";
+import { InMemoryFounderPasskeyStore } from "./store";
+import { CONTINUUM_FOUNDER_WEBAUTHN_USER_ID } from "./config";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e-runtime";
 import { createSupabaseFounderPasskeyStore, createSupabasePasskeyChallengeLedger, createSupabasePasskeyPairingStore } from "./server";
 import type {
   FounderPasskeyRecord,
@@ -16,6 +21,43 @@ import type {
   PasskeyChallengeLedger,
   PasskeyPairingStore,
 } from "./types";
+
+type BrowserE2ePasskeyState = {
+  store: FounderPasskeyStore;
+  challenges: PasskeyChallengeLedger;
+};
+
+const browserE2eGlobal = globalThis as typeof globalThis & {
+  __continuumPasskeyBrowserE2e?: BrowserE2ePasskeyState;
+};
+
+function browserE2ePasskeyState(): BrowserE2ePasskeyState {
+  if (!browserE2eGlobal.__continuumPasskeyBrowserE2e) {
+    const store = new InMemoryFounderPasskeyStore();
+    const credentialId = process.env.CONTINUUM_PASSKEY_BROWSER_E2E_CREDENTIAL_ID
+      ?.trim();
+    const publicKey = process.env.CONTINUUM_PASSKEY_BROWSER_E2E_PUBLIC_KEY
+      ?.trim();
+    if (credentialId && publicKey) {
+      void store.insert({
+        founderUserId: CONTINUUM_FOUNDER_WEBAUTHN_USER_ID,
+        credentialId,
+        publicKey: new Uint8Array(Buffer.from(publicKey, "base64url")),
+        counter: 0,
+        transports: ["internal"],
+        deviceType: "singleDevice",
+        backedUp: false,
+        createdAt: new Date().toISOString(),
+        label: "Synthetic browser authenticator",
+      });
+    }
+    browserE2eGlobal.__continuumPasskeyBrowserE2e = {
+      store,
+      challenges: new InMemoryPasskeyChallengeLedger(),
+    };
+  }
+  return browserE2eGlobal.__continuumPasskeyBrowserE2e;
+}
 
 export async function readFounderPasskeySession(): Promise<
   | { ok: true; username: string; token: string }
@@ -30,6 +72,9 @@ export async function readFounderPasskeySession(): Promise<
 }
 
 export function tryCreateFounderPasskeyStore(): FounderPasskeyStore | null {
+  if (isOperationalShadowBrowserE2eRuntime()) {
+    return browserE2ePasskeyState().store;
+  }
   try {
     return createSupabaseFounderPasskeyStore();
   } catch {
@@ -38,6 +83,9 @@ export function tryCreateFounderPasskeyStore(): FounderPasskeyStore | null {
 }
 
 export function tryCreatePasskeyChallengeLedger(): PasskeyChallengeLedger | null {
+  if (isOperationalShadowBrowserE2eRuntime()) {
+    return browserE2ePasskeyState().challenges;
+  }
   try {
     return createSupabasePasskeyChallengeLedger();
   } catch {
@@ -63,7 +111,7 @@ export function getFounderPasskeyRuntime():
       username: string;
     }
   | { ok: false; reason: "unavailable" } {
-  const config = getExecutiveDashboardAuthConfig();
+  const config = getExecutiveDashboardSessionConfig();
   if (!config.ok) return { ok: false, reason: "unavailable" };
   const store = tryCreateFounderPasskeyStore();
   const challenges = tryCreatePasskeyChallengeLedger();

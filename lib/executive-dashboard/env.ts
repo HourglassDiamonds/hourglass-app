@@ -3,13 +3,6 @@
  * Never expose via NEXT_PUBLIC_*.
  */
 
-import { isVerifiedContinuumProductionShadowRuntime } from "@/lib/continuum/runtime-env";
-
-export const PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV =
-  "CONTINUUM_PRODUCTION_SHADOW_FOUNDER_USERNAME" as const;
-export const PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV =
-  "CONTINUUM_PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH" as const;
-
 function trimmed(value: string | undefined): string | undefined {
   const v = value?.trim();
   return v ? v : undefined;
@@ -32,32 +25,26 @@ export const SERVER_ONLY_EXECUTIVE_DASHBOARD_ENV = [
   "EXECUTIVE_DASHBOARD_USERNAME",
   "EXECUTIVE_DASHBOARD_PASSWORD_HASH",
   "EXECUTIVE_DASHBOARD_SESSION_SECRET",
-  PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
-  PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
 ] as const;
 
-function activeFounderCredentialScope(): {
-  username: string | undefined;
-  passwordHash: string | undefined;
-  usernameKey: string;
-  passwordHashKey: string;
-} {
-  if (isVerifiedContinuumProductionShadowRuntime()) {
-    return {
-      username: trimmed(process.env[PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]),
-      passwordHash: trimmed(
-        process.env[PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV],
-      ),
-      usernameKey: PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
-      passwordHashKey: PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
-    };
+/**
+ * Founder identity + signing material shared by password and passkey sessions.
+ * Passkey authentication must not depend on a password hash.
+ */
+export function getExecutiveDashboardSessionConfig():
+  | { ok: true; username: string; sessionSecret: string }
+  | { ok: false; missing: string[] } {
+  const username = getExecutiveDashboardUsername();
+  const sessionSecret = getExecutiveDashboardSessionSecret();
+  const missing: string[] = [];
+  if (!username) missing.push("EXECUTIVE_DASHBOARD_USERNAME");
+  if (!sessionSecret || sessionSecret.length < 32) {
+    missing.push("EXECUTIVE_DASHBOARD_SESSION_SECRET");
   }
-  return {
-    username: getExecutiveDashboardUsername(),
-    passwordHash: getExecutiveDashboardPasswordHash(),
-    usernameKey: "EXECUTIVE_DASHBOARD_USERNAME",
-    passwordHashKey: "EXECUTIVE_DASHBOARD_PASSWORD_HASH",
-  };
+  if (missing.length > 0 || !username || !sessionSecret) {
+    return { ok: false, missing };
+  }
+  return { ok: true, username, sessionSecret };
 }
 
 /**
@@ -80,23 +67,14 @@ export function getExecutiveDashboardAuthConfig():
       sessionSecret: string;
     }
   | { ok: false; missing: string[] } {
-  const {
-    username,
-    passwordHash,
-    usernameKey,
-    passwordHashKey,
-  } = activeFounderCredentialScope();
-  const sessionSecret = getExecutiveDashboardSessionSecret();
-  const missing: string[] = [];
-  if (!username) missing.push(usernameKey);
-  if (!passwordHash) missing.push(passwordHashKey);
-  if (!sessionSecret || sessionSecret.length < 32) {
-    missing.push("EXECUTIVE_DASHBOARD_SESSION_SECRET");
-  }
-  if (missing.length > 0 || !username || !passwordHash || !sessionSecret) {
+  const session = getExecutiveDashboardSessionConfig();
+  const passwordHash = getExecutiveDashboardPasswordHash();
+  const missing = session.ok ? [] : [...session.missing];
+  if (!passwordHash) missing.push("EXECUTIVE_DASHBOARD_PASSWORD_HASH");
+  if (missing.length > 0 || !session.ok || !passwordHash) {
     return { ok: false, missing };
   }
-  return { ok: true, username, passwordHash, sessionSecret };
+  return { ...session, passwordHash };
 }
 
 /**

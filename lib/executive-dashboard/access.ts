@@ -1,5 +1,5 @@
 import {
-  getExecutiveDashboardAuthConfig,
+  getExecutiveDashboardSessionConfig,
   isExecutiveDashboardPublicProduction,
 } from "./env";
 import { confirmDurableFounderSession } from "./founder-sessions";
@@ -62,7 +62,7 @@ export async function readExecutiveDashboardSession(
   cookieValue: string | undefined | null,
   nowMs = Date.now(),
 ): Promise<{ ok: true; username: string } | { ok: false; reason: string }> {
-  const config = getExecutiveDashboardAuthConfig();
+  const config = getExecutiveDashboardSessionConfig();
   if (!config.ok) {
     return { ok: false, reason: "missing-config" };
   }

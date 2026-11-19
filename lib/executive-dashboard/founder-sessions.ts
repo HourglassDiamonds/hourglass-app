@@ -25,6 +25,8 @@ import {
   resolveContinuumIsolationState,
   supabaseProjectRefFromUrl,
 } from "@/lib/continuum/runtime-env";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e-runtime";
 
 export const FOUNDER_SESSIONS_TABLE = "continuum_founder_sessions";
 export const FOUNDER_SESSION_EXPIRE_SWEEP = 32;
@@ -47,6 +49,7 @@ export type FounderSessionStore = {
  * Same exact identity contract as durable founder-auth rate limiting.
  */
 export function isDurableFounderSessionStoreEnabled(): boolean {
+  if (isOperationalShadowBrowserE2eRuntime()) return false;
   if (isVerifiedDurableFounderRuntime()) return true;
   if (parseContinuumEnv() !== "preview") return false;
   if (resolveContinuumIsolationState() !== "preview-isolated") return false;

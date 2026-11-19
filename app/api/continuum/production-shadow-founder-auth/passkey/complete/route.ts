@@ -5,11 +5,14 @@ import { PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH } from
   "@/lib/continuum/production-staging-access";
 import { isVerifiedContinuumProductionShadowRuntime } from
   "@/lib/continuum/runtime-env";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e-runtime";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
-  if (!isVerifiedContinuumProductionShadowRuntime()) {
+  if (!isVerifiedContinuumProductionShadowRuntime() &&
+      !isOperationalShadowBrowserE2eRuntime()) {
     return new NextResponse("Not Found", { status: 404 });
   }
   const body = await request.json().catch(() => null) as

@@ -28,6 +28,7 @@ import {
 } from "./authenticate";
 import {
   createPasskeyChallengeToken,
+  passkeyChallengeCookieOptions,
   readPasskeyChallengeCookie,
   sessionFingerprint,
 } from "./challenges";
@@ -741,6 +742,7 @@ describe("founder passkeys", () => {
     const challengeSrc = read("lib/executive-dashboard/passkeys/challenges.ts");
     assert.doesNotMatch(challengeSrc, /const consumed = new Map/);
     assert.match(challengeSrc, /v: 2/);
+    assert.equal(passkeyChallengeCookieOptions(true).path, "/");
     const sql = read("lib/supabase/continuum-founder-passkeys-schema.sql");
     assert.match(sql, /continuum_founder_webauthn_consume_challenge/);
     assert.match(actions, /loginExecutiveDashboard/);

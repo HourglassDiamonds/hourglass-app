@@ -41,6 +41,8 @@ import {
   resolveContinuumIsolationState,
   supabaseProjectRefFromUrl,
 } from "@/lib/continuum/runtime-env";
+import { isOperationalShadowBrowserE2eRuntime } from
+  "@/lib/continuum/today-sterling/operational-shadow-browser-e2e-runtime";
 
 export const FOUNDER_AUTH_RATE_LIMIT_WINDOW_NAME = "15m" as const;
 
@@ -63,6 +65,7 @@ export type FounderAuthRateLimitNamespace =
  * identity so that project cannot ride this path.
  */
 export function isDurableFounderAuthRateLimitEnabled(): boolean {
+  if (isOperationalShadowBrowserE2eRuntime()) return false;
   if (isVerifiedDurableFounderRuntime()) return true;
   if (parseContinuumEnv() !== "preview") return false;
   if (resolveContinuumIsolationState() !== "preview-isolated") return false;

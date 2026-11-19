@@ -20,10 +20,6 @@ import {
 } from "./founder-sessions";
 import { CONTINUUM_FOUNDER_WEBAUTHN_USER_ID } from "./passkeys/config";
 import {
-  PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
-  PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
-} from "./env";
-import {
   createFounderSessionId,
   createExecutiveDashboardSessionToken,
   executiveDashboardSessionCookieOptions,
@@ -277,12 +273,11 @@ describe("founder durable sessions", () => {
     });
   });
 
-  it("persists and verifies a durable session with the shadow-only username", async () => {
+  it("persists and verifies a shadow session with the canonical founder identity", async () => {
     const store = createMemoryFounderSessionStore();
     setFounderSessionStoreForTests(store);
     const now = Date.now();
     const sessionId = createFounderSessionId();
-    const shadowUsername = "shadow-founder";
     const commitSha = "c".repeat(40);
     await withEnv(
       {
@@ -294,9 +289,6 @@ describe("founder durable sessions", () => {
         VERCEL_PROJECT_ID: "prj_shadow_test",
         VERCEL_GIT_COMMIT_SHA: commitSha,
         VERCEL_DEPLOYMENT_ID: "dpl_ShadowTest123",
-        [PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]: shadowUsername,
-        [PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV]:
-          "unused-shadow-password-hash",
       },
       async () => {
         assert.equal(isDurableFounderSessionStoreEnabled(), true);
@@ -311,7 +303,7 @@ describe("founder durable sessions", () => {
           { ok: true },
         );
         const shadowToken = createExecutiveDashboardSessionToken(
-          shadowUsername,
+          username,
           sessionSecret,
           now,
           60,
@@ -321,15 +313,15 @@ describe("founder durable sessions", () => {
           (await readExecutiveDashboardSession(shadowToken, now)).ok,
           true,
         );
-        const ordinaryProductionToken = createExecutiveDashboardSessionToken(
-          username,
+        const retiredShadowIdentityToken = createExecutiveDashboardSessionToken(
+          "shadow-founder",
           sessionSecret,
           now,
           60,
           sessionId,
         );
         assert.equal(
-          (await readExecutiveDashboardSession(ordinaryProductionToken, now)).ok,
+          (await readExecutiveDashboardSession(retiredShadowIdentityToken, now)).ok,
           false,
         );
       },

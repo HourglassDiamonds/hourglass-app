@@ -17,10 +17,9 @@ import {
 } from "./access";
 import {
   getExecutiveDashboardAuthConfig,
+  getExecutiveDashboardSessionConfig,
   isExecutiveDashboardAuthRateLimitDisabled,
   isExecutiveDashboardPublicProduction,
-  PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
-  PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
 } from "./env";
 import { CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF } from "@/lib/continuum/runtime-env";
 import {
@@ -173,11 +172,9 @@ describe("executive dashboard auth", () => {
     );
   });
 
-  it("uses dedicated credentials only for the exact verified Production shadow runtime", async () => {
+  it("keeps canonical founder identity and password auth on the verified Production shadow runtime", async () => {
     const productionPasswordHash =
       hashExecutiveDashboardPassword("production-password-test-only");
-    const shadowPassword = "shadow-password-test-only";
-    const shadowPasswordHash = hashExecutiveDashboardPassword(shadowPassword);
     const commitSha = "a".repeat(40);
     const productionUrl =
       `https://${CONTINUUM_PRODUCTION_SUPABASE_PROJECT_REF}.supabase.co`;
@@ -185,8 +182,6 @@ describe("executive dashboard auth", () => {
       EXECUTIVE_DASHBOARD_USERNAME: "production-founder",
       EXECUTIVE_DASHBOARD_PASSWORD_HASH: productionPasswordHash,
       EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
-      [PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]: "shadow-founder",
-      [PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV]: shadowPasswordHash,
     };
 
     await withEnvAsync(
@@ -208,18 +203,14 @@ describe("executive dashboard auth", () => {
         const config = getExecutiveDashboardAuthConfig();
         assert.equal(config.ok, true);
         if (!config.ok) return;
-        assert.equal(config.username, "shadow-founder");
+        assert.equal(config.username, "production-founder");
         assert.equal(config.sessionSecret, sessionSecret);
-        assert.equal(
-          verifyExecutiveDashboardPassword(shadowPassword, config.passwordHash),
-          true,
-        );
         assert.equal(
           verifyExecutiveDashboardPassword(
             "production-password-test-only",
             config.passwordHash,
           ),
-          false,
+          true,
         );
       },
     );
@@ -256,19 +247,13 @@ describe("executive dashboard auth", () => {
           assert.equal(config.ok, true);
           if (!config.ok) return;
           assert.equal(config.username, "production-founder");
-          assert.equal(
-            verifyExecutiveDashboardPassword(
-              shadowPassword,
-              config.passwordHash,
-            ),
-            false,
-          );
+            assert.equal(config.username, "production-founder");
         },
       );
     }
   });
 
-  it("fails closed when the verified shadow runtime lacks dedicated credentials", async () => {
+  it("builds passkey/session config without any password hash in the verified shadow runtime", async () => {
     const commitSha = "b".repeat(40);
     await withEnvAsync(
       {
@@ -285,19 +270,23 @@ describe("executive dashboard auth", () => {
         VERCEL_GIT_COMMIT_SHA: commitSha,
         VERCEL_DEPLOYMENT_ID: "dpl_ShadowTest123",
         EXECUTIVE_DASHBOARD_USERNAME: "production-founder",
-        EXECUTIVE_DASHBOARD_PASSWORD_HASH: passwordHash,
+        EXECUTIVE_DASHBOARD_PASSWORD_HASH: undefined,
         EXECUTIVE_DASHBOARD_SESSION_SECRET: sessionSecret,
-        [PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV]: undefined,
-        [PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV]: undefined,
       },
       async () => {
-        const config = getExecutiveDashboardAuthConfig();
-        assert.equal(config.ok, false);
-        if (config.ok) return;
-        assert.deepEqual(config.missing, [
-          PRODUCTION_SHADOW_FOUNDER_USERNAME_ENV,
-          PRODUCTION_SHADOW_FOUNDER_PASSWORD_HASH_ENV,
-        ]);
+        const session = getExecutiveDashboardSessionConfig();
+        assert.deepEqual(session, {
+          ok: true,
+          username: "production-founder",
+          sessionSecret,
+        });
+        const password = getExecutiveDashboardAuthConfig();
+        assert.equal(password.ok, false);
+        if (!password.ok) {
+          assert.deepEqual(password.missing, [
+            "EXECUTIVE_DASHBOARD_PASSWORD_HASH",
+          ]);
+        }
       },
     );
   });
