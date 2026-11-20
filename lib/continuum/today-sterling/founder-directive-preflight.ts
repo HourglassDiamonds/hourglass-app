@@ -7,7 +7,15 @@ import { isSterlingOperationalShadowEnabled } from "./server-config";
 import { isVerifiedOperationalShadowRuntime } from "./operational-shadow-review";
 import { matchAuthorizedNovember20FounderDirectiveReadback } from
   "./authorized-founder-updates-2026-11-20";
-import { loadSterlingFounderDirectiveNotes } from "./founder-directive-load";
+import {
+  loadExactClientMemorySourceNotes,
+  loadSterlingFounderDirectiveNotes,
+} from "./founder-directive-load";
+import {
+  AUTHORIZED_SUPERVISED_TRIAL_NOTE_IDS,
+  matchAuthorizedSupervisedTrialInputReadback,
+  type AuthorizedSupervisedTrialInputReadback,
+} from "./authorized-supervised-trial-inputs-2026-11-20";
 
 export type FounderDirectivePreflightResult =
   | {
@@ -21,6 +29,7 @@ export type FounderDirectivePreflightResult =
         projectId: string | null;
         personId: string | null;
       }>;
+      trialInputs: AuthorizedSupervisedTrialInputReadback[];
     }
   | { ok: false; reason: string };
 
@@ -33,6 +42,12 @@ async function readAuthorizedFounderDirectives(
   if (!readable) {
     return { ok: false, reason: "founder-directive-readback-failed" };
   }
+  const trialInputs = matchAuthorizedSupervisedTrialInputReadback(
+    await loadExactClientMemorySourceNotes(client, AUTHORIZED_SUPERVISED_TRIAL_NOTE_IDS),
+  );
+  if (!trialInputs) {
+    return { ok: false, reason: "supervised-trial-input-readback-failed" };
+  }
   return {
     ok: true,
     status: "ready",
@@ -44,6 +59,7 @@ async function readAuthorizedFounderDirectives(
       projectId: directive.projectId,
       personId: directive.personId,
     })),
+    trialInputs,
   };
 }
 

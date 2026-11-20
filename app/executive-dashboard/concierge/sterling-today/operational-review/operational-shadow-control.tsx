@@ -48,11 +48,18 @@ export function OperationalShadowControl() {
         credentials: "same-origin",
         cache: "no-store",
       });
-      const next = await response.json() as { ok: boolean; status?: string; reason?: string; directives?: unknown[] };
-      const ready = response.ok && next.ok && next.status === "ready" && next.directives?.length === 2;
+      const next = await response.json() as {
+        ok: boolean;
+        status?: string;
+        reason?: string;
+        directives?: unknown[];
+        trialInputs?: unknown[];
+      };
+      const ready = response.ok && next.ok && next.status === "ready" &&
+        next.directives?.length === 2 && next.trialInputs?.length === 5;
       setDirectivesReady(ready);
       setDirectiveMessage(ready
-        ? "Morgan and James confirmations are kept and readable through Client Memory."
+        ? "Morgan and James plus all five supervised-trial confirmations are kept and readable through Client Memory."
         : `Founder confirmations unavailable · ${next.reason ?? "readback-failed"}`);
     } catch {
       setDirectivesReady(false);

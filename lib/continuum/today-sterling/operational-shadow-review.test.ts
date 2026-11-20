@@ -48,9 +48,12 @@ describe("bounded operational shadow review", () => {
     assert.match(resultRoute, /prepareAuthenticatedOperationalShadowFounderDirectives/);
     assert.match(directivePreflight, /matchAuthorizedNovember20FounderDirectiveReadback/);
     assert.match(directivePreflight, /loadSterlingFounderDirectiveNotes/);
+    assert.match(directivePreflight, /matchAuthorizedSupervisedTrialInputReadback/);
+    assert.match(directivePreflight, /loadExactClientMemorySourceNotes/);
     assert.doesNotMatch(directivePreflight, /recordSterlingFounderDirective|createSupabaseClientMemoryNoteWriter/);
     assert.doesNotMatch(directivePreflight, /createSterlingRunLease|executeSterlingTodaySemantic|createLiveSourceViewerBatch/);
     assert.match(control, /disabled=\{pending \|\| !directivesReady\}/);
+    assert.match(control, /next\.trialInputs\?\.length === 5/);
   });
 
   it("rewrites only the two browser-facing shadow routes to guarded internal handlers", () => {

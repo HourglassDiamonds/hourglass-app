@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { SOURCE_NOTE_COLUMNS, rowToSourceNote } from "@/lib/continuum/client-memory/source-note-row";
 import { sterlingFounderDirectiveFromNote, STERLING_FOUNDER_DIRECTIVE_PREFIX } from "./founder-directive";
 import type { SterlingFounderDirectiveRecord } from "./types";
+import type { SourceNote } from "@/lib/continuum/client-memory/types";
 
 export type LoadedSterlingFounderDirective = {
   noteId: string;
@@ -36,4 +37,22 @@ export async function loadSterlingFounderDirectives(
   client: SupabaseClient,
 ): Promise<SterlingFounderDirectiveRecord[]> {
   return (await loadSterlingFounderDirectiveNotes(client)).map((row) => row.directive);
+}
+
+/** Bounded exact-note read through the same Client Memory row mapper used by the board. */
+export async function loadExactClientMemorySourceNotes(
+  client: SupabaseClient,
+  noteIds: readonly string[],
+): Promise<SourceNote[]> {
+  if (noteIds.length === 0 || noteIds.length > 24 ||
+      noteIds.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) {
+    throw new Error("exact-source-note-target-invalid");
+  }
+  const { data, error } = await client
+    .from("continuum_source_notes")
+    .select(SOURCE_NOTE_COLUMNS)
+    .in("id", [...noteIds])
+    .order("id");
+  if (error) throw error;
+  return (data ?? []).map((row) => rowToSourceNote(row as Record<string, unknown>));
 }
