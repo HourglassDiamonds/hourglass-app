@@ -20,6 +20,37 @@ function oneOf(value: unknown, values: readonly string[]): value is string {
   return typeof value === "string" && values.includes(value);
 }
 
+function boundedStrings(value: unknown, maximum: number): value is string[] {
+  return Array.isArray(value) && value.length <= maximum &&
+    value.every((row) => typeof row === "string" && row.trim().length > 0 && row.length <= 240);
+}
+
+function validObligationUpdates(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length === 0 || value.length > 24) return false;
+  const ids = new Set<string>();
+  for (const row of value) {
+    if (!isRecord(row) || typeof row.obligationId !== "string" || !row.obligationId.trim() ||
+        row.obligationId.length > 240 || ids.has(row.obligationId) || typeof row.description !== "string" ||
+        !row.description.trim() || row.description.length > 500 ||
+        !oneOf(row.status, ["open", "fulfilled", "superseded", "ambiguous"]) ||
+        !oneOf(row.responsibleParty, STERLING_RESPONSIBLE_PARTIES)) return false;
+    ids.add(row.obligationId);
+  }
+  return true;
+}
+
+function validProductionEstimate(value: unknown): boolean {
+  if (!isRecord(value) || !oneOf(value.status, ["pending", "estimated"])) return false;
+  if (value.status === "pending") {
+    return value.completionOn === null && value.quotedLeadTime === null && value.sourceRef === null;
+  }
+  return typeof value.completionOn === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value.completionOn) &&
+    Number.isFinite(Date.parse(`${value.completionOn}T00:00:00Z`)) &&
+    typeof value.quotedLeadTime === "string" && value.quotedLeadTime.trim().length > 0 &&
+    value.quotedLeadTime.length <= 240 && typeof value.sourceRef === "string" &&
+    value.sourceRef.trim().length > 0 && value.sourceRef.length <= 240;
+}
+
 export function validateSterlingFounderDirective(
   value: unknown,
 ): SterlingFounderDirectiveRecord | null {
@@ -37,12 +68,28 @@ export function validateSterlingFounderDirective(
   if (!projectId && !value.workUnitId.startsWith("provisional:")) return null;
   if (value.lifecycleStage !== undefined && value.lifecycleStage !== null &&
       !isCustomLifecycleStage(value.lifecycleStage) && !isRepairLifecycleStage(value.lifecycleStage)) return null;
+  if (value.lifecycleEffectiveOn !== undefined &&
+      (typeof value.lifecycleEffectiveOn !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value.lifecycleEffectiveOn) ||
+        !Number.isFinite(Date.parse(`${value.lifecycleEffectiveOn}T00:00:00Z`)))) return null;
+  if (value.operationalSubstage !== undefined &&
+      (typeof value.operationalSubstage !== "string" || !value.operationalSubstage.trim() ||
+        value.operationalSubstage.length > 120 || /[\u0000-\u001f\u007f]/.test(value.operationalSubstage))) return null;
   if (value.waitingOn !== undefined && !oneOf(value.waitingOn, STERLING_RESPONSIBLE_PARTIES)) return null;
   if (value.attentionPriority !== undefined && !oneOf(value.attentionPriority, STERLING_ATTENTION_PRIORITIES)) return null;
   if (value.relationshipRole !== undefined && !oneOf(value.relationshipRole, STERLING_RELATIONSHIP_ROLES)) return null;
   if (value.disposition !== undefined && !oneOf(value.disposition, STERLING_FOUNDER_DISPOSITIONS)) return null;
+  if (value.fulfilledObligationIds !== undefined &&
+      (!boundedStrings(value.fulfilledObligationIds, 24) || value.fulfilledObligationIds.length === 0)) return null;
+  if (value.obligationUpdates !== undefined && !validObligationUpdates(value.obligationUpdates)) return null;
+  if (value.productionEstimate !== undefined && !validProductionEstimate(value.productionEstimate)) return null;
+  if (value.resolvedJobIds !== undefined &&
+      (!boundedStrings(value.resolvedJobIds, 24) || value.resolvedJobIds.length === 0 ||
+        !value.resolvedJobIds.every((row) => UUID_RE.test(row)))) return null;
   if (value.lifecycleStage === undefined && value.waitingOn === undefined && value.attentionPriority === undefined &&
-      value.relationshipRole === undefined && value.disposition === undefined) return null;
+      value.relationshipRole === undefined && value.disposition === undefined &&
+      value.operationalSubstage === undefined && value.fulfilledObligationIds === undefined &&
+      value.obligationUpdates === undefined && value.resolvedJobIds === undefined &&
+      value.lifecycleEffectiveOn === undefined && value.productionEstimate === undefined) return null;
   return value as unknown as SterlingFounderDirectiveRecord;
 }
 

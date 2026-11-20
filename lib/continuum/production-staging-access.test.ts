@@ -62,6 +62,7 @@ describe("Production-backed staging request boundary", () => {
     assert.equal(PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE.startsWith(`${EXECUTIVE_DASHBOARD_SESSION_PATH}/`), true);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_PATH, false, true).allowed, true);
     assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE, false, true).allowed, true);
+    assert.equal(decide("POST", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);
     assert.equal(decide("POST", PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE, false, true).allowed, true);
     assert.equal(decide("POST", PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE, false, true).allowed, true);
     assert.equal(decide("GET", PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, false, true).allowed, true);

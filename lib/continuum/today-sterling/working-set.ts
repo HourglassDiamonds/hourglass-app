@@ -127,6 +127,7 @@ function unique(values: readonly (string | null | undefined)[]): string[] {
 
 function operationalIdentifiers(value: string): string[] {
   const explicit = [
+    ...(value.match(/(?<![A-Za-z0-9])CR\d{7}(?![A-Za-z0-9])/gi) ?? []),
     ...strictProjectNumbers(value),
     ...(value.match(/(?<![A-Za-z0-9])NIV-[A-Za-z0-9-]{6,}(?![A-Za-z0-9])/gi) ?? []),
     ...(value.match(/(?<![A-Za-z0-9])LG\d{6,}(?![A-Za-z0-9])/gi) ?? []),
@@ -283,6 +284,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
       } : null });
   }
   for (const directive of input.founderDirectives ?? []) {
+    const directiveThreadIds = unique(directive.sourceRefs.map((sourceRef) => exactSourceThreadId(sourceRef)));
     evidence.push({
       evidenceId: `founder-directive:${directive.directiveId}`,
       sourceType: "founder_directive",
@@ -293,7 +295,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
       excerpt: directive.reason,
       attachmentFilenames: [],
       messageId: directive.directiveId,
-      threadId: null,
+      threadId: directiveThreadIds.length === 1 ? directiveThreadIds[0]! : null,
       projectIds: unique([directive.projectId]),
       personIds: unique([directive.personId]),
       provenance: "sterling_founder_directive",
@@ -301,10 +303,16 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
         directiveId: directive.directiveId,
         workUnitId: directive.workUnitId,
         lifecycleStage: directive.lifecycleStage,
+        lifecycleEffectiveOn: directive.lifecycleEffectiveOn,
+        operationalSubstage: directive.operationalSubstage,
+        productionEstimate: directive.productionEstimate,
         waitingOn: directive.waitingOn,
         attentionPriority: directive.attentionPriority,
         relationshipRole: directive.relationshipRole,
         disposition: directive.disposition,
+        fulfilledObligationIds: directive.fulfilledObligationIds,
+        obligationUpdates: directive.obligationUpdates,
+        resolvedJobIds: directive.resolvedJobIds,
       },
     });
   }

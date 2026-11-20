@@ -7,6 +7,10 @@ describe("bounded operational shadow review", () => {
   const runtime = readFileSync("lib/continuum/today-sterling/operational-shadow-review.ts", "utf8");
   const runRoute = readFileSync("app/api/continuum/internal/operational-shadow/run/route.ts", "utf8");
   const resultRoute = readFileSync("app/api/continuum/internal/operational-shadow/result/route.ts", "utf8");
+  const directivePreflight = readFileSync(
+    "lib/continuum/today-sterling/founder-directive-preflight.ts", "utf8");
+  const control = readFileSync(
+    "app/executive-dashboard/concierge/sterling-today/operational-review/operational-shadow-control.tsx", "utf8");
   const nextConfig = readFileSync("next.config.ts", "utf8");
   const proxy = readFileSync("proxy.ts", "utf8");
   const page = readFileSync("app/executive-dashboard/concierge/sterling-today/operational-review/page.tsx", "utf8");
@@ -41,6 +45,11 @@ describe("bounded operational shadow review", () => {
     assert.match(runRoute, /sameOrigin/);
     assert.match(resultRoute, /restoreAuthenticatedOperationalShadowResult/);
     assert.match(resultRoute, /cleanupAuthenticatedOperationalShadowResult/);
+    assert.match(resultRoute, /prepareAuthenticatedOperationalShadowFounderDirectives/);
+    assert.match(directivePreflight, /recordSterlingFounderDirective/);
+    assert.match(directivePreflight, /loadSterlingFounderDirectives/);
+    assert.doesNotMatch(directivePreflight, /createSterlingRunLease|executeSterlingTodaySemantic|createLiveSourceViewerBatch/);
+    assert.match(control, /disabled=\{pending \|\| !directivesReady\}/);
   });
 
   it("rewrites only the two browser-facing shadow routes to guarded internal handlers", () => {
@@ -91,6 +100,9 @@ describe("bounded operational shadow review", () => {
     assert.match(runtime, /newerUnindexedMessageIds/);
     assert.match(runtime, /bodyIncompleteMessageIds/);
     assert.match(runtime, /retrievedAt/);
+    assert.match(runtime, /outstandingObligations/);
+    assert.match(runtime, /description: obligation\.description\.trim\(\)/);
+    assert.match(runtime, /checkBackAt/);
     const resultBlock = runtime.slice(runtime.indexOf("const threadEvidence"));
     assert.doesNotMatch(resultBlock, /plainText|snippet|operationalText|verifiedCurrentMessageText/);
   });

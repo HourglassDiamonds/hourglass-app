@@ -5,6 +5,7 @@ import type {
 
 type Obligation = {
   obligationId: string;
+  description: string;
   status: string;
   responsibleParty: string;
   evidenceRefs: readonly string[];
@@ -18,7 +19,8 @@ type Recommendation = {
 export type OperationalBoardDecision = {
   disposition: OperationalBoardDisposition;
   owner: OperationalBoardOwner;
-  reason: "evidence_incomplete" | "unsupported_founder_action" | "model_classification";
+  reason: "evidence_incomplete" | "unsupported_founder_action" | "unsupported_next_step" | "model_classification";
+  outstandingObligations: readonly Obligation[];
 };
 
 function normalizedOwner(value: string): OperationalBoardOwner {
@@ -30,18 +32,30 @@ function isOutstanding(obligation: Obligation): boolean {
   return obligation.status === "open" || obligation.status === "ambiguous";
 }
 
-function hasSpecificFounderAction(
+function supportedOutstandingObligations(
+  obligations: readonly Obligation[],
+  owner: OperationalBoardOwner,
+): Obligation[] {
+  const terminalIds = new Set(obligations
+    .filter((row) => row.status === "fulfilled" || row.status === "superseded")
+    .map((row) => row.obligationId));
+  return obligations.filter((obligation) =>
+    isOutstanding(obligation) && !terminalIds.has(obligation.obligationId) &&
+    obligation.responsibleParty === owner && obligation.description.trim().length > 0 &&
+    obligation.evidenceRefs.length > 0);
+}
+
+function supportedFounderObligations(
   obligations: readonly Obligation[],
   recommendation: Recommendation,
-): boolean {
-  if (recommendation?.category !== "founder_actions") return false;
-  const recommended = new Map(recommendation.obligations.map((row) => [row.obligationId, row]));
-  return obligations.some((obligation) => {
-    const echoed = recommended.get(obligation.obligationId);
-    return isOutstanding(obligation) && obligation.responsibleParty === "founder" &&
-      obligation.evidenceRefs.length > 0 && Boolean(echoed && isOutstanding(echoed) &&
-        echoed.responsibleParty === "founder" && echoed.evidenceRefs.length > 0);
-  });
+): Obligation[] {
+  if (recommendation?.category !== "founder_actions") return [];
+  const recommended = new Map(
+    supportedOutstandingObligations(recommendation.obligations, "founder")
+      .map((row) => [row.obligationId, row]),
+  );
+  return supportedOutstandingObligations(obligations, "founder")
+    .filter((obligation) => recommended.has(obligation.obligationId));
 }
 
 /**
@@ -57,25 +71,41 @@ export function decideOperationalBoardRow(input: {
   evidenceComplete: boolean;
 }): OperationalBoardDecision {
   if (!input.evidenceComplete) {
-    return { disposition: "ambiguous", owner: "unknown", reason: "evidence_incomplete" };
+    return { disposition: "ambiguous", owner: "unknown", reason: "evidence_incomplete",
+      outstandingObligations: [] };
   }
   if (input.todayDisposition === "ambiguous") {
-    return { disposition: "ambiguous", owner: "unknown", reason: "model_classification" };
+    return { disposition: "ambiguous", owner: "unknown", reason: "model_classification",
+      outstandingObligations: [] };
   }
-  const open = input.obligations.some(isOutstanding);
+  const open = input.obligations.some((row) => isOutstanding(row) &&
+    !input.obligations.some((other) => other.obligationId === row.obligationId &&
+      (other.status === "fulfilled" || other.status === "superseded")));
   if (!open && input.lifecycle === "completed") {
-    return { disposition: "resolved", owner: "none", reason: "model_classification" };
+    return { disposition: "resolved", owner: "none", reason: "model_classification",
+      outstandingObligations: [] };
   }
   if (!open && input.todayDisposition === "suppressed") {
-    return { disposition: "suppressed", owner: "none", reason: "model_classification" };
+    return { disposition: "suppressed", owner: "none", reason: "model_classification",
+      outstandingObligations: [] };
   }
   if (input.nextStepOwner === "founder") {
-    return hasSpecificFounderAction(input.obligations, input.recommendation)
-      ? { disposition: "founder_action", owner: "founder", reason: "model_classification" }
-      : { disposition: "ambiguous", owner: "unknown", reason: "unsupported_founder_action" };
+    const obligations = supportedFounderObligations(input.obligations, input.recommendation);
+    return obligations.length > 0
+      ? { disposition: "founder_action", owner: "founder", reason: "model_classification",
+          outstandingObligations: obligations }
+      : { disposition: "ambiguous", owner: "unknown", reason: "unsupported_founder_action",
+          outstandingObligations: [] };
   }
   const owner = normalizedOwner(input.nextStepOwner);
-  if (owner === "client") return { disposition: "waiting_on_client", owner, reason: "model_classification" };
-  if (owner === "vendor_shop") return { disposition: "waiting_on_shop", owner, reason: "model_classification" };
-  return { disposition: "ambiguous", owner: "unknown", reason: "model_classification" };
+  if (owner === "client" || owner === "vendor_shop") {
+    const obligations = supportedOutstandingObligations(input.obligations, owner);
+    return obligations.length > 0
+      ? { disposition: owner === "client" ? "waiting_on_client" : "waiting_on_shop", owner,
+          reason: "model_classification", outstandingObligations: obligations }
+      : { disposition: "ambiguous", owner: "unknown", reason: "unsupported_next_step",
+          outstandingObligations: [] };
+  }
+  return { disposition: "ambiguous", owner: "unknown", reason: "model_classification",
+    outstandingObligations: [] };
 }

@@ -11,6 +11,8 @@ const CACHE_KEY = "continuum:sterling:operational-shadow:v11";
 
 export function OperationalShadowControl() {
   const [result, setResult] = useState<OperationalShadowResult | null>(null);
+  const [directivesReady, setDirectivesReady] = useState(false);
+  const [directiveMessage, setDirectiveMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const request = async (method: "POST" | "GET" | "DELETE") => {
     setPending(true);
@@ -38,6 +40,27 @@ export function OperationalShadowControl() {
       setPending(false);
     }
   };
+  const prepareDirectives = async () => {
+    setPending(true);
+    try {
+      const response = await fetch(PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE, {
+        method: "POST",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+      const next = await response.json() as { ok: boolean; status?: string; reason?: string; directives?: unknown[] };
+      const ready = response.ok && next.ok && next.status === "ready" && next.directives?.length === 2;
+      setDirectivesReady(ready);
+      setDirectiveMessage(ready
+        ? "Morgan and James confirmations are kept and readable through Client Memory."
+        : `Founder confirmations unavailable · ${next.reason ?? "readback-failed"}`);
+    } catch {
+      setDirectivesReady(false);
+      setDirectiveMessage("Founder confirmations unavailable · request-failed");
+    } finally {
+      setPending(false);
+    }
+  };
   const download = () => {
     if (!result) return;
     const url = URL.createObjectURL(new Blob([JSON.stringify(result, null, 2)], { type: "application/json" }));
@@ -55,10 +78,14 @@ export function OperationalShadowControl() {
         One bounded execution retrieves only the server-owned thread set, runs the existing assembler and comparator, and returns a sanitized result. It cannot publish Today or change business records.
       </p>
       <div className="mt-6">
-        <button type="button" onClick={() => void request("POST")} disabled={pending} className="min-h-11 rounded-xl bg-[#ad9164] px-5 text-[11px] uppercase tracking-[0.15em] text-[#17120e] disabled:opacity-50">
+        <button type="button" onClick={() => void prepareDirectives()} disabled={pending || directivesReady} className="min-h-11 rounded-xl border border-white/15 px-5 text-[11px] uppercase tracking-[0.15em] text-[#c4b7aa] disabled:opacity-50">
+          {directivesReady ? "Founder confirmations ready" : "Save and verify founder confirmations"}
+        </button>
+        <button type="button" onClick={() => void request("POST")} disabled={pending || !directivesReady} className="ml-3 min-h-11 rounded-xl bg-[#ad9164] px-5 text-[11px] uppercase tracking-[0.15em] text-[#17120e] disabled:opacity-50">
           {pending ? "Running bounded review…" : "Run authorized shadow review once"}
         </button>
       </div>
+      {directiveMessage ? <p role={directivesReady ? "status" : "alert"} className={`mt-3 text-[12px] ${directivesReady ? "text-[#a9bd8e]" : "text-[#d39a8a]"}`}>{directiveMessage}</p> : null}
       {!result ? <button type="button" onClick={() => void request("GET")} disabled={pending} className="mt-3 min-h-11 rounded-xl border border-white/15 px-4 text-[11px] uppercase tracking-[0.15em] text-[#c4b7aa]">Restore durable result without rerun</button> : null}
       {result ? (
         <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-5 text-[12px] text-[#c4b7aa]">

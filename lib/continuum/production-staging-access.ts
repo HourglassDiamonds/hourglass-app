@@ -88,7 +88,9 @@ export function productionStagingRequestDecision(input: {
       (operationalShadowEnabled &&
         (input.pathname === PRODUCTION_SHADOW_PASSKEY_BEGIN_ROUTE ||
           input.pathname === PRODUCTION_SHADOW_PASSKEY_COMPLETE_ROUTE)) ||
-      (operationalShadowEnabled && input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE)
+      (operationalShadowEnabled &&
+        (input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RUN_ROUTE ||
+          input.pathname === PRODUCTION_STAGING_OPERATIONAL_SHADOW_RESULT_ROUTE))
       ? { allowed: true }
       : { allowed: false, reason: "method-denied" };
   }

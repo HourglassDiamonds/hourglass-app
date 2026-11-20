@@ -139,6 +139,26 @@ describe("operational board comparison", () => {
     assert.equal(result.duplicateWorkUnits.length, 0);
   });
 
+  it("keeps completed and current projects distinct when correspondence is reused", () => {
+    const sharedSource = ["gmail:thread:shared-history"];
+    const result = compareOperationalBoard({
+      expected: [
+        expected({ workUnitId: "project:completed", projectId: "completed", exactSourceRefs: sharedSource,
+          material: false, disposition: "resolved", owner: "none" }),
+        expected({ workUnitId: "project:current", projectId: "current", exactSourceRefs: sharedSource,
+          disposition: "waiting_on_shop", owner: "vendor_shop" }),
+      ],
+      actual: [
+        actual({ workUnitId: "project:completed", projectId: "completed", exactSourceRefs: sharedSource,
+          disposition: "resolved", owner: "none" }),
+        actual({ workUnitId: "project:current", projectId: "current", exactSourceRefs: sharedSource,
+          disposition: "waiting_on_shop", owner: "vendor_shop" }),
+      ],
+    });
+    assert.equal(result.passed, true);
+    assert.equal(result.duplicateWorkUnits.length, 0);
+  });
+
   it("requires a specific supported obligation before emitting a founder alert", () => {
     const unsupported = decideOperationalBoardRow({
       nextStepOwner: "founder", todayDisposition: "presented", lifecycle: "intake",
@@ -146,9 +166,11 @@ describe("operational board comparison", () => {
       evidenceComplete: true,
     });
     assert.deepEqual(unsupported,
-      { disposition: "ambiguous", owner: "unknown", reason: "unsupported_founder_action" });
+      { disposition: "ambiguous", owner: "unknown", reason: "unsupported_founder_action",
+        outstandingObligations: [] });
 
-    const obligation = { obligationId: "follow-up", status: "open",
+    const obligation = { obligationId: "follow-up", description: "Reply with the requested measurements",
+      status: "open",
       responsibleParty: "founder", evidenceRefs: ["canonical:job:one"] };
     const supported = decideOperationalBoardRow({
       nextStepOwner: "founder", todayDisposition: "presented", lifecycle: "intake",
@@ -157,15 +179,69 @@ describe("operational board comparison", () => {
     });
     assert.equal(supported.disposition, "founder_action");
     assert.equal(supported.owner, "founder");
+    assert.deepEqual(supported.outstandingObligations.map((row) => row.description),
+      ["Reply with the requested measurements"]);
   });
 
   it("leaves a decision visibly unresolved when its evidence is incomplete", () => {
-    const obligation = { obligationId: "follow-up", status: "open",
+    const obligation = { obligationId: "follow-up", description: "Reply with the requested measurements",
+      status: "open",
       responsibleParty: "founder", evidenceRefs: ["gmail:message:one"] };
     assert.deepEqual(decideOperationalBoardRow({
       nextStepOwner: "founder", todayDisposition: "presented", lifecycle: "intake",
       obligations: [obligation], recommendation: { category: "founder_actions", obligations: [obligation] },
       evidenceComplete: false,
-    }), { disposition: "ambiguous", owner: "unknown", reason: "evidence_incomplete" });
+    }), { disposition: "ambiguous", owner: "unknown", reason: "evidence_incomplete",
+      outstandingObligations: [] });
+  });
+
+  it("requires a specific deliverable before assigning a client or shop owner", () => {
+    const unsupported = decideOperationalBoardRow({
+      nextStepOwner: "vendor_shop", todayDisposition: "presented", lifecycle: "cad",
+      obligations: [], recommendation: null, evidenceComplete: true,
+    });
+    assert.deepEqual(unsupported,
+      { disposition: "ambiguous", owner: "unknown", reason: "unsupported_next_step",
+        outstandingObligations: [] });
+
+    const deliverable = { obligationId: "deliverable", description: "Return the revised CAD",
+      status: "open", responsibleParty: "vendor_shop", evidenceRefs: ["gmail:message:vendor"] };
+    const supported = decideOperationalBoardRow({
+      nextStepOwner: "vendor_shop", todayDisposition: "presented", lifecycle: "cad",
+      obligations: [deliverable], recommendation: null, evidenceComplete: true,
+    });
+    assert.equal(supported.disposition, "waiting_on_shop");
+    assert.deepEqual(supported.outstandingObligations, [deliverable]);
+  });
+
+  it("lets completion of the same obligation retire it without erasing distinct founder work", () => {
+    const completed = { obligationId: "label", description: "Send the shipping label",
+      status: "fulfilled", responsibleParty: "founder", evidenceRefs: ["gmail:message:sent"] };
+    const staleEcho = { ...completed, status: "open", evidenceRefs: ["gmail:message:request"] };
+    const distinct = { obligationId: "approval", description: "Approve the revised design",
+      status: "open", responsibleParty: "founder", evidenceRefs: ["gmail:message:design"] };
+    const decision = decideOperationalBoardRow({
+      nextStepOwner: "founder", todayDisposition: "presented", lifecycle: "cad",
+      obligations: [staleEcho, completed, distinct],
+      recommendation: { category: "founder_actions", obligations: [staleEcho, distinct] },
+      evidenceComplete: true,
+    });
+    assert.equal(decision.disposition, "founder_action");
+    assert.deepEqual(decision.outstandingObligations.map((row) => row.obligationId), ["approval"]);
+  });
+
+  it("suppresses a completed founder commitment when no distinct work remains", () => {
+    const completed = { obligationId: "label", description: "Send the shipping label",
+      status: "fulfilled", responsibleParty: "founder", evidenceRefs: ["gmail:message:sent"] };
+    const staleEcho = { ...completed, status: "open", evidenceRefs: ["gmail:message:request"] };
+    const decision = decideOperationalBoardRow({
+      nextStepOwner: "founder", todayDisposition: "suppressed", lifecycle: "cad",
+      obligations: [staleEcho, completed],
+      recommendation: { category: "founder_actions", obligations: [staleEcho] },
+      evidenceComplete: true,
+    });
+    assert.deepEqual(decision,
+      { disposition: "suppressed", owner: "none", reason: "model_classification",
+        outstandingObligations: [] });
   });
 });

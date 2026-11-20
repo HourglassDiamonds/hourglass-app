@@ -32,6 +32,20 @@ export const STERLING_FOUNDER_DISPOSITIONS = [
 ] as const;
 export type SterlingFounderDisposition = (typeof STERLING_FOUNDER_DISPOSITIONS)[number];
 
+export type SterlingFounderObligationUpdate = {
+  obligationId: string;
+  description: string;
+  status: "open" | "fulfilled" | "superseded" | "ambiguous";
+  responsibleParty: SterlingResponsibleParty;
+};
+
+export type SterlingProductionEstimate = {
+  status: "pending" | "estimated";
+  completionOn: string | null;
+  quotedLeadTime: string | null;
+  sourceRef: string | null;
+};
+
 export type SterlingFounderDirectiveRecord = {
   directiveId: string;
   workUnitId: string;
@@ -41,10 +55,16 @@ export type SterlingFounderDirectiveRecord = {
   recordedAt: string;
   recordedBy: string;
   lifecycleStage?: ProjectLifecycleStage | null;
+  lifecycleEffectiveOn?: string;
+  operationalSubstage?: string;
+  productionEstimate?: SterlingProductionEstimate;
   waitingOn?: SterlingResponsibleParty;
   attentionPriority?: SterlingAttentionPriority;
   relationshipRole?: SterlingRelationshipRole;
   disposition?: SterlingFounderDisposition;
+  fulfilledObligationIds?: readonly string[];
+  obligationUpdates?: readonly SterlingFounderObligationUpdate[];
+  resolvedJobIds?: readonly string[];
   reason: string;
 };
 
@@ -94,10 +114,16 @@ export type SterlingEvidence = {
     directiveId: string;
     workUnitId?: string;
     lifecycleStage?: ProjectLifecycleStage | null;
+    lifecycleEffectiveOn?: string;
+    operationalSubstage?: string;
+    productionEstimate?: SterlingProductionEstimate;
     waitingOn?: SterlingResponsibleParty;
     attentionPriority?: SterlingAttentionPriority;
     relationshipRole?: SterlingRelationshipRole;
     disposition?: SterlingFounderDisposition;
+    fulfilledObligationIds?: readonly string[];
+    obligationUpdates?: readonly SterlingFounderObligationUpdate[];
+    resolvedJobIds?: readonly string[];
   } | null;
 };
 

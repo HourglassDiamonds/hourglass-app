@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { applySterlingFounderAuthority } from "./founder-authority";
+import { decideOperationalBoardRow } from "./operational-board-decision";
 import { validateSterlingTodayProposal } from "./validate";
 import {
   STERLING_TODAY_PROPOSAL_VERSION,
@@ -26,6 +27,9 @@ function directiveEvidence(input: {
   waitingOn?: "founder" | "client" | "vendor_shop" | "business_contact" | "unknown";
   attention?: "action_now" | "monitor" | "no_attention";
   relationshipRole?: "client" | "business_contact";
+  operationalSubstage?: string;
+  fulfilledObligationIds?: readonly string[];
+  resolvedJobIds?: readonly string[];
 }): SterlingEvidence {
   return {
     evidenceId: input.id,
@@ -44,10 +48,13 @@ function directiveEvidence(input: {
     founderDirective: {
       directiveId: input.id,
       lifecycleStage: input.stage,
+      operationalSubstage: input.operationalSubstage,
       waitingOn: input.waitingOn,
       attentionPriority: input.attention,
       relationshipRole: input.relationshipRole,
       disposition: input.disposition,
+      fulfilledObligationIds: input.fulfilledObligationIds,
+      resolvedJobIds: input.resolvedJobIds,
     },
   };
 }
@@ -354,6 +361,69 @@ describe("Sterling founder authority", () => {
       "approved_for_founder_review",
       "approved_for_founder_review",
     ]);
+  });
+
+  it("closes only named obligations and an exact stale reminder while leaving the project active", () => {
+    const evidence = directiveEvidence({
+      id: "founder-partial-cad-approval",
+      at: "2026-11-20T14:00:00.000Z",
+      operationalSubstage: "CAD approved",
+      fulfilledObligationIds: ["shop-final-cad", "founder-cad-review"],
+      resolvedJobIds: [JOB_ID],
+    });
+    const set = workingSet([evidence], { withOpenJob: true });
+    const raw = proposal(evidence.evidenceId);
+    raw.portfolioAssessments[0]!.obligations = [
+      {
+        obligationId: "shop-final-cad",
+        description: "Shop delivers the final CAD.",
+        status: "open",
+        responsibleParty: "vendor_shop",
+        confidence: "medium",
+        evidenceRefs: [evidence.evidenceId],
+      },
+      {
+        obligationId: "founder-cad-review",
+        description: "Founder reviews the final CAD.",
+        status: "open",
+        responsibleParty: "founder",
+        confidence: "medium",
+        evidenceRefs: [evidence.evidenceId],
+      },
+    ];
+    raw.recommendations[0]!.obligations = [...raw.portfolioAssessments[0]!.obligations];
+
+    const first = applySterlingFounderAuthority(set, raw);
+    const second = applySterlingFounderAuthority(set, first);
+    const assessment = second.portfolioAssessments[0]!;
+    assert.equal(assessment.currentStage.canonicalLifecycleStage, "cad");
+    assert.equal(assessment.currentStage.operationalSubstage, "CAD approved");
+    assert.equal(assessment.nextStepOwner, "unknown");
+    assert.equal(assessment.todayDisposition, "suppressed");
+    assert.equal(assessment.attentionPriority, "no_attention");
+    assert.deepEqual(assessment.obligations.map((row) => [row.obligationId, row.status]), [
+      ["shop-final-cad", "fulfilled"],
+      ["founder-cad-review", "fulfilled"],
+    ]);
+    assert.equal(second.recommendations.length, 0);
+    assert.deepEqual(second.proposedCanonicalMutations.map((row) => [row.kind, row.jobId]), [
+      ["resolve_open_job", JOB_ID],
+    ]);
+    assert.equal(second.proposedCanonicalMutations[0]?.targetLifecycleStage, null);
+    assert.equal(validateSterlingTodayProposal(set, second).accepted, true);
+    assert.deepEqual(decideOperationalBoardRow({
+      nextStepOwner: assessment.nextStepOwner,
+      todayDisposition: assessment.todayDisposition,
+      lifecycle: assessment.currentStage.canonicalLifecycleStage,
+      obligations: assessment.obligations,
+      recommendation: null,
+      evidenceComplete: true,
+    }), {
+      disposition: "suppressed",
+      owner: "none",
+      reason: "model_classification",
+      outstandingObligations: [],
+    });
   });
 
   it("does not guess which canonical job owns a waiting-on correction", () => {

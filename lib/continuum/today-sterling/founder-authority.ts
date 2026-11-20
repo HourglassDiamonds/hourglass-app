@@ -101,25 +101,27 @@ function founderCanonicalMutations(
     const openJobs = workingSet.jobs.filter((job) => job.projectId === project.projectId &&
       (job.state === "open" || job.state === "snoozed"));
     const terminal = directive.disposition != null && TERMINAL_DISPOSITIONS.has(directive.disposition);
+    const specificallyResolved = new Set(directive.resolvedJobIds ?? []);
     for (const job of openJobs) {
-      if (terminal) {
+      if (terminal || specificallyResolved.has(job.jobId)) {
         const completed = directive.disposition === "completed";
+        const resolve = specificallyResolved.has(job.jobId) || completed;
         mutations.push({
           ...base,
           proposalKey: founderMutationKey(
             directive.directiveId,
-            completed ? "resolve_open_job" : "cancel_open_job",
+            resolve ? "resolve_open_job" : "cancel_open_job",
             job.jobId,
           ),
-          kind: completed ? "resolve_open_job" : "cancel_open_job",
+          kind: resolve ? "resolve_open_job" : "cancel_open_job",
           jobId: job.jobId,
           expectedRecordVersion: job.recordVersion,
           targetLifecycleStage: null,
-          targetJobState: completed ? "resolved" : "cancelled",
+          targetJobState: resolve ? "resolved" : "cancelled",
           targetResponsibleParty: null,
           newJob: null,
-          reason: completed
-            ? "Founder-confirmed completion; review resolution of the remaining canonical open job."
+          reason: resolve
+            ? "Founder-confirmed obligation completion; review resolution of this exact canonical open job."
             : "Founder-confirmed terminal disposition; review cancellation of the stale canonical open job.",
         });
       } else if (openJobs.length === 1 && directive.waitingOn && directive.waitingOn !== job.responsibleParty) {
@@ -154,8 +156,47 @@ function reconciledAssessment(
 ): SterlingPortfolioAssessment {
   const directive = evidence.founderDirective;
   const terminal = directive.disposition != null && TERMINAL_DISPOSITIONS.has(directive.disposition);
-  const priority = terminal ? "no_attention" : directive.attentionPriority ?? assessment.attentionPriority;
-  const owner = directive.waitingOn ?? assessment.nextStepOwner;
+  const fulfilled = new Set(directive.fulfilledObligationIds ?? []);
+  const updatedById = new Map((directive.obligationUpdates ?? []).map((row) => [row.obligationId, row] as const));
+  let obligations = terminal
+    ? assessment.obligations.map((row) => ({
+        ...row,
+        status: row.status === "open" || row.status === "ambiguous" ? "superseded" as const : row.status,
+        confidence: "high" as const,
+        evidenceRefs: addEvidence(row.evidenceRefs, evidence.evidenceId),
+      }))
+    : assessment.obligations.map((row) => {
+      const update = updatedById.get(row.obligationId);
+      return update ? {
+          ...row,
+          ...update,
+          confidence: "high" as const,
+          evidenceRefs: addEvidence(row.evidenceRefs, evidence.evidenceId),
+        }
+        : fulfilled.has(row.obligationId) ? {
+          ...row,
+          status: "fulfilled" as const,
+          confidence: "high" as const,
+          evidenceRefs: addEvidence(row.evidenceRefs, evidence.evidenceId),
+        }
+        : row;
+    });
+  if (!terminal) {
+    const existing = new Set(obligations.map((row) => row.obligationId));
+    obligations = [...obligations, ...(directive.obligationUpdates ?? [])
+      .filter((row) => !existing.has(row.obligationId))
+      .map((row) => ({ ...row, confidence: "high" as const, evidenceRefs: [evidence.evidenceId] }))];
+  }
+  const hasOutstanding = obligations.some((row) => row.status === "open" || row.status === "ambiguous");
+  const hasCompletionUpdate = fulfilled.size > 0 || (directive.obligationUpdates ?? [])
+    .some((row) => row.status === "fulfilled" || row.status === "superseded");
+  const partialCompletionExhausted = hasCompletionUpdate && !hasOutstanding;
+  const priority = terminal || partialCompletionExhausted
+    ? "no_attention"
+    : directive.attentionPriority ?? assessment.attentionPriority;
+  const owner = partialCompletionExhausted && directive.waitingOn === undefined
+    ? "unknown"
+    : directive.waitingOn ?? assessment.nextStepOwner;
   const disposition = terminal || priority === "no_attention" ? "suppressed" : "presented";
   const recommendationItemId = disposition === "presented"
     ? assessment.recommendationItemId ?? founderItemId(assessment.workUnitId, directive.directiveId)
@@ -169,19 +210,13 @@ function reconciledAssessment(
       canonicalLifecycleStage: directive.lifecycleStage === undefined
         ? assessment.currentStage.canonicalLifecycleStage
         : directive.lifecycleStage,
+      operationalSubstage: directive.operationalSubstage ?? assessment.currentStage.operationalSubstage,
       responsibleParty: owner,
       confidence: "high",
       explanation: `Founder-authoritative directive recorded at ${evidence.timestamp}.`,
       evidenceRefs: addEvidence(assessment.currentStage.evidenceRefs, evidence.evidenceId),
     },
-    obligations: terminal
-      ? assessment.obligations.map((row) => ({
-          ...row,
-          status: row.status === "open" || row.status === "ambiguous" ? "superseded" as const : row.status,
-          confidence: "high" as const,
-          evidenceRefs: addEvidence(row.evidenceRefs, evidence.evidenceId),
-        }))
-      : assessment.obligations,
+    obligations,
     nextStepOwner: owner,
     attentionPriority: priority,
     confidence: "high",

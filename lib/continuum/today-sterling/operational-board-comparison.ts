@@ -37,7 +37,14 @@ export type ShadowBoardAuditRow = OperationalBoardIdentity & {
   openJobIds: readonly string[];
   evidenceState?: "complete" | "incomplete";
   incompleteThreadIds?: readonly string[];
-  decisionReason?: "evidence_incomplete" | "unsupported_founder_action" | "model_classification";
+  decisionReason?: "evidence_incomplete" | "unsupported_founder_action" | "unsupported_next_step" | "model_classification";
+  outstandingObligations?: readonly {
+    obligationId: string;
+    description: string;
+    responsibleParty: OperationalBoardOwner;
+    evidenceRefs: readonly string[];
+    checkBackAt: string | null;
+  }[];
 };
 
 export type OperationalBoardMismatch = {

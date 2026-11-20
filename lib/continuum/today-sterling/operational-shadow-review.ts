@@ -138,6 +138,21 @@ export function buildOperationalComparisonInput(
       evidenceState: incompleteThreadIds.length === 0 ? "complete" : "incomplete",
       incompleteThreadIds,
       decisionReason: decision.reason,
+      outstandingObligations: decision.outstandingObligations.map((obligation) => {
+        const jobIds = obligation.evidenceRefs
+          .map((sourceRef) => /^canonical:job:(.+)$/.exec(sourceRef)?.[1] ?? null)
+          .filter((jobId): jobId is string => Boolean(jobId));
+        const dueDates = assembly.requestWorkingSet.jobs
+          .filter((job) => (jobIds.includes(job.jobId) || job.jobId === obligation.obligationId) && job.dueAt)
+          .map((job) => job.dueAt!);
+        return {
+          obligationId: obligation.obligationId,
+          description: obligation.description.trim(),
+          responsibleParty: decision.owner,
+          evidenceRefs: [...obligation.evidenceRefs],
+          checkBackAt: [...new Set(dueDates)].length === 1 ? dueDates[0]! : null,
+        };
+      }),
     };
   });
   return { expected, actual, unresolvedExpected, comparison: compareOperationalBoard({ expected, actual }) };

@@ -21,6 +21,7 @@ const INSTRUCTIONS = [
   "The portfolio assessment is authoritative for canonical lifecycle stage, operational substage, stage responsible party, and next-step owner. A Today recommendation references its assessment by workUnitId and recommendationItemId and must not restate those fields.",
   "For every work unit not presented in Today, set an explicit suppressed or ambiguous disposition and explain the omissionReason. Never silently omit a work unit.",
   "Newer material evidence supersedes older evidence. Founder directives supersede inference.",
+  "When founderDirective.fulfilledObligationIds names an obligation, retain that exact obligationId as fulfilled and never reopen it. Apply obligationUpdates as exact founder-authoritative obligation state, including conditional future commitments. Treat resolvedJobIds as exact completed canonical jobs, not as permission to close other work.",
   "Actual fulfillment closes prior promises. Production/order evidence supersedes design-stage assumptions.",
   "Separate project stage from individual obligations. A production project may still have a founder obligation.",
   "Keep lifecycle stage, next-step ownership, attention priority, and relationship role independent. Never use one axis as a proxy for another.",
