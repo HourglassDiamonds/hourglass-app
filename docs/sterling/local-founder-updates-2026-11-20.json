@@ -50,16 +50,28 @@
       "reason": "Morgan C026937 / RN08576 was approved on November 20. Close final-CAD delivery and founder review, enter Production effective on the approval date, wait on the shop, and retire the old reminder. No quoted production lead time is stored, so the ETA remains pending."
     },
     {
-      "directiveId": "b2b2b2b2-b2b2-42b2-82b2-b2b2b2b2b2b2",
-      "workUnitId": "provisional:02bb0d6fa4b4ac390a8aa326",
-      "projectId": null,
+      "directiveId": "86b13f13-ea1c-45ea-b768-c15f05a49bf8",
+      "workUnitId": "project:affeb07c-745e-4078-8021-27e792309527",
+      "projectId": "affeb07c-745e-4078-8021-27e792309527",
       "personId": "3c845863-81c3-4391-9346-1dd18091c0af",
       "sourceRefs": [
-        "gmail:thread:192ba533c7869445"
+        "gmail:thread:192ba533c7869445",
+        "client-memory-note:844c0fc7-cc04-400b-8398-48da3132945f",
+        "gmail:thread:192ba533c7869445:message:1a1881c7f79f8e48",
+        "gmail:thread:192ba533c7869445:message:1a18952e3237f460",
+        "gmail:thread:192ba533c7869445:message:1a18d1dc5a4a46ce",
+        "gmail:thread:192ba533c7869445:message:1a1906722e180a92",
+        "gmail:thread:192ba533c7869445:message:1a19da672b729657",
+        "gmail:thread:192ba533c7869445:message:1a1a6c0668afcbcc",
+        "gmail:thread:192ba533c7869445:message:1a1a6c666d820912",
+        "gmail:thread:192ba533c7869445:message:1a1a6ca77eb81091",
+        "gmail:thread:192ba533c7869445:message:1a1a6cfac448986a"
       ],
       "recordedAt": "2026-11-20T09:05:00-05:00",
       "recordedBy": "founder:local-assessment",
-      "operationalSubstage": "Waiting on shop; founder video due upon receipt",
+      "lifecycleStage": "production",
+      "lifecycleEffectiveOn": "2026-11-20",
+      "operationalSubstage": "Waiting on shop. Justin sends James a finished-ring video upon receipt.",
       "waitingOn": "vendor_shop",
       "attentionPriority": "monitor",
       "relationshipRole": "client",
@@ -67,18 +79,18 @@
       "obligationUpdates": [
         {
           "obligationId": "shop-finish-return-cr5001205",
-          "description": "Shop finishes and returns the CR5001205 ring.",
+          "description": "Shop finishes and returns the ring.",
           "status": "open",
           "responsibleParty": "vendor_shop"
         },
         {
           "obligationId": "founder-video-on-receipt-cr5001205",
-          "description": "Justin sends James a video after receipt of the finished CR5001205 ring.",
+          "description": "Justin sends James a finished-ring video upon receipt.",
           "status": "open",
           "responsibleParty": "founder"
         }
       ],
-      "reason": "James Bowron's CR5001205 remains with the shop. Receipt of the finished ring triggers Justin's separate video commitment; C011699 remains completed and separate."
+      "reason": "James Bowron's CR5001205 remains with the shop. Invoice #1243 fulfilled the $1,175 deposit. Receipt of the finished ring triggers Justin's separate video commitment; completed C011699 remains separate."
     }
   ]
 }

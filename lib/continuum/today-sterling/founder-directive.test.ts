@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { describe, it } from "node:test";
 import { InMemoryClientMemoryStore } from "@/lib/continuum/client-memory/store";
-import { CLIENT_MEMORY_SOURCE_SYSTEM } from "@/lib/continuum/client-memory/types";
+import { CLIENT_MEMORY_SOURCE_SYSTEM, type SourceNote } from "@/lib/continuum/client-memory/types";
 import type { ClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/writer";
 import { createInMemoryClientMemoryNoteWriter } from "@/lib/continuum/client-memory/write/writer";
 import type { ProjectDeskSummary } from "@/lib/continuum/client-memory/project-desk/types";
@@ -19,7 +19,9 @@ import { buildSterlingTodayWorkingSet } from "./working-set";
 import { validateSterlingTodayProposal } from "./validate";
 import {
   AUTHORIZED_NOVEMBER_20_DIRECTIVE_IDS,
+  AUTHORIZED_NOVEMBER_20_READBACK_TARGETS,
   authorizedNovember20FounderDirectives,
+  matchAuthorizedNovember20FounderDirectiveReadback,
 } from "./authorized-founder-updates-2026-11-20";
 import {
   STERLING_TODAY_PROPOSAL_VERSION,
@@ -96,6 +98,73 @@ describe("Sterling founder directive persistence", () => {
   });
 });
 
+describe("November 20 founder directive readback", () => {
+  it("rejects the retired James provisional note and accepts both exact kept notes", () => {
+    const approved = authorizedNovember20FounderDirectives();
+    const note = (
+      noteId: string,
+      directive: SterlingFounderDirectiveRecord,
+      lifecycleStatus: SourceNote["lifecycleStatus"] = "kept",
+    ): SourceNote => ({
+      id: noteId,
+      personId: directive.personId,
+      projectId: directive.projectId,
+      contextLayer: "client",
+      sourceSystem: "concierge-manual",
+      sourceArtifact: "concierge-manual",
+      sourceSheet: "manual-notes",
+      sourceField: "note",
+      importRowKey: `manual:${directive.directiveId}`,
+      gmailThreadId: null,
+      noteText: sterlingFounderDirectiveNote(directive),
+      createdAt: directive.recordedAt,
+      lifecycleStatus,
+      updatedAt: directive.recordedAt,
+      updatedBy: directive.recordedBy,
+      deletedAt: lifecycleStatus === "trashed" ? "2026-11-20T18:21:15.907Z" : null,
+      previousLifecycle: lifecycleStatus === "trashed" ? "kept" : null,
+    });
+    const kept = AUTHORIZED_NOVEMBER_20_READBACK_TARGETS.map((target) => {
+      const directive = approved.find((row) => row.directiveId === target.directiveId)!;
+      const parsed = sterlingFounderDirectiveFromNote(note(target.noteId, directive));
+      assert.ok(parsed);
+      return { noteId: target.noteId, directive: parsed };
+    });
+    const matched = matchAuthorizedNovember20FounderDirectiveReadback(kept);
+    assert.ok(matched);
+    const james = matched.find((row) => row.noteId === "1904a048-4233-480e-960c-9320adbd39cd")!;
+    assert.equal(james.directive.projectId, "affeb07c-745e-4078-8021-27e792309527");
+    assert.deepEqual(james.directive.obligationUpdates, [
+      {
+        obligationId: "shop-finish-return-cr5001205",
+        description: "Shop finishes and returns the ring.",
+        status: "open",
+        responsibleParty: "vendor_shop",
+      },
+      {
+        obligationId: "founder-video-on-receipt-cr5001205",
+        description: "Justin sends James a finished-ring video upon receipt.",
+        status: "open",
+        responsibleParty: "founder",
+      },
+    ]);
+
+    const retired: SterlingFounderDirectiveRecord = {
+      ...james.directive,
+      directiveId: "b2b2b2b2-b2b2-42b2-82b2-b2b2b2b2b2b2",
+      workUnitId: "provisional:02bb0d6fa4b4ac390a8aa326",
+      projectId: null,
+    };
+    assert.equal(sterlingFounderDirectiveFromNote(
+      note("844c0fc7-cc04-400b-8398-48da3132945f", retired, "trashed"),
+    ), null);
+    assert.equal(matchAuthorizedNovember20FounderDirectiveReadback([
+      kept[0],
+      { noteId: "844c0fc7-cc04-400b-8398-48da3132945f", directive: retired },
+    ]), null);
+  });
+});
+
 describe("local founder update save and fresh-board replay", () => {
   it("reads generic saved updates back through manual notes and rebuilds Morgan and James", async (context) => {
     const ledger = JSON.parse(readFileSync(
@@ -116,6 +185,7 @@ describe("local founder update save and fresh-board replay", () => {
       ["9ff1ea75-4d5b-44d0-b2a0-c39ec15b54fd", "person"],
       ["3c845863-81c3-4391-9346-1dd18091c0af", "person"],
       ["6c47edeb-33f8-4aa7-bb38-53bbe023fcc3", "project"],
+      ["affeb07c-745e-4078-8021-27e792309527", "project"],
     ] as const) {
       await store.insertEntity({ id, kind, createdAt: "2026-11-19T00:00:00.000Z", createdBy: "local-replay" });
     }
@@ -127,6 +197,16 @@ describe("local founder update save and fresh-board replay", () => {
       status: "active",
       sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
       createdAt: "2026-11-19T00:00:00.000Z",
+      createdBy: "local-replay",
+    });
+    await store.insertRelationship({
+      id: "d5d5d5d5-d5d5-45d5-85d5-d5d5d5d5d5d5",
+      fromEntityId: "3c845863-81c3-4391-9346-1dd18091c0af",
+      toEntityId: "affeb07c-745e-4078-8021-27e792309527",
+      kind: "client-project",
+      status: "active",
+      sourceSystem: CLIENT_MEMORY_SOURCE_SYSTEM,
+      createdAt: "2026-11-20T09:05:00-05:00",
       createdBy: "local-replay",
     });
     for (const update of updates) {
@@ -145,6 +225,7 @@ describe("local founder update save and fresh-board replay", () => {
     const morganProjectId = "6c47edeb-33f8-4aa7-bb38-53bbe023fcc3";
     const morganPersonId = "9ff1ea75-4d5b-44d0-b2a0-c39ec15b54fd";
     const jamesPersonId = "3c845863-81c3-4391-9346-1dd18091c0af";
+    const jamesProjectId = "affeb07c-745e-4078-8021-27e792309527";
     const reminderJobId = "a92280a3-4041-4072-af8e-79e068ca2a0e";
     const projects: ProjectDeskSummary[] = [{
       projectId: morganProjectId,
@@ -162,6 +243,20 @@ describe("local founder update save and fresh-board replay", () => {
       projectWork: {} as never,
       lifecycleStage: "cad",
       lifecycleLabel: "CAD",
+      gmailThreadId: null,
+    }, {
+      projectId: jamesProjectId,
+      title: "James Bowron — Toi et Moi · CR5001205",
+      projectKind: "custom_new_jewelry",
+      people: [{ personId: jamesPersonId, displayName: "James Bowron", roles: ["client"], organizationName: null }],
+      specs: [{ fieldName: "cad_job_number", label: "CAD", value: "CR5001205" }],
+      latestNoteAt: "2026-11-20T14:05:00.000Z",
+      latestNotePreview: null,
+      coverage: { people: "available", specs: "available", notes: "available", jobs: "none", files: "none", email: "not-connected" },
+      recordCreatedAt: "2026-11-20T14:00:00.000Z",
+      projectWork: {} as never,
+      lifecycleStage: "production",
+      lifecycleLabel: "In production",
       gmailThreadId: null,
     }];
     const jobs: ProjectJob[] = [{
@@ -199,12 +294,12 @@ describe("local founder update save and fresh-board replay", () => {
       founderDirectives: reloaded,
     });
     const morganUnit = set.workUnits.find((row) => row.projectId === morganProjectId)!;
-    const jamesUnit = set.workUnits.find((row) => row.workUnitId === "provisional:02bb0d6fa4b4ac390a8aa326")!;
+    const jamesUnit = set.workUnits.find((row) => row.projectId === jamesProjectId)!;
     assert.ok(morganUnit);
-    assert.equal(jamesUnit.label, "CR5001205");
+    assert.equal(jamesUnit.label, "James Bowron — Toi et Moi · CR5001205");
     assert.deepEqual(jamesUnit.threadIds, ["192ba533c7869445"]);
     const morganEvidence = set.evidence.find((row) => row.founderDirective?.directiveId.startsWith("a1a1"))!;
-    const jamesEvidence = set.evidence.find((row) => row.founderDirective?.directiveId.startsWith("b2b2"))!;
+    const jamesEvidence = set.evidence.find((row) => row.founderDirective?.directiveId === "86b13f13-ea1c-45ea-b768-c15f05a49bf8")!;
 
     const raw: SterlingTodayProposal = {
       contractVersion: STERLING_TODAY_PROPOSAL_VERSION,
@@ -233,8 +328,8 @@ describe("local founder update save and fresh-board replay", () => {
         },
         {
           workUnitId: jamesUnit.workUnitId,
-          projectId: null,
-          identityStatus: "provisional_evidence",
+          projectId: jamesProjectId,
+          identityStatus: "canonical_project",
           todayDisposition: "ambiguous",
           recommendationItemId: null,
           currentStage: { canonicalLifecycleStage: null, operationalSubstage: null, responsibleParty: "unknown", confidence: "low", explanation: "Pre-update state.", evidenceRefs: [jamesEvidence.evidenceId] },
@@ -318,16 +413,16 @@ describe("local founder update save and fresh-board replay", () => {
       },
       {
         project: "James — CR5001205",
-        projectsStage: "Waiting on shop; founder video due upon receipt",
-        lifecycle: null,
-        lifecycleEffectiveOn: null,
+        projectsStage: "Waiting on shop. Justin sends James a finished-ring video upon receipt.",
+        lifecycle: "production",
+        lifecycleEffectiveOn: "2026-11-20",
         productionEstimate: null,
         today: "waiting_on_shop",
         next: "vendor_shop",
-        todayObligations: ["Shop finishes and returns the CR5001205 ring."],
+        todayObligations: ["Shop finishes and returns the ring."],
         rememberedObligations: [
-          { id: "shop-finish-return-cr5001205", status: "open", responsibleParty: "vendor_shop", description: "Shop finishes and returns the CR5001205 ring." },
-          { id: "founder-video-on-receipt-cr5001205", status: "open", responsibleParty: "founder", description: "Justin sends James a video after receipt of the finished CR5001205 ring." },
+          { id: "shop-finish-return-cr5001205", status: "open", responsibleParty: "vendor_shop", description: "Shop finishes and returns the ring." },
+          { id: "founder-video-on-receipt-cr5001205", status: "open", responsibleParty: "founder", description: "Justin sends James a finished-ring video upon receipt." },
         ],
       },
     ]);
@@ -390,20 +485,20 @@ describe("local founder update save and fresh-board replay", () => {
     const beforeReceipt = rebuildJamesFromSavedNotes("james-before-receipt");
     assert.deepEqual(beforeReceipt, {
       project: "James — CR5001205",
-      projectsStage: "Waiting on shop; founder video due upon receipt",
+      projectsStage: "Waiting on shop. Justin sends James a finished-ring video upon receipt.",
       rememberedObligations: [
-        { id: "shop-finish-return-cr5001205", status: "open", responsibleParty: "vendor_shop", description: "Shop finishes and returns the CR5001205 ring." },
-        { id: "founder-video-on-receipt-cr5001205", status: "open", responsibleParty: "founder", description: "Justin sends James a video after receipt of the finished CR5001205 ring." },
+        { id: "shop-finish-return-cr5001205", status: "open", responsibleParty: "vendor_shop", description: "Shop finishes and returns the ring." },
+        { id: "founder-video-on-receipt-cr5001205", status: "open", responsibleParty: "founder", description: "Justin sends James a finished-ring video upon receipt." },
       ],
       today: "waiting_on_shop",
       next: "vendor_shop",
-      todayObligations: ["Shop finishes and returns the CR5001205 ring."],
+      todayObligations: ["Shop finishes and returns the ring."],
     });
 
     const received: SterlingFounderDirectiveRecord = {
       directiveId: "e3e3e3e3-e3e3-43e3-83e3-e3e3e3e3e3e3",
       workUnitId: jamesUnit.workUnitId,
-      projectId: null,
+      projectId: jamesProjectId,
       personId: jamesPersonId,
       sourceRefs: ["founder-confirmation:james-ring-received"],
       recordedAt: "2026-11-20T15:00:00-05:00",
@@ -445,7 +540,7 @@ describe("local founder update save and fresh-board replay", () => {
     const sent: SterlingFounderDirectiveRecord = {
       directiveId: "f4f4f4f4-f4f4-44f4-84f4-f4f4f4f4f4f4",
       workUnitId: jamesUnit.workUnitId,
-      projectId: null,
+      projectId: jamesProjectId,
       personId: jamesPersonId,
       sourceRefs: ["founder-confirmation:james-video-sent"],
       recordedAt: "2026-11-20T15:30:00-05:00",

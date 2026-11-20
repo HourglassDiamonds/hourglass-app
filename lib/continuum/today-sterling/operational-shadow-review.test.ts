@@ -46,8 +46,9 @@ describe("bounded operational shadow review", () => {
     assert.match(resultRoute, /restoreAuthenticatedOperationalShadowResult/);
     assert.match(resultRoute, /cleanupAuthenticatedOperationalShadowResult/);
     assert.match(resultRoute, /prepareAuthenticatedOperationalShadowFounderDirectives/);
-    assert.match(directivePreflight, /recordSterlingFounderDirective/);
-    assert.match(directivePreflight, /loadSterlingFounderDirectives/);
+    assert.match(directivePreflight, /matchAuthorizedNovember20FounderDirectiveReadback/);
+    assert.match(directivePreflight, /loadSterlingFounderDirectiveNotes/);
+    assert.doesNotMatch(directivePreflight, /recordSterlingFounderDirective|createSupabaseClientMemoryNoteWriter/);
     assert.doesNotMatch(directivePreflight, /createSterlingRunLease|executeSterlingTodaySemantic|createLiveSourceViewerBatch/);
     assert.match(control, /disabled=\{pending \|\| !directivesReady\}/);
   });
