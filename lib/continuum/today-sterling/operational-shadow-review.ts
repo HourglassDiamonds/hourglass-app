@@ -153,6 +153,13 @@ export function buildOperationalComparisonInput(
           checkBackAt: [...new Set(dueDates)].length === 1 ? dueDates[0]! : null,
         };
       }),
+      rememberedObligations: assessment.obligations.map((obligation) => ({
+        obligationId: obligation.obligationId,
+        description: obligation.description.trim(),
+        status: obligation.status,
+        responsibleParty: obligation.responsibleParty,
+        evidenceRefs: [...obligation.evidenceRefs],
+      })),
     };
   });
   return { expected, actual, unresolvedExpected, comparison: compareOperationalBoard({ expected, actual }) };

@@ -23,11 +23,11 @@ const TERMINAL_DISPOSITIONS = new Set<SterlingFounderDisposition>([
   "solicitation",
 ]);
 
-function latestFounderEvidence(
+function founderEvidenceChronology(
   workingSet: SterlingTodayWorkingSet,
   workUnitId: string,
   evidenceRefs: readonly string[],
-): FounderEvidence | null {
+): FounderEvidence[] {
   const allowed = new Set(evidenceRefs);
   return workingSet.evidence
     .filter((row): row is FounderEvidence => allowed.has(row.evidenceId) && Boolean(row.founderDirective) &&
@@ -35,8 +35,7 @@ function latestFounderEvidence(
     .sort((left, right) => {
       const byTime = Date.parse(left.timestamp) - Date.parse(right.timestamp);
       return byTime || left.evidenceId.localeCompare(right.evidenceId);
-    })
-    .at(-1) ?? null;
+    });
 }
 
 function categoryFor(
@@ -68,79 +67,83 @@ function founderMutationKey(directiveId: string, kind: string, targetId: string)
 
 function founderCanonicalMutations(
   workingSet: SterlingTodayWorkingSet,
-  directives: ReadonlyMap<string, FounderEvidence>,
+  directives: ReadonlyMap<string, readonly FounderEvidence[]>,
 ): SterlingProposedCanonicalMutation[] {
   const mutations: SterlingProposedCanonicalMutation[] = [];
-  for (const [workUnitId, evidence] of directives) {
+  for (const [workUnitId, evidenceRows] of directives) {
     const unit = workingSet.workUnits.find((row) => row.workUnitId === workUnitId);
     const project = unit?.projectId
       ? workingSet.projects.find((row) => row.projectId === unit.projectId)
       : null;
     if (!project) continue;
-    const directive = evidence.founderDirective;
-    const base = {
-      projectId: project.projectId,
-      personId: null,
-      evidenceRefs: [evidence.evidenceId],
-      requiresFounderApproval: true as const,
-    };
-    if (directive.lifecycleStage != null && directive.lifecycleStage !== project.lifecycleStage) {
-      mutations.push({
-        ...base,
-        proposalKey: founderMutationKey(directive.directiveId, "set_project_lifecycle", project.projectId),
-        kind: "set_project_lifecycle",
-        jobId: null,
-        expectedRecordVersion: project.recordVersion,
-        targetLifecycleStage: directive.lifecycleStage,
-        targetJobState: null,
-        targetResponsibleParty: null,
-        newJob: null,
-        reason: "Founder-authoritative lifecycle correction; review before canonical application.",
-      });
-    }
-    const openJobs = workingSet.jobs.filter((job) => job.projectId === project.projectId &&
-      (job.state === "open" || job.state === "snoozed"));
-    const terminal = directive.disposition != null && TERMINAL_DISPOSITIONS.has(directive.disposition);
-    const specificallyResolved = new Set(directive.resolvedJobIds ?? []);
-    for (const job of openJobs) {
-      if (terminal || specificallyResolved.has(job.jobId)) {
-        const completed = directive.disposition === "completed";
-        const resolve = specificallyResolved.has(job.jobId) || completed;
+    for (const evidence of evidenceRows) {
+      const directive = evidence.founderDirective;
+      const base = {
+        projectId: project.projectId,
+        personId: null,
+        evidenceRefs: [evidence.evidenceId],
+        requiresFounderApproval: true as const,
+      };
+      if (directive.lifecycleStage != null && directive.lifecycleStage !== project.lifecycleStage) {
         mutations.push({
           ...base,
-          proposalKey: founderMutationKey(
-            directive.directiveId,
-            resolve ? "resolve_open_job" : "cancel_open_job",
-            job.jobId,
-          ),
-          kind: resolve ? "resolve_open_job" : "cancel_open_job",
-          jobId: job.jobId,
-          expectedRecordVersion: job.recordVersion,
-          targetLifecycleStage: null,
-          targetJobState: resolve ? "resolved" : "cancelled",
+          proposalKey: founderMutationKey(directive.directiveId, "set_project_lifecycle", project.projectId),
+          kind: "set_project_lifecycle",
+          jobId: null,
+          expectedRecordVersion: project.recordVersion,
+          targetLifecycleStage: directive.lifecycleStage,
+          targetJobState: null,
           targetResponsibleParty: null,
           newJob: null,
-          reason: resolve
-            ? "Founder-confirmed obligation completion; review resolution of this exact canonical open job."
-            : "Founder-confirmed terminal disposition; review cancellation of the stale canonical open job.",
+          reason: "Founder-authoritative lifecycle correction; review before canonical application.",
         });
-      } else if (openJobs.length === 1 && directive.waitingOn && directive.waitingOn !== job.responsibleParty) {
-        mutations.push({
-          ...base,
-          proposalKey: founderMutationKey(directive.directiveId, "update_open_job_holder", job.jobId),
-          kind: "update_open_job_holder",
-          jobId: job.jobId,
-          expectedRecordVersion: job.recordVersion,
-          targetLifecycleStage: null,
-          targetJobState: null,
-          targetResponsibleParty: directive.waitingOn,
-          newJob: null,
-          reason: "Founder-authoritative waiting-on correction; review before canonical job update.",
-        });
+      }
+      const openJobs = workingSet.jobs.filter((job) => job.projectId === project.projectId &&
+        (job.state === "open" || job.state === "snoozed"));
+      const terminal = directive.disposition != null && TERMINAL_DISPOSITIONS.has(directive.disposition);
+      const specificallyResolved = new Set(directive.resolvedJobIds ?? []);
+      for (const job of openJobs) {
+        if (terminal || specificallyResolved.has(job.jobId)) {
+          const completed = directive.disposition === "completed";
+          const resolve = specificallyResolved.has(job.jobId) || completed;
+          mutations.push({
+            ...base,
+            proposalKey: founderMutationKey(
+              directive.directiveId,
+              resolve ? "resolve_open_job" : "cancel_open_job",
+              job.jobId,
+            ),
+            kind: resolve ? "resolve_open_job" : "cancel_open_job",
+            jobId: job.jobId,
+            expectedRecordVersion: job.recordVersion,
+            targetLifecycleStage: null,
+            targetJobState: resolve ? "resolved" : "cancelled",
+            targetResponsibleParty: null,
+            newJob: null,
+            reason: resolve
+              ? "Founder-confirmed obligation completion; review resolution of this exact canonical open job."
+              : "Founder-confirmed terminal disposition; review cancellation of the stale canonical open job.",
+          });
+        } else if (openJobs.length === 1 && directive.waitingOn && directive.waitingOn !== job.responsibleParty) {
+          mutations.push({
+            ...base,
+            proposalKey: founderMutationKey(directive.directiveId, "update_open_job_holder", job.jobId),
+            kind: "update_open_job_holder",
+            jobId: job.jobId,
+            expectedRecordVersion: job.recordVersion,
+            targetLifecycleStage: null,
+            targetJobState: null,
+            targetResponsibleParty: directive.waitingOn,
+            newJob: null,
+            reason: "Founder-authoritative waiting-on correction; review before canonical job update.",
+          });
+        }
       }
     }
   }
-  return mutations;
+  const latestByAxis = new Map<string, SterlingProposedCanonicalMutation>();
+  for (const mutation of mutations) latestByAxis.set(mutationAxis(mutation), mutation);
+  return [...latestByAxis.values()];
 }
 
 function mutationAxis(mutation: SterlingProposedCanonicalMutation): string {
@@ -275,19 +278,22 @@ export function applySterlingFounderAuthority(
   const priorRecommendations = new Map(
     proposal.recommendations.map((row) => [row.workUnitId, row] as const),
   );
-  const directives = new Map<string, FounderEvidence>();
+  const directives = new Map<string, readonly FounderEvidence[]>();
   const assessments = proposal.portfolioAssessments.map((assessment) => {
     const unit = workingSet.workUnits.find((row) => row.workUnitId === assessment.workUnitId);
-    const evidence = unit ? latestFounderEvidence(workingSet, unit.workUnitId, unit.evidenceRefs) : null;
-    if (!evidence) return assessment;
-    directives.set(assessment.workUnitId, evidence);
-    return reconciledAssessment(assessment, evidence);
+    const evidenceRows = unit
+      ? founderEvidenceChronology(workingSet, unit.workUnitId, unit.evidenceRefs)
+      : [];
+    if (evidenceRows.length === 0) return assessment;
+    directives.set(assessment.workUnitId, evidenceRows);
+    return evidenceRows.reduce(reconciledAssessment, assessment);
   });
   const assessmentByUnit = new Map(assessments.map((row) => [row.workUnitId, row] as const));
   const untouched = proposal.recommendations.filter((row) => !directives.has(row.workUnitId));
-  const enforced = [...directives].flatMap(([workUnitId, evidence]) => {
+  const enforced = [...directives].flatMap(([workUnitId, evidenceRows]) => {
     const assessment = assessmentByUnit.get(workUnitId);
-    if (!assessment) return [];
+    const evidence = evidenceRows.at(-1);
+    if (!assessment || !evidence) return [];
     const recommendation = reconciledRecommendation({
       assessment,
       prior: priorRecommendations.get(workUnitId) ?? null,

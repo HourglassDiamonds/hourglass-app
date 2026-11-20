@@ -344,7 +344,7 @@ describe("Sterling-native Today", () => {
     assert.deepEqual(set.workUnits[0]?.threadIds, ["thread-a", "thread-b"]);
   });
 
-  it("keeps a thread with conflicting exact identifiers provisional instead of cross-linking projects", () => {
+  it("keeps distinct project messages separate inside one reused thread", () => {
     const first = { ...summary(), gmailThreadId: null };
     const secondId = "66666666-6666-4666-8666-666666666666";
     const second = { ...summary(), projectId: secondId, title: "Other / C017756", gmailThreadId: null,
@@ -356,9 +356,81 @@ describe("Sterling-native Today", () => {
         { messageId: "m-conflict-2", sentAt: "2026-10-07T14:00:00.000Z",
           direction: "inbound", fromEmailHash: null, operationalText: "References C017756.", attachmentFilenames: [] }],
       }]]) });
-    const gmailEvidence = set.evidence.find(row => row.threadId === "thread-conflict");
-    assert.deepEqual(gmailEvidence?.projectIds, []);
-    assert.equal(set.workUnits.filter(row => row.kind === "provisional_evidence").length, 1);
+    const gmailEvidence = set.evidence.filter(row => row.threadId === "thread-conflict");
+    assert.deepEqual(gmailEvidence.map((row) => row.projectIds), [[first.projectId], [secondId]]);
+    assert.equal(set.workUnits.filter(row => row.kind === "provisional_evidence").length, 0);
+  });
+
+  it("links only established messages from shared Gmail history to a canonical project", () => {
+    const projectId = "77777777-7777-4777-8777-777777777777";
+    const personId = "88888888-8888-4888-8888-888888888888";
+    const threadId = "192ba533c7869445";
+    const historicalMessageId = "192ba533c7869445";
+    const identifierMessageId = "1a1881c7f79f8e48";
+    const reviewedMessageId = "1a1b2dd4512d35c8";
+    const project = {
+      ...summary(),
+      projectId,
+      title: "Current commission",
+      gmailThreadId: null,
+      lifecycleStage: "production" as const,
+      specs: [{ fieldName: "cad_job_number" as const, label: "CAD", value: "CR5001205" }],
+      people: [{ personId, displayName: "Client", roles: ["client"], organizationName: null }],
+    };
+    const set = buildSterlingTodayWorkingSet({
+      runId: "run-shared-history-message-links",
+      sourceWatermark: "wm-shared-history-message-links",
+      generatedAt: "2026-11-20T14:05:00.000Z",
+      projects: [project],
+      jobs: [],
+      candidates: [],
+      knownPeople: [],
+      founderDirectives: [{
+        directiveId: "99999999-9999-4999-8999-999999999999",
+        workUnitId: `project:${projectId}`,
+        projectId,
+        personId,
+        sourceRefs: [
+          `gmail:thread:${threadId}`,
+          `gmail:thread:${threadId}:message:${identifierMessageId}`,
+          `gmail:thread:${threadId}:message:${reviewedMessageId}`,
+        ],
+        recordedAt: "2026-11-20T09:05:00-05:00",
+        recordedBy: "founder:test",
+        lifecycleStage: "production",
+        waitingOn: "vendor_shop",
+        obligationUpdates: [{
+          obligationId: "shop-finish-return",
+          description: "Shop finishes and returns the ring.",
+          status: "open",
+          responsibleParty: "vendor_shop",
+        }],
+        reason: "The reused thread is shared history; only reviewed messages belong to this project.",
+      }],
+      threadContext: new Map([[threadId, {
+        subject: "Reused conversation",
+        messages: [
+          { messageId: historicalMessageId, sentAt: "2024-10-23T17:00:58.000Z", direction: "outbound",
+            fromEmailHash: null, operationalText: "Older completed work.", attachmentFilenames: [] },
+          { messageId: identifierMessageId, sentAt: "2026-10-29T14:42:10.000Z", direction: "outbound",
+            fromEmailHash: null, operationalText: "Current design file.", attachmentFilenames: ["H017-CR5001205.jpg"] },
+          { messageId: reviewedMessageId, sentAt: "2026-11-06T21:56:44.000Z", direction: "outbound",
+            fromEmailHash: null, operationalText: "Current production follow-up.", attachmentFilenames: [] },
+        ],
+      }]]),
+    });
+    const byMessage = new Map(set.evidence.filter((row) => row.sourceType === "gmail")
+      .map((row) => [row.messageId, row.projectIds] as const));
+    assert.deepEqual(byMessage.get(historicalMessageId), []);
+    assert.deepEqual(byMessage.get(identifierMessageId), [projectId]);
+    assert.deepEqual(byMessage.get(reviewedMessageId), [projectId]);
+    const canonical = set.workUnits.find((row) => row.workUnitId === `project:${projectId}`)!;
+    assert.ok(canonical.evidenceRefs.includes(`gmail:${threadId}:${identifierMessageId}`));
+    assert.ok(canonical.evidenceRefs.includes(`gmail:${threadId}:${reviewedMessageId}`));
+    assert.equal(canonical.evidenceRefs.includes(`gmail:${threadId}:${historicalMessageId}`), false);
+    const sharedHistory = set.workUnits.find((row) => row.projectId === null &&
+      row.evidenceRefs.includes(`gmail:${threadId}:${historicalMessageId}`));
+    assert.ok(sharedHistory);
   });
 
   it("builds a one-work-unit target package without logging evidence text", () => {

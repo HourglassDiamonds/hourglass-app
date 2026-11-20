@@ -101,6 +101,7 @@ describe("bounded operational shadow review", () => {
     assert.match(runtime, /bodyIncompleteMessageIds/);
     assert.match(runtime, /retrievedAt/);
     assert.match(runtime, /outstandingObligations/);
+    assert.match(runtime, /rememberedObligations/);
     assert.match(runtime, /description: obligation\.description\.trim\(\)/);
     assert.match(runtime, /checkBackAt/);
     const resultBlock = runtime.slice(runtime.indexOf("const threadEvidence"));

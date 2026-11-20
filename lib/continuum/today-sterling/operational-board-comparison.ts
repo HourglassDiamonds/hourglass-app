@@ -45,6 +45,14 @@ export type ShadowBoardAuditRow = OperationalBoardIdentity & {
     evidenceRefs: readonly string[];
     checkBackAt: string | null;
   }[];
+  /** Complete project memory; Today may show only the currently actionable owner. */
+  rememberedObligations?: readonly {
+    obligationId: string;
+    description: string;
+    status: "open" | "fulfilled" | "superseded" | "ambiguous";
+    responsibleParty: string;
+    evidenceRefs: readonly string[];
+  }[];
 };
 
 export type OperationalBoardMismatch = {

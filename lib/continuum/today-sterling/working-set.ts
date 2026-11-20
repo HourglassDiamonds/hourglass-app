@@ -163,6 +163,13 @@ function exactSourceThreadId(sourceRef: string | null | undefined): string | nul
     ref.match(/^gmail-thread:([0-9a-f]{10,})$/i)?.[1] ?? null;
 }
 
+function exactSourceMessageId(sourceRef: string | null | undefined): string | null {
+  const ref = sourceRef?.trim() ?? "";
+  const parsed = exactGmailIdsFromPointer(ref).messageId;
+  if (parsed && isExactGmailHexId(parsed)) return parsed;
+  return ref.match(/^gmail:thread:[0-9a-f]{10,}:message:([0-9a-f]{10,})$/i)?.[1] ?? null;
+}
+
 export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSetInput): SterlingTodayWorkingSet {
   const personIdsByHash = new Map<string, Set<string>>();
   for (const person of input.knownPeople) {
@@ -179,9 +186,14 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
   for (const person of input.knownPeople) peopleById.set(person.personId, [...(peopleById.get(person.personId) ?? []), person]);
 
   const projectIdsByThread = new Map<string, Set<string>>();
+  const projectIdsByMessage = new Map<string, Set<string>>();
   const addThreadProject = (threadId: string | null | undefined, projectId: string | null | undefined) => {
     if (!threadId?.trim() || !projectId?.trim()) return;
     const set = projectIdsByThread.get(threadId) ?? new Set<string>(); set.add(projectId); projectIdsByThread.set(threadId, set);
+  };
+  const addMessageProject = (messageId: string | null | undefined, projectId: string | null | undefined) => {
+    if (!messageId?.trim() || !projectId?.trim()) return;
+    const set = projectIdsByMessage.get(messageId) ?? new Set<string>(); set.add(projectId); projectIdsByMessage.set(messageId, set);
   };
   for (const project of input.projects) addThreadProject(project.gmailThreadId, project.projectId);
   for (const [projectId, threadIds] of input.projectThreadIds ?? []) {
@@ -190,6 +202,12 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
   for (const candidate of input.candidates) {
     const projectId = targetProjectId(candidate);
     for (const threadId of collectExactGmailIds([candidate]).threadIds) addThreadProject(threadId, projectId);
+  }
+  for (const directive of input.founderDirectives ?? []) {
+    if (!directive.projectId) continue;
+    for (const sourceRef of directive.sourceRefs) {
+      addMessageProject(exactSourceMessageId(sourceRef), directive.projectId);
+    }
   }
 
   // Exact CAD/order/production identifiers are identity resolution, not semantic judgment.
@@ -205,13 +223,20 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
       const ids = projectsByIdentifier.get(token) ?? new Set<string>(); ids.add(projectId); projectsByIdentifier.set(token, ids);
     }
   }
-  for (const [threadId, thread] of input.threadContext) {
-    const haystack = [thread.subject, ...(thread.attachmentFilenames ?? []), ...(thread.messages ?? []).flatMap(message => [
-      message.subject, message.operationalText, ...(message.attachmentFilenames ?? []),
-    ])].filter(Boolean).join(" ");
-    const identifierProjectIds = new Set(projectIdentifiers(haystack)
-      .flatMap(token => [...(projectsByIdentifier.get(token) ?? [])]));
-    if (identifierProjectIds.size === 1) addThreadProject(threadId, [...identifierProjectIds][0]);
+  for (const thread of input.threadContext.values()) {
+    for (const message of thread.messages ?? []) {
+      const haystack = [
+        message.subject,
+        message.operationalText,
+        message.verifiedCurrentMessageText,
+        ...(message.attachmentFilenames ?? []),
+      ].filter(Boolean).join(" ");
+      const identifierProjectIds = new Set(projectIdentifiers(haystack)
+        .flatMap(token => [...(projectsByIdentifier.get(token) ?? [])]));
+      if (identifierProjectIds.size === 1) {
+        addMessageProject(message.messageId, [...identifierProjectIds][0]);
+      }
+    }
   }
 
   const candidatesByMessage = new Map<string, ContinuumCandidate[]>();
@@ -221,7 +246,7 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
 
   const evidence: SterlingEvidence[] = [];
   for (const [threadId, thread] of input.threadContext) {
-    const projectIds = [...(projectIdsByThread.get(threadId) ?? [])];
+    const threadProjectIds = [...(projectIdsByThread.get(threadId) ?? [])];
     for (const message of thread.messages ?? []) {
       const related = candidatesByMessage.get(message.messageId) ?? [];
       const trustedLive = hasTrustedLiveAuthenticity(message);
@@ -235,7 +260,11 @@ export function buildSterlingTodayWorkingSet(input: BuildSterlingTodayWorkingSet
         sourceRef: `gmail:thread:${threadId}:message:${message.messageId}`, timestamp: message.sentAt,
         direction: message.direction, subject: message.subject ?? thread.subject ?? null, excerpt,
         attachmentFilenames: unique(message.attachmentFilenames ?? []), messageId: message.messageId, threadId,
-        projectIds: unique([...projectIds, ...related.map(targetProjectId)]),
+        projectIds: unique([
+          ...threadProjectIds,
+          ...(projectIdsByMessage.get(message.messageId) ?? []),
+          ...related.map(targetProjectId),
+        ]),
         personIds: unique([
           knownPersonId(message.fromEmailHash),
           ...(message.toEmailHashes ?? []).map(knownPersonId),
@@ -453,6 +482,13 @@ function buildWorkUnits(
       evidenceRefs: unique(rows.map((row) => row.evidenceId)),
     }];
   });
+  const founderEvidenceByUnit = new Map<string, SterlingEvidence[]>();
+  for (const row of evidence) {
+    const workUnitId = row.founderDirective?.workUnitId;
+    if (!workUnitId?.startsWith("provisional:") || row.projectIds.length > 0) continue;
+    founderEvidenceByUnit.set(workUnitId, [...(founderEvidenceByUnit.get(workUnitId) ?? []), row]);
+    assignedEvidence.add(row.evidenceId);
+  }
   const evidenceBySource = new Map<string, SterlingEvidence[]>();
   for (const row of evidence) {
     if (assignedEvidence.has(row.evidenceId) || row.projectIds.length > 0 || row.sourceType === "canonical" || row.sourceType === "calendar") continue;
@@ -499,5 +535,35 @@ function buildWorkUnits(
     sourceRefs: group.sourceRefs,
     evidenceRefs: group.evidenceRefs,
   }));
-  return [...canonical, ...provisionalUnits].sort((a, b) => a.workUnitId.localeCompare(b.workUnitId));
+  const byWorkUnitId = new Map(
+    [...canonical, ...provisionalUnits].map((row) => [row.workUnitId, row] as const),
+  );
+  for (const [workUnitId, rows] of founderEvidenceByUnit) {
+    const current = byWorkUnitId.get(workUnitId);
+    if (current) {
+      byWorkUnitId.set(workUnitId, {
+        ...current,
+        threadIds: unique([...current.threadIds, ...rows.map((row) => row.threadId)]),
+        sourceRefs: unique([...current.sourceRefs, ...rows.map((row) => row.sourceRef)]),
+        evidenceRefs: unique([...current.evidenceRefs, ...rows.map((row) => row.evidenceId)]),
+      });
+      continue;
+    }
+    const identifiers = unique(rows.flatMap((row) => operationalIdentifiers(
+      [row.subject, row.excerpt, ...row.attachmentFilenames].filter(Boolean).join(" "),
+    )));
+    byWorkUnitId.set(workUnitId, {
+      workUnitId,
+      kind: "provisional_evidence",
+      identityBasis: "source_record",
+      projectId: null,
+      label: identifiers[0] ?? rows[0]?.subject ?? "Founder-confirmed provisional work",
+      observedIdentifiers: identifiers,
+      typedIdentifiers: typedIdentifiers(identifiers),
+      threadIds: unique(rows.map((row) => row.threadId)),
+      sourceRefs: unique(rows.map((row) => row.sourceRef)),
+      evidenceRefs: unique(rows.map((row) => row.evidenceId)),
+    });
+  }
+  return [...byWorkUnitId.values()].sort((a, b) => a.workUnitId.localeCompare(b.workUnitId));
 }

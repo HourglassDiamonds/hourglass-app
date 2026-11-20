@@ -331,6 +331,150 @@ describe("local founder update save and fresh-board replay", () => {
         ],
       },
     ]);
+
+    const rebuildJamesFromSavedNotes = (runId: string) => {
+      const founderDirectives = structuredClone(store.listSourceNotes())
+        .map(sterlingFounderDirectiveFromNote)
+        .filter((row): row is SterlingFounderDirectiveRecord => row !== null);
+      const nextSet = buildSterlingTodayWorkingSet({
+        runId,
+        sourceWatermark: "november-19-baseline-plus-local-founder-updates",
+        generatedAt: "2026-11-20T17:00:00.000Z",
+        projects,
+        jobs,
+        candidates: [],
+        threadContext: new Map(),
+        knownPeople: [
+          { personId: morganPersonId, displayName: "Morgan Jines", roles: ["client"], organizationName: null, emailHash: "a".repeat(64) },
+          { personId: jamesPersonId, displayName: "James Bowron", roles: ["client"], organizationName: null, emailHash: "b".repeat(64) },
+        ],
+        founderDirectives,
+      });
+      const nextProposal = applySterlingFounderAuthority(nextSet, {
+        ...raw,
+        runId: nextSet.runId,
+        evidenceSnapshotId: nextSet.evidenceSnapshotId,
+        generatedAt: nextSet.generatedAt,
+      });
+      const validation = validateSterlingTodayProposal(nextSet, nextProposal);
+      assert.equal(validation.accepted, true, validation.errors.join("\n"));
+      const assessment = nextProposal.portfolioAssessments.find(
+        (row) => row.workUnitId === jamesUnit.workUnitId,
+      )!;
+      const recommendation = nextProposal.recommendations.find(
+        (row) => row.workUnitId === jamesUnit.workUnitId,
+      ) ?? null;
+      const decision = decideOperationalBoardRow({
+        nextStepOwner: assessment.nextStepOwner,
+        todayDisposition: assessment.todayDisposition,
+        lifecycle: assessment.currentStage.canonicalLifecycleStage,
+        obligations: assessment.obligations,
+        recommendation,
+        evidenceComplete: true,
+      });
+      return {
+        project: "James — CR5001205",
+        projectsStage: assessment.currentStage.operationalSubstage,
+        rememberedObligations: assessment.obligations.map((row) => ({
+          id: row.obligationId,
+          status: row.status,
+          responsibleParty: row.responsibleParty,
+          description: row.description,
+        })),
+        today: decision.disposition,
+        next: decision.owner,
+        todayObligations: decision.outstandingObligations.map((row) => row.description),
+      };
+    };
+
+    const beforeReceipt = rebuildJamesFromSavedNotes("james-before-receipt");
+    assert.deepEqual(beforeReceipt, {
+      project: "James — CR5001205",
+      projectsStage: "Waiting on shop; founder video due upon receipt",
+      rememberedObligations: [
+        { id: "shop-finish-return-cr5001205", status: "open", responsibleParty: "vendor_shop", description: "Shop finishes and returns the CR5001205 ring." },
+        { id: "founder-video-on-receipt-cr5001205", status: "open", responsibleParty: "founder", description: "Justin sends James a video after receipt of the finished CR5001205 ring." },
+      ],
+      today: "waiting_on_shop",
+      next: "vendor_shop",
+      todayObligations: ["Shop finishes and returns the CR5001205 ring."],
+    });
+
+    const received: SterlingFounderDirectiveRecord = {
+      directiveId: "e3e3e3e3-e3e3-43e3-83e3-e3e3e3e3e3e3",
+      workUnitId: jamesUnit.workUnitId,
+      projectId: null,
+      personId: jamesPersonId,
+      sourceRefs: ["founder-confirmation:james-ring-received"],
+      recordedAt: "2026-11-20T15:00:00-05:00",
+      recordedBy: "founder:local-simulation",
+      operationalSubstage: "Finished ring received; video due",
+      waitingOn: "founder",
+      attentionPriority: "action_now",
+      disposition: "active",
+      obligationUpdates: [
+        {
+          obligationId: "shop-finish-return-cr5001205",
+          description: "Shop finished and returned the CR5001205 ring.",
+          status: "fulfilled",
+          responsibleParty: "vendor_shop",
+        },
+        {
+          obligationId: "founder-video-on-receipt-cr5001205",
+          description: "Send James the finished-ring video.",
+          status: "open",
+          responsibleParty: "founder",
+        },
+      ],
+      reason: "Founder confirmed receipt; the saved finished-ring video promise is now actionable.",
+    };
+    assert.equal((await recordSterlingFounderDirective({ writer, directive: received })).ok, true);
+    const afterReceipt = rebuildJamesFromSavedNotes("james-after-receipt");
+    assert.deepEqual(afterReceipt, {
+      project: "James — CR5001205",
+      projectsStage: "Finished ring received; video due",
+      rememberedObligations: [
+        { id: "shop-finish-return-cr5001205", status: "fulfilled", responsibleParty: "vendor_shop", description: "Shop finished and returned the CR5001205 ring." },
+        { id: "founder-video-on-receipt-cr5001205", status: "open", responsibleParty: "founder", description: "Send James the finished-ring video." },
+      ],
+      today: "founder_action",
+      next: "founder",
+      todayObligations: ["Send James the finished-ring video."],
+    });
+
+    const sent: SterlingFounderDirectiveRecord = {
+      directiveId: "f4f4f4f4-f4f4-44f4-84f4-f4f4f4f4f4f4",
+      workUnitId: jamesUnit.workUnitId,
+      projectId: null,
+      personId: jamesPersonId,
+      sourceRefs: ["founder-confirmation:james-video-sent"],
+      recordedAt: "2026-11-20T15:30:00-05:00",
+      recordedBy: "founder:local-simulation",
+      operationalSubstage: "Finished-ring video sent",
+      obligationUpdates: [{
+        obligationId: "founder-video-on-receipt-cr5001205",
+        description: "Justin sent James the finished-ring video.",
+        status: "fulfilled",
+        responsibleParty: "founder",
+      }],
+      reason: "Founder confirmed the saved finished-ring video commitment was fulfilled.",
+    };
+    assert.equal((await recordSterlingFounderDirective({ writer, directive: sent })).ok, true);
+    const afterSent = rebuildJamesFromSavedNotes("james-after-video-sent");
+    assert.deepEqual(afterSent, {
+      project: "James — CR5001205",
+      projectsStage: "Finished-ring video sent",
+      rememberedObligations: [
+        { id: "shop-finish-return-cr5001205", status: "fulfilled", responsibleParty: "vendor_shop", description: "Shop finished and returned the CR5001205 ring." },
+        { id: "founder-video-on-receipt-cr5001205", status: "fulfilled", responsibleParty: "founder", description: "Justin sent James the finished-ring video." },
+      ],
+      today: "suppressed",
+      next: "none",
+      todayObligations: [],
+    });
+    const afterRefresh = rebuildJamesFromSavedNotes("james-after-refresh");
+    assert.deepEqual(afterRefresh, afterSent);
+    context.diagnostic(`JAMES_CONDITIONAL_WORKFLOW ${JSON.stringify({ beforeReceipt, afterReceipt, afterSent, afterRefresh })}`);
     context.diagnostic(`FRESH_LOCAL_BOARD ${JSON.stringify(localRows)}`);
   });
 });
